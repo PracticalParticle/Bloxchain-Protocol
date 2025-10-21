@@ -56,7 +56,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_REQUEST_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayRequestActions
+            supportedActions: timeDelayRequestActions,
+            isProtected: true
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -64,7 +65,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_DELAYED_APPROVAL_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayApproveActions
+            supportedActions: timeDelayApproveActions,
+            isProtected: true
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -72,7 +74,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_CANCELLATION_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayCancelActions
+            supportedActions: timeDelayCancelActions,
+            isProtected: true
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -80,7 +83,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_APPROVAL_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxApproveActions
+            supportedActions: metaTxApproveActions,
+            isProtected: true
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
@@ -88,7 +92,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_CANCELLATION_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxCancelActions
+            supportedActions: metaTxCancelActions,
+            isProtected: true
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
@@ -96,7 +101,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_REQUEST_AND_APPROVE_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxRequestApproveActions
+            supportedActions: metaTxRequestApproveActions,
+            isProtected: true
         });
         
         // Payment function schemas
@@ -108,7 +114,8 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.UPDATE_PAYMENT_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: updatePaymentActions
+            supportedActions: updatePaymentActions,
+            isProtected: true
         });
         
         return schemas;

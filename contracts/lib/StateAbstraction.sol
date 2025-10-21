@@ -33,11 +33,10 @@ import "../interfaces/IEventForwarder.sol";
  */
 library StateAbstraction {
     // ============ VERSION INFORMATION ============
-    string public constant LIBRARY_NAME = "StateAbstraction";
-    string public constant VERSION = "1.0.0";
-    int256 public constant VERSION_MAJOR = 1;
-    int256 public constant VERSION_MINOR = 0;
-    int256 public constant VERSION_PATCH = 0;
+    bytes32 public constant LIBRARY_NAME_HASH = keccak256("StateAbstraction");
+    uint8 public constant VERSION_MAJOR = 1;
+    uint8 public constant VERSION_MINOR = 0;
+    uint8 public constant VERSION_PATCH = 0;
     
     using MessageHashUtils for bytes32;
     using SharedValidation for *;
@@ -150,6 +149,7 @@ library StateAbstraction {
         bytes32 operationType;
         string operationName;
         TxAction[] supportedActions;
+        bool isProtected;
     }
 
     // ============ DEFINITION STRUCTS ============
@@ -201,10 +201,10 @@ library StateAbstraction {
 
 
     event TransactionEvent(
-        uint256 txId,
-        string triggerFunc,
+        uint256 indexed txId,
+        bytes4 indexed functionHash,
         TxStatus status,
-        address requester,
+        address indexed requester,
         address target,
         bytes32 operationType
     );
@@ -268,7 +268,7 @@ library StateAbstraction {
      * @return The TxRecord associated with the transaction ID.
      */
     function getTxRecord(SecureOperationState storage self, uint256 txId) public view returns (TxRecord memory) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return self.txRecords[txId];
     }
 
@@ -295,7 +295,7 @@ library StateAbstraction {
         bytes memory executionOptions
     ) public returns (TxRecord memory) {
         if (!hasActionPermission(self, msg.sender, TX_REQUEST_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST) && !hasActionPermission(self, msg.sender, META_TX_REQUEST_AND_APPROVE_SELECTOR, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
-            revert SharedValidation.NoPermissionExecute(msg.sender);
+            revert SharedValidation.NoPermission(msg.sender);
         }
         SharedValidation.validateNotZeroAddress(target);
 
@@ -331,23 +331,12 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, TX_DELAYED_APPROVAL_SELECTOR, TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
         
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
-        // Update storage with new status and result
-        if (success) {
-            self.txRecords[txId].status = TxStatus.COMPLETED;
-            self.txRecords[txId].result = result;
-        } else {
-            self.txRecords[txId].status = TxStatus.FAILED;
-        }
-        
-        // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
-        
-        logTxEvent(self, txId, TX_DELAYED_APPROVAL_SELECTOR);
+        _completeTransaction(self, txId, success, result, TX_DELAYED_APPROVAL_SELECTOR);
         return self.txRecords[txId];
     }
 
@@ -361,14 +350,9 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, TX_CANCELLATION_SELECTOR, TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
         
-        self.txRecords[txId].status = TxStatus.CANCELLED;
-        
-        // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
-        
-        logTxEvent(self, txId, TX_CANCELLATION_SELECTOR);
+        _cancelTransaction(self, txId, TX_CANCELLATION_SELECTOR);
         
         return self.txRecords[txId];
     }
@@ -384,16 +368,11 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, META_TX_CANCELLATION_SELECTOR, TxAction.EXECUTE_META_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
-        self.txRecords[txId].status = TxStatus.CANCELLED;
-        
-        // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
-        
-        logTxEvent(self, txId, META_TX_CANCELLATION_SELECTOR);
+        _cancelTransaction(self, txId, META_TX_CANCELLATION_SELECTOR);
         
         return self.txRecords[txId];
     }
@@ -409,24 +388,13 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, META_TX_APPROVAL_SELECTOR, TxAction.EXECUTE_META_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
-        // Update storage with new status and result
-        if (success) {
-            self.txRecords[txId].status = TxStatus.COMPLETED;
-            self.txRecords[txId].result = result;
-        } else {
-            self.txRecords[txId].status = TxStatus.FAILED;
-        }
-        
-        // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
-        
-        logTxEvent(self, txId, META_TX_APPROVAL_SELECTOR);
+        _completeTransaction(self, txId, success, result, META_TX_APPROVAL_SELECTOR);
         
         return self.txRecords[txId];
     }
@@ -610,8 +578,8 @@ library StateAbstraction {
                 executionType: executionType,
                 executionOptions: executionOptions
             }),
-            message: bytes32(0),
-            result: new bytes(0),
+            message: 0,
+            result: "",
             payment: PaymentDetails({
                 recipient: address(0),
                 nativeTokenAmount: 0,
@@ -628,7 +596,7 @@ library StateAbstraction {
      */
     function addToPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
         
         // Check if transaction ID is already in the set (O(1) operation)
         if (self.pendingTransactionsSet.contains(txId)) revert SharedValidation.RequestAlreadyPending(txId);
@@ -666,7 +634,7 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, UPDATE_PAYMENT_SELECTOR, TxAction.EXECUTE_UPDATE_PAYMENT)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        SharedValidation.validatePendingTransaction(uint8(self.txRecords[txId].status));
+        _validateTxPending(self, txId);
            
         self.txRecords[txId].payment = paymentDetails;
         
@@ -683,7 +651,7 @@ library StateAbstraction {
      * @return The role associated with the hash, or Role(0) if the role doesn't exist.
      */
     function getRole(SecureOperationState storage self, bytes32 role) public view returns (Role storage) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return self.roles[role];
     }
 
@@ -724,7 +692,7 @@ library StateAbstraction {
         bytes32 roleHash
     ) public {
         // Validate that the role exists
-        if (self.roles[roleHash].roleHash == bytes32(0)) revert SharedValidation.RoleNameEmpty();
+        _validateRoleExists(self, roleHash);
         
         // Security check: Prevent removing protected roles
         if (self.roles[roleHash].isProtected) {
@@ -758,13 +726,13 @@ library StateAbstraction {
      */
     function assignWallet(SecureOperationState storage self, bytes32 role, address wallet) public {
         SharedValidation.validateNotZeroAddress(wallet);
-        if (self.roles[role].roleHash == bytes32(0)) revert SharedValidation.RoleNameEmpty();
+        _validateRoleExists(self, role);
         
         Role storage roleData = self.roles[role];
         SharedValidation.validateWalletLimit(roleData.authorizedWallets.length(), roleData.maxWallets);
         
         // Check if wallet is already in the role
-        if (roleData.authorizedWallets.contains(wallet)) revert SharedValidation.WalletAlreadyInRole(wallet);
+        if (roleData.authorizedWallets.contains(wallet)) revert SharedValidation.WalletError(wallet);
         
         roleData.authorizedWallets.add(wallet);
         roleData.walletCount = roleData.authorizedWallets.length();
@@ -778,13 +746,13 @@ library StateAbstraction {
      * @param oldWallet The old wallet address to remove from the role.
      */
     function updateAssignedWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
-        if (self.roles[role].roleHash == bytes32(0)) revert SharedValidation.RoleNameEmpty();
+        _validateRoleExists(self, role);
         SharedValidation.validateNotZeroAddress(newWallet);
         
         // Check if old wallet exists in the role
         Role storage roleData = self.roles[role];
         if (!roleData.authorizedWallets.contains(oldWallet)) {
-            revert SharedValidation.OldWalletNotFound(oldWallet);
+            revert SharedValidation.WalletError(oldWallet);
         }
 
         // update the wallet if it's not the same
@@ -803,17 +771,17 @@ library StateAbstraction {
      * @notice Security: Cannot remove the last wallet from a role to prevent empty roles.
      */
     function revokeWallet(SecureOperationState storage self, bytes32 role, address wallet) public {
-        if (self.roles[role].roleHash == bytes32(0)) revert SharedValidation.RoleNameEmpty();
+        _validateRoleExists(self, role);
         
         // Check if wallet exists in the role
         Role storage roleData = self.roles[role];
         if (!roleData.authorizedWallets.contains(wallet)) {
-            revert SharedValidation.OldWalletNotFound(wallet);
+            revert SharedValidation.WalletError(wallet);
         }
         
         // Security check: Prevent removing the last wallet from a role
         if (roleData.authorizedWallets.length() <= 1) {
-            revert SharedValidation.CannotRemoveLastWallet(wallet);
+            revert SharedValidation.WalletError(wallet);
         }
         
         // Remove the wallet (O(1) operation)
@@ -833,11 +801,11 @@ library StateAbstraction {
         FunctionPermission memory functionPermission
     ) public {
         // Check if role exists by checking if it's in the supported roles set
-        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleNameEmpty();
+        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
         
         // Check if function exists by checking if it's in the supported functions set
         if (self.functions[functionPermission.functionSelector].functionSelector != functionPermission.functionSelector) {
-            revert SharedValidation.FunctionDoesNotExist(functionPermission.functionSelector);
+            revert SharedValidation.FunctionError(functionPermission.functionSelector);
         }
         
         // Validate that all grantedActions are supported by the function
@@ -976,7 +944,9 @@ library StateAbstraction {
      * @param functionName Name of the function.
      * @param functionSelector Hash identifier for the function.
      * @param operationType The operation type this function belongs to.
+     * @param operationName The name of the operation type.
      * @param supportedActions Array of permissions required to execute this function.
+     * @param isProtected Whether the function schema is protected from removal.
      */
     function createFunctionSchema(
         SecureOperationState storage self,
@@ -984,7 +954,8 @@ library StateAbstraction {
         bytes4 functionSelector,
         bytes32 operationType,
         string memory operationName,
-        TxAction[] memory supportedActions
+        TxAction[] memory supportedActions,
+        bool isProtected
     ) public {
         if (!self.supportedOperationTypesSet.contains(operationType)) {
             SharedValidation.validateOperationTypeNotZero(operationType);
@@ -992,7 +963,7 @@ library StateAbstraction {
         }  
         
         if (self.functions[functionSelector].functionSelector == functionSelector) {
-            revert SharedValidation.FunctionAlreadyExists(functionSelector);
+            revert SharedValidation.FunctionError(functionSelector);
         }
         
         self.functions[functionSelector] = FunctionSchema({
@@ -1000,9 +971,46 @@ library StateAbstraction {
             functionSelector: functionSelector,
             operationType: operationType,
             operationName: operationName,
-            supportedActions: supportedActions
+            supportedActions: supportedActions,
+            isProtected: isProtected
         });
         self.supportedFunctionsSet.add(bytes32(functionSelector)); 
+    }
+
+    /**
+     * @dev Removes a function schema from the system.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector to remove.
+     * @notice Security: Cannot remove protected function schemas to maintain system integrity.
+     * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
+     */
+    function removeFunctionSchema(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public {
+        // Validate that the function schema exists
+        SharedValidation.validateFunctionSchemaExists(self.functions[functionSelector].functionSelector, functionSelector);
+        
+        // Security check: Prevent removing protected function schemas
+        if (self.functions[functionSelector].isProtected) {
+            SharedValidation.validateCanRemoveProtectedFunctionSchema(functionSelector);
+        }
+        
+        // Store the operation type before removing the function schema
+        bytes32 operationType = self.functions[functionSelector].operationType;
+        
+        // Remove the function schema from the supported functions set (O(1) operation)
+        self.supportedFunctionsSet.remove(bytes32(functionSelector));
+        
+        // Clear the function schema data
+        delete self.functions[functionSelector];
+        
+        // Check if the operation type is still in use by other functions
+        bytes4[] memory functionsUsingOperationType = getFunctionsByOperationType(self, operationType);
+        if (functionsUsingOperationType.length == 0) {
+            // Remove the operation type from supported operation types set if no longer in use
+            self.supportedOperationTypesSet.remove(operationType);
+        }
     }
 
     /**
@@ -1018,7 +1026,7 @@ library StateAbstraction {
         TxAction action
     ) public view returns (bool) {
         FunctionSchema memory functionSchema = self.functions[functionSelector];
-        if (functionSchema.functionSelector == bytes4(0)) {
+        if (functionSchema.functionSelector == 0) {
             return false; 
         }
         
@@ -1030,18 +1038,39 @@ library StateAbstraction {
         return false;
     }
 
-    // ============ OPERATION TYPES FUNCTIONS ============
-
     /**
-     * @dev Checks if an operation type is supported
-     * @param self The SecureOperationState to check
-     * @param operationType The operation type to check
-     * @return bool True if the operation type is supported
+     * @dev Returns all function schemas that use a specific operation type.
+     * @param self The SecureOperationState to check.
+     * @param operationType The operation type to search for.
+     * @return Array of function selectors that use the specified operation type.
      */
-    function isOperationTypeSupported(SecureOperationState storage self, bytes32 operationType) public view returns (bool) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
-        return self.supportedOperationTypesSet.contains(operationType);
+    function getFunctionsByOperationType(
+        SecureOperationState storage self,
+        bytes32 operationType
+    ) public view returns (bytes4[] memory) {
+        _validateAnyRole(self);
+        uint256 functionsLength = self.supportedFunctionsSet.length();
+        bytes4[] memory tempResults = new bytes4[](functionsLength);
+        uint256 resultCount = 0;
+        
+        for (uint i = 0; i < functionsLength; i++) {
+            bytes4 functionSelector = bytes4(self.supportedFunctionsSet.at(i));
+            FunctionSchema memory functionSchema = self.functions[functionSelector];
+            if (functionSchema.operationType == operationType) {
+                tempResults[resultCount] = functionSelector;
+                resultCount++;
+            }
+        }
+        
+        // Create properly sized result array
+        bytes4[] memory result = new bytes4[](resultCount);
+        for (uint i = 0; i < resultCount; i++) {
+            result[i] = tempResults[i];
+        }
+        
+        return result;
     }
+
 
     // ============ BACKWARD COMPATIBILITY FUNCTIONS ============
 
@@ -1051,7 +1080,7 @@ library StateAbstraction {
      * @return Array of pending transaction IDs
      */
     function getPendingTransactionsList(SecureOperationState storage self) public view returns (uint256[] memory) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return _convertUintSetToArray(self.pendingTransactionsSet);
     }
 
@@ -1061,7 +1090,7 @@ library StateAbstraction {
      * @return Array of supported role hashes
      */
     function getSupportedRolesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return _convertBytes32SetToArray(self.supportedRolesSet);
     }
 
@@ -1071,7 +1100,7 @@ library StateAbstraction {
      * @return Array of supported function selectors
      */
     function getSupportedFunctionsList(SecureOperationState storage self) public view returns (bytes4[] memory) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         uint256 length = self.supportedFunctionsSet.length();
         bytes4[] memory result = new bytes4[](length);
         for (uint256 i = 0; i < length; i++) {
@@ -1086,7 +1115,7 @@ library StateAbstraction {
      * @return Array of supported operation type hashes
      */
     function getSupportedOperationTypesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return _convertBytes32SetToArray(self.supportedOperationTypesSet);
     }
 
@@ -1112,7 +1141,7 @@ library StateAbstraction {
      * @return The current nonce for the signer.
      */
     function getSignerNonce(SecureOperationState storage self, address signer) public view returns (uint256) {
-        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+        _validateAnyRole(self);
         return self.signerNonces[signer];
     }
 
@@ -1137,7 +1166,7 @@ library StateAbstraction {
     ) private view returns (bool) {
         // Basic validation
         SharedValidation.validateSignatureLength(metaTx.signature);
-        SharedValidation.validatePendingTransaction(uint8(metaTx.txRecord.status));
+        if (metaTx.txRecord.status != TxStatus.PENDING) revert SharedValidation.TransactionNotPending(uint8(metaTx.txRecord.status));
         
         // Transaction parameters validation
         SharedValidation.validateNotZeroAddress(metaTx.txRecord.params.requester);
@@ -1178,8 +1207,8 @@ library StateAbstraction {
     function generateMessageHash(MetaTransaction memory metaTx) private view returns (bytes32) {
         bytes32 domainSeparator = keccak256(abi.encode(
             DOMAIN_SEPARATOR_TYPE_HASH,
-            keccak256(abi.encodePacked(LIBRARY_NAME)),
-            keccak256(abi.encodePacked(VERSION)),
+            LIBRARY_NAME_HASH,
+            keccak256(abi.encodePacked(VERSION_MAJOR, ".", VERSION_MINOR, ".", VERSION_PATCH)),
             block.chainid,
             address(this)
         ));
@@ -1324,8 +1353,8 @@ library StateAbstraction {
         MetaTransaction memory metaTx = MetaTransaction({
             txRecord: txRecord,
             params: metaTxParams,
-            message: bytes32(0),
-            signature: new bytes(0),
+            message: 0,
+            signature: "",
             data: prepareTransactionData(txRecord)
         });
 
@@ -1376,7 +1405,7 @@ library StateAbstraction {
      * @dev Logs an event by emitting TransactionEvent and forwarding to event forwarder
      * @param self The SecureOperationState
      * @param txId The transaction ID
-     * @param functionSelector The function selector to get the function name from
+     * @param functionSelector The function selector to emit in the event
      */
     function logTxEvent(
         SecureOperationState storage self,
@@ -1384,17 +1413,14 @@ library StateAbstraction {
         bytes4 functionSelector
     ) public {
         TxRecord memory txRecord = self.txRecords[txId];
-        string memory functionName = self.functions[functionSelector].functionName;
         
         // Validate that function exists
-        if (bytes(functionName).length == 0) {
-            revert SharedValidation.FunctionDoesNotExist(functionSelector);
-        }
+        SharedValidation.validateFunctionSchemaExists(self.functions[functionSelector].functionSelector, functionSelector);
 
         // Emit only non-sensitive public data
         emit TransactionEvent(
             txId,
-            functionName,
+            functionSelector,
             txRecord.status,
             txRecord.params.requester,
             txRecord.params.target,
@@ -1405,7 +1431,7 @@ library StateAbstraction {
         if (self.eventForwarder != address(0)) {
             try IEventForwarder(self.eventForwarder).forwardTxEvent(
                 txId,
-                functionName,
+                functionSelector,
                 txRecord.status,
                 txRecord.params.requester,
                 txRecord.params.target,
@@ -1430,46 +1456,84 @@ library StateAbstraction {
         self.eventForwarder = forwarder;
     }
 
-    // ============ DEFINITION LOADING FUNCTIONS ============
+    // ============ OPTIMIZATION HELPER FUNCTIONS ============
 
     /**
-     * @dev Loads definitions directly into a SecureOperationState
-     * This function initializes the secure state with all predefined definitions
-     * @param secureState The SecureOperationState to initialize
-     * @param functionSchemas Array of function schema definitions  
-     * @param roleHashes Array of role hashes
-     * @param functionPermissions Array of function permissions (parallel to roleHashes)
+     * @dev Helper function to complete a transaction and remove from pending list
+     * @param self The SecureOperationState to modify
+     * @param txId The transaction ID to complete
+     * @param success Whether the transaction execution was successful
+     * @param result The result of the transaction execution
+     * @param functionSelector The function selector for logging
      */
-    function loadDefinitions(
-        SecureOperationState storage secureState,
-        FunctionSchema[] memory functionSchemas,
-        bytes32[] memory roleHashes,
-        FunctionPermission[] memory functionPermissions
-    ) public {  
-        // Load function schemas
-        for (uint256 i = 0; i < functionSchemas.length; i++) {
-            createFunctionSchema(
-                secureState,
-                functionSchemas[i].functionName,
-                functionSchemas[i].functionSelector,
-                functionSchemas[i].operationType,
-                functionSchemas[i].operationName,
-                functionSchemas[i].supportedActions
-            );
+    function _completeTransaction(
+        SecureOperationState storage self,
+        uint256 txId,
+        bool success,
+        bytes memory result,
+        bytes4 functionSelector
+    ) private {
+        // Update storage with new status and result
+        if (success) {
+            self.txRecords[txId].status = TxStatus.COMPLETED;
+            self.txRecords[txId].result = result;
+        } else {
+            self.txRecords[txId].status = TxStatus.FAILED;
         }
         
-        // Load role permissions using parallel arrays
-        SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
-        for (uint256 i = 0; i < roleHashes.length; i++) {
-            addFunctionToRole(
-                secureState,
-                roleHashes[i],
-                functionPermissions[i]
-            );
-        }
+        // Remove from pending transactions list
+        removeFromPendingTransactionsList(self, txId);
+        
+        logTxEvent(self, txId, functionSelector);
     }
 
-        // ============ OPTIMIZATION HELPER FUNCTIONS ============
+    /**
+     * @dev Helper function to cancel a transaction and remove from pending list
+     * @param self The SecureOperationState to modify
+     * @param txId The transaction ID to cancel
+     * @param functionSelector The function selector for logging
+     */
+    function _cancelTransaction(
+        SecureOperationState storage self,
+        uint256 txId,
+        bytes4 functionSelector
+    ) private {
+        self.txRecords[txId].status = TxStatus.CANCELLED;
+        
+        // Remove from pending transactions list
+        removeFromPendingTransactionsList(self, txId);
+        
+        logTxEvent(self, txId, functionSelector);
+    }
+
+        /**
+     * @dev Validates that the caller has any role permission
+     * @param self The SecureOperationState to check
+     * @notice This function consolidates the repeated permission check pattern to reduce contract size
+     */
+    function _validateAnyRole(SecureOperationState storage self) internal view {
+        if (!hasAnyRole(self, msg.sender)) revert SharedValidation.NoPermission(msg.sender);
+    }
+
+    /**
+     * @dev Validates that a role exists by checking if its hash is not zero
+     * @param self The SecureOperationState to check
+     * @param roleHash The role hash to validate
+     * @notice This function consolidates the repeated role existence check pattern to reduce contract size
+     */
+    function _validateRoleExists(SecureOperationState storage self, bytes32 roleHash) internal view {
+        if (self.roles[roleHash].roleHash == 0) revert SharedValidation.RoleEmpty();
+    }
+
+    /**
+     * @dev Validates that a transaction is in pending status
+     * @param self The SecureOperationState to check
+     * @param txId The transaction ID to validate
+     * @notice This function consolidates the repeated pending transaction check pattern to reduce contract size
+     */
+    function _validateTxPending(SecureOperationState storage self, uint256 txId) internal view {
+        if (self.txRecords[txId].status != TxStatus.PENDING) revert SharedValidation.TransactionNotPending(uint8(self.txRecords[txId].status));
+    }
 
     /**
      * @dev Generic helper to convert UintSet to array

@@ -87,8 +87,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         
         // Load SecureOwnable-specific definitions
         IDefinition.RolePermission memory secureOwnablePermissions = SecureOwnableDefinitions.getRolePermissions();
-        StateAbstraction.loadDefinitions(
-            _getSecureState(),
+        _loadDefinitions(
             SecureOwnableDefinitions.getFunctionSchemas(),
             secureOwnablePermissions.roleHashes,
             secureOwnablePermissions.functionPermissions

@@ -89,8 +89,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         
         // Load base state machine definitions
         IDefinition.RolePermission memory multiPhasePermissions = StateAbstractionDefinitions.getRolePermissions();
-        StateAbstraction.loadDefinitions(
-            _secureState,
+        _loadDefinitions(
             StateAbstractionDefinitions.getFunctionSchemas(),
             multiPhasePermissions.roleHashes,
             multiPhasePermissions.functionPermissions
@@ -570,6 +569,44 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes memory rawTxData
     ) internal pure returns (bytes memory) {
         return StateAbstraction.createRawExecutionOptions(rawTxData);
+    }
+
+    // ============ DEFINITION LOADING ============
+
+    /**
+     * @dev Loads definitions directly into the secure state
+     * This function initializes the secure state with all predefined definitions
+     * @param functionSchemas Array of function schema definitions  
+     * @param roleHashes Array of role hashes
+     * @param functionPermissions Array of function permissions (parallel to roleHashes)
+     */
+    function _loadDefinitions(
+        StateAbstraction.FunctionSchema[] memory functionSchemas,
+        bytes32[] memory roleHashes,
+        StateAbstraction.FunctionPermission[] memory functionPermissions
+    ) internal {
+        // Load function schemas
+        for (uint256 i = 0; i < functionSchemas.length; i++) {
+            StateAbstraction.createFunctionSchema(
+                _getSecureState(),
+                functionSchemas[i].functionName,
+                functionSchemas[i].functionSelector,
+                functionSchemas[i].operationType,
+                functionSchemas[i].operationName,
+                functionSchemas[i].supportedActions,
+                functionSchemas[i].isProtected
+            );
+        }
+        
+        // Load role permissions using parallel arrays
+        SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
+        for (uint256 i = 0; i < roleHashes.length; i++) {
+            StateAbstraction.addFunctionToRole(
+                _getSecureState(),
+                roleHashes[i],
+                functionPermissions[i]
+            );
+        }
     }
 
     // ============ INTERNAL UTILITIES ============

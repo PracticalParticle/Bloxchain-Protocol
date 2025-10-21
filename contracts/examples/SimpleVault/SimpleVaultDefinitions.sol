@@ -63,7 +63,8 @@ library SimpleVaultDefinitions {
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
-            supportedActions: timeDelayRequestActions
+            supportedActions: timeDelayRequestActions,
+            isProtected: true
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -71,7 +72,8 @@ library SimpleVaultDefinitions {
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
-            supportedActions: timeDelayRequestActions
+            supportedActions: timeDelayRequestActions,
+            isProtected: true
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -79,7 +81,8 @@ library SimpleVaultDefinitions {
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
-            supportedActions: timeDelayApproveActions
+            supportedActions: timeDelayApproveActions,
+            isProtected: true
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -87,7 +90,8 @@ library SimpleVaultDefinitions {
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
-            supportedActions: timeDelayCancelActions
+            supportedActions: timeDelayCancelActions,
+            isProtected: true
         });
         
         // Meta-transaction functions
@@ -96,7 +100,8 @@ library SimpleVaultDefinitions {
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
-            supportedActions: metaTxApproveActions
+            supportedActions: metaTxApproveActions,
+            isProtected: true
         });
         
         return schemas;

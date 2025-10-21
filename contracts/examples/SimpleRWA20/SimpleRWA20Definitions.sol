@@ -45,7 +45,8 @@ library SimpleRWA20Definitions {
             functionSelector: MINT_TOKENS_META_SELECTOR,
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
-            supportedActions: metaTxRequestApproveActions
+            supportedActions: metaTxRequestApproveActions,
+            isProtected: true
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -53,7 +54,8 @@ library SimpleRWA20Definitions {
             functionSelector: BURN_TOKENS_META_SELECTOR,
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",
-            supportedActions: metaTxRequestApproveActions
+            supportedActions: metaTxRequestApproveActions,
+            isProtected: true
         });
         
         return schemas;

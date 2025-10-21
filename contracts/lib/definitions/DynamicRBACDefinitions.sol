@@ -41,7 +41,8 @@ library DynamicRBACDefinitions {
             functionSelector: ROLE_EDITING_TOGGLE_META_SELECTOR,
             operationType: ROLE_EDITING_TOGGLE,
             operationName: "ROLE_EDITING_TOGGLE",
-            supportedActions: metaRequestApproveActions
+            supportedActions: metaRequestApproveActions,
+            isProtected: true
         });
         
         return schemas;

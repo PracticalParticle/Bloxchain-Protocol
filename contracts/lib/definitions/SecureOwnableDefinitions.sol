@@ -82,7 +82,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: metaApproveActions
+            supportedActions: metaApproveActions,
+            isProtected: true
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -90,7 +91,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: metaCancelActions
+            supportedActions: metaCancelActions,
+            isProtected: true
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -98,7 +100,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: metaApproveActions
+            supportedActions: metaApproveActions,
+            isProtected: true
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -106,7 +109,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: metaCancelActions
+            supportedActions: metaCancelActions,
+            isProtected: true
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
@@ -114,7 +118,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
-            supportedActions: metaRequestApproveActions
+            supportedActions: metaRequestApproveActions,
+            isProtected: true
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
@@ -122,7 +127,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
-            supportedActions: metaRequestApproveActions
+            supportedActions: metaRequestApproveActions,
+            isProtected: true
         });
         
         // Time-delayed functions
@@ -131,7 +137,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_REQUEST_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayRequestActions
+            supportedActions: timeDelayRequestActions,
+            isProtected: true
         });
         
         schemas[7] = StateAbstraction.FunctionSchema({
@@ -139,7 +146,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayApproveActions
+            supportedActions: timeDelayApproveActions,
+            isProtected: true
         });
         
         schemas[8] = StateAbstraction.FunctionSchema({
@@ -147,7 +155,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayCancelActions
+            supportedActions: timeDelayCancelActions,
+            isProtected: true
         });
         
         schemas[9] = StateAbstraction.FunctionSchema({
@@ -155,7 +164,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayRequestActions
+            supportedActions: timeDelayRequestActions,
+            isProtected: true
         });
         
         schemas[10] = StateAbstraction.FunctionSchema({
@@ -163,7 +173,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayApproveActions
+            supportedActions: timeDelayApproveActions,
+            isProtected: true
         });
         
         schemas[11] = StateAbstraction.FunctionSchema({
@@ -171,7 +182,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_CANCELLATION_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayCancelActions
+            supportedActions: timeDelayCancelActions,
+            isProtected: true
         });
         
         return schemas;
