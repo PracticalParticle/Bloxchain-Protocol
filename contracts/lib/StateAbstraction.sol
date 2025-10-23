@@ -132,7 +132,8 @@ library StateAbstraction {
         string roleName;
         bytes32 roleHash;
         EnumerableSet.AddressSet authorizedWallets;
-        FunctionPermission[] functionPermissions;
+        mapping(bytes4 => FunctionPermission) functionPermissions;
+        EnumerableSet.Bytes32Set functionSelectorsSet;
         uint256 maxWallets;
         uint256 walletCount;
         bool isProtected;
@@ -140,7 +141,7 @@ library StateAbstraction {
 
     struct FunctionPermission {
         bytes4 functionSelector;
-        TxAction[] grantedActions;
+        uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
     }
 
     struct FunctionSchema {
@@ -148,7 +149,7 @@ library StateAbstraction {
         bytes4 functionSelector;
         bytes32 operationType;
         string operationName;
-        TxAction[] supportedActions;
+        uint16 supportedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
         bool isProtected;
     }
 
@@ -809,48 +810,18 @@ library StateAbstraction {
         }
         
         // Validate that all grantedActions are supported by the function
-        bool isMetaSign = false;
-        bool isMetaExecute = false;
-        
-        for (uint i = 0; i < functionPermission.grantedActions.length; i++) {
-            TxAction action = functionPermission.grantedActions[i];
-            
-            // Check if action is supported by the function
-            if (!isActionSupportedByFunction(self, functionPermission.functionSelector, action)) {
-                revert SharedValidation.ActionNotSupported();
-            }
-            
-            // Check for meta-sign actions
-            if (action == TxAction.SIGN_META_REQUEST_AND_APPROVE ||
-                action == TxAction.SIGN_META_APPROVE ||
-                action == TxAction.SIGN_META_CANCEL) {
-                isMetaSign = true;
-            }
-            
-            // Check for meta-execute actions
-            if (action == TxAction.EXECUTE_META_REQUEST_AND_APPROVE ||
-                action == TxAction.EXECUTE_META_APPROVE ||
-                action == TxAction.EXECUTE_META_CANCEL) {
-                isMetaExecute = true;
-            }
-        }
-        
-        // If both flags are raised, this is a security misconfiguration
-        if (isMetaSign && isMetaExecute) {
-            revert SharedValidation.ConflictingMetaTxPermissions(functionPermission.functionSelector);
-        }
+        _validateMetaTxPermissions(self, functionPermission);
         
         Role storage role = self.roles[roleHash];
         
         // Check if permission already exists
-        for (uint i = 0; i < role.functionPermissions.length; i++) {
-            if (role.functionPermissions[i].functionSelector == functionPermission.functionSelector) {
-                revert SharedValidation.FunctionPermissionExists(functionPermission.functionSelector);
-            }
+        if (role.functionSelectorsSet.contains(bytes32(functionPermission.functionSelector))) {
+            revert SharedValidation.FunctionPermissionExists(functionPermission.functionSelector);
         }
         
         // If it doesn't exist, add it
-        role.functionPermissions.push(functionPermission);
+        role.functionPermissions[functionPermission.functionSelector] = functionPermission;
+        role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector));
     }
 
     /**
@@ -875,22 +846,14 @@ library StateAbstraction {
         
         Role storage role = self.roles[roleHash];
         
-        // Find and remove the function permission
-        bool found = false;
-        for (uint i = 0; i < role.functionPermissions.length; i++) {
-            if (role.functionPermissions[i].functionSelector == functionSelector) {
-                // Move the last element to the position of the element to delete
-                role.functionPermissions[i] = role.functionPermissions[role.functionPermissions.length - 1];
-                // Remove the last element
-                role.functionPermissions.pop();
-                found = true;
-                break;
-            }
-        }
-        
-        if (!found) {
+        // Check if permission exists and remove it
+        if (!role.functionSelectorsSet.contains(bytes32(functionSelector))) {
             revert SharedValidation.FunctionError(functionSelector);
         }
+        
+        // Remove the function permission
+        delete role.functionPermissions[functionSelector];
+        role.functionSelectorsSet.remove(bytes32(functionSelector));
     }
 
     /**
@@ -962,18 +925,14 @@ library StateAbstraction {
     ) public view returns (bool) {
         Role storage role = self.roles[roleHash];
         
-        for (uint j = 0; j < role.functionPermissions.length; j++) {
-            FunctionPermission storage permission = role.functionPermissions[j];
-            if (permission.functionSelector == functionSelector) {
-                // Check if any of the granted actions matches the requested action
-                for (uint k = 0; k < permission.grantedActions.length; k++) {
-                    if (permission.grantedActions[k] == requestedAction) {
-                        return true;
-                    }
-                }
-            }
+        // Check if function has permissions
+        if (!role.functionSelectorsSet.contains(bytes32(functionSelector))) {
+            return false;
         }
-        return false;
+        
+        FunctionPermission storage permission = role.functionPermissions[functionSelector];
+        
+        return hasActionInBitmap(permission.grantedActionsBitmap, requestedAction);
     }
 
     // ============ FUNCTION MANAGEMENT FUNCTIONS ============
@@ -985,7 +944,7 @@ library StateAbstraction {
      * @param functionSelector Hash identifier for the function.
      * @param operationType The operation type this function belongs to.
      * @param operationName The name of the operation type.
-     * @param supportedActions Array of permissions required to execute this function.
+     * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param isProtected Whether the function schema is protected from removal.
      */
     function createFunctionSchema(
@@ -994,7 +953,7 @@ library StateAbstraction {
         bytes4 functionSelector,
         bytes32 operationType,
         string memory operationName,
-        TxAction[] memory supportedActions,
+        uint16 supportedActionsBitmap,
         bool isProtected
     ) public {
         if (!self.supportedOperationTypesSet.contains(operationType)) {
@@ -1011,7 +970,7 @@ library StateAbstraction {
             functionSelector: functionSelector,
             operationType: operationType,
             operationName: operationName,
-            supportedActions: supportedActions,
+            supportedActionsBitmap: supportedActionsBitmap,
             isProtected: isProtected
         });
         self.supportedFunctionsSet.add(bytes32(functionSelector)); 
@@ -1070,12 +1029,7 @@ library StateAbstraction {
             return false; 
         }
         
-        for (uint i = 0; i < functionSchema.supportedActions.length; i++) {
-            if (functionSchema.supportedActions[i] == action) {
-                return true;
-            }
-        }
-        return false;
+        return hasActionInBitmap(functionSchema.supportedActionsBitmap, action);
     }
 
     /**
@@ -1170,6 +1124,27 @@ library StateAbstraction {
         Role storage role = self.roles[roleHash];
         SharedValidation.validateIndexInBounds(index, role.authorizedWallets.length());
         return role.authorizedWallets.at(index);
+    }
+
+    /**
+     * @dev Gets all function permissions for a role as an array for backward compatibility
+     * @param self The SecureOperationState to check
+     * @param roleHash The role hash to get function permissions from
+     * @return Array of function permissions with arrays (for external API)
+     */
+    function getRoleFunctionPermissions(SecureOperationState storage self, bytes32 roleHash) public view returns (FunctionPermission[] memory) {
+        _validateAnyRole(self);
+        Role storage role = self.roles[roleHash];
+        
+        uint256 length = role.functionSelectorsSet.length();
+        FunctionPermission[] memory result = new FunctionPermission[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            bytes4 functionSelector = bytes4(role.functionSelectorsSet.at(i));
+            result[i] = role.functionPermissions[functionSelector];
+        }
+        
+        return result;
     }
 
     // ============ META-TRANSACTION SUPPORT FUNCTIONS ============
@@ -1496,6 +1471,42 @@ library StateAbstraction {
         self.eventForwarder = forwarder;
     }
 
+        // ============ BITMAP HELPER FUNCTIONS ============
+
+    /**
+     * @dev Checks if a TxAction is present in a bitmap
+     * @param bitmap The bitmap to check
+     * @param action The TxAction to check for
+     * @return True if the action is present in the bitmap
+     */
+    function hasActionInBitmap(uint16 bitmap, TxAction action) internal pure returns (bool) {
+        return (bitmap & (1 << uint8(action))) != 0;
+    }
+
+    /**
+     * @dev Adds a TxAction to a bitmap
+     * @param bitmap The original bitmap
+     * @param action The TxAction to add
+     * @return The updated bitmap with the action added
+     */
+    function addActionToBitmap(uint16 bitmap, TxAction action) internal pure returns (uint16) {
+        return uint16(bitmap | (1 << uint8(action)));
+    }
+
+    /**
+     * @dev Creates a bitmap from an array of TxActions
+     * @param actions Array of TxActions to convert to bitmap
+     * @return Bitmap representation of the actions
+     */
+    function createBitmapFromActions(TxAction[] memory actions) internal pure returns (uint16) {
+        uint16 bitmap = 0;
+        for (uint i = 0; i < actions.length; i++) {
+            bitmap = addActionToBitmap(bitmap, actions[i]);
+        }
+        return bitmap;
+    }
+
+
     // ============ OPTIMIZATION HELPER FUNCTIONS ============
 
     /**
@@ -1573,6 +1584,47 @@ library StateAbstraction {
      */
     function _validateTxPending(SecureOperationState storage self, uint256 txId) internal view {
         if (self.txRecords[txId].status != TxStatus.PENDING) revert SharedValidation.TransactionNotPending(uint8(self.txRecords[txId].status));
+    }
+
+    /**
+     * @dev Validates meta-transaction permissions for a function permission
+     * @param self The secure operation state
+     * @param functionPermission The function permission to validate
+     * @custom:security This function prevents conflicting meta-sign and meta-execute permissions
+     */
+    function _validateMetaTxPermissions(
+        SecureOperationState storage self,
+        FunctionPermission memory functionPermission
+    ) internal view {
+        uint16 bitmap = functionPermission.grantedActionsBitmap;
+        
+        // Create bitmasks for meta-sign and meta-execute actions
+        // Meta-sign actions: SIGN_META_REQUEST_AND_APPROVE (3), SIGN_META_APPROVE (4), SIGN_META_CANCEL (5)
+        uint16 metaSignMask = (1 << 3) | (1 << 4) | (1 << 5);
+        
+        // Meta-execute actions: EXECUTE_META_REQUEST_AND_APPROVE (6), EXECUTE_META_APPROVE (7), EXECUTE_META_CANCEL (8)
+        uint16 metaExecuteMask = (1 << 6) | (1 << 7) | (1 << 8);
+        
+        // Check if any meta-sign actions are present
+        bool hasMetaSign = (bitmap & metaSignMask) != 0;
+        
+        // Check if any meta-execute actions are present
+        bool hasMetaExecute = (bitmap & metaExecuteMask) != 0;
+        
+        // If both flags are raised, this is a security misconfiguration
+        if (hasMetaSign && hasMetaExecute) {
+            revert SharedValidation.ConflictingMetaTxPermissions(functionPermission.functionSelector);
+        }
+        
+        // Validate that each action in the bitmap is supported by the function
+        // This still requires iteration, but we can optimize it
+        for (uint i = 0; i < 10; i++) { // TxAction enum has 10 values (0-9)
+            if (hasActionInBitmap(bitmap, TxAction(i))) {
+                if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
+                    revert SharedValidation.ActionNotSupported();
+                }
+            }
+        }
     }
 
     /**

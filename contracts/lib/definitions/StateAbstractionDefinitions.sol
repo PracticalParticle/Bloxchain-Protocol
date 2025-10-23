@@ -56,7 +56,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_REQUEST_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayRequestActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true
         });
         
@@ -65,7 +65,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_DELAYED_APPROVAL_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayApproveActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true
         });
         
@@ -74,7 +74,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.TX_CANCELLATION_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: timeDelayCancelActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true
         });
         
@@ -83,7 +83,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_APPROVAL_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxApproveActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
             isProtected: true
         });
         
@@ -92,7 +92,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_CANCELLATION_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxCancelActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxCancelActions),
             isProtected: true
         });
         
@@ -101,7 +101,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.META_TX_REQUEST_AND_APPROVE_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: metaTxRequestApproveActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
             isProtected: true
         });
         
@@ -114,7 +114,7 @@ library StateAbstractionDefinitions {
             functionSelector: StateAbstraction.UPDATE_PAYMENT_SELECTOR,
             operationType: SYSTEM_OPERATION,
             operationName: "SYSTEM_OPERATION",
-            supportedActions: updatePaymentActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(updatePaymentActions),
             isProtected: true
         });
         
@@ -154,42 +154,42 @@ library StateAbstractionDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_REQUEST_SELECTOR,
-            grantedActions: ownerTxRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTxRequestActions)
         });
         
         // Owner: TX Delayed Approval
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_DELAYED_APPROVAL_SELECTOR,
-            grantedActions: ownerTxApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTxApproveActions)
         });
         
         // Owner: TX Cancellation
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_CANCELLATION_SELECTOR,
-            grantedActions: ownerTxCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTxCancelActions)
         });
         
         // Owner: Meta TX Request and Approve
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_REQUEST_AND_APPROVE_SELECTOR,
-            grantedActions: ownerMetaTxRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions)
         });
         
         // Owner: Meta TX Approval
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_APPROVAL_SELECTOR,
-            grantedActions: ownerMetaTxApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxApproveActions)
         });
         
         // Owner: Meta TX Cancellation
         roleHashes[5] = StateAbstraction.OWNER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_CANCELLATION_SELECTOR,
-            grantedActions: ownerMetaTxCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxCancelActions)
         });
         
         // Broadcaster role permissions (3 entries)
@@ -206,21 +206,21 @@ library StateAbstractionDefinitions {
         roleHashes[6] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_REQUEST_AND_APPROVE_SELECTOR,
-            grantedActions: broadcasterMetaTxRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions)
         });
         
         // Broadcaster: Meta TX Approval
         roleHashes[7] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_APPROVAL_SELECTOR,
-            grantedActions: broadcasterMetaTxApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxApproveActions)
         });
         
         // Broadcaster: Meta TX Cancellation
         roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.META_TX_CANCELLATION_SELECTOR,
-            grantedActions: broadcasterMetaTxCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxCancelActions)
         });
         
         // Recovery role permissions (3 entries)
@@ -237,21 +237,21 @@ library StateAbstractionDefinitions {
         roleHashes[9] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[9] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_REQUEST_SELECTOR,
-            grantedActions: recoveryTxRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTxRequestActions)
         });
         
         // Recovery: TX Delayed Approval
         roleHashes[10] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[10] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_DELAYED_APPROVAL_SELECTOR,
-            grantedActions: recoveryTxApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTxApproveActions)
         });
         
         // Recovery: TX Cancellation
         roleHashes[11] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[11] = StateAbstraction.FunctionPermission({
             functionSelector: StateAbstraction.TX_CANCELLATION_SELECTOR,
-            grantedActions: recoveryTxCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTxCancelActions)
         });
         
         return IDefinition.RolePermission({

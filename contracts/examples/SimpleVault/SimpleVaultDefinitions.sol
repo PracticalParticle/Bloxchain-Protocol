@@ -63,7 +63,7 @@ library SimpleVaultDefinitions {
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
-            supportedActions: timeDelayRequestActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true
         });
         
@@ -72,7 +72,7 @@ library SimpleVaultDefinitions {
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
-            supportedActions: timeDelayRequestActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true
         });
         
@@ -81,7 +81,7 @@ library SimpleVaultDefinitions {
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
-            supportedActions: timeDelayApproveActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true
         });
         
@@ -90,7 +90,7 @@ library SimpleVaultDefinitions {
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
-            supportedActions: timeDelayCancelActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true
         });
         
@@ -100,7 +100,7 @@ library SimpleVaultDefinitions {
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
-            supportedActions: metaTxApproveActions,
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
             isProtected: true
         });
         
@@ -139,42 +139,42 @@ library SimpleVaultDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
-            grantedActions: ownerTimeDelayRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
         });
         
         // Owner: Withdraw Token Request
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
-            grantedActions: ownerTimeDelayRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
         });
         
         // Owner: Approve Withdrawal Delayed
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
-            grantedActions: ownerTimeDelayApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions)
         });
         
         // Owner: Cancel Withdrawal
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
-            grantedActions: ownerTimeDelayCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions)
         });
         
         // Owner: Approve Withdrawal Meta (signer)
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActions: ownerMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions)
         });
 
         // Broadcaster: Approve Withdrawal Meta (executor)
         roleHashes[5] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActions: broadcasterMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions)
         });
         
         return IDefinition.RolePermission({

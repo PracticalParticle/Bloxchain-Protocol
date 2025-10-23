@@ -459,9 +459,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role
      */
-    function getRolePermission(bytes32 roleHash) public view returns (StateAbstraction.FunctionPermission[] memory) {
-        StateAbstraction.Role storage role = _secureState.getRole(roleHash);
-        return role.functionPermissions;
+    function getActiveRolePermissions(bytes32 roleHash) public view returns (StateAbstraction.FunctionPermission[] memory) {
+        return _secureState.getRoleFunctionPermissions(roleHash);
     }
 
     /**
@@ -593,7 +592,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationType,
                 functionSchemas[i].operationName,
-                functionSchemas[i].supportedActions,
+                functionSchemas[i].supportedActionsBitmap,
                 functionSchemas[i].isProtected
             );
         }
