@@ -854,6 +854,46 @@ library StateAbstraction {
     }
 
     /**
+     * @dev Removes a function permission from an existing role.
+     * @param self The SecureOperationState to modify.
+     * @param roleHash The role hash to remove the function permission from.
+     * @param functionSelector The function selector to remove from the role.
+     */
+    function removeFunctionFromRole(
+        SecureOperationState storage self,
+        bytes32 roleHash,
+        bytes4 functionSelector
+    ) public {
+        // Check if role exists by checking if it's in the supported roles set
+        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
+        
+        // Security check: Prevent removing protected functions from roles
+        FunctionSchema memory functionSchema = self.functions[functionSelector];
+        if (functionSchema.functionSelector == functionSelector && functionSchema.isProtected) {
+            revert SharedValidation.CannotRemoveProtectedRole();
+        }
+        
+        Role storage role = self.roles[roleHash];
+        
+        // Find and remove the function permission
+        bool found = false;
+        for (uint i = 0; i < role.functionPermissions.length; i++) {
+            if (role.functionPermissions[i].functionSelector == functionSelector) {
+                // Move the last element to the position of the element to delete
+                role.functionPermissions[i] = role.functionPermissions[role.functionPermissions.length - 1];
+                // Remove the last element
+                role.functionPermissions.pop();
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            revert SharedValidation.FunctionError(functionSelector);
+        }
+    }
+
+    /**
      * @dev Checks if a wallet has permission for a specific function and action.
      * @param self The SecureOperationState to check.
      * @param wallet The wallet address to check.
