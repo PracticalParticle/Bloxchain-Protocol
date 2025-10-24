@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 // Contracts imports
-import "../../../lib/StateAbstraction.sol";
+import "../lib/StateAbstraction.sol";
 
 /**
  * @title IBaseStateMachine

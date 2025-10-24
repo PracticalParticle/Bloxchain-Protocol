@@ -5,10 +5,10 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Contract imports
-import "../../lib/StateAbstraction.sol";
+import "../base/lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
-import "../../lib/definitions/SecureOwnableDefinitions.sol";
-import "../../lib/definitions/DynamicRBACDefinitions.sol";
+import "./lib/definitions/SecureOwnableDefinitions.sol";
+import "./lib/definitions/DynamicRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
 import "./SecureOwnable.sol";
 

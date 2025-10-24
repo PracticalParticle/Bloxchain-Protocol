@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeabl
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Contracts imports
-import "../../lib/StateAbstraction.sol";
-import "../../lib/definitions/StateAbstractionDefinitions.sol";
+import "./lib/StateAbstraction.sol";
+import "./lib/definitions/StateAbstractionDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
 import "../../utils/SharedValidation.sol";
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../StateAbstraction.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../base/lib/StateAbstraction.sol";
+import "../../../../interfaces/IDefinition.sol";
 
 /**
  * @title SecureOwnableDefinitions
