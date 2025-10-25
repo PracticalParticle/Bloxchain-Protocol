@@ -15,7 +15,16 @@
     "test:sanity:simple-vault": "node scripts/sanity/simple-vault/run-tests.js --all",
     "test:e2e": "npm run deploy:truffle && npm run test:sanity:secure-ownable",
     "docgen": "hardhat docgen",
-    "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
+    "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\"",
+    "certora:install": "pip3 install certora-cli",
+    "certora:verify": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-all.ps1",
+    "certora:core": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-core.ps1",
+    "certora:security": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-security.ps1",
+    "certora:cloud": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-cloud.ps1",
+    "certora:docker:build": "docker-compose -f docker-compose.certora.yml build",
+    "certora:docker:run": "bash certora/scripts/run-docker.sh",
+    "certora:docker:shell": "docker-compose -f docker-compose.certora.yml exec certora bash",
+    "certora:docker:test": "docker-compose -f docker-compose.certora.yml exec certora certoraRun certora/test-minimal.conf"
   },
   "keywords": [
     "solidity",
@@ -40,12 +49,13 @@
     "jest": "^29.7.0",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
+    "solc": "^0.8.26",
     "solidity-coverage": "^0.8.4",
     "solidity-docgen": "^0.6.0-beta.35",
-    "ts-jest": "^29.1.1",
     "truffle": "^5.11.5",
     "truffle-assertions": "^0.9.2",
     "truffle-contract-size": "^2.0.1",
+    "ts-jest": "^29.1.1",
     "viem": "^2.23.7"
   }
 }
