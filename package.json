@@ -21,10 +21,10 @@
     "certora:core": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-core.ps1",
     "certora:security": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-security.ps1",
     "certora:cloud": "powershell -ExecutionPolicy Bypass -File certora/scripts/verify-cloud.ps1",
-    "certora:docker:build": "docker-compose -f docker-compose.certora.yml build",
+    "certora:docker:build": "docker-compose -f docker/docker-compose.certora.yml build",
     "certora:docker:run": "bash certora/scripts/run-docker.sh",
-    "certora:docker:shell": "docker-compose -f docker-compose.certora.yml exec certora bash",
-    "certora:docker:test": "docker-compose -f docker-compose.certora.yml exec certora certoraRun certora/test-minimal.conf"
+    "certora:docker:shell": "docker-compose -f docker/docker-compose.certora.yml exec certora bash",
+    "certora:docker:test": "docker-compose -f docker/docker-compose.certora.yml exec certora certoraRun certora/test-minimal.conf"
   },
   "keywords": [
     "solidity",

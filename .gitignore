@@ -33,9 +33,9 @@ certora/.last/
 run.conf
 
 ### Docker ###
-Dockerfile.certora
-docker-compose.certora.yml
-.dockerignore
+docker/Dockerfile.certora
+docker/docker-compose.certora.yml
+docker/.dockerignore
 
 ### Python Virtual Environment ###
 .venv/
