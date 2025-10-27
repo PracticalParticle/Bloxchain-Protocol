@@ -4,12 +4,12 @@ pragma solidity ^0.8.25;
 import "./core/access/SecureOwnable.sol";
 
 /**
- * @title Guardian
+ * @title SecureBlox
  * @dev A basic implementation of state abstraction using SecureOwnable for secure ownership management
  */
-contract Guardian is SecureOwnable {
+contract SecureBlox is SecureOwnable {
     /**
-     * @notice Initializer to initialize Guardian
+     * @notice Initializer to initialize SecureBlox
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address
@@ -35,3 +35,4 @@ contract Guardian is SecureOwnable {
 
     // add your implementation here
 }
+

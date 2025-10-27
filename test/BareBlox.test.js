@@ -44,27 +44,27 @@ contract("BareBlox", function (accounts) {
 
   describe("BaseStateMachine Functionality", function () {
     it("should return supported operation types", async function () {
-      const operationTypes = await guardianBare.getSupportedOperationTypes();
+      const operationTypes = await bareBlox.getSupportedOperationTypes();
       assert.isArray(operationTypes, "Should return array of operation types");
     });
 
     it("should return supported roles", async function () {
-      const roles = await guardianBare.getSupportedRoles();
+      const roles = await bareBlox.getSupportedRoles();
       assert.isArray(roles, "Should return array of roles");
     });
 
     it("should return supported functions", async function () {
-      const functions = await guardianBare.getSupportedFunctions();
+      const functions = await bareBlox.getSupportedFunctions();
       assert.isArray(functions, "Should return array of functions");
     });
 
     it("should return empty transaction history initially", async function () {
-      const history = await guardianBare.getTransactionHistory(1, 10);
+      const history = await bareBlox.getTransactionHistory(1, 10);
       assert.equal(history.length, 0, "Transaction history should be empty initially");
     });
 
     it("should return empty pending transactions initially", async function () {
-      const pending = await guardianBare.getPendingTransactions();
+      const pending = await bareBlox.getPendingTransactions();
       assert.equal(pending.length, 0, "Pending transactions should be empty initially");
     });
   });
@@ -72,7 +72,7 @@ contract("BareBlox", function (accounts) {
   describe("Role Management and Wallet Count", function () {
     it("should return correct wallet count for owner role", async function () {
       const OWNER_ROLE = "0x542ebd056dcb61d328d2ae572dc534147e13901e8b9f46a60701f85bee10689c";
-      const roleInfo = await guardianBare.getRole(OWNER_ROLE);
+      const roleInfo = await bareBlox.getRole(OWNER_ROLE);
       
       assert.equal(roleInfo.walletCount.toString(), "1", "Owner role should have 1 wallet");
       assert.equal(roleInfo.maxWallets.toString(), "1", "Owner role max wallets should be 1");
@@ -82,7 +82,7 @@ contract("BareBlox", function (accounts) {
 
     it("should return correct wallet count for broadcaster role", async function () {
       const BROADCASTER_ROLE = "0xc15f6c501c46d6a978ce193e529ccf232fd6296d7ae1d8e05d1397d0c763acd2";
-      const roleInfo = await guardianBare.getRole(BROADCASTER_ROLE);
+      const roleInfo = await bareBlox.getRole(BROADCASTER_ROLE);
       
       assert.equal(roleInfo.walletCount.toString(), "1", "Broadcaster role should have 1 wallet");
       assert.equal(roleInfo.maxWallets.toString(), "1", "Broadcaster role max wallets should be 1");
@@ -92,7 +92,7 @@ contract("BareBlox", function (accounts) {
 
     it("should return correct wallet count for recovery role", async function () {
       const RECOVERY_ROLE = "0x92a45ac1c17729837eadae4b2a6e244b3e684811c8ffef29684ccf097245cb93";
-      const roleInfo = await guardianBare.getRole(RECOVERY_ROLE);
+      const roleInfo = await bareBlox.getRole(RECOVERY_ROLE);
       
       assert.equal(roleInfo.walletCount.toString(), "1", "Recovery role should have 1 wallet");
       assert.equal(roleInfo.maxWallets.toString(), "1", "Recovery role max wallets should be 1");
@@ -106,9 +106,9 @@ contract("BareBlox", function (accounts) {
       const RECOVERY_ROLE = "0x92a45ac1c17729837eadae4b2a6e244b3e684811c8ffef29684ccf097245cb93";
       
       // Check that wallet count matches the actual number of wallets assigned
-      const ownerRoleInfo = await guardianBare.getRole(OWNER_ROLE);
-      const broadcasterRoleInfo = await guardianBare.getRole(BROADCASTER_ROLE);
-      const recoveryRoleInfo = await guardianBare.getRole(RECOVERY_ROLE);
+      const ownerRoleInfo = await bareBlox.getRole(OWNER_ROLE);
+      const broadcasterRoleInfo = await bareBlox.getRole(BROADCASTER_ROLE);
+      const recoveryRoleInfo = await bareBlox.getRole(RECOVERY_ROLE);
       
       // Verify that walletCount is 1 for all base roles
       assert.equal(ownerRoleInfo.walletCount.toString(), "1", "Owner role wallet count should be 1");
@@ -116,9 +116,9 @@ contract("BareBlox", function (accounts) {
       assert.equal(recoveryRoleInfo.walletCount.toString(), "1", "Recovery role wallet count should be 1");
       
       // Verify that the wallets are correctly assigned
-      assert.isTrue(await guardianBare.hasRole(OWNER_ROLE, owner), "Owner should have owner role");
-      assert.isTrue(await guardianBare.hasRole(BROADCASTER_ROLE, broadcaster), "Broadcaster should have broadcaster role");
-      assert.isTrue(await guardianBare.hasRole(RECOVERY_ROLE, recovery), "Recovery should have recovery role");
+      assert.isTrue(await bareBlox.hasRole(OWNER_ROLE, owner), "Owner should have owner role");
+      assert.isTrue(await bareBlox.hasRole(BROADCASTER_ROLE, broadcaster), "Broadcaster should have broadcaster role");
+      assert.isTrue(await bareBlox.hasRole(RECOVERY_ROLE, recovery), "Recovery should have recovery role");
     });
 
     it("should return complete role information including permissions", async function () {
@@ -126,7 +126,7 @@ contract("BareBlox", function (accounts) {
       
       // Test the enhanced getRoleInfo method (if available through DynamicRBAC)
       // For GuardianBare, we'll test the basic getRole method
-      const roleInfo = await guardianBare.getRole(OWNER_ROLE);
+      const roleInfo = await bareBlox.getRole(OWNER_ROLE);
       
       // Verify all basic role information
       assert.equal(roleInfo.walletCount.toString(), "1", "Owner role should have 1 wallet");
@@ -142,7 +142,7 @@ contract("BareBlox", function (accounts) {
   describe("Interface Support", function () {
     it("should support ERC165 interface", async function () {
       const ERC165_INTERFACE_ID = "0x01ffc9a7";
-      const supportsERC165 = await guardianBare.supportsInterface(ERC165_INTERFACE_ID);
+      const supportsERC165 = await bareBlox.supportsInterface(ERC165_INTERFACE_ID);
       assert.isTrue(supportsERC165, "Should support ERC165 interface");
     });
   });

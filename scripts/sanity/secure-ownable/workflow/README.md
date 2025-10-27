@@ -53,7 +53,7 @@ The workflow framework provides a complete system for understanding and executin
 ### Prerequisites
 
 1. **Environment Setup**: Ensure `.env` file is configured with:
-   - `GUARDIAN_ADDRESS`: Deployed contract address
+   - `SECUREBLOX_ADDRESS`: Deployed contract address
    - `TEST_WALLET_*_PRIVATE_KEY`: Test wallet private keys
    - `REMOTE_HOST` and `REMOTE_PORT`: Network connection details
 
@@ -212,7 +212,7 @@ Total Duration: 15.23 seconds
 
 ### Common Issues
 
-1. **Contract Not Deployed**: Ensure `GUARDIAN_ADDRESS` is set correctly
+1. **Contract Not Deployed**: Ensure `SECUREBLOX_ADDRESS` is set correctly
 2. **Network Connection**: Verify `REMOTE_HOST` and `REMOTE_PORT` are accessible
 3. **Wallet Configuration**: Ensure test wallet private keys are valid
 4. **ABI Files**: Ensure ABI files exist in the `abi/` directory

@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import "./core/base/BaseStateMachine.sol";
 
 /**
- * @title GuardianBare
+ * @title BareBlox
  * @dev A minimal implementation using only BaseStateMachine for core state machine functionality
  * 
  * This contract provides the most basic state abstraction implementation using only
@@ -17,9 +17,9 @@ import "./core/base/BaseStateMachine.sol";
  * This is the minimal viable implementation for applications that only need
  * the core state machine functionality without additional security features.
  */
-contract GuardianBare is BaseStateMachine {
+contract BareBlox is BaseStateMachine {
     /**
-     * @notice Initializer to initialize GuardianBare
+     * @notice Initializer to initialize BareBlox
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address
@@ -51,3 +51,4 @@ contract GuardianBare is BaseStateMachine {
     // - System state queries
     // - Centralized transaction management functions
 }
+

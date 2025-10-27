@@ -1,22 +1,22 @@
 // Migration 2: Deploy Guardian Contracts (built on foundation libraries)
 require('dotenv').config();
-const Guardian = artifacts.require("Guardian");
-const GuardianWithRoles = artifacts.require("GuardianWithRoles");
-const GuardianBare = artifacts.require("GuardianBare");
+const SecureBlox = artifacts.require("SecureBlox");
+const RoleBlox = artifacts.require("RoleBlox");
+const BareBlox = artifacts.require("BareBlox");
 
 module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 2: Deploying Guardian Contracts on ${network}`);
     console.log(`📋 Using account: ${accounts[0]}`);
     
     // Configuration flags - set to true/false to control which contracts to deploy
-    const deployGuardian = process.env.DEPLOY_GUARDIAN === 'true'; // Default: false
-    const deployGuardianWithRoles = process.env.DEPLOY_GUARDIAN_WITH_ROLES === 'true'; // Default: false
-    const deployGuardianBare = process.env.DEPLOY_GUARDIAN_BARE === 'true'; // Default: false
+    const deploySecureBlox = process.env.DEPLOY_SECUREBLOX === 'true'; // Default: false
+    const deployRoleBlox = process.env.DEPLOY_ROLEBLOX === 'true'; // Default: false
+    const deployBareBlox = process.env.DEPLOY_BAREBLOX === 'true'; // Default: false
     
     console.log("\n🎯 Deployment Configuration:");
-    console.log(`   Guardian: ${deployGuardian ? '✅ YES' : '❌ NO'}`);
-    console.log(`   GuardianWithRoles: ${deployGuardianWithRoles ? '✅ YES' : '❌ NO'}`);
-    console.log(`   GuardianBare: ${deployGuardianBare ? '✅ YES' : '❌ NO'}`);
+    console.log(`   SecureBlox: ${deploySecureBlox ? '✅ YES' : '❌ NO'}`);
+    console.log(`   RoleBlox: ${deployRoleBlox ? '✅ YES' : '❌ NO'}`);
+    console.log(`   BareBlox: ${deployBareBlox ? '✅ YES' : '❌ NO'}`);
     
     // Get deployed foundation libraries from Migration 1
     console.log("\n📦 Step 1: Linking Foundation Libraries...");
@@ -36,35 +36,35 @@ module.exports = async function(deployer, network, accounts) {
     console.log("✅ Using SecureOwnableDefinitions at:", sod.address);
     console.log("✅ Using DynamicRBACDefinitions at:", drd.address);
     
-    // Step 2: Deploy Guardian (if enabled)
-    let guardian = null;
-    if (deployGuardian) {
-        console.log("\n📦 Step 2: Deploying Guardian...");
+    // Step 2: Deploy SecureBlox (if enabled)
+    let secureBlox = null;
+    if (deploySecureBlox) {
+        console.log("\n📦 Step 2: Deploying SecureBlox...");
         
-        // Link all required libraries to Guardian
-        await deployer.link(StateAbstraction, Guardian);
-        await deployer.link(StateAbstractionDefinitions, Guardian);
-        await deployer.link(SecureOwnableDefinitions, Guardian);
+        // Link all required libraries to SecureBlox
+        await deployer.link(StateAbstraction, SecureBlox);
+        await deployer.link(StateAbstractionDefinitions, SecureBlox);
+        await deployer.link(SecureOwnableDefinitions, SecureBlox);
         
-        // Deploy Guardian
-        await deployer.deploy(Guardian);
-        guardian = await Guardian.deployed();
-        console.log("✅ Guardian deployed at:", guardian.address);
+        // Deploy SecureBlox
+        await deployer.deploy(SecureBlox);
+        secureBlox = await SecureBlox.deployed();
+        console.log("✅ SecureBlox deployed at:", secureBlox.address);
         
-        // Initialize Guardian
-        console.log("🔧 Initializing Guardian...");
+        // Initialize SecureBlox
+        console.log("🔧 Initializing SecureBlox...");
         try {
-            const tx = await guardian.initialize(
+            const tx = await secureBlox.initialize(
                 accounts[0],  // initialOwner
                 accounts[1],  // broadcaster
                 accounts[2],  // recovery
                 1,          // timeLockPeriodSec
                 "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
             );
-            console.log("✅ Guardian initialized successfully");
+            console.log("✅ SecureBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
         } catch (error) {
-            console.log("❌ Guardian initialization failed:");
+            console.log("❌ SecureBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
             console.log("   Error data:", error.data);
@@ -74,7 +74,7 @@ module.exports = async function(deployer, network, accounts) {
             if (error.data) {
                 try {
                     const decodedError = await web3.eth.call({
-                        to: guardian.address,
+                        to: secureBlox.address,
                         data: error.data
                     });
                     console.log("   Decoded error data:", decodedError);
@@ -86,39 +86,39 @@ module.exports = async function(deployer, network, accounts) {
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
         }
     } else {
-        console.log("\n📦 Step 2: Skipping Guardian deployment (disabled)");
+        console.log("\n📦 Step 2: Skipping SecureBlox deployment (disabled)");
     }
     
-    // Step 3: Deploy GuardianWithRoles (if enabled)
-    let guardianWithRoles = null;
-    if (deployGuardianWithRoles) {
-        console.log("\n📦 Step 3: Deploying GuardianWithRoles...");
+    // Step 3: Deploy RoleBlox (if enabled)
+    let roleBlox = null;
+    if (deployRoleBlox) {
+        console.log("\n📦 Step 3: Deploying RoleBlox...");
         
-        // Link all required libraries to GuardianWithRoles
-        await deployer.link(StateAbstraction, GuardianWithRoles);
-        await deployer.link(StateAbstractionDefinitions, GuardianWithRoles);
-        await deployer.link(SecureOwnableDefinitions, GuardianWithRoles);
-        await deployer.link(DynamicRBACDefinitions, GuardianWithRoles);
+        // Link all required libraries to RoleBlox
+        await deployer.link(StateAbstraction, RoleBlox);
+        await deployer.link(StateAbstractionDefinitions, RoleBlox);
+        await deployer.link(SecureOwnableDefinitions, RoleBlox);
+        await deployer.link(DynamicRBACDefinitions, RoleBlox);
         
-        // Deploy GuardianWithRoles
-        await deployer.deploy(GuardianWithRoles);
-        guardianWithRoles = await GuardianWithRoles.deployed();
-        console.log("✅ GuardianWithRoles deployed at:", guardianWithRoles.address);
+        // Deploy RoleBlox
+        await deployer.deploy(RoleBlox);
+        roleBlox = await RoleBlox.deployed();
+        console.log("✅ RoleBlox deployed at:", roleBlox.address);
         
-        // Initialize GuardianWithRoles
-        console.log("🔧 Initializing GuardianWithRoles...");
+        // Initialize RoleBlox
+        console.log("🔧 Initializing RoleBlox...");
         try {
-            const tx = await guardianWithRoles.initialize(
+            const tx = await roleBlox.initialize(
                 accounts[0],  // initialOwner
                 accounts[1],  // broadcaster 
                 accounts[2],  // recovery 
                 1,          // timeLockPeriodSec
                 "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
             );
-            console.log("✅ GuardianWithRoles initialized successfully");
+            console.log("✅ RoleBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
         } catch (error) {
-            console.log("❌ GuardianWithRoles initialization failed:");
+            console.log("❌ RoleBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
             console.log("   Error data:", error.data);
@@ -128,7 +128,7 @@ module.exports = async function(deployer, network, accounts) {
             if (error.data) {
                 try {
                     const decodedError = await web3.eth.call({
-                        to: guardianWithRoles.address,
+                        to: roleBlox.address,
                         data: error.data
                     });
                     console.log("   Decoded error data:", decodedError);
@@ -140,25 +140,25 @@ module.exports = async function(deployer, network, accounts) {
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
         }
     } else {
-        console.log("\n📦 Step 3: Skipping GuardianWithRoles deployment (disabled)");
+        console.log("\n📦 Step 3: Skipping RoleBlox deployment (disabled)");
     }
     
-    // Step 4: Deploy GuardianBare (if enabled)
-    let guardianBare = null;
-    if (deployGuardianBare) {
-        console.log("\n📦 Step 4: Deploying GuardianBare...");
+    // Step 4: Deploy BareBlox (if enabled)
+    let bareBlox = null;
+    if (deployBareBlox) {
+        console.log("\n📦 Step 4: Deploying BareBlox...");
         
         // Link required libraries
-        await deployer.link(StateAbstraction, GuardianBare);
-        await deployer.link(StateAbstractionDefinitions, GuardianBare);
+        await deployer.link(StateAbstraction, BareBlox);
+        await deployer.link(StateAbstractionDefinitions, BareBlox);
         
-        // Deploy GuardianBare
-        await deployer.deploy(GuardianBare);
-        guardianBare = await GuardianBare.deployed();
-        console.log("✅ GuardianBare deployed at:", guardianBare.address);
+        // Deploy BareBlox
+        await deployer.deploy(BareBlox);
+        bareBlox = await BareBlox.deployed();
+        console.log("✅ BareBlox deployed at:", bareBlox.address);
         
-        // Initialize GuardianBare
-        console.log("🔧 Initializing GuardianBare...");
+        // Initialize BareBlox
+        console.log("🔧 Initializing BareBlox...");
         const initialOwner = accounts[0];
         const broadcaster = accounts[1];
         const recovery = accounts[2];
@@ -171,35 +171,35 @@ module.exports = async function(deployer, network, accounts) {
         console.log("Time Lock Period:", timeLockPeriodSec, "seconds");
         
         try {
-            await guardianBare.initialize(
+            await bareBlox.initialize(
                 initialOwner,
                 broadcaster,
                 recovery,
                 timeLockPeriodSec,
                 eventForwarder
             );
-            console.log("✅ GuardianBare initialized successfully!");
+            console.log("✅ BareBlox initialized successfully!");
             
             // Verify deployment
-            const isInitialized = await guardianBare.initialized();
+            const isInitialized = await bareBlox.initialized();
             
             console.log("- Initialized:", isInitialized);
         } catch (error) {
-            console.log("❌ GuardianBare initialization failed:");
+            console.log("❌ BareBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
             console.log("   Error data:", error.data);
             console.log("   Full error:", JSON.stringify(error, null, 2));
         }
     } else {
-        console.log("\n📦 Step 4: Skipping GuardianBare deployment (disabled)");
+        console.log("\n📦 Step 4: Skipping BareBlox deployment (disabled)");
     }
     
     console.log("\n🎉 Migration 2 completed successfully!");
     console.log("📋 Guardian Contracts Deployed & Initialized:");
-    if (guardian) console.log(`   Guardian: ${guardian.address}`);
-    if (guardianWithRoles) console.log(`   GuardianWithRoles: ${guardianWithRoles.address}`);
-    if (guardianBare) console.log(`   GuardianBare: ${guardianBare.address}`);
+    if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
+    if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
+    if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
     
     console.log("\n🎯 Complete Deployment Summary:");
     console.log("📚 Foundation Libraries:");
@@ -208,9 +208,9 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   DynamicRBACDefinitions: ${drd.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
-    if (guardian) console.log(`   Guardian: ${guardian.address}`);
-    if (guardianWithRoles) console.log(`   GuardianWithRoles: ${guardianWithRoles.address}`);
-    if (guardianBare) console.log(`   GuardianBare: ${guardianBare.address}`);
+    if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
+    if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
+    if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
     
     console.log("\n✅ All contracts deployed and initialized successfully!");
     console.log("🎯 Ready for analyzer testing with fully functional contracts!");
@@ -218,11 +218,11 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   Owner: ${accounts[0]}`);
     console.log(`   Broadcaster: ${accounts[1] || accounts[0]}`);
     console.log(`   Recovery: ${accounts[2] || accounts[0]}`);
-    console.log(`   Time Lock Period: 60 seconds (1 minute) for Guardian/GuardianWithRoles, 3600 seconds (1 hour) for GuardianBare`);
+    console.log(`   Time Lock Period: 60 seconds (1 minute) for SecureBlox/RoleBlox, 3600 seconds (1 hour) for BareBlox`);
     console.log(`   Event Forwarder: None`);
     
     console.log("\n💡 Usage Examples:");
-    console.log("   Deploy only Guardian: DEPLOY_GUARDIAN=true DEPLOY_GUARDIAN_WITH_ROLES=false DEPLOY_GUARDIAN_BARE=false truffle migrate");
-    console.log("   Deploy only GuardianBare: DEPLOY_GUARDIAN=false DEPLOY_GUARDIAN_WITH_ROLES=false DEPLOY_GUARDIAN_BARE=true truffle migrate");
+    console.log("   Deploy only SecureBlox: DEPLOY_SECUREBLOX=true DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false truffle migrate");
+    console.log("   Deploy only BareBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=true truffle migrate");
     console.log("   Deploy all (default): truffle migrate");
 };

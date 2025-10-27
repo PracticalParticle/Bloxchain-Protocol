@@ -38,7 +38,7 @@ class BaseSecureOwnableTest {
         
         // Initialize contract address and ABI
         this.contractAddress = null; // Will be set during initialization
-        this.contractABI = this.loadABI('Guardian');
+        this.contractABI = this.loadABI('SecureBlox');
         
         // Initialize test wallets - will be populated during initialization
         this.wallets = {};
@@ -101,10 +101,10 @@ class BaseSecureOwnableTest {
         
         try {
             // Get contract address from environment
-            this.contractAddress = process.env.GUARDIAN_ADDRESS;
+            this.contractAddress = process.env.SECUREBLOX_ADDRESS;
             
             if (!this.contractAddress) {
-                throw new Error('GUARDIAN_ADDRESS not set in environment variables');
+                throw new Error('SECUREBLOX_ADDRESS not set in environment variables');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);

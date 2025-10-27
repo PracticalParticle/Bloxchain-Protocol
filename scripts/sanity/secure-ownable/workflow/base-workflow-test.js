@@ -31,8 +31,8 @@ class BaseWorkflowTest {
         this.testName = testName;
         this.web3 = new Web3(getWeb3Url());
         
-        this.contractAddress = process.env.GUARDIAN_ADDRESS;
-        this.contractABI = this.loadABI('Guardian');
+        this.contractAddress = process.env.SECUREBLOX_ADDRESS;
+        this.contractABI = this.loadABI('SecureBlox');
         
         // Initialize test wallets
         this.wallets = {
