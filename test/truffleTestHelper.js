@@ -2,9 +2,25 @@ require('dotenv').config();
 const { createTestClient, http } = require('viem');
 
 // Get RPC URL from environment or default to localhost
-const RPC_URL = process.env.RPC_URL || process.env.REMOTE_HOST 
-  ? `http://${process.env.REMOTE_HOST}:${process.env.REMOTE_PORT || 8545}`
-  : 'http://127.0.0.1:8545';
+// Protocol logic: 
+// - Use REMOTE_PROTOCOL if REMOTE_HOST is set (defaults to 'https')
+// - Use 'http' for localhost
+function getRPCUrl() {
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  if (process.env.REMOTE_HOST) {
+    const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    const port = process.env.REMOTE_PORT || 8545;
+    return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
+  }
+  
+  // Default to http for localhost
+  return 'http://127.0.0.1:8545';
+}
+
+const RPC_URL = getRPCUrl();
 
 const testClient = createTestClient({
     mode: 'anvil',

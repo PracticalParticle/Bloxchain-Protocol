@@ -103,7 +103,7 @@ For custom networks:
 ```bash
 # .env
 GUARDIAN_NETWORK=custom
-CUSTOM_RPC_URL=http://your-custom-rpc:8545
+CUSTOM_RPC_URL=https://your-custom-rpc:8545
 CUSTOM_NETWORK_ID=9999
 CUSTOM_NETWORK_NAME=custom_network
 ```

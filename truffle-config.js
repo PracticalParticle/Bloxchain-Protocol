@@ -21,11 +21,51 @@
 // Load environment variables from .env file
 require('dotenv').config();
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+// Helper function to create provider URL
+function getProviderUrl() {
+  // If RPC_URL is provided, use it directly
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  // Determine protocol (default to https for remote, http for local)
+  const protocol = process.env.REMOTE_HOST ? (process.env.REMOTE_PROTOCOL || 'https') : 'http';
+  const host = process.env.REMOTE_HOST || "127.0.0.1";
+  const port = parseInt(process.env.REMOTE_PORT) || 8545;
+  
+  return `${protocol}://${host}:${port}`;
+}
+
+// Helper function to create network configuration
+function createNetworkConfig() {
+  const config = {
+    network_id: process.env.REMOTE_NETWORK_ID || "*",
+    gas: process.env.REMOTE_GAS ? parseInt(process.env.REMOTE_GAS) : undefined,
+    gasPrice: process.env.REMOTE_GAS_PRICE ? parseInt(process.env.REMOTE_GAS_PRICE) : undefined,
+    from: process.env.REMOTE_FROM || undefined,
+    verbose: false,
+    debug: true
+  };
+  
+  // If using custom URL with provider, construct it
+  const providerUrl = getProviderUrl();
+  
+  // Use provider property for custom URLs (supports HTTPS)
+  if (providerUrl !== `http://127.0.0.1:8545`) {
+    config.provider = () => {
+      const Web3 = require('web3');
+      const web3 = new Web3(providerUrl);
+      // Return the provider object, not the web3 instance
+      return web3.currentProvider;
+    };
+  } else {
+    // For localhost, use host/port (defaults to HTTP)
+    config.host = process.env.REMOTE_HOST || "127.0.0.1";
+    config.port = parseInt(process.env.REMOTE_PORT) || 8545;
+  }
+  
+  return config;
+}
 
 module.exports = {
   /**
@@ -42,18 +82,8 @@ module.exports = {
     // Dynamic development network - automatically adapts based on environment variables
     // Local development: No environment variables set (defaults to localhost)
     // Remote development: Set REMOTE_HOST environment variable
-    development: {
-      host: process.env.REMOTE_HOST || "127.0.0.1",
-      port: parseInt(process.env.REMOTE_PORT) || 8545,
-      network_id: process.env.REMOTE_NETWORK_ID || "*",
-      gas: process.env.REMOTE_GAS ? parseInt(process.env.REMOTE_GAS) : undefined,
-      gasPrice: process.env.REMOTE_GAS_PRICE ? parseInt(process.env.REMOTE_GAS_PRICE) : undefined,
-      from: process.env.REMOTE_FROM || undefined,
-      // Enable detailed error reporting
-      verbose: false,
-      // Enable debug mode
-      debug: true
-    },
+    // Supports both HTTP and HTTPS based on REMOTE_PROTOCOL or RPC_URL
+    development: createNetworkConfig(),
     
 
     // Useful for testing. The `development` name is special - truffle uses it by default

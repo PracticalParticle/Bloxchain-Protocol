@@ -2,10 +2,23 @@ const Web3 = require('web3');
 const fs = require('fs');
 require('dotenv').config();
 
-const web3 = new Web3(process.env.REMOTE_HOST ? 
-    'http://' + process.env.REMOTE_HOST + ':' + process.env.REMOTE_PORT : 
-    'http://localhost:8545'
-);
+// Helper function to get RPC URL dynamically
+function getWeb3Url() {
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  if (process.env.REMOTE_HOST) {
+    const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    const port = process.env.REMOTE_PORT || 8545;
+    return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
+  }
+  
+  // Default to http for localhost
+  return 'http://localhost:8545';
+}
+
+const web3 = new Web3(getWeb3Url());
 
 /**
  * EIP-712 Signing Implementation for Meta-Transactions

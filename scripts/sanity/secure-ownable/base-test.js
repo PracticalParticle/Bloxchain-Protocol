@@ -11,13 +11,26 @@ const EIP712Signer = require('../utils/eip712-signing');
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
+// Helper function to get RPC URL dynamically
+function getWeb3Url() {
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  if (process.env.REMOTE_HOST) {
+    const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    const port = process.env.REMOTE_PORT || 8545;
+    return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
+  }
+  
+  // Default to http for localhost
+  return 'http://localhost:8545';
+}
+
 class BaseSecureOwnableTest {
     constructor(testName) {
         this.testName = testName;
-        this.web3 = new Web3(process.env.REMOTE_HOST ? 
-            `http://${process.env.REMOTE_HOST}:${process.env.REMOTE_PORT}` : 
-            'http://localhost:8545'
-        );
+        this.web3 = new Web3(getWeb3Url());
         
         // Determine test mode
         this.testMode = process.env.TEST_MODE || 'manual';
@@ -518,10 +531,10 @@ class BaseSecureOwnableTest {
                 // Get role hash with timeout
                 const roleHash = await this.getRoleHash(role);
                 
-                // Get role permissions with timeout
-                const rolePermissionsPromise = this.callContractMethod(this.contract.methods.getRolePermission(roleHash));
+                // Get role permissions with timeout using getActiveRolePermissions
+                const rolePermissionsPromise = this.callContractMethod(this.contract.methods.getActiveRolePermissions(roleHash));
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('getRolePermission timeout after 5 seconds')), 5000)
+                    setTimeout(() => reject(new Error('getActiveRolePermissions timeout after 5 seconds')), 5000)
                 );
                 
                 const rolePermissions = await Promise.race([rolePermissionsPromise, timeoutPromise]);
@@ -536,7 +549,17 @@ class BaseSecureOwnableTest {
                 }
                 
                 // Check if the granted actions match expected actions
-                const grantedActions = functionPermission.grantedActions.map(action => parseInt(action));
+                // Note: getActiveRolePermissions returns grantedActionsBitmap, not grantedActions array
+                // We need to decode the bitmap to compare actions
+                const grantedActionsBitmap = parseInt(functionPermission.grantedActionsBitmap);
+                const grantedActions = [];
+                
+                // Decode bitmap to array of action integers
+                for (let i = 0; i < 16; i++) {
+                    if (grantedActionsBitmap & (1 << i)) {
+                        grantedActions.push(i);
+                    }
+                }
                 
                 const hasRequiredActions = expectedActions.every(expectedAction => 
                     grantedActions.includes(expectedAction)
