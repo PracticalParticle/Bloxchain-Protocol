@@ -1,5 +1,21 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "array1Length",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "array2Length",
+        "type": "uint256"
+      }
+    ],
+    "name": "ArrayLengthMismatch",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "CannotModifyProtectedRoles",
     "type": "error"
@@ -225,7 +241,7 @@
   },
   {
     "inputs": [],
-    "name": "RoleNameEmpty",
+    "name": "RoleEmpty",
     "type": "error"
   },
   {
@@ -1211,6 +1227,37 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "roleHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getActiveRolePermissions",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "uint16",
+            "name": "grantedActionsBitmap",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct StateAbstraction.FunctionPermission[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getBroadcaster",
     "outputs": [
@@ -1283,37 +1330,6 @@
         "internalType": "bool",
         "name": "isProtected",
         "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getRolePermission",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "enum StateAbstraction.TxAction[]",
-            "name": "grantedActions",
-            "type": "uint8[]"
-          }
-        ],
-        "internalType": "struct StateAbstraction.FunctionPermission[]",
-        "name": "",
-        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -4485,9 +4501,9 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction[]",
-            "name": "grantedActions",
-            "type": "uint8[]"
+            "internalType": "uint16",
+            "name": "grantedActionsBitmap",
+            "type": "uint16"
           }
         ],
         "internalType": "struct StateAbstraction.FunctionPermission[]",

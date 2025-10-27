@@ -1084,7 +1084,7 @@
         "type": "bytes32"
       }
     ],
-    "name": "getRolePermission",
+    "name": "getActiveRolePermissions",
     "outputs": [
       {
         "components": [
@@ -1094,9 +1094,9 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction[]",
-            "name": "grantedActions",
-            "type": "uint8[]"
+            "internalType": "uint16",
+            "name": "grantedActionsBitmap",
+            "type": "uint16"
           }
         ],
         "internalType": "struct StateAbstraction.FunctionPermission[]",

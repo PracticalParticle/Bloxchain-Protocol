@@ -13,22 +13,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "array1Length",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "array2Length",
-        "type": "uint256"
-      }
-    ],
-    "name": "ArrayLengthMismatch",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "releaseTime",
         "type": "uint256"
       },
@@ -44,23 +28,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "currentStatus",
-        "type": "uint8"
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
       }
     ],
-    "name": "CanOnlyApprovePending",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "CannotRemoveLastWallet",
+    "name": "CannotRemoveProtectedFunctionSchema",
     "type": "error"
   },
   {
@@ -130,18 +103,7 @@
         "type": "bytes4"
       }
     ],
-    "name": "FunctionAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "FunctionDoesNotExist",
+    "name": "FunctionError",
     "type": "error"
   },
   {
@@ -228,17 +190,6 @@
       }
     ],
     "name": "InvalidAddress",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "handler",
-        "type": "address"
-      }
-    ],
-    "name": "InvalidHandlerContract",
     "type": "error"
   },
   {
@@ -345,28 +296,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermissionExecute",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "OldWalletNotFound",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "OperationNotSupported",
     "type": "error"
@@ -410,7 +339,7 @@
   },
   {
     "inputs": [],
-    "name": "RoleNameEmpty",
+    "name": "RoleEmpty",
     "type": "error"
   },
   {
@@ -492,12 +421,23 @@
   {
     "inputs": [
       {
+        "internalType": "uint8",
+        "name": "currentStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "TransactionNotPending",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "wallet",
         "type": "address"
       }
     ],
-    "name": "WalletAlreadyInRole",
+    "name": "WalletError",
     "type": "error"
   },
   {
@@ -509,16 +449,16 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
       },
       {
-        "indexed": false,
-        "internalType": "string",
-        "name": "triggerFunc",
-        "type": "string"
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "functionHash",
+        "type": "bytes4"
       },
       {
         "indexed": false,
@@ -527,7 +467,7 @@
         "type": "uint8"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "requester",
         "type": "address"
@@ -550,12 +490,12 @@
   },
   {
     "inputs": [],
-    "name": "LIBRARY_NAME",
+    "name": "LIBRARY_NAME_HASH",
     "outputs": [
       {
-        "internalType": "string",
+        "internalType": "bytes32",
         "name": "",
-        "type": "string"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -662,26 +602,12 @@
   },
   {
     "inputs": [],
-    "name": "VERSION",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [],
     "name": "VERSION_MAJOR",
     "outputs": [
       {
-        "internalType": "int256",
+        "internalType": "uint8",
         "name": "",
-        "type": "int256"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -693,9 +619,9 @@
     "name": "VERSION_MINOR",
     "outputs": [
       {
-        "internalType": "int256",
+        "internalType": "uint8",
         "name": "",
-        "type": "int256"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -707,9 +633,9 @@
     "name": "VERSION_PATCH",
     "outputs": [
       {
-        "internalType": "int256",
+        "internalType": "uint8",
         "name": "",
-        "type": "int256"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
