@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../StateAbstraction.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../base/lib/StateAbstraction.sol";
+import "../../../../interfaces/IDefinition.sol";
 
 /**
  * @title SecureOwnableDefinitions
@@ -82,7 +82,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: metaApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaApproveActions),
+            isProtected: true
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -90,7 +91,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: metaCancelActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaCancelActions),
+            isProtected: true
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -98,7 +100,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: metaApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaApproveActions),
+            isProtected: true
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -106,7 +109,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: metaCancelActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaCancelActions),
+            isProtected: true
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
@@ -114,7 +118,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
-            supportedActions: metaRequestApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
+            isProtected: true
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
@@ -122,7 +127,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
-            supportedActions: metaRequestApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
+            isProtected: true
         });
         
         // Time-delayed functions
@@ -131,7 +137,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_REQUEST_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayRequestActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            isProtected: true
         });
         
         schemas[7] = StateAbstraction.FunctionSchema({
@@ -139,7 +146,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
+            isProtected: true
         });
         
         schemas[8] = StateAbstraction.FunctionSchema({
@@ -147,7 +155,8 @@ library SecureOwnableDefinitions {
             functionSelector: TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
-            supportedActions: timeDelayCancelActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
+            isProtected: true
         });
         
         schemas[9] = StateAbstraction.FunctionSchema({
@@ -155,7 +164,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayRequestActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            isProtected: true
         });
         
         schemas[10] = StateAbstraction.FunctionSchema({
@@ -163,7 +173,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
+            isProtected: true
         });
         
         schemas[11] = StateAbstraction.FunctionSchema({
@@ -171,7 +182,8 @@ library SecureOwnableDefinitions {
             functionSelector: UPDATE_BROADCASTER_CANCELLATION_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
-            supportedActions: timeDelayCancelActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
+            isProtected: true
         });
         
         return schemas;
@@ -201,42 +213,42 @@ library SecureOwnableDefinitions {
         roleHashes[0] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
-            grantedActions: broadcasterMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions)
         });
         
         // Broadcaster: Transfer Ownership Cancel Meta
         roleHashes[1] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
-            grantedActions: broadcasterMetaCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions)
         });
         
         // Broadcaster: Update Broadcaster Approve Meta
         roleHashes[2] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
-            grantedActions: broadcasterMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions)
         });
         
         // Broadcaster: Update Broadcaster Cancel Meta
         roleHashes[3] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
-            grantedActions: broadcasterMetaCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions)
         });
         
         // Broadcaster: Update Recovery Meta
         roleHashes[4] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
-            grantedActions: broadcasterMetaRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions)
         });
         
         // Broadcaster: Update Timelock Meta
         roleHashes[5] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
-            grantedActions: broadcasterMetaRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions)
         });
         
         // Owner role permissions (10 entries)
@@ -262,70 +274,70 @@ library SecureOwnableDefinitions {
         roleHashes[6] = StateAbstraction.OWNER_ROLE;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
-            grantedActions: ownerTimeDelayApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions)
         });
 
         // Owner: Transfer Ownership Approve Meta
         roleHashes[7] = StateAbstraction.OWNER_ROLE;
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
-            grantedActions: ownerMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions)
         });
 
         // Owner: Transfer Ownership Cancel Meta
         roleHashes[8] = StateAbstraction.OWNER_ROLE;
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
-            grantedActions: ownerMetaCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions)
         });
         
         // Owner: Update Broadcaster Request
         roleHashes[9] = StateAbstraction.OWNER_ROLE;
         functionPermissions[9] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
-            grantedActions: ownerTimeDelayRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
         });
         
         // Owner: Update Broadcaster Delayed Approval
         roleHashes[10] = StateAbstraction.OWNER_ROLE;
         functionPermissions[10] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR,
-            grantedActions: ownerTimeDelayApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions)
         });
         
         // Owner: Update Broadcaster Cancellation
         roleHashes[11] = StateAbstraction.OWNER_ROLE;
         functionPermissions[11] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCELLATION_SELECTOR,
-            grantedActions: ownerTimeDelayCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions)
         });
         
         // Owner: Update Broadcaster Approve Meta
         roleHashes[12] = StateAbstraction.OWNER_ROLE;
         functionPermissions[12] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
-            grantedActions: ownerMetaApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions)
         });
               
         // Owner: Update Broadcaster Cancel Meta
         roleHashes[13] = StateAbstraction.OWNER_ROLE;
         functionPermissions[13] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
-            grantedActions: ownerMetaCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions)
         });
          
         // Owner: Update Recovery Meta
         roleHashes[14] = StateAbstraction.OWNER_ROLE;
         functionPermissions[14] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
-            grantedActions: ownerMetaRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions)
         });
 
         // Owner: Update Timelock Meta
         roleHashes[15] = StateAbstraction.OWNER_ROLE;
         functionPermissions[15] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
-            grantedActions: ownerMetaRequestApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions)
         });
         
         // Recovery role permissions (3 entries)
@@ -342,21 +354,21 @@ library SecureOwnableDefinitions {
         roleHashes[16] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[16] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_REQUEST_SELECTOR,
-            grantedActions: recoveryTimeDelayRequestActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayRequestActions)
         });
         
         // Recovery: Transfer Ownership Delayed Approval
         roleHashes[17] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[17] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
-            grantedActions: recoveryTimeDelayApproveActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayApproveActions)
         });
         
         // Recovery: Transfer Ownership Cancellation
         roleHashes[18] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[18] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR,
-            grantedActions: recoveryTimeDelayCancelActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayCancelActions)
         });
         
         return IDefinition.RolePermission({

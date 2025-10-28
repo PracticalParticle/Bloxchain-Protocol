@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 // Contracts imports
-import "../../../lib/StateAbstraction.sol";
+import "../lib/StateAbstraction.sol";
 
 /**
  * @title IBaseStateMachine
@@ -110,7 +110,7 @@ interface IBaseStateMachine {
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role
      */
-    function getRolePermission(bytes32 roleHash) external view returns (StateAbstraction.FunctionPermission[] memory);
+    function getActiveRolePermissions(bytes32 roleHash) external view returns (StateAbstraction.FunctionPermission[] memory);
 
     /**
      * @dev Gets the current nonce for a specific signer

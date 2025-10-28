@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 // Import TxRecord struct from StateAbstraction
-import "../lib/StateAbstraction.sol";
+import "../core/base/lib/StateAbstraction.sol";
 
 /**
  * @title IEventForwarder
@@ -16,7 +16,7 @@ interface IEventForwarder {
     /**
      * @dev Forward a transaction event from a deployed instance
      * @param txId The transaction ID
-     * @param triggerFunc The trigger function for the event (function name)
+     * @param functionSelector The function selector for the event (bytes4)
      * @param status The transaction status
      * @param requester The address of the requester
      * @param target The target contract address
@@ -24,7 +24,7 @@ interface IEventForwarder {
      */
     function forwardTxEvent(
         uint256 txId,
-        string calldata triggerFunc,
+        bytes4 functionSelector,
         StateAbstraction.TxStatus status,
         address requester,
         address target,

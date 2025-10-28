@@ -60,8 +60,7 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         // Load SimpleRWA20-specific definitions
         IDefinition.RolePermission memory permissions = 
             SimpleRWA20Definitions.getRolePermissions();
-        StateAbstraction.loadDefinitions(
-            _getSecureState(),
+        _loadDefinitions(
             SimpleRWA20Definitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions

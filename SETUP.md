@@ -56,8 +56,8 @@ After deployment, update the contract addresses in your `.env` file:
 
 ```bash
 # Contract Addresses (update after deployment)
-GUARDIAN_ADDRESS=0x...
-GUARDIAN_WITH_ROLES_ADDRESS=0x...
+SECUREBLOX_ADDRESS=0x...
+ROLEBLOX_ADDRESS=0x...
 SIMPLE_VAULT_ADDRESS=0x...
 SIMPLE_RWA20_ADDRESS=0x...
 ```
@@ -103,7 +103,7 @@ For custom networks:
 ```bash
 # .env
 GUARDIAN_NETWORK=custom
-CUSTOM_RPC_URL=http://your-custom-rpc:8545
+CUSTOM_RPC_URL=https://your-custom-rpc:8545
 CUSTOM_NETWORK_ID=9999
 CUSTOM_NETWORK_NAME=custom_network
 ```

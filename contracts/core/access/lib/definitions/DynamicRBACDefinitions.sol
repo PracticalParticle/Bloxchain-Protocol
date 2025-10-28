@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../StateAbstraction.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../base/lib/StateAbstraction.sol";
+import "../../../../interfaces/IDefinition.sol";
 
 /**
  * @title DynamicRBACDefinitions
@@ -41,7 +41,8 @@ library DynamicRBACDefinitions {
             functionSelector: ROLE_EDITING_TOGGLE_META_SELECTOR,
             operationType: ROLE_EDITING_TOGGLE,
             operationName: "ROLE_EDITING_TOGGLE",
-            supportedActions: metaRequestApproveActions
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
+            isProtected: true
         });
         
         return schemas;
@@ -65,7 +66,7 @@ library DynamicRBACDefinitions {
         roleHashes[0] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_EDITING_TOGGLE_META_SELECTOR,
-            grantedActions: broadcasterActions
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterActions)
         });
         
         return IDefinition.RolePermission({

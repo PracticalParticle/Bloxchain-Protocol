@@ -26,9 +26,14 @@
             "type": "string"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction[]",
-            "name": "supportedActions",
-            "type": "uint8[]"
+            "internalType": "uint16",
+            "name": "supportedActionsBitmap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isProtected",
+            "type": "bool"
           }
         ],
         "internalType": "struct StateAbstraction.FunctionSchema[]",
@@ -58,9 +63,9 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction[]",
-                "name": "grantedActions",
-                "type": "uint8[]"
+                "internalType": "uint16",
+                "name": "grantedActionsBitmap",
+                "type": "uint16"
               }
             ],
             "internalType": "struct StateAbstraction.FunctionPermission[]",
