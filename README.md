@@ -1,15 +1,18 @@
-# Guardian Framework: State Abstraction for Blockchain Security
+# Bloxchain Protocol: State Abstraction for Blockchain Security
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Solidity](https://img.shields.io/badge/Solidity-^0.8.2-blue.svg)](https://soliditylang.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-^0.8.25-blue.svg)](https://soliditylang.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-green.svg)](./sdk/typescript/)
+[![Truffle](https://img.shields.io/badge/Truffle-Development-orange.svg)](https://trufflesuite.com/)
+[![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
+[![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
 
 > **⚠️ EXPERIMENTAL SOFTWARE WARNING**  
 > This repository contains experimental smart contract code. While the framework is feature-complete and tested, it is not yet audited for production use. Use at your own risk and do not deploy with real assets without proper security review.
 
-## 🚀 What is Guardian Framework?
+## 🚀 What is Bloxchain Protocol?
 
-Guardian Framework is a **revolutionary blockchain security architecture** that eliminates single-point failures through **mandatory multi-signature workflows** and **atomic transaction breakdown**. Unlike traditional smart contracts that execute immediately, Guardian implements **time-locked operations** and **meta-transactions** with **role separation** to provide enterprise-grade security.
+Bloxchain Protocol is a **revolutionary blockchain security architecture** that eliminates single-point failures through **mandatory multi-signature workflows** and **atomic transaction breakdown**. Unlike traditional smart contracts that execute immediately, Bloxchain implements **time-locked operations** and **meta-transactions** with **role separation** to provide enterprise-grade security.
 
 ### 🎯 Core Innovation: State Abstraction
 
@@ -21,6 +24,9 @@ Guardian Framework is a **revolutionary blockchain security architecture** that 
 - **Meta-transactions** enable gasless, delegated execution
 - **Dynamic role-based access control** adapts without code changes
 
+![Bloxchain Protocol Actions](./images/sandblox-screenshot.png)
+*[SandBlox](https://sandblox.app/) Transactions - Main interface showing contract operations*
+
 ## 🏗️ Architecture Overview
 
 ### Core Components
@@ -29,9 +35,9 @@ Guardian Framework is a **revolutionary blockchain security architecture** that 
 graph TB
     A[StateAbstraction Library] --> B[BaseStateMachine]
     B --> C[SecureOwnable]
-    B --> D[DynamicRBAC]
+    C --> D[DynamicRBAC]
     C --> E[Guardian]
-    C --> F[GuardianBare]
+    B --> F[GuardianBare]
     D --> G[GuardianWithRoles]
     
     H[TypeScript SDK] --> I[SecureOwnable Client]
@@ -42,7 +48,7 @@ graph TB
     L --> N[SimpleRWA20]
 ```
 
-### 🔧 Three Guardian Implementations
+### 🔧 Guardian Implementations
 
 | Contract | Features | Use Case |
 |----------|----------|----------|
@@ -57,6 +63,11 @@ graph TB
 - **Meta-Transaction Workflow**: Sign → Execute (2 signatures, role separation)
 - **No Single-Point Failures**: Contract controls storage, not wallets
 - **Temporal Security**: Time-locks provide intervention windows
+
+**Core System Roles**:
+- **Owner Role**: Administrative control, can approve operations after timelock, or by signing a Meta-transaction
+- **Broadcaster Role**: Meta-transaction execution, gas sponsorship
+- **Recovery Role**: Emergency operations, limited scope
 
 ## 🚀 Quick Start
 
@@ -74,8 +85,8 @@ npm install -g truffle
 
 ```bash
 # Clone the repository
-git clone https://github.com/PracticalParticle/Guardian.git
-cd Guardian
+git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
+cd Bloxchain-Protocol
 
 # Install dependencies
 npm install
@@ -90,13 +101,29 @@ npm run compile:truffle
 npm run deploy:truffle
 ```
 
+### 🌐 Testnet Deployment
+
+**Sepolia Testnet Support**:
+```bash
+# Deploy to Sepolia testnet
+npm run deploy:truffle:sepolia
+
+# Or use SandBlox for interactive testing
+# Visit: https://sandblox.app/
+```
+
+**Supported Networks**:
+- **Local Development**: Ganache (networkId: 1337)
+- **Ethereum Sepolia**: Testnet deployment and testing
+- **SandBlox Platform**: Interactive testing environment
+
 ### TypeScript SDK
 
 ```bash
 # Install Viem (required dependency)
 npm install viem
 
-# Import Guardian SDK
+# Import BloxChain SDK
 import { 
   SecureOwnable, 
   DynamicRBAC,
@@ -201,41 +228,53 @@ await dynamicRBAC.grantFunctionPermission(
 
 ### SimpleVault: Secure Asset Management
 
+**Time-Locked Withdrawal System**:
 ```solidity
 contract SimpleVault is SecureOwnable {
-    // Time-locked ETH withdrawal
-    function withdrawEthRequest(address to, uint256 amount) external {
+    // Time-locked ETH withdrawal request
+    function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
         // Creates time-locked withdrawal request
         // Requires approval after time-lock period
     }
     
-    // Meta-transaction token withdrawal
-    function withdrawTokenWithMetaTx(MetaTransaction memory metaTx) external {
-        // Gasless token withdrawal via meta-transaction
-        // Requires role separation (signer + executor)
+    // Standard approval workflow (after time delay)
+    function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+        // Approves withdrawal after mandatory time-lock period
+        // Requires owner role permission
+    }
+    
+    // Meta-transaction approval workflow (gasless)
+    function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+        // Approves withdrawal using meta-transaction
+        // Requires broadcaster role execution with off-chain signature
     }
 }
 ```
 
 ### SimpleRWA20: Tokenized Real-World Assets
 
+**Meta-Transaction Token Operations**:
 ```solidity
-contract SimpleRWA20 is ERC20Upgradeable, SecureOwnable {
+contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnable {
     // Secure token minting with meta-transactions
     function mintWithMetaTx(MetaTransaction memory metaTx) external {
         // Only broadcaster can execute
         // Requires off-chain signature from authorized role
     }
-    
-    // Time-locked token burning
-    function burnWithDelay(address from, uint256 amount) external {
-        // Creates time-locked burn request
-        // Prevents immediate token destruction
-    }
 }
 ```
 
+
 ## 🔧 Development Tools
+
+### Interactive Testing Platform
+
+**[SandBlox](https://sandblox.app/)** - Comprehensive testing platform for Bloxchain Protocol:
+- **Live Contract Interaction** with real-time state monitoring
+- **Multi-signature workflow testing** with visual role management
+- **Meta-transaction workflow testing** for gasless operation development
+- **Time-lock operation management** with automated workflow tracking
+- **Sepolia Testnet Support** - Deploy and test on Ethereum Sepolia testnet
 
 ### Contract Compilation & Size Monitoring
 
@@ -277,7 +316,7 @@ npm run format
 ## 📚 Comprehensive Documentation
 
 ### 🏗️ Architecture & Design
-- **[Framework Architecture](./sdk/typescript/docs/guardian-architecture.md)** - Core design principles
+- **[Protocol Architecture](./sdk/typescript/docs/bloxchain-architecture.md)** - Core design principles
 - **[State Machine Engine](./sdk/typescript/docs/state-machine-engine.md)** - SecureOperationState engine
 - **[Architecture Patterns](./sdk/typescript/docs/architecture-patterns.md)** - Design patterns
 
@@ -314,12 +353,11 @@ Execution Phase: Executor Role → Submits signed transaction
 Validation Phase: Contract → Verifies signatures and executes
 ```
 
-### Role-Based Access Control
-
-- **Owner Role**: Administrative control, can approve operations after timelock
-- **Broadcaster Role**: Meta-transaction execution, gas sponsorship
-- **Recovery Role**: Emergency operations, limited scope
-- **Dynamic Roles**: Custom roles with function-level permissions
+**Function-Level Permissions**:
+- **Time-Delay Operations**: Request, approve, and cancel permissions
+- **Meta-Transaction Operations**: Sign and execute permissions with role separation
+- **Dynamic Role Management**: Create, update, and delete custom roles
+- **System Administration**: Owner, broadcaster, and recovery role management
 
 ### Cryptographic Security
 
@@ -351,10 +389,50 @@ Validation Phase: Contract → Verifies signatures and executes
 ## 🔬 Technical Specifications
 
 ### Smart Contract Architecture
+
+**Core Library Implementation**:
+- **StateAbstraction Library v1.0.0**: Core state machine with mandatory multi-signature workflows
+- **BaseStateMachine**: Foundation for all security contracts with meta-transaction support
+- **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
+- **DynamicRBAC**: Runtime role configuration with function-level permissions
+
+**Contract Hierarchy**:
+```solidity
+// Core Library
+library StateAbstraction {
+    struct SecureOperationState {
+        bool initialized;
+        uint256 txCounter;
+        uint256 timeLockPeriodSec;
+        mapping(uint256 => TxRecord) txRecords;
+        mapping(bytes32 => Role) roles;
+        // ... additional state management
+    }
+}
+
+// Base State Machine
+abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
+    StateAbstraction.SecureOperationState internal _secureState;
+    // Meta-transaction utilities and state queries
+}
+
+// Security Extensions
+abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
+    // Multi-role security with time-locked operations
+}
+
+abstract contract DynamicRBAC is SecureOwnable {
+    // Dynamic role-based access control
+}
+```
+
+**Technical Features**:
 - **Solidity Version**: ^0.8.25
 - **OpenZeppelin**: ^5.4.0 (with upgradeable contracts)
 - **Contract Size**: < 24KB (optimized for mainnet deployment)
 - **Gas Optimization**: Library-based architecture with modular definitions
+- **EIP-712 Compliance**: Structured data signing for meta-transactions
+- **Role Separation**: Mandatory separation between signing and execution roles
 
 ### TypeScript SDK
 - **Viem Integration**: Modern Ethereum development with type safety
@@ -368,60 +446,114 @@ Validation Phase: Contract → Verifies signatures and executes
 - **Sanity Checks**: Production-ready validation scripts
 - **Contract Size Monitoring**: Automated size optimization verification
 
-## 🚧 Current Status
+## 🚧 Implementation Status
 
-### ✅ Implemented Features
-- **Core StateAbstraction Library**: Complete implementation with all security features
-- **Three Guardian Variants**: Guardian, GuardianBare, GuardianWithRoles
-- **Complete TypeScript SDK**: Full client library with comprehensive documentation
-- **Real Examples**: SimpleVault and SimpleRWA20 production implementations
-- **Testing Infrastructure**: Truffle tests, Hardhat support, sanity checks
-- **Meta-Transactions**: EIP-712 compliant with role separation
-- **Dynamic RBAC**: Runtime role configuration and function-level permissions
-- **Time-Lock Operations**: Request/approval workflows with temporal security
+### ✅ Available Features
+**Core Components**:
+- ✅ **StateAbstraction Library v1.0.0**: Centralized state management with multi-phase workflows
+- ✅ **Guardian Contracts**: Basic, Bare, and WithRoles implementations
+- ✅ **TypeScript SDK**: Full client library with comprehensive documentation
+- ✅ **Example Contracts**: SimpleVault and SimpleRWA20 and GuardianSafe with real-world use cases
+- ✅ **Comprehensive Tests**: Full suite ensuring functionality and security
+- ✅ **Sepolia Testnet Support**: Live deployment and testing on Ethereum Sepolia testnet
 
-### 🔮 Roadmap Features
-- **Formal Verification**: Automated security property verification
+**Security Features**:
+- ✅ **Mandatory Multi-Signature**: Every transaction requires minimum 2 signatures
+- ✅ **Role Separation**: Meta-transactions enforce signer ≠ executor separation
+- ✅ **Time-Lock Operations**: Configurable delays with intervention windows
+- ✅ **Dynamic RBAC**: Runtime role configuration without contract upgrades
+- ✅ **Audit Trails**: Complete transaction history with cryptographic proofs
+
+## 🔮 Roadmap
+
+### Planned
+
+- **Formal Verification** – Automated verification of security and correctness properties
+- **Security Audit** – Third-party security audit by leading blockchain security firms
+
 
 ## 🤝 Contributing
 
-We welcome contributions to the Guardian Framework! Please see our contributing guidelines:
+We welcome contributions to the Bloxchain Protocol! Please see our comprehensive [Contributing Guidelines](CONTRIBUTING.md) for detailed information on:
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Follow our coding standards**: Use `npm run format` for Solidity formatting
-4. **Add tests**: Ensure comprehensive test coverage
-5. **Submit a pull request**: Include detailed description of changes
+- **Development Setup** - Complete environment configuration
+- **Code Standards** - Solidity and TypeScript guidelines
+- **Testing Requirements** - 100% coverage and comprehensive test suites
+- **Security Considerations** - Security review process and best practices
+- **Pull Request Process** - Detailed submission and review workflow
+- **Applications Development** - Fork-first approach for community applications
 
-### Development Setup
+**Key Requirements:**
+- Follow our [Code of Conduct](CODE_OF_CONDUCT.md)
+- Maintain 100% test coverage
+- Keep contracts under 24KB size limit
+- Use `npm run format` for Solidity formatting
+- Include comprehensive documentation updates
 
+### Development Workflow
+
+**Setup & Testing**:
 ```bash
-# Install dependencies
+# Install dependencies and start local blockchain
 npm install
-
-# Start local blockchain
 ganache --deterministic --networkId 1337
 
-# Run tests
-npm run test:truffle
-
-# Check contract sizes
+# Compile contracts with size monitoring
 npm run compile:truffle:size
+
+# Run comprehensive test suite
+npm run test:truffle
+npm run test:hardhat
+
+# Run sanity checks
+npm run test:sanity:secure-ownable
+npm run test:sanity:simple-vault
+npm run test:sanity:simple-rwa20
+```
+
+**Documentation & Deployment**:
+```bash
+# Generate documentation and format code
+npm run docgen
+npm run format
+
+# Deploy to local network
+npm run deploy:truffle
+
 ```
 
 ## 📄 License
 
 This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - see the [LICENSE](LICENSE) file for details.
 
+### Core Framework License
 **Key Benefits of MPL-2.0:**
 - **Open Source**: Free to use, modify, and distribute
 - **Commercial Use**: Clear commercial use permissions
 - **Patent Protection**: Protects contributors from patent litigation
 - **No Vendor Lock-in**: Freedom to modify without proprietary restrictions
 
+### Applications Directory License Structure
+
+**Important**: The `applications/` directory is **EXCLUDED** from MPL-2.0 licensing:
+
+- **Core Framework**: Licensed under MPL-2.0 (contracts, SDK, documentation)
+- **Applications**: Each application has its own separate license
+- **Community Applications** (`applications/community/`): Various open-source licenses (MIT, Apache 2.0, GPL v3, etc.)
+- **Proprietary Applications** (`applications/proprietary/`): Commercial/proprietary licenses
+
+**Applications are:**
+- ❌ **NOT covered by MPL-2.0**
+- ❌ **NOT officially supported** by Bloxchain Protocol
+- ❌ **NOT part of the core framework**
+- ✅ **Licensed separately** with their own terms
+- ✅ **Used at your own risk**
+
+See individual LICENSE files in each application directory for specific terms.
+
 ## 🙏 Acknowledgments
 
-- **Particle Crypto Security** for the innovative State Abstraction implementation
+- **[Particle Crypto Security](https://particlecs.com/)** for the innovative State Abstraction implementation
 - **OpenZeppelin** for secure smart contract components and upgradeable patterns
 - **Viem** for modern TypeScript blockchain interactions
 - **Truffle Suite** for comprehensive development and testing tools
@@ -430,11 +562,12 @@ This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - se
 
 - **Documentation**: Comprehensive guides in [`sdk/typescript/docs/`](./sdk/typescript/docs/)
 - **Examples**: Real-world implementations in [`contracts/examples/`](./contracts/examples/)
+- **Testing Platform**: Interactive development with [SandBlox](https://sandblox.app/)
+- **Company Website**: Learn more at [Particle CS](https://particlecs.com/)
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Join community discussions for questions and collaboration
 
 ---
 
-Created by Particle Crypto Security  
-Copyright � 2025 Particle Crypto Security. All rights reserved.
-
+Created by [Particle Crypto Security](https://particlecs.com/)  
+Copyright © 2025 Particle Crypto Security. All rights reserved.

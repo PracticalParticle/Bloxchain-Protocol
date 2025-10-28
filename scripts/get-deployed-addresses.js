@@ -133,8 +133,8 @@ function displayEnvironmentConfig(addresses) {
       DYNAMIC_RBAC_DEFINITIONS_ADDRESS: process.env.DYNAMIC_RBAC_DEFINITIONS_ADDRESS || 'Not set'
     },
     guardianContracts: {
-      GUARDIAN_ADDRESS: process.env.GUARDIAN_ADDRESS || 'Not set',
-      GUARDIAN_WITH_ROLES_ADDRESS: process.env.GUARDIAN_WITH_ROLES_ADDRESS || 'Not set'
+      SECUREBLOX_ADDRESS: process.env.SECUREBLOX_ADDRESS || 'Not set',
+      ROLEBLOX_ADDRESS: process.env.ROLEBLOX_ADDRESS || 'Not set'
     },
     exampleContracts: {
       SIMPLE_VAULT_ADDRESS: process.env.SIMPLE_VAULT_ADDRESS || 'Not set',
@@ -182,8 +182,8 @@ function displayEnvironmentConfig(addresses) {
     
     if (latestContracts) {
       const verifications = [
-        { env: 'GUARDIAN_ADDRESS', artifact: latestContracts.Guardian },
-        { env: 'GUARDIAN_WITH_ROLES_ADDRESS', artifact: latestContracts.GuardianWithRoles },
+        { env: 'SECUREBLOX_ADDRESS', artifact: latestContracts.SecureBlox },
+        { env: 'ROLEBLOX_ADDRESS', artifact: latestContracts.RoleBlox },
         { env: 'SIMPLE_VAULT_ADDRESS', artifact: latestContracts.SimpleVault },
         { env: 'SIMPLE_RWA20_ADDRESS', artifact: latestContracts.SimpleRWA20 }
       ];
@@ -204,7 +204,7 @@ function displayEnvironmentConfig(addresses) {
   console.log('```javascript');
   console.log('require(\'dotenv\').config();');
   console.log('');
-  console.log('const guardianAddress = process.env.GUARDIAN_ADDRESS;');
+  console.log('const secureBloxAddress = process.env.SECUREBLOX_ADDRESS;');
   console.log('const vaultAddress = process.env.SIMPLE_VAULT_ADDRESS;');
   console.log('// etc...');
   console.log('```');

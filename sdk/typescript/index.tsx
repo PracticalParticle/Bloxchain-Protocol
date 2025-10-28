@@ -1,4 +1,4 @@
-// Guardian Framework TypeScript SDK
+// Bloxchain Protocol TypeScript SDK
 // Main entry point for all SDK functionality
 
 // Core Classes

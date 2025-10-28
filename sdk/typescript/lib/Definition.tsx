@@ -8,6 +8,7 @@ import {
   FunctionSchema, 
   RolePermission
 } from '../types/definition.index';
+import { TxAction } from '../types/lib.index';
 
 // Import the ABI
 import IDefinitionABI from '../../../abi/IDefinition.abi.json';
@@ -100,9 +101,10 @@ export class Definitions implements IDefinition {
       return result.map((item: any) => ({
         functionName: item.functionName as string,
         functionSelector: item.functionSelector as Hex,
-        parameters: item.parameters as string[],
-        returnTypes: item.returnTypes as string[],
-        description: item.description as string
+        operationType: item.operationType as Hex,
+        operationName: item.operationName as string,
+        supportedActions: item.supportedActions as TxAction[],
+        isProtected: item.isProtected as boolean
       }));
     } catch (error) {
       throw new Error(`Failed to get function schemas: ${error instanceof Error ? error.message : 'Unknown error'}`);

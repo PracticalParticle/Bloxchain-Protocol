@@ -1,8 +1,8 @@
-# Guardian State Machine Engine
+# Bloxchain State Machine Engine
 
 ## Overview
 
-The Guardian State Machine Engine (`SecureOperationState`) is the core component that powers all security operations in the Guardian Framework. It implements a sophisticated state management system that handles transaction lifecycle, access control, and security validation in a unified, auditable manner.
+The Bloxchain State Machine Engine (`SecureOperationState`) is the core component that powers all security operations in the Bloxchain Protocol. It implements a sophisticated state management system that handles transaction lifecycle, access control, and security validation in a unified, auditable manner.
 
 ## State Machine Design Principles
 

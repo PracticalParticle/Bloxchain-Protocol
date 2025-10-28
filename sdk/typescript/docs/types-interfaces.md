@@ -85,9 +85,10 @@ interface FunctionPermission {
 interface FunctionSchema {
   functionName: string;
   functionSelector: Hex;
-  parameters: string[];
-  returnTypes: string[];
-  description: string;
+  operationType: Hex;
+  operationName: string;
+  supportedActions: TxAction[];
+  isProtected: boolean;
 }
 
 // Role permission structure containing role hashes and their function permissions
@@ -278,7 +279,9 @@ interface FunctionSchemaDefinition {
   functionName: string
   functionSelector: string
   operationType: OperationType
+  operationName: string
   supportedActions: TxAction[]
+  isProtected: boolean
   parameters: Parameter[]
 }
 ```
@@ -289,7 +292,9 @@ const transferOwnershipSchema: FunctionSchemaDefinition = {
   functionName: 'transferOwnershipRequest',
   functionSelector: '0x12345678',
   operationType: 'OWNERSHIP_TRANSFER',
+  operationName: 'OWNERSHIP_TRANSFER',
   supportedActions: ['EXECUTE_TIME_DELAY_REQUEST'],
+  isProtected: true,
   parameters: [
     {
       name: 'newOwner',

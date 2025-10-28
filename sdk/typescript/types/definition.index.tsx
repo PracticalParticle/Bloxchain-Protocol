@@ -24,9 +24,10 @@ export interface FunctionPermission {
 export interface FunctionSchema {
   functionName: string;
   functionSelector: Hex;
-  parameters: string[];
-  returnTypes: string[];
-  description: string;
+  operationType: Hex;
+  operationName: string;
+  supportedActions: TxAction[];
+  isProtected: boolean;
 }
 
 /**

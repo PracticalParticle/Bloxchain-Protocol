@@ -10,16 +10,29 @@ const path = require('path');
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// Helper function to get RPC URL dynamically
+function getWeb3Url() {
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  if (process.env.REMOTE_HOST) {
+    const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    const port = process.env.REMOTE_PORT || 8545;
+    return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
+  }
+  
+  // Default to http for localhost
+  return 'http://localhost:8545';
+}
+
 class BaseWorkflowTest {
     constructor(testName) {
         this.testName = testName;
-        this.web3 = new Web3(process.env.REMOTE_HOST ? 
-            `http://${process.env.REMOTE_HOST}:${process.env.REMOTE_PORT}` : 
-            'http://localhost:8545'
-        );
+        this.web3 = new Web3(getWeb3Url());
         
-        this.contractAddress = process.env.GUARDIAN_ADDRESS;
-        this.contractABI = this.loadABI('Guardian');
+        this.contractAddress = process.env.SECUREBLOX_ADDRESS;
+        this.contractABI = this.loadABI('SecureBlox');
         
         // Initialize test wallets
         this.wallets = {

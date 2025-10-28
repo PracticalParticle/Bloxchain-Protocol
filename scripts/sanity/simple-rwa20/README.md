@@ -8,7 +8,7 @@ SimpleRWA20 is an example contract that demonstrates:
 - ERC20 token functionality with minting and burning
 - Meta-transaction support for secure operations
 - Role-based access control (Owner, Broadcaster, Recovery)
-- Integration with the Guardian framework
+- Integration with the Bloxchain protocol
 - ERC20Burnable functionality for secure token destruction
 
 ## Test Structure
@@ -131,7 +131,7 @@ RECOVERY_PRIVATE_KEY=0x...
 - ✅ Allowance-based burning
 
 ### Integration Features
-- ✅ Guardian framework integration
+- ✅ Bloxchain protocol integration
 - ✅ StateAbstraction usage
 - ✅ EIP-712 signing
 - ✅ Event emission

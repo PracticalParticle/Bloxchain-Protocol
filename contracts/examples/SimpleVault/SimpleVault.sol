@@ -54,8 +54,7 @@ contract SimpleVault is SecureOwnable {
         // Load SimpleVault-specific definitions
         IDefinition.RolePermission memory permissions = 
             SimpleVaultDefinitions.getRolePermissions();
-        StateAbstraction.loadDefinitions(
-            _getSecureState(),
+        _loadDefinitions(
             SimpleVaultDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions

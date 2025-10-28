@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 // Contracts imports
 import "../base/BaseStateMachine.sol";
-import "../../lib/definitions/SecureOwnableDefinitions.sol";
+import "./lib/definitions/SecureOwnableDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
 import "../../utils/SharedValidation.sol";
 import "./interface/ISecureOwnable.sol";
@@ -87,8 +87,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         
         // Load SecureOwnable-specific definitions
         IDefinition.RolePermission memory secureOwnablePermissions = SecureOwnableDefinitions.getRolePermissions();
-        StateAbstraction.loadDefinitions(
-            _getSecureState(),
+        _loadDefinitions(
             SecureOwnableDefinitions.getFunctionSchemas(),
             secureOwnablePermissions.roleHashes,
             secureOwnablePermissions.functionPermissions

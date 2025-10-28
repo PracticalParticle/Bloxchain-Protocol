@@ -1,16 +1,16 @@
-# Guardian Framework Architecture
+# Bloxchain Protocol Architecture
 
 ## Overview
 
-The Guardian Framework is a unique blockchain security framework built around a **state machine architecture** that provides comprehensive security, access control, and transaction management capabilities. Unlike traditional smart contract patterns, Guardian uses a centralized state management system called `SecureOperationState` that acts as the core engine for all security operations.
+The Bloxchain Protocol is a unique blockchain security framework built around a **state machine architecture** that provides comprehensive security, access control, and transaction management capabilities. Unlike traditional smart contract patterns, Bloxchain uses a centralized state management system called `SecureOperationState` that acts as the core engine for all security operations.
 
 ## Core Architecture Principles
 
 ### 1. State Machine Pattern
-Guardian implements a **centralized state machine** where all security operations, access control, and transaction management flow through a single, well-defined state engine (`SecureOperationState`).
+Bloxchain implements a **centralized state machine** where all security operations, access control, and transaction management flow through a single, well-defined state engine (`SecureOperationState`).
 
 ### 2. Unified Security Model
-All Guardian contracts inherit from a common security foundation that provides:
+All Bloxchain contracts inherit from a common security foundation that provides:
 - **Multi-phase transaction processing**
 - **Role-based access control (RBAC)**
 - **Time-locked operations**
@@ -25,7 +25,7 @@ The framework is built with modularity in mind:
 
 ## SecureOperationState: The Core Engine
 
-The `SecureOperationState` struct is the heart of the Guardian framework, acting as a comprehensive state machine that manages all aspects of secure operations.
+The `SecureOperationState` struct is the heart of the Bloxchain protocol, acting as a comprehensive state machine that manages all aspects of secure operations.
 
 ### State Machine Components
 
@@ -241,6 +241,6 @@ const hasRole = await dynamicRBAC.hasRole(roleHash, walletAddress)
 
 ## Conclusion
 
-The Guardian Framework's state machine architecture provides a robust, secure, and flexible foundation for blockchain applications. By centralizing security logic in the `SecureOperationState` engine, Guardian ensures consistent, auditable, and efficient security operations across all contract implementations.
+The Bloxchain Protocol's state machine architecture provides a robust, secure, and flexible foundation for blockchain applications. By centralizing security logic in the `SecureOperationState` engine, Bloxchain ensures consistent, auditable, and efficient security operations across all contract implementations.
 
-The TypeScript SDK provides comprehensive tools for analyzing, validating, and interacting with Guardian contracts, making it easy for developers to leverage the full power of the Guardian state machine architecture.
+The TypeScript SDK provides comprehensive tools for analyzing, validating, and interacting with Bloxchain contracts, making it easy for developers to leverage the full power of the Bloxchain state machine architecture.

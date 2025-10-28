@@ -1,6 +1,6 @@
-# Guardian TypeScript SDK Documentation Index
+# Bloxchain TypeScript SDK Documentation Index
 
-Welcome to the comprehensive documentation for the Guardian TypeScript SDK. This index provides quick access to all documentation resources.
+Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. This index provides quick access to all documentation resources.
 
 ## 📚 **Documentation Structure**
 
@@ -9,8 +9,8 @@ Welcome to the comprehensive documentation for the Guardian TypeScript SDK. This
 - [**Getting Started**](./getting-started.md) - Quick setup and basic usage
 - [**API Reference**](./api-reference.md) - Complete API documentation
 
-### **🏗️ Guardian Architecture**
-- [**Framework Architecture**](./guardian-architecture.md) - Guardian framework overview and design principles
+### **🏗️ Bloxchain Architecture**
+- [**Protocol Architecture**](./bloxchain-architecture.md) - Bloxchain protocol overview and design principles
 - [**State Machine Engine**](./state-machine-engine.md) - SecureOperationState engine and state management
 - [**Architecture Patterns**](./architecture-patterns.md) - Design patterns and best practices
 
@@ -43,7 +43,7 @@ Welcome to the comprehensive documentation for the Guardian TypeScript SDK. This
 
 **I want to...**
 - **Get started quickly** → [Getting Started](./getting-started.md)
-- **Understand Guardian architecture** → [Framework Architecture](./guardian-architecture.md)
+- **Understand Bloxchain architecture** → [Protocol Architecture](./bloxchain-architecture.md)
 - **Learn about the state machine** → [State Machine Engine](./state-machine-engine.md)
 - **Understand the API** → [API Reference](./api-reference.md)
 - **Use SecureOwnable** → [SecureOwnable Guide](./secure-ownable.md)

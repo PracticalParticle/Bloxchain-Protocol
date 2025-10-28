@@ -1,14 +1,14 @@
-# Guardian Architecture Patterns
+# Bloxchain Architecture Patterns
 
 ## Overview
 
-The Guardian Framework implements several key architectural patterns that work together to provide a robust, secure, and flexible blockchain security solution. Understanding these patterns is essential for effectively using and extending the Guardian framework.
+The Bloxchain Protocol implements several key architectural patterns that work together to provide a robust, secure, and flexible blockchain security solution. Understanding these patterns is essential for effectively using and extending the Bloxchain protocol.
 
 ## Core Architectural Patterns
 
 ### 1. **State Machine Pattern**
 
-The Guardian framework is built around a centralized state machine that manages all security operations.
+The Bloxchain protocol is built around a centralized state machine that manages all security operations.
 
 #### Implementation
 ```solidity
@@ -418,6 +418,6 @@ class RoleBasedStrategy implements SecurityStrategy {
 
 ## Conclusion
 
-The Guardian Framework implements a comprehensive set of architectural patterns that work together to provide a robust, secure, and flexible blockchain security solution. By understanding and following these patterns, developers can effectively use and extend the Guardian framework to build secure, scalable blockchain applications.
+The Bloxchain Protocol implements a comprehensive set of architectural patterns that work together to provide a robust, secure, and flexible blockchain security solution. By understanding and following these patterns, developers can effectively use and extend the Bloxchain protocol to build secure, scalable blockchain applications.
 
 The patterns described in this document provide a foundation for understanding the Guardian architecture and serve as a guide for implementing similar patterns in custom Guardian-based applications.

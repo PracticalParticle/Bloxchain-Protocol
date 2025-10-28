@@ -8,7 +8,7 @@ SimpleVault is an example contract that demonstrates:
 - ETH and token withdrawal with time-lock security
 - Meta-transaction support for approvals
 - Role-based access control (Owner, Broadcaster, Recovery)
-- Integration with the Guardian framework and BaseStateMachine
+- Integration with the Bloxchain protocol and BaseStateMachine
 - Centralized state management through StateAbstraction library
 
 ## Test Structure
@@ -137,7 +137,7 @@ RECOVERY_PRIVATE_KEY=0x...
 - ✅ Permission checks
 
 ### Integration Features
-- ✅ Guardian framework integration
+- ✅ Bloxchain protocol integration
 - ✅ BaseStateMachine centralized helpers
 - ✅ StateAbstraction library usage
 - ✅ SimpleVaultDefinitions as source of truth

@@ -11,13 +11,26 @@ const SimpleRWA20EIP712Signer = require('./simple-rwa20-eip712-signer');
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
+// Helper function to get RPC URL dynamically
+function getWeb3Url() {
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  
+  if (process.env.REMOTE_HOST) {
+    const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    const port = process.env.REMOTE_PORT || 8545;
+    return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
+  }
+  
+  // Default to http for localhost
+  return 'http://localhost:8545';
+}
+
 class BaseSimpleRWA20Test {
     constructor(testName) {
         this.testName = testName;
-        this.web3 = new Web3(process.env.REMOTE_HOST ? 
-            `http://${process.env.REMOTE_HOST}:${process.env.REMOTE_PORT}` : 
-            'http://localhost:8545'
-        );
+        this.web3 = new Web3(getWeb3Url());
         
         // Determine test mode
         this.testMode = process.env.TEST_MODE || 'manual';

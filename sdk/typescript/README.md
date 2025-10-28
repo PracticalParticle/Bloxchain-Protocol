@@ -1,10 +1,10 @@
-# Guardian Framework TypeScript SDK
+# Bloxchain Protocol TypeScript SDK
 
-A comprehensive TypeScript SDK for interacting with the Guardian Framework smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
+A comprehensive TypeScript SDK for interacting with the Bloxchain Protocol smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
 
 ## 🏗️ **Unique Architecture**
 
-Guardian Framework implements a **state machine architecture** with `SecureOperationState` as the core engine, providing:
+Bloxchain Protocol implements a **state machine architecture** with `SecureOperationState` as the core engine, providing:
 
 - **Centralized State Management**: All security operations flow through a unified state machine
 - **Multi-Phase Transaction Processing**: Time-locked operations with request/approval workflows
@@ -26,7 +26,7 @@ Guardian Framework implements a **state machine architecture** with `SecureOpera
 Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
 ### **🏗️ Architecture & Design**
-- **[Framework Architecture](./docs/guardian-architecture.md)** - Guardian framework overview and design principles
+- **[Protocol Architecture](./docs/bloxchain-architecture.md)** - Bloxchain protocol overview and design principles
 - **[State Machine Engine](./docs/state-machine-engine.md)** - SecureOperationState engine and state management
 - **[Architecture Patterns](./docs/architecture-patterns.md)** - Design patterns and best practices
 
@@ -388,4 +388,4 @@ When contributing to the SDK:
 
 ## License
 
-This SDK is part of the Guardian Framework and follows the same licensing terms.
+This SDK is part of the Bloxchain Protocol and follows the same licensing terms.

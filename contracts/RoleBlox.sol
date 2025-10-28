@@ -4,12 +4,12 @@ pragma solidity ^0.8.25;
 import "./core/access/DynamicRBAC.sol";
 
 /**
- * @title GuardianWithRoles
+ * @title RoleBlox
  * @dev A basic implementation of state abstraction with dynamic role-based access control using DynamicRBAC
  */
-contract GuardianWithRoles is DynamicRBAC {
+contract RoleBlox is DynamicRBAC {
     /**
-     * @notice Initializer to initialize GuardianWithRoles
+     * @notice Initializer to initialize RoleBlox
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address
@@ -35,3 +35,4 @@ contract GuardianWithRoles is DynamicRBAC {
 
     // add your implementation here
 }
+

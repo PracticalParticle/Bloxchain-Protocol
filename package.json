@@ -1,7 +1,7 @@
 {
-  "name": "Guardian",
+  "name": "Bloxchain",
   "version": "1.0.0",
-  "description": "Particle's smart state abstraction contracts",
+  "description": "Particle's Bloxchain protocol smart state abstraction contracts",
   "main": "truffle-config.js",
   "scripts": {
     "test:truffle": "truffle test",
