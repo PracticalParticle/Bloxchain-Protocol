@@ -16,6 +16,7 @@ const contractsToProcess = [
   'SecureOwnableWorkflows',
   'DynamicRBAC',
   'DynamicRBACDefinitions',
+  'GuardController',
   'IDefinition',
   'IWorkflow',
   'BareBlox',

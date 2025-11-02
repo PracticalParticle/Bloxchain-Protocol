@@ -5,6 +5,7 @@
 export { default as BaseStateMachine } from './contracts/BaseStateMachine';
 export { default as SecureOwnable } from './contracts/SecureOwnable';
 export { default as DynamicRBAC } from './contracts/DynamicRBAC';
+export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
 export { Workflow } from './lib/Workflow';
 
@@ -12,6 +13,7 @@ export { Workflow } from './lib/Workflow';
 export * from './interfaces/base.index';
 export * from './interfaces/base.state.machine.index';
 export * from './interfaces/core.access.index';
+export * from './interfaces/core.execution.index';
 export * from './interfaces/lib.index';
 export * from './interfaces/definition.index';
 export * from './interfaces/workflow.index';
