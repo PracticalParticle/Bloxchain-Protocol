@@ -1,6 +1,6 @@
 # Solidity API
 
-# GuardianBare
+# BareBlox
 
 A minimal implementation using only BaseStateMachine for core state machine functionality
 

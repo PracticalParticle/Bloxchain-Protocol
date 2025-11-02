@@ -159,10 +159,10 @@ Returns if an action is supported by a function
 
 ---
 
-### getRolePermission
+### getActiveRolePermissions
 
 ```solidity
-function getRolePermission(bytes32 roleHash) external view returns (struct StateAbstraction.FunctionPermission[])
+function getActiveRolePermissions(bytes32 roleHash) external view returns (struct StateAbstraction.FunctionPermission[])
 ```
 
 Gets the function permissions for a specific role

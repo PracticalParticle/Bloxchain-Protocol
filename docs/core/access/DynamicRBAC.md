@@ -74,6 +74,21 @@ Requests and approves a role editing toggle using a meta-transaction
 
 ---
 
+### executeRoleEditingToggle
+
+```solidity
+function executeRoleEditingToggle(bool enabled) external nonpayable
+```
+
+External function that can only be called by the contract itself to execute role editing toggle
+
+**Parameters:**
+- `` (): True to enable role editing, false to disable
+
+
+
+---
+
 ### createNewRole
 
 ```solidity
@@ -89,6 +104,21 @@ Creates a new dynamic role with function permissions (always non-protected)
 
 **Returns:**
 - The hash of the created role
+
+
+---
+
+### removeRole
+
+```solidity
+function removeRole(bytes32 roleHash) external nonpayable
+```
+
+Removes a role from the system
+
+**Parameters:**
+- `` (): The hash of the role to remove
+
 
 
 ---
@@ -142,16 +172,90 @@ Checks if a role exists
 
 ---
 
-### executeRoleEditingToggle
+### functionSchemaExists
 
 ```solidity
-function executeRoleEditingToggle(bool enabled) external nonpayable
+function functionSchemaExists(bytes4 functionSelector) external view returns (bool)
 ```
 
-External function that can only be called by the contract itself to execute role editing toggle
+Checks if a function schema exists
 
 **Parameters:**
-- `` (): True to enable role editing, false to disable
+- `` (): The function selector to check
+
+**Returns:**
+- True if the function schema exists, false otherwise
+
+
+---
+
+### getFunctionSchema
+
+```solidity
+function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum StateAbstraction.TxAction[], bool)
+```
+
+Gets function schema information
+
+**Parameters:**
+- `` (): The function selector to get information for
+
+**Returns:**
+- The name of the function
+- The function selector
+- The operation type
+- The operation name
+- The supported actions
+- Whether the function schema is protected
+
+
+---
+
+### registerFunction
+
+```solidity
+function registerFunction(string functionSignature, string operationName, enum StateAbstraction.TxAction[] supportedActions) external nonpayable
+```
+
+Registers a function schema with its full signature
+
+**Parameters:**
+- `` (): The full function signature (e.g., &quot;transfer(address,uint256)&quot;)
+- `` (): The operation name (hashed to operationType)
+- `` (): Array of supported actions (converted to bitmap internally)
+
+
+
+---
+
+### unregisterFunction
+
+```solidity
+function unregisterFunction(bytes4 functionSelector, bool safeRemoval) external nonpayable
+```
+
+Unregisters a function schema and removes its signature
+
+**Parameters:**
+- `` (): The function selector to remove
+- `` (): If true, ensures no role currently references this function
+
+
+
+---
+
+### loadDefinitions
+
+```solidity
+function loadDefinitions(struct StateAbstraction.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct StateAbstraction.FunctionPermission[] functionPermissions) external nonpayable
+```
+
+Public function to load function schemas and role permissions dynamically at runtime
+
+**Parameters:**
+- `` (): Array of function schema definitions to load
+- `` (): Array of role hashes to add permissions to
+- `` (): Array of function permissions (parallel to roleHashes)
 
 
 
@@ -172,13 +276,108 @@ Internal function to toggle role editing
 
 ---
 
+### _loadDynamicDefinitions
+
+```solidity
+function _loadDynamicDefinitions(struct StateAbstraction.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct StateAbstraction.FunctionPermission[] functionPermissions) internal nonpayable
+```
+
+Loads function schemas and role permissions dynamically at runtime
+
+**Parameters:**
+- `` (): Array of function schema definitions to load
+- `` (): Array of role hashes to add permissions to
+- `` (): Array of function permissions (parallel to roleHashes)
+
+
+
+---
+
+### _convertBitmapToActions
+
+```solidity
+function _convertBitmapToActions(uint16 bitmap) internal pure returns (enum StateAbstraction.TxAction[])
+```
+
+Converts a bitmap to an array of TxActions
+
+**Parameters:**
+- `` (): The bitmap to convert
+
+**Returns:**
+- Array of TxActions represented by the bitmap
+
+
+---
+
+### _createBitmapFromActions
+
+```solidity
+function _createBitmapFromActions(enum StateAbstraction.TxAction[] actions) internal pure returns (uint16)
+```
+
+Converts an array of TxActions to a bitmap
+
+**Parameters:**
+- `` (): Array of TxActions to convert
+
+**Returns:**
+- Bitmap representation of the actions
+
+
+---
+
 
 ## Events
+
+### RoleEditingToggled
+
+```solidity
+event RoleEditingToggled(bool enabled)
+```
+
+
+
+
+---
+
+### FunctionRegistered
+
+```solidity
+event FunctionRegistered(bytes4 functionSelector, string functionSignature, bytes32 operationType)
+```
+
+
+
+
+---
+
+### FunctionUnregistered
+
+```solidity
+event FunctionUnregistered(bytes4 functionSelector)
+```
+
+
+
+
+---
 
 ### RoleCreated
 
 ```solidity
 event RoleCreated(bytes32 roleHash, string roleName, uint256 maxWallets, bool isProtected)
+```
+
+
+
+
+---
+
+### RoleRemoved
+
+```solidity
+event RoleRemoved(bytes32 roleHash)
 ```
 
 
@@ -208,10 +407,10 @@ event WalletRemovedFromRole(bytes32 roleHash, address wallet)
 
 ---
 
-### RoleEditingToggled
+### DefinitionsLoaded
 
 ```solidity
-event RoleEditingToggled(bool enabled)
+event DefinitionsLoaded(uint256 functionSchemaCount, uint256 rolePermissionCount)
 ```
 
 

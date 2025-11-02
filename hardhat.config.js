@@ -4,7 +4,7 @@ require("solidity-docgen");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.24",
+  solidity: "0.8.25",
   networks: {
     hardhat: {
       // Configuration for the built-in Hardhat Network
