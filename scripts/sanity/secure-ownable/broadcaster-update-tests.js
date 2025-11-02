@@ -312,32 +312,8 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction status: ${txRecord.status}`);
             console.log(`  📋 Operation type: ${txRecord.params.operationType}`);
 
-            // Wait for timelock to expire
-            console.log('  ⏳ Waiting for timelock to expire...');
-            
-            // Get the actual timelock period and release time
-            const txBeforeApproval = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            const releaseTime = parseInt(txBeforeApproval.releaseTime);
-            
-            // Get actual blockchain time instead of machine time
-            const currentBlock = await this.web3.eth.getBlock('latest');
-            const currentBlockchainTime = currentBlock.timestamp;
-            
-            // Calculate time to advance with safety buffer
-            // We need to advance at least 1 second MORE than the timelock period to ensure it has expired
-            const timeToAdvance = Math.max(0, releaseTime - currentBlockchainTime + 2); // Add 2 seconds buffer (1 sec + 1 sec safety)
-            
-            console.log(`  📋 Release time: ${releaseTime}`);
-            console.log(`  📋 Current blockchain time: ${currentBlockchainTime}`);
-            console.log(`  📋 Time to advance: ${timeToAdvance} seconds (includes 2-second safety buffer)`);
-            
-            // Advance time by the calculated amount to ensure timelock has expired
-            if (timeToAdvance > 0) {
-                console.log(`  ⏰ Advancing blockchain time by ${timeToAdvance} seconds...`);
-                await this.advanceBlockchainTime(timeToAdvance);
-            } else {
-                console.log(`  ✅ Timelock already expired, no need to advance time`);
-            }
+            // Wait for timelock to expire using the robust waitForTimelock method
+            await this.waitForTimelock(txRecord.txId, 'Broadcaster Update Time Delay Approval');
 
             // Approve the transaction
             console.log(`  📋 Calling updateBroadcasterDelayedApproval(${txRecord.txId})...`);
