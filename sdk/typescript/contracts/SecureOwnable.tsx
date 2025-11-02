@@ -129,8 +129,8 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
     return this.executeReadContract<bigint>('getSignerNonce', [signer]);
   }
 
-  async getRolePermission(roleHash: Hex): Promise<any[]> {
-    return this.executeReadContract<any[]>('getRolePermission', [roleHash]);
+  async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
+    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
   }
 
   async initialized(): Promise<boolean> {

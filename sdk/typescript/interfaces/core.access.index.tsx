@@ -125,7 +125,7 @@ export interface ISecureOwnable {
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getSignerNonce(signer: Address): Promise<bigint>;
-  getRolePermission(roleHash: Hex): Promise<any[]>;
+  getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   initialized(): Promise<boolean>;
 
   // Interface Support

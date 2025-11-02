@@ -165,8 +165,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
   }
 
-  async getRolePermission(roleHash: Hex): Promise<any[]> {
-    return this.executeReadContract<any[]>('getRolePermission', [roleHash]);
+  async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
+    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
   }
 
   async getSignerNonce(signer: Address): Promise<bigint> {
