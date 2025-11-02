@@ -9,21 +9,24 @@ const path = require('path');
 // List of contract names to process
 const contractsToProcess = [
   'StateAbstraction',
+  'StateAbstractionDefinitions',
   'BaseStateMachine',
   'SecureOwnable',
   'SecureOwnableDefinitions',
   'SecureOwnableWorkflows',
   'DynamicRBAC',
+  'DynamicRBACDefinitions',
+  'GuardController',
   'IDefinition',
   'IWorkflow',
-  'Guardian',
-  'GuardianBare',
-  'GuardianWithRoles',
+  'BareBlox',
+  'SecureBlox',
+  'RoleBlox',
+  'ControlBlox',
   'SimpleVault',
+  'SimpleVaultDefinitions',
   'SimpleRWA20',
-  'SimpleRWA20Definitions',
-  'SimpleVaultDefinitions'
-  
+  'SimpleRWA20Definitions'
 ];
 
 // Define the source and destination folders

@@ -1,5 +1,5 @@
 import { Address, Hex } from 'viem';
-import { TransactionResult, TransactionOptions } from './base.index';
+// import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
 import { ExecutionType, TxAction } from '../types/lib.index';
 
@@ -88,7 +88,7 @@ export interface IBaseStateMachine {
   }>;
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
-  getRolePermission(roleHash: Hex): Promise<any[]>;
+  getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   getSignerNonce(signer: Address): Promise<bigint>;
 
   // System state queries

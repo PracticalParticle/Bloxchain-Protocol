@@ -42,6 +42,7 @@ export class Workflow implements IWorkflow {
   protected contractAddress: Address;
   protected chain: Chain;
   protected config: WorkflowConfig;
+  protected workflowAddress?: Address;
 
   constructor(
     client: PublicClient,
@@ -59,6 +60,8 @@ export class Workflow implements IWorkflow {
       chainId: chain.id,
       ...config
     };
+    // Optional dedicated workflow library address (if deployed separately)
+    this.workflowAddress = (config as any)?.workflowAddress as Address | undefined;
   }
 
   /**
@@ -68,7 +71,7 @@ export class Workflow implements IWorkflow {
   async getOperationWorkflows(): Promise<OperationWorkflow[]> {
     try {
       const result = await this.client.readContract({
-        address: this.contractAddress,
+        address: this.workflowAddress ?? this.contractAddress,
         abi: IWorkflowABI,
         functionName: 'getOperationWorkflows'
       }) as any[];
@@ -108,7 +111,7 @@ export class Workflow implements IWorkflow {
   async getWorkflowForOperation(operationType: Hex): Promise<OperationWorkflow> {
     try {
       const result = await this.client.readContract({
-        address: this.contractAddress,
+        address: this.workflowAddress ?? this.contractAddress,
         abi: IWorkflowABI,
         functionName: 'getWorkflowForOperation',
         args: [operationType]
@@ -148,7 +151,7 @@ export class Workflow implements IWorkflow {
   async getWorkflowPaths(): Promise<WorkflowPath[]> {
     try {
       const result = await this.client.readContract({
-        address: this.contractAddress,
+        address: this.workflowAddress ?? this.contractAddress,
         abi: IWorkflowABI,
         functionName: 'getWorkflowPaths'
       }) as any[];
@@ -227,5 +230,24 @@ export class Workflow implements IWorkflow {
    */
   updateConfig(config: Partial<WorkflowConfig>): void {
     this.config = { ...this.config, ...config };
+    if ((config as any)?.workflowAddress) {
+      this.workflowAddress = (config as any).workflowAddress as Address;
+    }
+  }
+
+  /**
+   * Returns function selectors for steps in a workflow that match a TxAction
+   */
+  async getFunctionSelectorsForAction(operationType: Hex, action: number): Promise<Hex[]> {
+    const wf = await this.getWorkflowForOperation(operationType);
+    const selectors: Hex[] = [];
+    for (const path of wf.paths) {
+      for (const step of path.steps) {
+        if (Number(step.action) === Number(action) && step.functionSelector && (step.functionSelector as string) !== '0x00000000') {
+          selectors.push(step.functionSelector as Hex);
+        }
+      }
+    }
+    return selectors;
   }
 }

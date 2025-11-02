@@ -1,6 +1,6 @@
 import { Address, Hex } from 'viem';
 import { TxStatus, ExecutionType, TxAction } from '../types/lib.index';
-import { ReadableOperationType } from '../types/definition.index';
+// import { ReadableOperationType } from '../types/definition.index';
 
 /**
  * Interfaces for execution options

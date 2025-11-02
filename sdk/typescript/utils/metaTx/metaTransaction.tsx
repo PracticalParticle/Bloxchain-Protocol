@@ -205,7 +205,9 @@ export class MetaTransactionSigner {
         txParams.executionType,
         txParams.executionOptions,
         metaTxParams
-      ]
+      ],
+      // Include account for permission checks if wallet client is available
+      account: this.walletClient?.account
     });
 
     // Extract message hash and txRecord from contract result
@@ -233,7 +235,9 @@ export class MetaTransactionSigner {
       address: this.contractAddress,
       abi: this.getContractABI(),
       functionName: 'generateUnsignedForExistingMetaTx',
-      args: [txId, metaTxParams]
+      args: [txId, metaTxParams],
+      // Include account for permission checks if wallet client is available
+      account: this.walletClient?.account
     });
 
     // Extract message hash and txRecord from contract result

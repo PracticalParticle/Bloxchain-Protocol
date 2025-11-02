@@ -1,8 +1,8 @@
 # Solidity API
 
-# RoleBlox
+# ControlBlox
 
-A basic implementation of state abstraction with dynamic role-based access control using DynamicRBAC
+Minimal controller implementation using GuardController (DynamicRBAC + guarded execution)
 
 
 

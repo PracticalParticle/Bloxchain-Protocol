@@ -377,10 +377,10 @@ Returns if an action is supported by a function
 
 ---
 
-### getRolePermission
+### getActiveRolePermissions
 
 ```solidity
-function getRolePermission(bytes32 roleHash) public view returns (struct StateAbstraction.FunctionPermission[])
+function getActiveRolePermissions(bytes32 roleHash) public view returns (struct StateAbstraction.FunctionPermission[])
 ```
 
 Gets the function permissions for a specific role
@@ -567,6 +567,24 @@ Centralized function to create raw execution options
 
 **Returns:**
 - The execution options
+
+
+---
+
+### _loadDefinitions
+
+```solidity
+function _loadDefinitions(struct StateAbstraction.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct StateAbstraction.FunctionPermission[] functionPermissions) internal nonpayable
+```
+
+Loads definitions directly into the secure state
+This function initializes the secure state with all predefined definitions
+
+**Parameters:**
+- `` (): Array of function schema definitions
+- `` (): Array of role hashes
+- `` (): Array of function permissions (parallel to roleHashes)
+
 
 
 ---

@@ -23,6 +23,17 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "FunctionError",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "provided",
         "type": "address"
@@ -311,6 +322,63 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "functionSchemaCount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rolePermissionCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "DefinitionsLoaded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "functionSignature",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "operationType",
+        "type": "bytes32"
+      }
+    ],
+    "name": "FunctionRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "FunctionUnregistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "uint64",
         "name": "version",
         "type": "uint64"
@@ -431,6 +499,19 @@
       }
     ],
     "name": "RoleEditingToggled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "roleHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "RoleRemoved",
     "type": "event"
   },
   {
@@ -806,6 +887,26 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "functionSchemaExists",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
   },
   {
     "inputs": [
@@ -1348,6 +1449,51 @@
     "constant": true
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "getFunctionSchema",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "functionName",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "functionSelectorReturn",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "operationType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "operationName",
+        "type": "string"
+      },
+      {
+        "internalType": "enum StateAbstraction.TxAction[]",
+        "name": "supportedActions",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "bool",
+        "name": "isProtected",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
     "inputs": [],
     "name": "getPendingTransactions",
     "outputs": [
@@ -1793,6 +1939,73 @@
     "constant": true
   },
   {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "functionName",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "operationType",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "string",
+            "name": "operationName",
+            "type": "string"
+          },
+          {
+            "internalType": "uint16",
+            "name": "supportedActionsBitmap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isProtected",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct StateAbstraction.FunctionSchema[]",
+        "name": "functionSchemas",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "roleHashes",
+        "type": "bytes32[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "uint16",
+            "name": "grantedActionsBitmap",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct StateAbstraction.FunctionPermission[]",
+        "name": "functionPermissions",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "loadDefinitions",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -1805,6 +2018,42 @@
     "stateMutability": "view",
     "type": "function",
     "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "functionSignature",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "operationName",
+        "type": "string"
+      },
+      {
+        "internalType": "enum StateAbstraction.TxAction[]",
+        "name": "supportedActions",
+        "type": "uint8[]"
+      }
+    ],
+    "name": "registerFunction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "roleHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "removeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -2774,6 +3023,24 @@
         "type": "tuple"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bool",
+        "name": "safeRemoval",
+        "type": "bool"
+      }
+    ],
+    "name": "unregisterFunction",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },

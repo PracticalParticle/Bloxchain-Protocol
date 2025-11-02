@@ -16,14 +16,14 @@ event identification and categorization.
 ### forwardTxEvent
 
 ```solidity
-function forwardTxEvent(uint256 txId, string triggerFunc, enum StateAbstraction.TxStatus status, address requester, address target, bytes32 operationType) external nonpayable
+function forwardTxEvent(uint256 txId, bytes4 functionSelector, enum StateAbstraction.TxStatus status, address requester, address target, bytes32 operationType) external nonpayable
 ```
 
 Forward a transaction event from a deployed instance
 
 **Parameters:**
 - `` (): The transaction ID
-- `` (): The trigger function for the event (function name)
+- `` (): The function selector for the event (bytes4)
 - `` (): The transaction status
 - `` (): The address of the requester
 - `` (): The target contract address

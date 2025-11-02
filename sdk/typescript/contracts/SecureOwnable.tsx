@@ -2,8 +2,8 @@ import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
 import SecureOwnableABIJson from '../../../abi/SecureOwnable.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { ISecureOwnable } from '../interfaces/core.access.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
-import { ExecutionType, TxAction } from '../types/lib.index';
+import { MetaTransaction } from '../interfaces/lib.index';
+import { TxAction } from '../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 
 /**
@@ -73,7 +73,9 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
 
   // TimeLock Management
   async updateTimeLockExecutionOptions(newTimeLockPeriodInMinutes: bigint): Promise<Hex> {
-    return this.executeReadContract<Hex>('updateTimeLockExecutionOptions', [newTimeLockPeriodInMinutes]);
+    // Convert minutes to seconds for the contract
+    const newTimeLockPeriodInSeconds = newTimeLockPeriodInMinutes * 60n;
+    return this.executeReadContract<Hex>('updateTimeLockExecutionOptions', [newTimeLockPeriodInSeconds]);
   }
 
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
@@ -104,80 +106,39 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   async getSupportedOperationTypes(): Promise<Hex[]> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getSupportedOperationTypes'
-    }) as Hex[];
+    return this.executeReadContract<Hex[]>('getSupportedOperationTypes');
   }
 
   async getSupportedRoles(): Promise<Hex[]> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getSupportedRoles'
-    }) as Hex[];
+    return this.executeReadContract<Hex[]>('getSupportedRoles');
   }
 
   async getSupportedFunctions(): Promise<Hex[]> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getSupportedFunctions'
-    }) as Hex[];
+    return this.executeReadContract<Hex[]>('getSupportedFunctions');
   }
 
   async hasRole(roleHash: Hex, wallet: Address): Promise<boolean> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'hasRole',
-      args: [roleHash, wallet]
-    }) as boolean;
+    return this.executeReadContract<boolean>('hasRole', [roleHash, wallet]);
   }
 
   async isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'isActionSupportedByFunction',
-      args: [functionSelector, action]
-    }) as boolean;
+    return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
   }
 
   async getSignerNonce(signer: Address): Promise<bigint> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getSignerNonce',
-      args: [signer]
-    }) as bigint;
+    return this.executeReadContract<bigint>('getSignerNonce', [signer]);
   }
 
-  async getRolePermission(roleHash: Hex): Promise<any[]> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getRolePermission',
-      args: [roleHash]
-    }) as any[];
+  async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
+    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
   }
 
   async initialized(): Promise<boolean> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'initialized'
-    }) as boolean;
+    return this.executeReadContract<boolean>('initialized');
   }
 
   async supportsInterface(interfaceId: Hex): Promise<boolean> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'supportsInterface',
-      args: [interfaceId]
-    }) as boolean;
+    return this.executeReadContract<boolean>('supportsInterface', [interfaceId]);
   }
 }
 

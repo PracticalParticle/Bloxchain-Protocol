@@ -1,6 +1,6 @@
 import { Address, Hex } from 'viem';
-import { TransactionResult, TransactionOptions } from '../interfaces/base.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
+import { TransactionResult, TransactionOptions } from './base.index';
+import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
 import { ExecutionType, TxAction } from '../types/lib.index';
 
 /**
@@ -125,7 +125,7 @@ export interface ISecureOwnable {
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getSignerNonce(signer: Address): Promise<bigint>;
-  getRolePermission(roleHash: Hex): Promise<any[]>;
+  getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   initialized(): Promise<boolean>;
 
   // Interface Support

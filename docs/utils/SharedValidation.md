@@ -453,21 +453,6 @@ Validates that an operation type matches the expected type
 
 ---
 
-### validatePendingTransaction
-
-```solidity
-function validatePendingTransaction(uint8 status) internal pure
-```
-
-Validates that a transaction is in pending state
-
-**Parameters:**
-- `` (): The transaction status
-
-
-
----
-
 ### validateNoOpenRequest
 
 ```solidity
@@ -667,10 +652,26 @@ Validates that a function doesn't already exist
 function validateFunctionExists(bytes4 functionSelector) internal pure
 ```
 
-Validates that a function exists
+Validates that a function exists (has non-zero selector)
 
 **Parameters:**
 - `` (): The function selector to check
+
+
+
+---
+
+### validateFunctionSchemaExists
+
+```solidity
+function validateFunctionSchemaExists(bytes4 actualSelector, bytes4 expectedSelector) internal pure
+```
+
+Validates that a function schema exists in a mapping
+
+**Parameters:**
+- `` (): The actual function selector from the mapping
+- `` (): The expected function selector to validate against
 
 
 
@@ -834,6 +835,21 @@ Validates that a protected role cannot be removed
 
 ---
 
+### validateCanRemoveProtectedFunctionSchema
+
+```solidity
+function validateCanRemoveProtectedFunctionSchema(bytes4 functionSelector) internal pure
+```
+
+Validates that a protected function schema cannot be removed
+
+**Parameters:**
+- `` (): The function selector of the protected schema
+
+
+
+---
+
 ### validateGreaterThanZero
 
 ```solidity
@@ -971,36 +987,6 @@ Validates that a value is within a valid range
 - `` (): The value to validate
 - `` (): The minimum allowed value
 - `` (): The maximum allowed value
-
-
-
----
-
-### validateStringNotEmpty
-
-```solidity
-function validateStringNotEmpty(string str) internal pure
-```
-
-Validates that a string is not empty
-
-**Parameters:**
-- `` (): The string to validate
-
-
-
----
-
-### validateBytesNotEmpty
-
-```solidity
-function validateBytesNotEmpty(bytes data) internal pure
-```
-
-Validates that a bytes array is not empty
-
-**Parameters:**
-- `` (): The bytes array to validate
 
 
 
