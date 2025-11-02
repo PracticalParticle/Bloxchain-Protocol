@@ -77,10 +77,10 @@ class BaseSecureOwnableTest {
         
         try {
             // Get contract addresses from Truffle artifacts
-            this.contractAddress = await this.getContractAddressFromArtifacts('Guardian');
+            this.contractAddress = await this.getContractAddressFromArtifacts('SecureBlox');
             
             if (!this.contractAddress) {
-                throw new Error('Could not find Guardian address in Truffle artifacts');
+                throw new Error('Could not find SecureBlox address in Truffle artifacts');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
