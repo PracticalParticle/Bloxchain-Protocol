@@ -163,7 +163,7 @@ requestAndApproveExecution(metaTx, requiredSelector)
 ## Roles and Permissions
 
 - Roles and function permissions are managed with DynamicRBAC
-- GuardController checks permissions via BaseStateMachine’s `_hasActionPermission(caller, selector, action)`
+- GuardController checks permissions via BaseStateMachine's `_hasActionPermission(caller, selector, action)`
 - Typical set for standard flows:
   - `EXECUTE_TIME_DELAY_REQUEST` to request
   - `EXECUTE_TIME_DELAY_APPROVE` to approve
@@ -244,3 +244,4 @@ bytes memory result = controller.approveTimeLockExecution(
   - `requestAndApproveExecution(MetaTransaction, bytes4)`
 
 For a ready-to-deploy contract, see `contracts/GuardBlox.sol`, which extends `GuardController` with an initializer aligned to `BareBlox`, `RoleBlox`, and `SecureBlox`.
+
