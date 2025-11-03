@@ -9,24 +9,22 @@ import { Hex } from 'viem';
  */
 
 /**
- * Function permission structure
+ * Function permission structure matching StateAbstraction.FunctionPermission
  */
 export interface FunctionPermission {
   functionSelector: Hex;
-  allowedRoles: Hex[];
-  requiresSignature: boolean;
-  isOffChain: boolean;
+  grantedActionsBitmap: number; // uint16 - bitmap for TxAction enum
 }
 
 /**
- * Function schema structure
+ * Function schema structure matching StateAbstraction.FunctionSchema
  */
 export interface FunctionSchema {
   functionName: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
-  supportedActions: TxAction[];
+  supportedActionsBitmap: number; // uint16 - bitmap for TxAction enum
   isProtected: boolean;
 }
 
@@ -38,10 +36,5 @@ export interface RolePermission {
   functionPermissions: FunctionPermission[];
 }
 
-/**
- * Readable operation type (from StateAbstraction)
- */
-export interface ReadableOperationType {
-  operationType: Hex;
-  name: string;
-}
+// Note: IDefinition interface does not provide getOperationTypes()
+// Operation types can be derived from function schemas or queried from BaseStateMachine
