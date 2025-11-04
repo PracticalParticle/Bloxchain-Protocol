@@ -32,6 +32,7 @@ export * from './utils/validations';
 export * from './utils/erc20/erc20Token';
 export { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransaction';
 export * from './utils/contract-errors';
+export * from './utils/viem-error-handler';
 
 // Workflow Utilities
 export * from './utils/workflow';

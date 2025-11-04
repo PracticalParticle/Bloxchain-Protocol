@@ -4,6 +4,7 @@ import { TransactionOptions, TransactionResult } from '../interfaces/base.index'
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
 import { ExecutionType, TxAction } from '../types/lib.index';
+import { handleViemError } from '../utils/viem-error-handler';
 
 /**
  * @title BaseStateMachine
@@ -39,19 +40,39 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
   ): Promise<TransactionResult> {
     this.validateWalletClient();
     
-    const hash = await this.walletClient!.writeContract({
+    // Viem's writeContract will use the WalletClient's account if available
+    // Only pass account explicitly if it differs from WalletClient's account
+    // Otherwise, let Viem use the WalletClient's account automatically
+    const walletClientAccount = this.walletClient!.account?.address;
+    const requestedAccount = options.from.toLowerCase();
+    
+    const writeContractParams: any = {
       chain: this.chain,
       address: this.contractAddress,
       abi: this.abi,
       functionName,
       args,
-      account: options.from
-    });
-
-    return {
-      hash,
-      wait: () => this.client.waitForTransactionReceipt({ hash })
     };
+    
+    // Only set account if it differs from WalletClient's account
+    // This ensures consistency and avoids potential conflicts
+    if (!walletClientAccount || walletClientAccount.toLowerCase() !== requestedAccount) {
+      writeContractParams.account = options.from;
+    }
+    
+    try {
+      const hash = await this.walletClient!.writeContract(writeContractParams);
+
+      return {
+        hash,
+        wait: () => this.client.waitForTransactionReceipt({ hash })
+      };
+    } catch (error: any) {
+      // Use utility to handle and enhance error with contract error decoding
+      // handleViemError returns Promise<never> and always throws, so this will never return
+      // TypeScript doesn't recognize Promise<never> in control flow, so we explicitly throw
+      throw await handleViemError(error, this.abi);
+    }
   }
 
   /**
