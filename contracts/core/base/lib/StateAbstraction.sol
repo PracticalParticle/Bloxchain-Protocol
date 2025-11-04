@@ -701,7 +701,10 @@ library StateAbstraction {
         }
         
         // Remove the role from the supported roles set (O(1) operation)
-        self.supportedRolesSet.remove(roleHash);
+        // Defensive check: ensure role was actually in the set
+        if (!self.supportedRolesSet.remove(roleHash)) {
+            revert SharedValidation.RoleEmpty();
+        }
         
         // Clear the role data
         delete self.roles[roleHash];
@@ -758,8 +761,20 @@ library StateAbstraction {
 
         // update the wallet if it's not the same
         if (oldWallet != newWallet) {
-            roleData.authorizedWallets.remove(oldWallet);
-            roleData.authorizedWallets.add(newWallet);
+            // Remove old wallet (should succeed since we checked contains above)
+            if (!roleData.authorizedWallets.remove(oldWallet)) {
+                revert SharedValidation.WalletError(oldWallet);
+            }
+            
+            // Check if new wallet is already in the role to prevent duplicates
+            if (roleData.authorizedWallets.contains(newWallet)) {
+                revert SharedValidation.WalletError(newWallet);
+            }
+            
+            // Add new wallet (should always succeed since we verified it doesn't exist)
+            if (!roleData.authorizedWallets.add(newWallet)) {
+                revert SharedValidation.WalletError(newWallet);
+            }
         }
         
     }
@@ -1008,7 +1023,14 @@ library StateAbstraction {
         bytes4[] memory functionsUsingOperationType = getFunctionsByOperationType(self, operationType);
         if (functionsUsingOperationType.length == 0) {
             // Remove the operation type from supported operation types set if no longer in use
-            self.supportedOperationTypesSet.remove(operationType);
+            // Only attempt removal if it exists in the set (may have been cleaned up already)
+            if (self.supportedOperationTypesSet.contains(operationType)) {
+                // Remove operation type (should always succeed since we verified it exists)
+                if (!self.supportedOperationTypesSet.remove(operationType)) {
+                    // This should never happen, but defensive check for safety
+                    revert SharedValidation.OperationNotSupported();
+                }
+            }
         }
     }
 
