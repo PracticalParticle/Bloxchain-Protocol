@@ -2,6 +2,7 @@ import { Address, Hex } from 'viem';
 import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
 import { ExecutionType, TxAction } from '../types/lib.index';
+import { Uint16Bitmap } from '../utils/bitmap';
 
 /**
  * Interface for SecureOwnable contract events
@@ -134,42 +135,61 @@ export interface ISecureOwnable {
 
 /**
  * Interface for DynamicRBAC contract methods
+ * Note: This interface matches the actual contract methods. Some convenience methods
+ * may be provided but are not part of the core contract interface.
  */
 export interface IDynamicRBAC {
-  // Role Management Functions
-  createRole(roleName: string, maxWallets: bigint, options: TransactionOptions): Promise<TransactionResult>;
-  updateRole(roleHash: Hex, newRoleName: string, newMaxWallets: bigint, options: TransactionOptions): Promise<TransactionResult>;
-  deleteRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult>;
+  // Role Editing Control
+  roleEditingEnabled(): Promise<boolean>;
+  updateRoleEditingToggleExecutionOptions(enabled: boolean): Promise<Hex>;
+  updateRoleEditingToggleRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
 
-  // Wallet Management Functions
+  // Role Management Functions (from contract)
+  createNewRole(
+    roleName: string,
+    maxWallets: bigint,
+    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+  removeRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult>;
+
+  // Wallet Management Functions (from contract)
   addWalletToRole(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult>;
   revokeWallet(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult>;
-  replaceWalletInRole(roleHash: Hex, newWallet: Address, oldWallet: Address, options: TransactionOptions): Promise<TransactionResult>;
 
-  // Permission Management Functions
-  addFunctionPermissionToRole(roleHash: Hex, functionSelector: Hex, action: TxAction, options: TransactionOptions): Promise<TransactionResult>;
-  removeFunctionPermissionFromRole(roleHash: Hex, functionSelector: Hex, options: TransactionOptions): Promise<TransactionResult>;
-
-  // Query Functions
-  getDynamicRoles(): Promise<Hex[]>;
-  getAllRoles(): Promise<Hex[]>;
-  getRoleInfo(roleHash: Hex): Promise<{
-    roleName: string;
-    roleHashReturn: Hex;
-    maxWallets: bigint;
-    walletCount: bigint;
+  // Function Registration (from contract)
+  registerFunction(
+    functionSignature: string,
+    operationName: string,
+    supportedActions: TxAction[],
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+  unregisterFunction(functionSelector: Hex, safeRemoval: boolean, options: TransactionOptions): Promise<TransactionResult>;
+  functionSchemaExists(functionSelector: Hex): Promise<boolean>;
+  getFunctionSchema(functionSelector: Hex): Promise<{
+    functionName: string;
+    functionSelectorReturn: Hex;
+    operationType: Hex;
+    operationName: string;
+    supportedActions: TxAction[];
     isProtected: boolean;
-    authorizedWallets: Address[];
-    functionPermissions: any[];
   }>;
-  hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
-  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
-  getRolePermissions(roleHash: Hex): Promise<{
-    functionSelectors: Hex[];
-    actions: TxAction[];
-  }>;
+
+  // Definition Management (from contract)
+  loadDefinitions(
+    functionSchemas: Array<{
+      functionName: string;
+      functionSelector: Hex;
+      operationType: Hex;
+      operationName: string;
+      supportedActionsBitmap: Uint16Bitmap;
+      isProtected: boolean;
+    }>,
+    roleHashes: Hex[],
+    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
+  // Query Functions (from contract)
   roleExists(roleHash: Hex): Promise<boolean>;
-  isRoleProtected(roleHash: Hex): Promise<boolean>;
-  getRoleWalletCount(roleHash: Hex): Promise<bigint>;
-  isRoleAtCapacity(roleHash: Hex): Promise<boolean>;
 }

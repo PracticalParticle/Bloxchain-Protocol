@@ -4,11 +4,12 @@ import {
   DefinitionsConfig
 } from '../interfaces/definition.index';
 import { 
-  ReadableOperationType, 
   FunctionSchema, 
-  RolePermission
+  RolePermission,
+  FunctionPermission
 } from '../types/definition.index';
 import { TxAction } from '../types/lib.index';
+import { fromContractValue } from '../utils/bitmap';
 
 // Import the ABI
 import IDefinitionABI from '../../../abi/IDefinition.abi.json';
@@ -32,9 +33,6 @@ import IDefinitionABI from '../../../abi/IDefinition.abi.json';
  *   '0x1234...',
  *   chain
  * );
- * 
- * // Get all operation types
- * const operationTypes = await definitions.getOperationTypes();
  * 
  * // Get function schemas
  * const schemas = await definitions.getFunctionSchemas();
@@ -66,27 +64,6 @@ export class Definitions implements IDefinition {
   }
 
   /**
-   * Returns all operation type definitions
-   * @returns Array of operation type definitions
-   */
-  async getOperationTypes(): Promise<ReadableOperationType[]> {
-    try {
-      const result = await this.client.readContract({
-        address: this.contractAddress,
-        abi: IDefinitionABI,
-        functionName: 'getOperationTypes'
-      }) as any[];
-
-      return result.map((item: any) => ({
-        operationType: item.operationType as Hex,
-        name: item.name as string
-      }));
-    } catch (error) {
-      throw new Error(`Failed to get operation types: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
    * Returns all function schema definitions
    * @returns Array of function schema definitions
    */
@@ -103,7 +80,7 @@ export class Definitions implements IDefinition {
         functionSelector: item.functionSelector as Hex,
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,
-        supportedActions: item.supportedActions as TxAction[],
+        supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
         isProtected: item.isProtected as boolean
       }));
     } catch (error) {
@@ -127,9 +104,7 @@ export class Definitions implements IDefinition {
         roleHashes: result.roleHashes.map((hash: any) => hash as Hex),
         functionPermissions: result.functionPermissions.map((perm: any) => ({
           functionSelector: perm.functionSelector as Hex,
-          allowedRoles: perm.allowedRoles.map((role: any) => role as Hex),
-          requiresSignature: perm.requiresSignature as boolean,
-          isOffChain: perm.isOffChain as boolean
+          grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap) // uint16
         }))
       };
     } catch (error) {
@@ -138,14 +113,14 @@ export class Definitions implements IDefinition {
   }
 
   /**
-   * Utility method to get operation type by name
+   * Utility method to get operation type by name from function schemas
    * @param operationName The name of the operation to find
    * @returns The operation type hash if found, undefined otherwise
    */
   async getOperationTypeByName(operationName: string): Promise<Hex | undefined> {
-    const operationTypes = await this.getOperationTypes();
-    const operation = operationTypes.find(op => op.name === operationName);
-    return operation?.operationType;
+    const schemas = await this.getFunctionSchemas();
+    const schema = schemas.find(s => s.operationName === operationName);
+    return schema?.operationType;
   }
 
   /**
@@ -160,6 +135,8 @@ export class Definitions implements IDefinition {
 
   /**
    * Utility method to check if a role has permission for a function
+   * Note: This checks if the role is in the roleHashes array at the same index
+   * as the functionPermission that matches the functionSelector
    * @param roleHash The role hash to check
    * @param functionSelector The function selector to check permission for
    * @returns True if the role has permission, false otherwise
@@ -167,9 +144,11 @@ export class Definitions implements IDefinition {
   async hasRolePermission(roleHash: Hex, functionSelector: Hex): Promise<boolean> {
     const rolePermissions = await this.getRolePermissions();
     
-    for (const permission of rolePermissions.functionPermissions) {
-      if (permission.functionSelector === functionSelector) {
-        return permission.allowedRoles.includes(roleHash);
+    // RolePermissions uses parallel arrays: roleHashes[i] corresponds to functionPermissions[i]
+    for (let i = 0; i < rolePermissions.roleHashes.length && i < rolePermissions.functionPermissions.length; i++) {
+      if (rolePermissions.roleHashes[i] === roleHash && 
+          rolePermissions.functionPermissions[i].functionSelector === functionSelector) {
+        return true;
       }
     }
     
@@ -178,19 +157,22 @@ export class Definitions implements IDefinition {
 
   /**
    * Utility method to get all roles that can execute a specific function
+   * Note: Returns roles from roleHashes array where corresponding functionPermission matches
    * @param functionSelector The function selector to check
    * @returns Array of role hashes that can execute the function
    */
   async getRolesForFunction(functionSelector: Hex): Promise<Hex[]> {
     const rolePermissions = await this.getRolePermissions();
+    const roles: Hex[] = [];
     
-    for (const permission of rolePermissions.functionPermissions) {
-      if (permission.functionSelector === functionSelector) {
-        return permission.allowedRoles;
+    // RolePermissions uses parallel arrays: roleHashes[i] corresponds to functionPermissions[i]
+    for (let i = 0; i < rolePermissions.roleHashes.length && i < rolePermissions.functionPermissions.length; i++) {
+      if (rolePermissions.functionPermissions[i].functionSelector === functionSelector) {
+        roles.push(rolePermissions.roleHashes[i]);
       }
     }
     
-    return [];
+    return roles;
   }
 
   /**

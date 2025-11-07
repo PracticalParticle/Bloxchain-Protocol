@@ -5,13 +5,14 @@ import { IDynamicRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { SecureOwnable } from './SecureOwnable';
+import { Uint16Bitmap, fromContractValue } from '../utils/bitmap';
 
 /**
  * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
  */
 interface StateAbstractionFunctionPermission {
   functionSelector: Hex;
-  grantedActionsBitmap: number; // uint16
+  grantedActionsBitmap: Uint16Bitmap; // uint16
 }
 
 /**
@@ -22,7 +23,7 @@ interface StateAbstractionFunctionSchema {
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
-  supportedActionsBitmap: number; // uint16
+  supportedActionsBitmap: Uint16Bitmap; // uint16
   isProtected: boolean;
 }
 
@@ -267,111 +268,6 @@ export class DynamicRBAC extends SecureOwnable implements IDynamicRBAC {
     };
   }
 
-  // ============ INTERFACE COMPLIANCE (IDynamicRBAC) ============
-  // These methods are required by IDynamicRBAC interface but don't exist in Solidity
-  // They are provided for backward compatibility but will throw errors when called
-
-  /**
-   * @deprecated Use createNewRole instead. This method doesn't exist in Solidity.
-   */
-  async createRole(roleName: string, maxWallets: bigint, options: TransactionOptions): Promise<TransactionResult> {
-    throw new Error('createRole is deprecated. Use createNewRole with functionPermissions parameter instead.');
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Roles are created with all permissions at creation time.
-   */
-  async updateRole(roleHash: Hex, newRoleName: string, newMaxWallets: bigint, options: TransactionOptions): Promise<TransactionResult> {
-    throw new Error('updateRole does not exist in Solidity. Roles are immutable after creation.');
-  }
-
-  /**
-   * @deprecated Use removeRole instead. This method doesn't exist in Solidity.
-   */
-  async deleteRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult> {
-    return this.removeRole(roleHash, options);
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Use addWalletToRole and revokeWallet separately.
-   */
-  async replaceWalletInRole(roleHash: Hex, newWallet: Address, oldWallet: Address, options: TransactionOptions): Promise<TransactionResult> {
-    throw new Error('replaceWalletInRole does not exist in Solidity. Use revokeWallet and addWalletToRole separately.');
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Permissions are set at role creation time via createNewRole.
-   */
-  async addFunctionPermissionToRole(roleHash: Hex, functionSelector: Hex, action: TxAction, options: TransactionOptions): Promise<TransactionResult> {
-    throw new Error('addFunctionPermissionToRole does not exist in Solidity. Permissions must be set when creating the role with createNewRole.');
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Permissions cannot be removed after role creation.
-   */
-  async removeFunctionPermissionFromRole(roleHash: Hex, functionSelector: Hex, options: TransactionOptions): Promise<TransactionResult> {
-    throw new Error('removeFunctionPermissionFromRole does not exist in Solidity. Permissions are immutable after role creation.');
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Use getSupportedRoles and filter by isProtected.
-   */
-  async getDynamicRoles(): Promise<Hex[]> {
-    throw new Error('getDynamicRoles does not exist in Solidity. Use getSupportedRoles and filter roles where isProtected is false.');
-  }
-
-  /**
-   * @deprecated Use getSupportedRoles from BaseStateMachine instead. This method doesn't exist in Solidity.
-   */
-  async getAllRoles(): Promise<Hex[]> {
-    return this.getSupportedRoles();
-  }
-
-  /**
-   * @deprecated This method doesn't exist in Solidity. Use hasRole with iteration or StateAbstraction helpers.
-   */
-  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
-    throw new Error('getWalletsInRole does not exist in Solidity. This requires iteration through walletCount using StateAbstraction helpers.');
-  }
-
-  /**
-   * @deprecated Use getActiveRolePermissions from BaseStateMachine instead. This method doesn't exist in Solidity.
-   */
-  async getRolePermissions(roleHash: Hex): Promise<{
-    functionSelectors: Hex[];
-    actions: TxAction[];
-  }> {
-    const permissions = await this.getActiveRolePermissions(roleHash);
-    // Transform the permissions array to match the expected format
-    const functionSelectors = permissions.map((p: any) => p.functionSelector);
-    const actions: TxAction[] = [];
-    // Note: Actions are stored as bitmaps, so this is a simplified version
-    return { functionSelectors, actions };
-  }
-
-  /**
-   * @deprecated Use getRole and check isProtected property instead. This method doesn't exist in Solidity.
-   */
-  async isRoleProtected(roleHash: Hex): Promise<boolean> {
-    const role = await this.getRole(roleHash);
-    return role.isProtected;
-  }
-
-  /**
-   * @deprecated Use getRole and check walletCount property instead. This method doesn't exist in Solidity.
-   */
-  async getRoleWalletCount(roleHash: Hex): Promise<bigint> {
-    const role = await this.getRole(roleHash);
-    return role.walletCount;
-  }
-
-  /**
-   * @deprecated Use getRole and compare walletCount with maxWallets instead. This method doesn't exist in Solidity.
-   */
-  async isRoleAtCapacity(roleHash: Hex): Promise<boolean> {
-    const role = await this.getRole(roleHash);
-    return role.walletCount >= role.maxWallets;
-  }
 }
 
 export default DynamicRBAC;

@@ -1,7 +1,6 @@
 import { Address, Hex } from 'viem';
 // import { TransactionOptions } from './base.index';
 import { 
-  ReadableOperationType, 
   FunctionSchema, 
   RolePermission
 } from '../types/definition.index';
@@ -10,15 +9,10 @@ import {
  * TypeScript interface for IDefinition
  * This interface allows interaction with any definition library that implements IDefinition.sol
  * 
- * Note: Workflow-related functions have been moved to the separate IWorkflow interface
+ * Note: IDefinition only provides getFunctionSchemas() and getRolePermissions()
+ * Operation types must be derived from function schemas or queried from BaseStateMachine
  */
 export interface IDefinition {
-  /**
-   * Returns all operation type definitions
-   * @returns Array of operation type definitions
-   */
-  getOperationTypes(): Promise<ReadableOperationType[]>;
-  
   /**
    * Returns all function schema definitions
    * @returns Array of function schema definitions

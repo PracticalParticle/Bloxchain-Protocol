@@ -72,10 +72,8 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   // TimeLock Management
-  async updateTimeLockExecutionOptions(newTimeLockPeriodInMinutes: bigint): Promise<Hex> {
-    // Convert minutes to seconds for the contract
-    const newTimeLockPeriodInSeconds = newTimeLockPeriodInMinutes * 60n;
-    return this.executeReadContract<Hex>('updateTimeLockExecutionOptions', [newTimeLockPeriodInSeconds]);
+  async updateTimeLockExecutionOptions(newTimeLockPeriodSec: bigint): Promise<Hex> {
+    return this.executeReadContract<Hex>('updateTimeLockExecutionOptions', [newTimeLockPeriodSec]);
   }
 
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {

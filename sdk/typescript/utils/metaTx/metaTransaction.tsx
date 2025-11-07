@@ -15,7 +15,7 @@ import {
   RawExecutionOptions
 } from '../../interfaces/lib.index';
 import { TxAction, ExecutionType } from '../../types/lib.index';
-import MetaTxABI from './MetaTx.abi.json';
+import BaseStateMachineABI from '../../../../abi/BaseStateMachine.abi.json';
 
 /**
  * @title MetaTransactionSigner
@@ -68,14 +68,16 @@ export class MetaTransactionSigner {
     txParams: TxParams,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
-    const { messageHash, txRecord } = await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
+    const result = await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
     
+    // The contract returns a complete MetaTransaction with data field populated
+    // Extract all fields from the contract result
     return {
-      txRecord,
-      params: metaTxParams,
-      message: messageHash,
-      signature: '0x' as Hex,
-      data: '0x' as Hex
+      txRecord: result.txRecord,
+      params: result.params,
+      message: result.message,
+      signature: result.signature as Hex,
+      data: result.data as Hex
     };
   }
 
@@ -89,39 +91,49 @@ export class MetaTransactionSigner {
     txId: bigint,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
-    const { messageHash, txRecord } = await this.generateUnsignedMetaTransactionForExisting(txId, metaTxParams);
+    const result = await this.generateUnsignedMetaTransactionForExisting(txId, metaTxParams);
     
+    // The contract returns a complete MetaTransaction with data field populated
     return {
-      txRecord,
-      params: metaTxParams,
-      message: messageHash,
-      signature: '0x' as Hex,
-      data: '0x' as Hex
+      txRecord: result.txRecord,
+      params: result.params,
+      message: result.message,
+      signature: result.signature as Hex,
+      data: result.data as Hex
     };
   }
 
   /**
-   * @dev Signs an unsigned meta-transaction using wallet client
+   * @dev Signs an unsigned meta-transaction using private key (for remote Ganache compatibility)
    * @param unsignedMetaTx Unsigned meta-transaction
    * @param signerAddress Address of the signer
+   * @param privateKey Private key for signing (required for remote Ganache)
    * @returns Complete signed meta-transaction
    */
   async signMetaTransaction(
     unsignedMetaTx: MetaTransaction,
-    signerAddress: Address
+    signerAddress: Address,
+    privateKey: Hex
   ): Promise<MetaTransaction> {
-    if (!this.walletClient) {
-      throw new Error('Wallet client is required for signing meta-transactions');
+    // Use private key signing directly (matches sanity test pattern)
+    const { privateKeyToAccount } = await import('viem/accounts');
+    const account = privateKeyToAccount(privateKey);
+    
+    // Sign the message hash using the account
+    const signature = await account.signMessage({
+      message: { raw: unsignedMetaTx.message }
+    });
+
+    // Verify signature matches expected signer
+    const recoveredAddress = await this.client.verifyMessage({
+      address: signerAddress,
+      message: { raw: unsignedMetaTx.message },
+      signature
+    });
+
+    if (!recoveredAddress) {
+      throw new Error('Signature verification failed');
     }
-
-    // Sign the message hash
-    const signature = await this.signMessageHash(
-      unsignedMetaTx.message,
-      signerAddress
-    );
-
-    // Verify signature
-    await this.verifySignature(unsignedMetaTx.message, signature, unsignedMetaTx.params.signer);
 
     // Return complete signed meta-transaction
     return {
@@ -155,15 +167,17 @@ export class MetaTransactionSigner {
    * @param txParams Transaction parameters
    * @param metaTxParams Meta-transaction parameters
    * @param signerAddress Address of the signer
+   * @param privateKey Private key for signing (required for remote Ganache)
    * @returns Complete signed meta-transaction
    */
   async createSignedMetaTransactionForNew(
     txParams: TxParams,
     metaTxParams: MetaTxParams,
-    signerAddress: Address
+    signerAddress: Address,
+    privateKey: Hex
   ): Promise<MetaTransaction> {
     const unsignedMetaTx = await this.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
-    return await this.signMetaTransaction(unsignedMetaTx, signerAddress);
+    return await this.signMetaTransaction(unsignedMetaTx, signerAddress, privateKey);
   }
 
   /**
@@ -171,31 +185,33 @@ export class MetaTransactionSigner {
    * @param txId Existing transaction ID
    * @param metaTxParams Meta-transaction parameters
    * @param signerAddress Address of the signer
+   * @param privateKey Private key for signing (required for remote Ganache)
    * @returns Complete signed meta-transaction
    */
   async createSignedMetaTransactionForExisting(
     txId: bigint,
     metaTxParams: MetaTxParams,
-    signerAddress: Address
+    signerAddress: Address,
+    privateKey: Hex
   ): Promise<MetaTransaction> {
     const unsignedMetaTx = await this.createUnsignedMetaTransactionForExisting(txId, metaTxParams);
-    return await this.signMetaTransaction(unsignedMetaTx, signerAddress);
+    return await this.signMetaTransaction(unsignedMetaTx, signerAddress, privateKey);
   }
 
   /**
    * @dev Generates unsigned meta-transaction for new operation using contract
    * @param txParams Transaction parameters
    * @param metaTxParams Meta-transaction parameters
-   * @returns Message hash and transaction record from contract
+   * @returns Complete MetaTransaction from contract (with data field populated)
    */
   private async generateUnsignedMetaTransactionForNew(
     txParams: TxParams,
     metaTxParams: MetaTxParams
-  ): Promise<{ messageHash: Hex; txRecord: TxRecord }> {
+  ): Promise<MetaTransaction> {
     const result = await this.client.readContract({
       address: this.contractAddress,
       abi: this.getContractABI(),
-      functionName: 'generateUnsignedForNewMetaTx',
+      functionName: 'generateUnsignedMetaTransactionForNew',
       args: [
         txParams.requester,
         txParams.target,
@@ -210,64 +226,59 @@ export class MetaTransactionSigner {
       account: this.walletClient?.account
     });
 
-    // Extract message hash and txRecord from contract result
-    const messageHash = (result as any).message || (result as any)[2];
-    const txRecord = (result as any).txRecord || (result as any)[0];
+    // The contract returns a complete MetaTransaction struct
+    // Extract all fields including data which is computed by prepareTransactionData
+    const metaTx = result as any;
     
-    if (!messageHash || messageHash === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+    if (!metaTx.message || metaTx.message === '0x0000000000000000000000000000000000000000000000000000000000000000') {
       throw new Error('Contract did not generate a valid message hash');
     }
 
-    return { messageHash, txRecord };
+    return {
+      txRecord: metaTx.txRecord,
+      params: metaTx.params,
+      message: metaTx.message,
+      signature: metaTx.signature as Hex,
+      data: metaTx.data as Hex
+    };
   }
 
   /**
    * @dev Generates unsigned meta-transaction for existing operation using contract
    * @param txId Transaction ID
    * @param metaTxParams Meta-transaction parameters
-   * @returns Message hash and transaction record from contract
+   * @returns Complete MetaTransaction from contract (with data field populated)
    */
   private async generateUnsignedMetaTransactionForExisting(
     txId: bigint,
     metaTxParams: MetaTxParams
-  ): Promise<{ messageHash: Hex; txRecord: TxRecord }> {
+  ): Promise<MetaTransaction> {
     const result = await this.client.readContract({
       address: this.contractAddress,
       abi: this.getContractABI(),
-      functionName: 'generateUnsignedForExistingMetaTx',
+      functionName: 'generateUnsignedMetaTransactionForExisting',
       args: [txId, metaTxParams],
       // Include account for permission checks if wallet client is available
       account: this.walletClient?.account
     });
 
-    // Extract message hash and txRecord from contract result
-    const messageHash = (result as any).message || (result as any)[2];
-    const txRecord = (result as any).txRecord || (result as any)[0];
+    // The contract returns a complete MetaTransaction struct
+    // Extract all fields including data which is computed by prepareTransactionData
+    const metaTx = result as any;
     
-    if (!messageHash || messageHash === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+    if (!metaTx.message || metaTx.message === '0x0000000000000000000000000000000000000000000000000000000000000000') {
       throw new Error('Contract did not generate a valid message hash');
     }
 
-    return { messageHash, txRecord };
+    return {
+      txRecord: metaTx.txRecord,
+      params: metaTx.params,
+      message: metaTx.message,
+      signature: metaTx.signature as Hex,
+      data: metaTx.data as Hex
+    };
   }
 
-  /**
-   * @dev Signs a message hash using the wallet client
-   * @param messageHash The message hash to sign
-   * @param account The account to sign with
-   * @returns The signature
-   */
-  private async signMessageHash(
-    messageHash: Hex,
-    account: Address
-  ): Promise<Hex> {
-    const signature = await this.walletClient!.signMessage({
-      account,
-      message: { raw: messageHash }
-    });
-
-    return signature;
-  }
 
   /**
    * @dev Verifies a signature against a message hash and expected signer
@@ -294,10 +305,11 @@ export class MetaTransactionSigner {
 
   /**
    * @dev Gets the contract ABI for meta-transaction functions
+   * Uses BaseStateMachine ABI to match the actual deployed contract
    * @returns Contract ABI
    */
   private getContractABI(): any[] {
-    return MetaTxABI as any[];
+    return BaseStateMachineABI as any[];
   }
 }
 
@@ -357,11 +369,11 @@ export class MetaTransactionBuilder {
     deadline: bigint,
     maxGasPrice: bigint,
     signer: Address,
-    chainId?: bigint,
+    chainId: bigint,
     nonce?: bigint
   ): MetaTxParams {
     return {
-      chainId: chainId || BigInt(1), // Default to mainnet
+      chainId: chainId, // Default to mainnet
       nonce: nonce || 0n,
       handlerContract,
       handlerSelector,
