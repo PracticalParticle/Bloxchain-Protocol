@@ -5,13 +5,14 @@ import { IDynamicRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { SecureOwnable } from './SecureOwnable';
+import { Uint16Bitmap, fromContractValue } from '../utils/bitmap';
 
 /**
  * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
  */
 interface StateAbstractionFunctionPermission {
   functionSelector: Hex;
-  grantedActionsBitmap: number; // uint16
+  grantedActionsBitmap: Uint16Bitmap; // uint16
 }
 
 /**
@@ -22,7 +23,7 @@ interface StateAbstractionFunctionSchema {
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
-  supportedActionsBitmap: number; // uint16
+  supportedActionsBitmap: Uint16Bitmap; // uint16
   isProtected: boolean;
 }
 

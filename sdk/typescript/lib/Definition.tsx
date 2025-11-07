@@ -9,6 +9,7 @@ import {
   FunctionPermission
 } from '../types/definition.index';
 import { TxAction } from '../types/lib.index';
+import { fromContractValue } from '../utils/bitmap';
 
 // Import the ABI
 import IDefinitionABI from '../../../abi/IDefinition.abi.json';
@@ -79,7 +80,7 @@ export class Definitions implements IDefinition {
         functionSelector: item.functionSelector as Hex,
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,
-        supportedActionsBitmap: item.supportedActionsBitmap as number, // uint16
+        supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
         isProtected: item.isProtected as boolean
       }));
     } catch (error) {
@@ -103,7 +104,7 @@ export class Definitions implements IDefinition {
         roleHashes: result.roleHashes.map((hash: any) => hash as Hex),
         functionPermissions: result.functionPermissions.map((perm: any) => ({
           functionSelector: perm.functionSelector as Hex,
-          grantedActionsBitmap: perm.grantedActionsBitmap as number // uint16
+          grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap) // uint16
         }))
       };
     } catch (error) {

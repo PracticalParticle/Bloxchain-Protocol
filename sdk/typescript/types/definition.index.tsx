@@ -1,4 +1,5 @@
 import { Hex } from 'viem';
+import { Uint16Bitmap } from '../utils/bitmap';
 // import { TxAction } from './lib.index';
 
 /**
@@ -13,7 +14,7 @@ import { Hex } from 'viem';
  */
 export interface FunctionPermission {
   functionSelector: Hex;
-  grantedActionsBitmap: number; // uint16 - bitmap for TxAction enum
+  grantedActionsBitmap: Uint16Bitmap; // uint16 - bitmap for TxAction enum
 }
 
 /**
@@ -24,7 +25,7 @@ export interface FunctionSchema {
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
-  supportedActionsBitmap: number; // uint16 - bitmap for TxAction enum
+  supportedActionsBitmap: Uint16Bitmap; // uint16 - bitmap for TxAction enum
   isProtected: boolean;
 }
 

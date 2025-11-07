@@ -2,6 +2,7 @@ import { Address, Hex } from 'viem';
 import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
 import { ExecutionType, TxAction } from '../types/lib.index';
+import { Uint16Bitmap } from '../utils/bitmap';
 
 /**
  * Interface for SecureOwnable contract events
@@ -147,7 +148,7 @@ export interface IDynamicRBAC {
   createNewRole(
     roleName: string,
     maxWallets: bigint,
-    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: number }>,
+    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
     options: TransactionOptions
   ): Promise<TransactionResult>;
   removeRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult>;
@@ -181,11 +182,11 @@ export interface IDynamicRBAC {
       functionSelector: Hex;
       operationType: Hex;
       operationName: string;
-      supportedActionsBitmap: number;
+      supportedActionsBitmap: Uint16Bitmap;
       isProtected: boolean;
     }>,
     roleHashes: Hex[],
-    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: number }>,
+    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 

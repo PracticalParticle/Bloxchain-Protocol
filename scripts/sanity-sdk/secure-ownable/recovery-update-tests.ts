@@ -5,7 +5,7 @@
 
 import { Address, Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
+import { TxAction, ExecutionType } from '../../../sdk/typescript/types/lib.index';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index';
 
 export class RecoveryUpdateTests extends BaseSecureOwnableTest {
@@ -109,7 +109,7 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         value: BigInt(0),
         gasLimit: BigInt(0),
         operationType: OPERATION_TYPES.RECOVERY_UPDATE,
-        executionType: 1, // STANDARD
+        executionType: ExecutionType.STANDARD,
         executionOptions: executionOptions
       };
 
@@ -152,7 +152,8 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
       console.log(`    📋 Transaction Hash: ${result.hash}`);
 
       const receipt = await result.wait();
-      const isSuccess = receipt.status === 'success' || receipt.status === 1;
+      // Viem receipt.status can be 'success' or 'reverted' (string), or 1/0 (number)
+      const isSuccess = receipt.status === 'success' || (typeof receipt.status === 'number' && receipt.status === 1);
       this.assertTest(isSuccess, `Transaction succeeded (status: ${receipt.status})`);
 
       // Verify recovery changed

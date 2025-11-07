@@ -369,11 +369,11 @@ export class MetaTransactionBuilder {
     deadline: bigint,
     maxGasPrice: bigint,
     signer: Address,
-    chainId?: bigint,
+    chainId: bigint,
     nonce?: bigint
   ): MetaTxParams {
     return {
-      chainId: chainId || BigInt(1), // Default to mainnet
+      chainId: chainId, // Default to mainnet
       nonce: nonce || 0n,
       handlerContract,
       handlerSelector,

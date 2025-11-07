@@ -107,7 +107,10 @@ export function getFunctionForAction(
     return undefined;
   }
 
-  const transitions = BASE_TRANSITION_MAP[currentStatus];
+  const transitions = BASE_TRANSITION_MAP[currentStatus].filter(t => t.isActive);
+  if (transitions.length === 0) {
+    return undefined;
+  }
   const transition = transitions.find(t => t.action === action);
   return transition?.functionName;
 }
@@ -118,7 +121,10 @@ export function getFunctionForAction(
  * @returns Array of available actions
  */
 export function getAvailableActions(currentStatus: TxStatus): TxAction[] {
-  const transitions = BASE_TRANSITION_MAP[currentStatus];
+  const transitions = BASE_TRANSITION_MAP[currentStatus].filter(t => t.isActive);
+  if (transitions.length === 0) {
+    return [];
+  }
   return transitions.map(t => t.action);
 }
 
@@ -137,7 +143,10 @@ export function getNextStatus(
     return [currentStatus];
   }
 
-  const transitions = BASE_TRANSITION_MAP[currentStatus];
+  const transitions = BASE_TRANSITION_MAP[currentStatus].filter(t => t.isActive);
+  if (transitions.length === 0) {
+    return [];
+  }
   const transition = transitions.find(t => t.action === action);
   
   if (!transition) {
@@ -167,7 +176,10 @@ export function getTransition(
     return undefined;
   }
 
-  const transitions = BASE_TRANSITION_MAP[currentStatus];
+  const transitions = BASE_TRANSITION_MAP[currentStatus].filter(t => t.isActive);
+  if (transitions.length === 0) {
+    return undefined;
+  }
   return transitions.find(t => t.action === action);
 }
 
@@ -186,19 +198,23 @@ export function isValidTransition(
     return true;
   }
 
-  const transitions = BASE_TRANSITION_MAP[currentStatus];
+  const transitions = BASE_TRANSITION_MAP[currentStatus].filter(t => t.isActive);
+  if (transitions.length === 0) {
+    return false;
+  }
   return transitions.some(t => t.action === action);
 }
 
 /**
  * Get all possible transitions from a status
  * @param currentStatus Current transaction status
- * @returns Array of all possible transitions
+ * @returns Array of all possible transitions (filtered by isActive)
  */
 export function getTransitionsFromStatus(
   currentStatus: TxStatus
 ): ActionTransition[] {
-  return BASE_TRANSITION_MAP[currentStatus] || [];
+  const transitions = BASE_TRANSITION_MAP[currentStatus] || [];
+  return transitions.filter(t => t.isActive);
 }
 
 /**

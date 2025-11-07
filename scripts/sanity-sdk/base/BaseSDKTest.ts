@@ -242,7 +242,9 @@ export abstract class BaseSDKTest {
     } else {
       this.testResults.failedTests++;
       console.log(`  ❌ ${message}`);
-      throw new Error(`Test assertion failed: ${message}`);
+      const err = new Error(`Test assertion failed: ${message}`);
+      (err as any).__counted = true;
+      throw err;
     }
   }
 
@@ -262,7 +264,9 @@ export abstract class BaseSDKTest {
    * Handle test error
    */
   protected handleTestError(testName: string, error: any): void {
-    this.testResults.failedTests++;
+    if (!(error as any).__counted) {
+      this.testResults.failedTests++;
+    }
     console.log(`❌ ${testName} failed: ${error.message}`);
     if (error.stack) {
       console.log(`   Stack: ${error.stack}`);

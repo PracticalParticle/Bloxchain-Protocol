@@ -19,7 +19,7 @@ export interface SecureOwnableRoles {
   recovery: Address;
 }
 
-export class BaseSecureOwnableTest extends BaseSDKTest {
+export abstract class BaseSecureOwnableTest extends BaseSDKTest {
   protected secureOwnable: SecureOwnable | null = null;
   protected roles: SecureOwnableRoles = {
     owner: '0x' as Address,

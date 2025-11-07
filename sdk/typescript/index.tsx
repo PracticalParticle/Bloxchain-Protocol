@@ -26,6 +26,7 @@ export type { OperationType } from './types/core.access.index';
 export * from './types/base.state.machine.index';
 export * from './types/lib.index';
 export * from './types/definition.index';
+export * from './utils/bitmap';
 
 // Utilities
 export * from './utils/validations';

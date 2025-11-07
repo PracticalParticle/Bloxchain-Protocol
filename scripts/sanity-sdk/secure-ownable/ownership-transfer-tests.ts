@@ -75,7 +75,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
 
       for (const txId of pendingTxs) {
         try {
-          const tx = await secureOwnableRecovery.getTransaction(txId);
+          const tx = await this.secureOwnable!.getTransaction(txId);
           const operationType = tx.params.operationType;
           console.log(`📋 Cleaning up transaction ${txId}`);
 
@@ -173,7 +173,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       // Wait for transaction to be mined
       const receipt = await result.wait();
       // Viem receipt.status can be 'success' or 'reverted' (string), or 1/0 (number)
-      const isSuccess = receipt.status === 'success' || receipt.status === 1;
+      const isSuccess = receipt.status === 'success' || (typeof receipt.status === 'number' && receipt.status === 1);
       this.assertTest(isSuccess, `Transaction succeeded (status: ${receipt.status})`);
       console.log(`  ✅ Transaction confirmed in block ${receipt.blockNumber}`);
 
@@ -328,7 +328,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       if (pendingTxs.length > 0) {
         for (const pendingTxId of pendingTxs) {
           try {
-            const tx = await secureOwnableRecovery.getTransaction(pendingTxId);
+            const tx = await this.secureOwnable!.getTransaction(pendingTxId);
             // Check if this is an ownership transfer transaction
             if (tx.params && tx.params.operationType) {
               const txOperationType = tx.params.operationType;
@@ -507,7 +507,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.waitForTimelockWithTxId(ownershipTransferTxId);
         
         // Cancel the transaction
-        const cancelResult = await secureOwnableRecovery.transferOwnershipDelayedCancellation(
+        const cancelResult = await secureOwnableRecovery.transferOwnershipCancellation(
           ownershipTransferTxId,
           { from: recoveryWallet.address }
         );
@@ -660,8 +660,8 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
           // Check if this is an ownership transfer transaction
           if (tx.params && tx.params.operationType) {
             const operationType = tx.params.operationType.toLowerCase();
-            if (operationType === OPERATION_TYPES.TRANSFER_OWNERSHIP.toLowerCase() ||
-                tx.params.operationType === OPERATION_TYPES.TRANSFER_OWNERSHIP) {
+            if (operationType === OPERATION_TYPES.OWNERSHIP_TRANSFER.toLowerCase() ||
+                tx.params.operationType === OPERATION_TYPES.OWNERSHIP_TRANSFER) {
               ownershipTransferTxId = txId;
               console.log(`  ⚠️  Found existing pending ownership transfer transaction: ${txId}`);
               break;
@@ -686,7 +686,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.waitForTimelockWithTxId(ownershipTransferTxId);
         
         // Cancel the transaction
-        const cancelResult = await secureOwnableRecovery.transferOwnershipDelayedCancellation(
+        const cancelResult = await secureOwnableRecovery.transferOwnershipCancellation(
           ownershipTransferTxId,
           { from: recoveryWallet.address }
         );

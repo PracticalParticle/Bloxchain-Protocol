@@ -4,7 +4,7 @@
  */
 
 import { BaseSecureOwnableTest } from './base-test';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
+import { TxAction, ExecutionType } from '../../../sdk/typescript/types/lib.index';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index';
 
 export class TimelockPeriodTests extends BaseSecureOwnableTest {
@@ -57,6 +57,12 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
 
       await this.testTimelockChange(BigInt(targetTimelock), `${targetTimelock} second${targetTimelock !== 1 ? 's' : ''}`);
 
+      // Restore timelock back to 1 second for subsequent tests
+      if (targetTimelock !== 1) {
+        console.log('  🔄 Restoring timelock period to 1 second for subsequent tests...');
+        await this.testTimelockChange(BigInt(1), '1 second');
+      }
+
       console.log('  🎉 Timelock functionality testing completed successfully!');
       console.log('  📋 All subsequent tests will use 1-second timelock period');
     } catch (error: any) {
@@ -102,7 +108,7 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
         value: BigInt(0),
         gasLimit: BigInt(0),
         operationType: OPERATION_TYPES.TIMELOCK_UPDATE,
-        executionType: 1, // STANDARD
+        executionType: ExecutionType.STANDARD,
         executionOptions: executionOptions
       };
 
@@ -145,7 +151,8 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       console.log(`    📋 Transaction Hash: ${result.hash}`);
 
       const receipt = await result.wait();
-      const isSuccess = receipt.status === 'success' || receipt.status === 1;
+      // Viem receipt.status can be 'success' or 'reverted' (string), or 1/0 (number)
+      const isSuccess = receipt.status === 'success' || (typeof receipt.status === 'number' && receipt.status === 1);
       this.assertTest(isSuccess, `Transaction succeeded (status: ${receipt.status})`);
 
       // Verify timelock changed

@@ -12,7 +12,7 @@ import * as path from 'path';
  */
 export async function getContractAddressFromArtifacts(
   contractName: string
-): Promise<string | null> {
+): Promise<Address | null> {
   try {
     const buildDir = path.join(__dirname, '../../../build/contracts');
     const artifactPath = path.join(buildDir, `${contractName}.json`);
@@ -43,7 +43,7 @@ export async function getContractAddressFromArtifacts(
     console.log(
       `📋 Found ${contractName} at ${networkData.address} on network ${latestNetworkId}`
     );
-    return networkData.address;
+    return networkData.address as Address;
   } catch (error) {
     console.error(`❌ Error reading ${contractName} artifact:`, error);
     return null;

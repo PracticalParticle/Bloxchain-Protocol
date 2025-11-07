@@ -18,5 +18,5 @@ export function getSecureOwnableExtension(): OperationWorkflow[] {
 export * from './workflows';
 
 // Re-export constants from core.access.index for convenience
-export { OPERATION_TYPES as SECURE_OWNABLE_OPERATION_TYPES, OPERATION_TYPES, FUNCTION_SELECTORS as SECURE_OWNABLE_SELECTORS, FUNCTION_SELECTORS } from '../../../../types/core.access.index';
+export { OPERATION_TYPES as SECURE_OWNABLE_OPERATION_TYPES, OPERATION_TYPES, FUNCTION_SELECTORS as SECURE_OWNABLE_SELECTORS } from '../../../../types/core.access.index';
 
