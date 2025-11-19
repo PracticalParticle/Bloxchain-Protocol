@@ -3,12 +3,12 @@ pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Local imports
 import "../../../utils/SharedValidation.sol";
 import "../../../interfaces/IEventForwarder.sol";
+import "../../../cryptography/interfaces/ISignatureVerifier.sol";
 
 /**
  * @title StateAbstraction
@@ -38,7 +38,6 @@ library StateAbstraction {
     uint8 public constant VERSION_MINOR = 0;
     uint8 public constant VERSION_PATCH = 0;
     
-    using MessageHashUtils for bytes32;
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -177,6 +176,9 @@ library StateAbstraction {
         // ============ META-TRANSACTION SUPPORT ============
         mapping(address => uint256) signerNonces;
         
+        // ============ SIGNATURE VERIFICATION ============
+        ISignatureVerifier signatureVerifier;
+        
         // ============ EVENT FORWARDING ============
         address eventForwarder;
     }
@@ -258,6 +260,19 @@ library StateAbstraction {
     function updateTimeLockPeriod(SecureOperationState storage self, uint256 _newTimeLockPeriodSec) public {
         SharedValidation.validateTimeLockPeriod(_newTimeLockPeriodSec);
         self.timeLockPeriodSec = _newTimeLockPeriodSec;
+    }
+
+    /**
+     * @dev Sets the signature verifier for meta-transaction signature verification
+     * @param self The SecureOperationState to modify
+     * @param verifier The signature verifier contract address
+     */
+    function setSignatureVerifier(
+        SecureOperationState storage self,
+        ISignatureVerifier verifier
+    ) public {
+        require(address(verifier) != address(0), "Invalid verifier");
+        self.signatureVerifier = verifier;
     }
 
     // ============ TRANSACTION MANAGEMENT FUNCTIONS ============
@@ -1226,7 +1241,7 @@ library StateAbstraction {
         
         // Signature verification
         bytes32 messageHash = generateMessageHash(metaTx);
-        address recoveredSigner = recoverSigner(messageHash, metaTx.signature);
+        address recoveredSigner = recoverSigner(self, messageHash, metaTx.signature);
         if (recoveredSigner != metaTx.params.signer) revert SharedValidation.InvalidSignature(metaTx.signature);
 
         // Authorization check - verify signer has meta-transaction signing permissions for the function and action
@@ -1280,41 +1295,20 @@ library StateAbstraction {
     }
 
     /**
-     * @dev Recovers the signer address from a message hash and signature.
-     * @param messageHash The hash of the message that was signed.
-     * @param signature The signature to recover the address from.
-     * @return The address of the signer.
+     * @dev Recovers the signer address from a message hash and signature using pluggable verifier
+     * @param self The SecureOperationState containing the signature verifier
+     * @param messageHash The EIP-712 formatted message hash
+     * @param signature The signature bytes (format algorithm-specific)
+     * @return The address of the signer
      */
-    function recoverSigner(bytes32 messageHash, bytes memory signature) public pure returns (address) {
-        SharedValidation.validateSignatureLength(signature);
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // More efficient assembly block with better memory safety
-        assembly {
-            // First 32 bytes stores the length of the signature
-            // add(signature, 32) = pointer of sig + 32
-            // effectively, skips first 32 bytes of signature
-            r := mload(add(signature, 0x20))
-            // add(signature, 64) = pointer of sig + 64
-            // effectively, skips first 64 bytes of signature
-            s := mload(add(signature, 0x40))
-            // add(signature, 96) = pointer of sig + 96
-            // effectively, skips first 96 bytes of signature
-            // byte(0, mload(add(signature, 96))) = first byte of the next 32 bytes
-            v := byte(0, mload(add(signature, 0x60)))
-        }
-
-        // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
-        // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
-        // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}
-        SharedValidation.validateSignatureParams(s, v);
-
-        address signer = ecrecover(messageHash.toEthSignedMessageHash(), v, r, s);
-        SharedValidation.validateRecoveredSigner(signer);
-
+    function recoverSigner(
+        SecureOperationState storage self,
+        bytes32 messageHash,
+        bytes memory signature
+    ) private view returns (address) {
+        require(address(self.signatureVerifier) != address(0), "Verifier not set");
+        address signer = self.signatureVerifier.recoverSigner(messageHash, signature);
+        require(signer != address(0), "Invalid signature");
         return signer;
     }
 
