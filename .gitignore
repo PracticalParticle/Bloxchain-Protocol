@@ -20,3 +20,31 @@ experimental/
 ### Test Reports ###
 scripts/sanity/reports/
 
+### Certora Prover ###
+certora/.certora_config
+certora/output/
+certora/.last/
+.certora_config/
+.certora_internal/
+.certora_metadata.json
+.certora_sources/
+.certora_verify.json
+.configuration_layout.json
+run.conf
+
+### Docker ###
+docker/Dockerfile.certora
+docker/docker-compose.certora.yml
+docker/.dockerignore
+
+### Python Virtual Environment ###
+.venv/
+venv/
+env/
+ENV/
+
+### Development Artifacts ###
+*.log
+*.tmp
+*.temp
+
