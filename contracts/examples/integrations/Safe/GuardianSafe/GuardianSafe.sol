@@ -148,29 +148,41 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         onlyOwner 
         returns (StateAbstraction.TxRecord memory) 
     {
+        // Use helper function to encode parameters and avoid stack too deep
+        bytes memory params = _encodeSafeTxParams(safeTx);
+        
         StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
             msg.sender,
             address(this),
             safeTx.safeTxGas,
             EXEC_SAFE_TX,
             GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,
-            abi.encode(
-                safeTx.to,
-                safeTx.value,
-                safeTx.data,
-                safeTx.operation,
-                safeTx.safeTxGas,
-                safeTx.baseGas,
-                safeTx.gasPrice,
-                safeTx.gasToken,
-                safeTx.refundReceiver,
-                safeTx.signatures
-            )
+            params
         );
         
         emit TransactionRequested(safeTx);
 
         return txRecord;
+    }
+
+    /**
+     * @dev Helper function to encode SafeTx parameters to avoid stack too deep
+     * @param safeTx The Safe transaction parameters
+     * @return Encoded parameters for executeTransaction function
+     */
+    function _encodeSafeTxParams(SafeTx calldata safeTx) private pure returns (bytes memory) {
+        return abi.encode(
+            safeTx.to,
+            safeTx.value,
+            safeTx.data,
+            safeTx.operation,
+            safeTx.safeTxGas,
+            safeTx.baseGas,
+            safeTx.gasPrice,
+            safeTx.gasToken,
+            safeTx.refundReceiver,
+            safeTx.signatures
+        );
     }
 
     /**
@@ -363,7 +375,23 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     ) public pure returns (bytes memory) {
         SharedValidation.validateTargetAddress(safeTx.to);
 
-        bytes memory executionData = abi.encode(
+        // Convert to calldata for helper function (we'll create a memory version)
+        SafeTx memory memSafeTx = safeTx;
+        bytes memory executionData = _encodeSafeTxParamsMemory(memSafeTx);
+
+        return StateAbstraction.createStandardExecutionOptions(
+            GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,
+            executionData
+        );
+    }
+
+    /**
+     * @dev Helper function to encode SafeTx parameters from memory (for createTransactionExecutionOptions)
+     * @param safeTx The Safe transaction parameters
+     * @return Encoded parameters for executeTransaction function
+     */
+    function _encodeSafeTxParamsMemory(SafeTx memory safeTx) private pure returns (bytes memory) {
+        return abi.encode(
             safeTx.to,
             safeTx.value,
             safeTx.data,
@@ -374,11 +402,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
             safeTx.gasToken,
             safeTx.refundReceiver,
             safeTx.signatures
-        );
-
-        return StateAbstraction.createStandardExecutionOptions(
-            GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,
-            executionData
         );
     }
 
