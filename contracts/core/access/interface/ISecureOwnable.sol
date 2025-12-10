@@ -7,9 +7,10 @@ import "../../base/lib/StateAbstraction.sol";
 /**
  * @title ISecureOwnable
  * @dev Interface for SecureOwnable functionality
+ * @notice This interface defines SecureOwnable-specific operations
+ * @notice Note: owner(), getBroadcaster(), and getRecovery() are available through BaseStateMachine
  */
-interface ISecureOwnable {    
-    function owner() external view returns (address);
-    function getBroadcaster() external view returns (address);
-    function getRecovery() external view returns (address);
+interface ISecureOwnable {
+    // Interface is kept for future SecureOwnable-specific functionality
+    // All role queries (owner, broadcaster, recovery) are in BaseStateMachine
 }

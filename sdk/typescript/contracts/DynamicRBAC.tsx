@@ -4,7 +4,7 @@ import { TransactionOptions, TransactionResult } from '../interfaces/base.index'
 import { IDynamicRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
-import { SecureOwnable } from './SecureOwnable';
+import { BaseStateMachine } from './BaseStateMachine';
 import { Uint16Bitmap, fromContractValue } from '../utils/bitmap';
 
 /**
@@ -31,20 +31,16 @@ interface StateAbstractionFunctionSchema {
  * @title DynamicRBAC
  * @notice TypeScript wrapper for DynamicRBAC smart contract
  * @dev Matches the actual Solidity contract implementation
- * @dev Extends SecureOwnable which extends BaseStateMachine
+ * @dev Extends BaseStateMachine directly for modular architecture
  */
-export class DynamicRBAC extends SecureOwnable implements IDynamicRBAC {
+export class DynamicRBAC extends BaseStateMachine implements IDynamicRBAC {
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
     chain: Chain
   ) {
-    // Note: SecureOwnable uses SecureOwnableABI, but DynamicRBAC needs DynamicRBACABI
-    // We override the ABI after calling super
-    super(client, walletClient, contractAddress, chain);
-    // Override ABI to use DynamicRBAC ABI instead of SecureOwnable ABI
-    (this as any).abi = DynamicRBACABIJson;
+    super(client, walletClient, contractAddress, chain, DynamicRBACABIJson);
   }
 
   // ============ ROLE EDITING CONTROL ============
@@ -164,15 +160,6 @@ export class DynamicRBAC extends SecureOwnable implements IDynamicRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract('unregisterFunction', [functionSelector, safeRemoval], options);
-  }
-
-  /**
-   * @dev Checks if a function schema exists
-   * @param functionSelector The function selector to check
-   * @return True if the function schema exists, false otherwise
-   */
-  async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
-    return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
   }
 
   /**

@@ -3,7 +3,7 @@ import GuardControllerABIJson from '../../../abi/GuardController.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IGuardController } from '../interfaces/core.execution.index';
 import { MetaTransaction } from '../interfaces/lib.index';
-import { DynamicRBAC } from './DynamicRBAC';
+import { BaseStateMachine } from './BaseStateMachine';
 
 /**
  * @title GuardController
@@ -11,20 +11,19 @@ import { DynamicRBAC } from './DynamicRBAC';
  * @dev Lightweight controller for generic contract delegation with full StateAbstraction workflows
  * 
  * This contract provides a complete solution for delegating control to external addresses.
- * It extends DynamicRBAC for runtime function registration and supports all StateAbstraction
+ * It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
  * execution patterns including time-locked transactions, meta-transactions, and payment management.
+ * 
+ * This contract is modular and can be combined with DynamicRBAC and SecureOwnable for role management.
  */
-export class GuardController extends DynamicRBAC implements IGuardController {
+export class GuardController extends BaseStateMachine implements IGuardController {
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
     chain: Chain
   ) {
-    super(client, walletClient, contractAddress, chain);
-    // Override ABI to use GuardController ABI
-    // Since DynamicRBAC constructor doesn't accept ABI parameter, we override the protected abi property
-    (this as any).abi = GuardControllerABIJson;
+    super(client, walletClient, contractAddress, chain, GuardControllerABIJson);
   }
 
   // ============ EXECUTION FUNCTIONS ============
@@ -155,11 +154,11 @@ export class GuardController extends DynamicRBAC implements IGuardController {
     );
   }
 
-  // Note: Function registration methods (registerFunction, unregisterFunction, functionSchemaExists)
-  // are already available through inheritance from DynamicRBAC
+  // Note: Function schema query (functionSchemaExists) is available through inheritance from BaseStateMachine
   // Note: Meta-transaction utility functions (createMetaTxParams,
   // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
   // are already available through inheritance from BaseStateMachine
+  // Note: For role management and function registration, combine with DynamicRBAC
 }
 
 export default GuardController;

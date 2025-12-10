@@ -80,64 +80,21 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
     return this.executeWriteContract('updateTimeLockRequestAndApprove', [metaTx], options);
   }
 
-  // SecureOwnable-specific getters
-
-  async getBroadcaster(): Promise<Address> {
-    return this.executeReadContract<Address>('getBroadcaster');
-  }
-
-  async getRecovery(): Promise<Address> {
-    return this.executeReadContract<Address>('getRecovery');
-  }
-
-
-  async getTimeLockPeriodSec(): Promise<bigint> {
-    return await this.client.readContract({
-      address: this.contractAddress,
-      abi: SecureOwnableABIJson,
-      functionName: 'getTimeLockPeriodSec'
-    }) as bigint;
-  }
-
-  async owner(): Promise<Address> {
-    return this.executeReadContract<Address>('owner');
-  }
-
-  async getSupportedOperationTypes(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedOperationTypes');
-  }
-
-  async getSupportedRoles(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedRoles');
-  }
-
-  async getSupportedFunctions(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedFunctions');
-  }
-
-  async hasRole(roleHash: Hex, wallet: Address): Promise<boolean> {
-    return this.executeReadContract<boolean>('hasRole', [roleHash, wallet]);
-  }
-
-  async isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean> {
-    return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
-  }
-
-  async getSignerNonce(signer: Address): Promise<bigint> {
-    return this.executeReadContract<bigint>('getSignerNonce', [signer]);
-  }
-
-  async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
-    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
-  }
-
-  async initialized(): Promise<boolean> {
-    return this.executeReadContract<boolean>('initialized');
-  }
-
-  async supportsInterface(interfaceId: Hex): Promise<boolean> {
-    return this.executeReadContract<boolean>('supportsInterface', [interfaceId]);
-  }
+  // Note: The following methods are available through BaseStateMachine inheritance:
+  // - owner()
+  // - getBroadcaster()
+  // - getRecovery()
+  // - getTimeLockPeriodSec()
+  // - getSupportedOperationTypes()
+  // - getSupportedRoles()
+  // - getSupportedFunctions()
+  // - hasRole()
+  // - isActionSupportedByFunction()
+  // - getSignerNonce()
+  // - getActiveRolePermissions()
+  // - initialized()
+  // - supportsInterface()
+  // - functionSchemaExists()
 }
 
 export default SecureOwnable;

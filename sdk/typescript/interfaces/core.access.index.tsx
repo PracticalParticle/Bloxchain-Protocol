@@ -112,10 +112,8 @@ export interface ISecureOwnable {
   getTransactionHistory(fromTxId: bigint, toTxId: bigint): Promise<TxRecord[]>;
   getTransaction(txId: bigint): Promise<TxRecord>;
   getPendingTransactions(): Promise<bigint[]>;
-  getBroadcaster(): Promise<Address>;
-  getRecovery(): Promise<Address>;
   getTimeLockPeriodSec(): Promise<bigint>;
-  owner(): Promise<Address>;
+  // Note: owner(), getBroadcaster(), and getRecovery() are available through BaseStateMachine inheritance
 
   // Operation Type Support
   getSupportedOperationTypes(): Promise<Hex[]>;
@@ -165,7 +163,7 @@ export interface IDynamicRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult>;
   unregisterFunction(functionSelector: Hex, safeRemoval: boolean, options: TransactionOptions): Promise<TransactionResult>;
-  functionSchemaExists(functionSelector: Hex): Promise<boolean>;
+  // Note: functionSchemaExists is available through BaseStateMachine inheritance
   getFunctionSchema(functionSelector: Hex): Promise<{
     functionName: string;
     functionSelectorReturn: Hex;

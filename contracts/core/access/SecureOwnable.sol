@@ -47,23 +47,21 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     event RecoveryAddressUpdated(address oldRecovery, address newRecovery);
     event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod);
 
-    modifier onlyOwner() {
-        SharedValidation.validateOwner(owner());
-        _;
-    }
+    // ============ RECOVERY ACCESS CONTROL MODIFIERS ============
 
+    /**
+     * @dev Modifier to restrict access to owner or recovery
+     */
     modifier onlyOwnerOrRecovery() {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
         _;
     }
     
+    /**
+     * @dev Modifier to restrict access to recovery only
+     */
     modifier onlyRecovery() {
         SharedValidation.validateRecovery(getRecovery());
-        _;
-    }
-
-    modifier onlyBroadcaster() {
-        SharedValidation.validateBroadcaster(getBroadcaster());
         _;
     }
 
@@ -82,8 +80,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         uint256 timeLockPeriodSec,    
         address eventForwarder
     ) public virtual onlyInitializing {
-        // Initialize base state machine
-        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        // Initialize base state machine (only if not already initialized)
+        if (!_secureState.initialized) {
+            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        }
         
         // Load SecureOwnable-specific definitions
         IDefinition.RolePermission memory secureOwnablePermissions = SecureOwnableDefinitions.getRolePermissions();
@@ -351,30 +351,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         _updateTimeLockPeriod(newTimeLockPeriodSec);
     }
 
-    // Ownership management
-    /**
-     * @dev Returns the owner of the contract
-     * @return The owner of the contract
-     */
-    function owner() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.OWNER_ROLE, 0);
-    }
-
-    /**
-     * @dev Returns the broadcaster address
-     * @return The broadcaster address
-     */
-    function getBroadcaster() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, 0);
-    }
-
-    /**
-     * @dev Returns the recovery address
-     * @return The recovery address
-     */
-    function getRecovery() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.RECOVERY_ROLE, 0);
-    }
+    // ============ INTERNAL FUNCTIONS ============
 
     /**
      * @dev Transfers ownership of the contract
@@ -410,18 +387,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Updates the time lock period
      * @param newTimeLockPeriodSec The new time lock period in seconds
      */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
         uint256 oldPeriod = getTimeLockPeriodSec();
         StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
         emit TimeLockPeriodUpdated(oldPeriod, newTimeLockPeriodSec);
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(ISecureOwnable).interfaceId ||
-            super.supportsInterface(interfaceId);
     }
 }

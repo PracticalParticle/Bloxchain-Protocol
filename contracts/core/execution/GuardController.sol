@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../access/DynamicRBAC.sol";
+import "../base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 
 /**
@@ -9,12 +9,12 @@ import "../../utils/SharedValidation.sol";
  * @dev Lightweight controller for generic contract delegation with full StateAbstraction workflows
  * 
  * This contract provides a complete solution for delegating control to external addresses.
- * It extends DynamicRBAC for runtime function registration and supports all StateAbstraction
+ * It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
  * execution patterns including time-locked transactions, meta-transactions, and payment management.
  * 
  * Key Features:
- * - Runtime function schema registration via DynamicRBAC
- * - Function selector to full signature mapping for interface tracking
+ * - Core state machine functionality from BaseStateMachine
+ * - Function schema query support (functionSchemaExists)
  * - Full StateAbstraction workflow support (STANDARD, RAW, NONE execution types)
  * - Meta-transaction support for delegated approvals and cancellations
  * - Payment management for native tokens and ERC20 tokens
@@ -22,10 +22,10 @@ import "../../utils/SharedValidation.sol";
  * - No target authorization list - relies on target contract's access control
  * 
  * Usage Flow:
- * 1. Deploy GuardController
- * 2. Register function schemas with full signatures via DynamicRBAC
- * 3. Create roles and assign function permissions with action bitmaps
- * 4. Assign wallets to roles
+ * 1. Deploy GuardController (or combine with DynamicRBAC/SecureOwnable for role management)
+ * 2. Function schemas should be registered via definitions or DynamicRBAC if combined
+ * 3. Create roles and assign function permissions with action bitmaps (via DynamicRBAC if combined)
+ * 4. Assign wallets to roles (via DynamicRBAC if combined)
  * 5. Execute operations via time-lock workflows based on action permissions
  * 6. Target contract validates access (ownership/role-based)
  * 
@@ -34,9 +34,10 @@ import "../../utils/SharedValidation.sol";
  * - Time-locked approval: request + approve workflow
  * - Meta-transaction workflows: signed approvals/cancellations
  * 
+ * @notice This contract is modular and can be combined with DynamicRBAC and SecureOwnable
  * @custom:security-contact security@particlecrypto.com
  */
-abstract contract GuardController is DynamicRBAC {
+abstract contract GuardController is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
 
     // ============ EXECUTION FUNCTIONS ============
@@ -63,7 +64,7 @@ abstract contract GuardController is DynamicRBAC {
         SharedValidation.validateNotZeroAddress(target);
         
         // Validate function is registered
-        if (!this.functionSchemaExists(functionSelector)) {
+        if (!functionSchemaExists(functionSelector)) {
             revert SharedValidation.FunctionError(functionSelector);
         }
         

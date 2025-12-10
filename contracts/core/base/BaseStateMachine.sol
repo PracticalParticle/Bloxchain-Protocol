@@ -68,6 +68,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bool success
     );
 
+    // ============ ACCESS CONTROL MODIFIERS ============
+
+    /**
+     * @dev Modifier to restrict access to the owner only
+     */
+    modifier onlyOwner() {
+        SharedValidation.validateOwner(owner());
+        _;
+    }
+
+    /**
+     * @dev Modifier to restrict access to broadcaster only
+     */
+    modifier onlyBroadcaster() {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        _;
+    }
+
     /**
      * @notice Initializes the base state machine core
      * @param initialOwner The initial owner address
@@ -96,6 +114,42 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         );
 
         _secureState.setEventForwarder(eventForwarder);
+    }
+
+    // ============ SYSTEM ROLE QUERY FUNCTIONS ============
+
+    /**
+     * @dev Returns the owner of the contract
+     * @return The owner of the contract
+     */
+    function owner() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.OWNER_ROLE, 0);
+    }
+
+    /**
+     * @dev Returns the broadcaster address
+     * @return The broadcaster address
+     */
+    function getBroadcaster() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, 0);
+    }
+
+    /**
+     * @dev Returns the recovery address
+     * @return The recovery address
+     */
+    function getRecovery() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.RECOVERY_ROLE, 0);
+    }
+
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Base implementation for ERC165 interface detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 
     // ============ TRANSACTION MANAGEMENT ============
@@ -445,6 +499,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     }
 
     /**
+     * @dev Checks if a function schema exists
+     * @param functionSelector The function selector to check
+     * @return True if the function schema exists, false otherwise
+     */
+    function functionSchemaExists(bytes4 functionSelector) public view returns (bool) {
+        return _secureState.functions[functionSelector].functionSelector == functionSelector;
+    }
+
+    /**
      * @dev Returns if an action is supported by a function
      * @param functionSelector The function selector to check
      * @param action The action to check
@@ -502,7 +565,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Returns the time lock period
      * @return The time lock period in seconds
      */
-    function getTimeLockPeriodSec() public view virtual returns (uint256) {
+    function getTimeLockPeriodSec() public view returns (uint256) {
         return _secureState.timeLockPeriodSec;
     }
 
@@ -510,7 +573,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Returns whether the contract is initialized
      * @return bool True if the contract is initialized, false otherwise
      */
-    function initialized() public view virtual returns (bool) {
+    function initialized() public view returns (bool) {
         return _getInitializedVersion() != type(uint8).max && _secureState.initialized;
     }
 
@@ -534,14 +597,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      */
     function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal {
         StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
-    }
-
-    /**
-     * @dev Centralized function to update time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
-        StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
     }
 
     // ============ CENTRALIZED EXECUTION OPTIONS ============

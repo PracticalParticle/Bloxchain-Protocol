@@ -190,6 +190,10 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
   }
 
+  async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
+    return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
+  }
+
   async getSignerNonce(signer: Address): Promise<bigint> {
     return this.executeReadContract<bigint>('getSignerNonce', [signer]);
   }
@@ -214,6 +218,32 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   async initialized(): Promise<boolean> {
     return this.executeReadContract<boolean>('initialized');
+  }
+
+  // ============ SYSTEM ROLE QUERY FUNCTIONS ============
+
+  /**
+   * @dev Returns the owner of the contract
+   * @return The owner of the contract
+   */
+  async owner(): Promise<Address> {
+    return this.executeReadContract<Address>('owner');
+  }
+
+  /**
+   * @dev Returns the broadcaster address
+   * @return The broadcaster address
+   */
+  async getBroadcaster(): Promise<Address> {
+    return this.executeReadContract<Address>('getBroadcaster');
+  }
+
+  /**
+   * @dev Returns the recovery address
+   * @return The recovery address
+   */
+  async getRecovery(): Promise<Address> {
+    return this.executeReadContract<Address>('getRecovery');
   }
 
   // ============ INTERFACE SUPPORT ============

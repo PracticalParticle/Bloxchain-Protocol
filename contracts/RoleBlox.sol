@@ -2,12 +2,18 @@
 pragma solidity ^0.8.25;
 
 import "./core/access/DynamicRBAC.sol";
+import "./core/access/SecureOwnable.sol";
 
 /**
  * @title RoleBlox
- * @dev A basic implementation of state abstraction with dynamic role-based access control using DynamicRBAC
+ * @dev A basic implementation of state abstraction with dynamic role-based access control using DynamicRBAC and SecureOwnable
+ * 
+ * This contract combines both DynamicRBAC and SecureOwnable functionality:
+ * - DynamicRBAC provides dynamic role creation and management
+ * - SecureOwnable provides secure ownership transfer and management
+ * - Both inherit from BaseStateMachine, ensuring proper initialization order
  */
-contract RoleBlox is DynamicRBAC {
+contract RoleBlox is DynamicRBAC, SecureOwnable {
     /**
      * @notice Initializer to initialize RoleBlox
      * @param initialOwner The initial owner address
@@ -22,15 +28,13 @@ contract RoleBlox is DynamicRBAC {
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder  
-    ) public virtual override initializer {
-        super.initialize(
-            initialOwner,
-            broadcaster,
-            recovery,
-            timeLockPeriodSec,
-            eventForwarder      
-        );
-        // add your initialization logic here
+    ) public virtual override(DynamicRBAC, SecureOwnable) initializer {
+        // Initialize both parent contracts
+        // The guarded initialization ensures BaseStateMachine is only initialized once
+        DynamicRBAC.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        
+        // Add any RoleBlox-specific initialization logic here
     }
 
     // add your implementation here

@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-// OpenZeppelin imports
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
 // Contract imports
+import "../base/BaseStateMachine.sol";
 import "../base/lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/DynamicRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
-import "./SecureOwnable.sol";
 
 /**
  * @title DynamicRBAC
@@ -27,7 +24,7 @@ import "./SecureOwnable.sol";
  * - Minimal interface for core RBAC operations
  * - Essential role management functions only
  */
-abstract contract DynamicRBAC is Initializable, SecureOwnable {
+abstract contract DynamicRBAC is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
     using SharedValidation for *;
     
@@ -58,9 +55,11 @@ abstract contract DynamicRBAC is Initializable, SecureOwnable {
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder
-    ) public virtual override onlyInitializing {
-        // Initialize SecureOwnable
-        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+    ) public virtual onlyInitializing {
+        // Initialize base state machine (only if not already initialized)
+        if (!_secureState.initialized) {
+            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        }
         
         // Load DynamicRBAC-specific definitions
         IDefinition.RolePermission memory permissions = DynamicRBACDefinitions.getRolePermissions();
@@ -225,15 +224,6 @@ abstract contract DynamicRBAC is Initializable, SecureOwnable {
     }
 
     /**
-     * @dev Checks if a function schema exists
-     * @param functionSelector The function selector to check
-     * @return True if the function schema exists, false otherwise
-     */
-    function functionSchemaExists(bytes4 functionSelector) external view returns (bool) {
-        return _getSecureState().functions[functionSelector].functionSelector == functionSelector;
-    }
-
-    /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
      * @return functionName The name of the function
@@ -293,7 +283,7 @@ abstract contract DynamicRBAC is Initializable, SecureOwnable {
         bytes4 functionSelector = bytes4(keccak256(bytes(functionSignature)));
         
         // Validate that function schema doesn't already exist
-        if (this.functionSchemaExists(functionSelector)) {
+        if (functionSchemaExists(functionSelector)) {
             revert SharedValidation.FunctionError(functionSelector);
         }
         
@@ -330,7 +320,7 @@ abstract contract DynamicRBAC is Initializable, SecureOwnable {
         if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
         
         // Validate function exists
-        if (!this.functionSchemaExists(functionSelector)) {
+        if (!functionSchemaExists(functionSelector)) {
             revert SharedValidation.FunctionError(functionSelector);
         }
         
