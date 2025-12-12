@@ -158,9 +158,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Centralized function to request a standard transaction with common validation
      * @param requester The address requesting the transaction
      * @param operationType The type of operation
-     * @param functionSelector The function selector for execution options
+     * @param functionSelector The function selector for execution options (the execution function, not the request function)
      * @param params The encoded parameters for the function
      * @return The created transaction record
+     * @notice Validates permissions for the calling function (request function), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
      */
     function _requestStandardTransaction(
         address requester,
@@ -170,6 +172,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes4 functionSelector,
         bytes memory params
     ) internal returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (request function selector), not the execution selector
+        // Execution functions are internal-only and protected by validateInternalCallInternal
+        bytes4 requestFunctionSelector = msg.sig;
+        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+
         bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
             functionSelector,
             params
@@ -195,6 +204,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param operationType The type of operation
      * @param rawTxData The raw transaction data
      * @return The created transaction record
+     * @notice Validates permissions for the calling function (request function selector)
      */
     function _requestRawTransaction(
         address requester,
@@ -203,6 +213,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes32 operationType,
         bytes memory rawTxData
     ) internal returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (request function selector)
+        bytes4 requestFunctionSelector = msg.sig;
+        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+
         bytes memory executionOptions = StateAbstraction.createRawExecutionOptions(rawTxData);
 
         return StateAbstraction.txRequest(
@@ -225,6 +241,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
      * @return The created transaction record
+     * @notice Validates permissions for the calling function (request function selector)
      */
     function _requestSimpleTransaction(
         address requester,
@@ -233,6 +250,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         uint256 gasLimit,
         bytes32 operationType
     ) internal returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (request function selector)
+        bytes4 requestFunctionSelector = msg.sig;
+        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+
         return StateAbstraction.txRequest(
             _getSecureState(),
             requester,
@@ -250,11 +273,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param txId The transaction ID
      * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (approval function selector), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
      */
     function _approveTransaction(
         uint256 txId,
         bytes32 expectedOperationType
     ) internal returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (approval function selector), not the execution selector
+        // Execution functions are internal-only and protected by validateInternalCallInternal
+        bytes4 approvalFunctionSelector = msg.sig;
+        if (!_hasActionPermission(msg.sender, approvalFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txDelayedApproval(_getSecureState(), txId);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
         return updatedRecord;
@@ -288,11 +320,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param txId The transaction ID
      * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (cancellation function selector), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
      */
     function _cancelTransaction(
         uint256 txId,
         bytes32 expectedOperationType
     ) internal returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (cancellation function selector), not the execution selector
+        // Execution functions are internal-only and protected by validateInternalCallInternal
+        bytes4 cancellationFunctionSelector = msg.sig;
+        if (!_hasActionPermission(msg.sender, cancellationFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellation(_getSecureState(), txId);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
         return updatedRecord;
