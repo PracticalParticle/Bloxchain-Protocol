@@ -163,6 +163,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestStandardTransaction(
         address requester,
@@ -171,7 +172,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes32 operationType,
         bytes4 functionSelector,
         bytes memory params
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
         bytes4 requestFunctionSelector = msg.sig;
@@ -205,6 +206,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param rawTxData The raw transaction data
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function selector)
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestRawTransaction(
         address requester,
@@ -212,7 +214,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         uint256 gasLimit,
         bytes32 operationType,
         bytes memory rawTxData
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector)
         bytes4 requestFunctionSelector = msg.sig;
         if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
@@ -242,6 +244,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param operationType The type of operation
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function selector)
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestSimpleTransaction(
         address requester,
@@ -249,7 +252,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector)
         bytes4 requestFunctionSelector = msg.sig;
         if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
@@ -275,11 +278,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @return The updated transaction record
      * @notice Validates permissions for the calling function (approval function selector), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _approveTransaction(
         uint256 txId,
         bytes32 expectedOperationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (approval function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
         bytes4 approvalFunctionSelector = msg.sig;
@@ -299,13 +303,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _approveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
@@ -322,11 +327,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @return The updated transaction record
      * @notice Validates permissions for the calling function (cancellation function selector), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransaction(
         uint256 txId,
         bytes32 expectedOperationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (cancellation function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
         bytes4 cancellationFunctionSelector = msg.sig;
@@ -346,13 +352,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
@@ -368,12 +375,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The transaction record
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestAndApproveTransaction(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
@@ -635,8 +643,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param roleHash The role hash
      * @param newWallet The new wallet address
      * @param oldWallet The old wallet address
+     * @notice This function is virtual to allow extensions to add hook functionality or additional validation
      */
-    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal {
+    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
         StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
