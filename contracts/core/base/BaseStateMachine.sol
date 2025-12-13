@@ -175,10 +175,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
-        bytes4 requestFunctionSelector = msg.sig;
-        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
         bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
             functionSelector,
@@ -216,10 +213,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes memory rawTxData
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector)
-        bytes4 requestFunctionSelector = msg.sig;
-        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
         bytes memory executionOptions = StateAbstraction.createRawExecutionOptions(rawTxData);
 
@@ -254,10 +248,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes32 operationType
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (request function selector)
-        bytes4 requestFunctionSelector = msg.sig;
-        if (!_hasActionPermission(msg.sender, requestFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
         return StateAbstraction.txRequest(
             _getSecureState(),
@@ -286,10 +277,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (approval function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
-        bytes4 approvalFunctionSelector = msg.sig;
-        if (!_hasActionPermission(msg.sender, approvalFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE);
 
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txDelayedApproval(_getSecureState(), txId);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
@@ -303,6 +291,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _approveTransactionWithMetaTx(
@@ -311,9 +300,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (consistent with time-delay pattern)
+        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        
+        // Validate handler selector permission
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        
         SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
@@ -335,10 +329,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (cancellation function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
-        bytes4 cancellationFunctionSelector = msg.sig;
-        if (!_hasActionPermission(msg.sender, cancellationFunctionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL);
 
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellation(_getSecureState(), txId);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
@@ -352,6 +343,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
@@ -360,9 +352,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (consistent with time-delay pattern)
+        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        
+        // Validate handler selector permission
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        
         SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
@@ -375,6 +372,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestAndApproveTransaction(
@@ -382,9 +380,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        // Validate permissions for the calling function (consistent with time-delay pattern)
+        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        
+        // Validate handler selector permission
         if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        
+        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
 
@@ -714,6 +718,23 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     }
 
     // ============ INTERNAL UTILITIES ============
+
+    /**
+     * @dev Validates that the caller has permission for the calling function (msg.sig) and specified action
+     * @param caller The address to check permissions for
+     * @param action The required action permission
+     * @notice Reverts if caller doesn't have permission for the calling function (msg.sig) and action
+     * @notice This helper centralizes the msg.sig permission validation pattern
+     */
+    function _validateCallingFunctionPermission(
+        address caller,
+        StateAbstraction.TxAction action
+    ) internal view {
+        bytes4 callingFunctionSelector = msg.sig;
+        if (!_hasActionPermission(caller, callingFunctionSelector, action)) {
+            revert SharedValidation.NoPermission(caller);
+        }
+    }
 
     /**
      * @dev Internal function to get the secure state
