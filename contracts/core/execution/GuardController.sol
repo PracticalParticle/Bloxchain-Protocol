@@ -15,7 +15,7 @@ import "../../utils/SharedValidation.sol";
  * Key Features:
  * - Core state machine functionality from BaseStateMachine
  * - Function schema query support (functionSchemaExists)
- * - Full StateAbstraction workflow support (STANDARD, RAW, NONE execution types)
+ * - STANDARD execution type only (function selector + params)
  * - Meta-transaction support for delegated approvals and cancellations
  * - Payment management for native tokens and ERC20 tokens
  * - Role-based access control with action-level permissions
@@ -63,15 +63,12 @@ abstract contract GuardController is BaseStateMachine {
         // Validate inputs
         SharedValidation.validateNotZeroAddress(target);
         
-        // Validate function is registered
-        if (!functionSchemaExists(functionSelector)) {
-            revert SharedValidation.FunctionError(functionSelector);
-        }
-        
-        // Validate RBAC permissions for time-lock request
-        if (!_hasActionPermission(msg.sender, functionSelector, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            functionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST
+        );
         
         // Request via BaseStateMachine helper (STANDARD execution)
         StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
@@ -87,33 +84,82 @@ abstract contract GuardController is BaseStateMachine {
     
     /**
      * @dev Approves and executes a time-locked transaction
+     * @param txId The transaction ID
+     * @param expectedOperationType The expected operation type for validation
+     * @return result The execution result
+     * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_APPROVE permission for the execution function
      */
     function approveTimeLockExecution(
         uint256 txId,
         bytes32 expectedOperationType
     ) public returns (bytes memory result) {
-        StateAbstraction.TxRecord memory txRecord = _approveTransaction(txId, expectedOperationType);
-        return txRecord.result;
+        // Get transaction to extract execution function
+        StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
+        
+        // Extract execution function selector (validates STANDARD execution type)
+        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(txRecord);
+        
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            executionFunctionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE
+        );
+        
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, expectedOperationType);
+        return updatedRecord.result;
     }
     
     /**
      * @dev Cancels a time-locked transaction
+     * @param txId The transaction ID
+     * @param expectedOperationType The expected operation type for validation
+     * @return The updated transaction record
+     * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_CANCEL permission for the execution function
      */
     function cancelTimeLockExecution(
         uint256 txId,
         bytes32 expectedOperationType
     ) public returns (StateAbstraction.TxRecord memory) {
+        // Get transaction to extract execution function
+        StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
+        
+        // Extract execution function selector (validates STANDARD execution type)
+        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(txRecord);
+        
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            executionFunctionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL
+        );
+        
         return _cancelTransaction(txId, expectedOperationType);
     }
     
     /**
      * @dev Approves a time-locked transaction using a meta-transaction
+     * @param metaTx The meta-transaction containing the transaction record and signature
+     * @param expectedOperationType The expected operation type for validation
+     * @param requiredSelector The handler selector for validation
+     * @return The updated transaction record
+     * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
     ) public returns (StateAbstraction.TxRecord memory) {
+        // Extract execution function selector (validates STANDARD execution type)
+        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
+        
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            executionFunctionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_META_APPROVE
+        );
+        
         return _approveTransactionWithMetaTx(
             metaTx,
             expectedOperationType,
@@ -124,12 +170,27 @@ abstract contract GuardController is BaseStateMachine {
     
     /**
      * @dev Cancels a time-locked transaction using a meta-transaction
+     * @param metaTx The meta-transaction containing the transaction record and signature
+     * @param expectedOperationType The expected operation type for validation
+     * @param requiredSelector The handler selector for validation
+     * @return The updated transaction record
+     * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
     ) public returns (StateAbstraction.TxRecord memory) {
+        // Extract execution function selector (validates STANDARD execution type)
+        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
+        
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            executionFunctionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_META_CANCEL
+        );
+        
         return _cancelTransactionWithMetaTx(
             metaTx,
             expectedOperationType,
@@ -140,11 +201,27 @@ abstract contract GuardController is BaseStateMachine {
     
     /**
      * @dev Requests and approves a transaction in one step using a meta-transaction
+     * @param metaTx The meta-transaction containing the transaction record and signature
+     * @param requiredSelector The handler selector for validation
+     * @return The transaction record after request and approval
+     * @notice Requires STANDARD execution type
+     * @notice Validates function schema and permissions for the execution function (same as executeWithTimeLock)
+     * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
      */
     function requestAndApproveExecution(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes4 requiredSelector
     ) public returns (StateAbstraction.TxRecord memory) {
+        // Extract execution function selector (validates STANDARD execution type)
+        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
+        
+        // Pre-execution validation (function schema + permissions)
+        _preExecutionValidation(
+            executionFunctionSelector,
+            msg.sender,
+            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+        );
+        
         return _requestAndApproveTransaction(
             metaTx,
             requiredSelector,
@@ -155,6 +232,54 @@ abstract contract GuardController is BaseStateMachine {
     // Note: Meta-transaction utility functions (createMetaTxParams, 
     // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
     // are already available through inheritance from BaseStateMachine
+
+    // ============ INTERNAL HELPER FUNCTIONS ============
+    
+    /**
+     * @dev Pre-execution validation that checks function schema and permissions
+     * @param executionFunctionSelector The execution function selector to validate
+     * @param caller The address requesting the execution
+     * @param action The required action permission
+     * @notice This function is virtual to allow extensions to add custom validation logic
+     * @notice Reverts if function schema doesn't exist or caller lacks permission
+     */
+    function _preExecutionValidation(
+        bytes4 executionFunctionSelector,
+        address caller,
+        StateAbstraction.TxAction action
+    ) internal view {
+        // Validate function schema (mandatory for all executions)
+        if (!functionSchemaExists(executionFunctionSelector)) {
+            revert SharedValidation.FunctionError(executionFunctionSelector);
+        }
+        
+        // Validate RBAC permissions
+        if (!_hasActionPermission(caller, executionFunctionSelector, action)) {
+            revert SharedValidation.NoPermission(caller);
+        }
+    }
+    
+    /**
+     * @dev Validates STANDARD execution type and extracts the execution function selector from a transaction record
+     * @param txRecord The transaction record containing execution type and options
+     * @return executionFunctionSelector The extracted function selector
+     * @notice Reverts if execution type is not STANDARD
+     */
+    function _extractExecutionFunctionSelector(
+        StateAbstraction.TxRecord memory txRecord
+    ) internal pure returns (bytes4 executionFunctionSelector) {
+        // Require STANDARD execution type
+        if (txRecord.params.executionType != StateAbstraction.ExecutionType.STANDARD) {
+            revert SharedValidation.OperationNotSupported();
+        }
+        
+        // Extract execution function selector
+        StateAbstraction.StandardExecutionOptions memory execOptions = abi.decode(
+            txRecord.params.executionOptions,
+            (StateAbstraction.StandardExecutionOptions)
+        );
+        return execOptions.functionSelector;
+    }
 }
 
 
