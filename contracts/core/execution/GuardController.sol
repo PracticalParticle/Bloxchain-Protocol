@@ -3,6 +3,8 @@ pragma solidity ^0.8.25;
 
 import "../base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
+import "./lib/definitions/GuardControllerDefinitions.sol";
+import "../../interfaces/IDefinition.sol";
 
 /**
  * @title GuardController
@@ -39,6 +41,35 @@ import "../../utils/SharedValidation.sol";
  */
 abstract contract GuardController is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
+
+    /**
+     * @notice Initializer to initialize GuardController
+     * @param initialOwner The initial owner address
+     * @param broadcaster The broadcaster address
+     * @param recovery The recovery address
+     * @param timeLockPeriodSec The timelock period in seconds
+     * @param eventForwarder The event forwarder address 
+     */
+    function initialize(
+        address initialOwner,
+        address broadcaster,
+        address recovery,
+        uint256 timeLockPeriodSec,
+        address eventForwarder
+    ) public virtual onlyInitializing {
+        // Initialize base state machine (only if not already initialized)
+        if (!_secureState.initialized) {
+            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        }
+        
+        // Load GuardController-specific definitions
+        IDefinition.RolePermission memory guardControllerPermissions = GuardControllerDefinitions.getRolePermissions();
+        _loadDefinitions(
+            GuardControllerDefinitions.getFunctionSchemas(),
+            guardControllerPermissions.roleHashes,
+            guardControllerPermissions.functionPermissions
+        );
+    }
 
     // ============ EXECUTION FUNCTIONS ============
     

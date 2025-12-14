@@ -29,13 +29,12 @@ contract ControlBlox is GuardController, DynamicRBAC, SecureOwnable {
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder
-    ) public virtual override(DynamicRBAC, SecureOwnable) initializer {
-        // Initialize both parent contracts
+    ) public virtual override(GuardController, DynamicRBAC, SecureOwnable) initializer {
+        // Initialize all parent contracts
         // The guarded initialization ensures BaseStateMachine is only initialized once
+        GuardController.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         DynamicRBAC.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
-        
-        // GuardController doesn't need initialization as it only provides execution functions
     }
 }
 
