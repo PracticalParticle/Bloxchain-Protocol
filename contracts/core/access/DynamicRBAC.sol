@@ -348,30 +348,28 @@ abstract contract DynamicRBAC is BaseStateMachine {
     }
 
     function _removeRole(bytes32 roleHash) internal {
-        // Validate that the role is not protected (early check)
-        if (_getSecureState().getRole(roleHash).isProtected) {
-            revert SharedValidation.CannotModifyProtectedRoles();
-        }
+        _ensureRoleNotProtected(roleHash);
 
         StateAbstraction.removeRole(_getSecureState(), roleHash);
     }
 
     function _addWalletToRole(bytes32 roleHash, address wallet) internal {
-        // Validate that the role is not protected
-        if (_getSecureState().getRole(roleHash).isProtected) {
-            revert SharedValidation.CannotModifyProtectedRoles();
-        }
+        _ensureRoleNotProtected(roleHash);
 
         StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
     }
 
     function _revokeWallet(bytes32 roleHash, address wallet) internal {
-        // Validate that the role is not protected
+        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    /**
+     * @dev Validates that a role is not protected
+     */
+    function _ensureRoleNotProtected(bytes32 roleHash) internal view {
         if (_getSecureState().getRole(roleHash).isProtected) {
             revert SharedValidation.CannotModifyProtectedRoles();
         }
-
-        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
     }
 
     function _registerFunction(
@@ -391,7 +389,7 @@ abstract contract DynamicRBAC is BaseStateMachine {
         bytes32 operationType = keccak256(bytes(operationName));
 
         // Convert actions array to bitmap
-        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
+        uint16 supportedActionsBitmap = StateAbstraction.createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
         StateAbstraction.createFunctionSchema(
@@ -459,19 +457,6 @@ abstract contract DynamicRBAC is BaseStateMachine {
         }
         
         return actions;
-    }
-
-    /**
-     * @dev Converts an array of TxActions to a bitmap
-     * @param actions Array of TxActions to convert
-     * @return Bitmap representation of the actions
-     */
-    function _createBitmapFromActions(StateAbstraction.TxAction[] memory actions) internal pure returns (uint16) {
-        uint16 bitmap = 0;
-        for (uint256 i = 0; i < actions.length; i++) {
-            bitmap = uint16(bitmap | (1 << uint8(actions[i])));
-        }
-        return bitmap;
     }
 
 }
