@@ -16,17 +16,28 @@ import "../../../../interfaces/IDefinition.sol";
 library DynamicRBACDefinitions {
     
     // Operation Type Constants
-    bytes32 public constant ROLE_EDITING_TOGGLE = keccak256("ROLE_EDITING_TOGGLE");
+    bytes32 public constant ROLE_CONFIG_BATCH = keccak256("ROLE_CONFIG_BATCH");
     
     // Function Selector Constants
-    bytes4 public constant ROLE_EDITING_TOGGLE_SELECTOR = bytes4(keccak256("executeRoleEditingToggle(bool)"));
+    // Internal execution entrypoint for RBAC configuration batches
+    bytes4 public constant ROLE_CONFIG_BATCH_EXECUTE_SELECTOR =
+        bytes4(keccak256("executeRoleConfigBatch((uint8,bytes)[])"));
     
     // Meta-transaction Function Selectors
-    bytes4 public constant ROLE_EDITING_TOGGLE_META_SELECTOR = bytes4(keccak256("updateRoleEditingToggleRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    // roleConfigBatchRequestAndApprove(StateAbstraction.MetaTransaction memory metaTx)
+    bytes4 public constant ROLE_CONFIG_BATCH_META_SELECTOR =
+        bytes4(
+            keccak256(
+                "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
+            )
+        );
     
     /**
      * @dev Returns predefined function schemas
      * @return Array of function schema definitions
+     *
+     * Registers the meta-transaction handler for RBAC configuration batches.
+     * All dynamic RBAC changes must go through this single time-locked workflow.
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
         StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](1);
@@ -37,10 +48,10 @@ library DynamicRBACDefinitions {
         metaRequestApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "updateRoleEditingToggleRequestAndApprove",
-            functionSelector: ROLE_EDITING_TOGGLE_META_SELECTOR,
-            operationType: ROLE_EDITING_TOGGLE,
-            operationName: "ROLE_EDITING_TOGGLE",
+            functionName: "roleConfigBatchRequestAndApprove",
+            functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
+            operationType: ROLE_CONFIG_BATCH,
+            operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
             isProtected: true
         });
@@ -51,21 +62,32 @@ library DynamicRBACDefinitions {
     /**
      * @dev Returns predefined role hashes and their corresponding function permissions
      * @return RolePermission struct containing roleHashes and functionPermissions arrays
+     *
+     * OWNER: allowed to SIGN_META_REQUEST_AND_APPROVE for the batch handler
+     * BROADCASTER: allowed to EXECUTE_META_REQUEST_AND_APPROVE for the batch handler
      */
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
-        bytes32[] memory roleHashes;
-        StateAbstraction.FunctionPermission[] memory functionPermissions;
-        roleHashes = new bytes32[](1);
-        functionPermissions = new StateAbstraction.FunctionPermission[](1);
+        bytes32[] memory roleHashes = new bytes32[](2);
+        StateAbstraction.FunctionPermission[] memory functionPermissions =
+            new StateAbstraction.FunctionPermission[](2);
         
-        // Role editing toggle permission (only broadcaster can execute)
+        // Owner: sign meta batch
+        StateAbstraction.TxAction[] memory ownerActions = new StateAbstraction.TxAction[](1);
+        ownerActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        
+        roleHashes[0] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[0] = StateAbstraction.FunctionPermission({
+            functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerActions)
+        });
+        
+        // Broadcaster: execute meta batch
         StateAbstraction.TxAction[] memory broadcasterActions = new StateAbstraction.TxAction[](1);
         broadcasterActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
-        // Broadcaster: Role Editing Toggle Meta
-        roleHashes[0] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[0] = StateAbstraction.FunctionPermission({
-            functionSelector: ROLE_EDITING_TOGGLE_META_SELECTOR,
+        roleHashes[1] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[1] = StateAbstraction.FunctionPermission({
+            functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterActions)
         });
         

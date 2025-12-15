@@ -28,18 +28,41 @@ abstract contract DynamicRBAC is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
     using SharedValidation for *;
     
-    // State variables
-    bool public roleEditingEnabled;
+    /**
+     * @dev Action types for batched RBAC configuration
+     */
+    enum RoleConfigActionType {
+        CREATE_ROLE,
+        REMOVE_ROLE,
+        ADD_WALLET,
+        REVOKE_WALLET,
+        REGISTER_FUNCTION,
+        UNREGISTER_FUNCTION,
+        LOAD_DEFINITIONS
+    }
+
+    /**
+     * @dev Encodes a single RBAC configuration action in a batch
+     */
+    struct RoleConfigAction {
+        RoleConfigActionType actionType;
+        bytes data;
+    }
     
-    // Events
-    event RoleEditingToggled(bool enabled);
-    event FunctionRegistered(bytes4 indexed functionSelector, string functionSignature, bytes32 operationType);
-    event FunctionUnregistered(bytes4 indexed functionSelector);
-    event RoleCreated(bytes32 indexed roleHash, string roleName, uint256 maxWallets, bool isProtected);
-    event RoleRemoved(bytes32 indexed roleHash);
-    event WalletAddedToRole(bytes32 indexed roleHash, address indexed wallet);
-    event WalletRemovedFromRole(bytes32 indexed roleHash, address indexed wallet);
-    event DefinitionsLoaded(uint256 functionSchemaCount, uint256 rolePermissionCount);
+    /**
+     * @dev Unified event for all RBAC configuration changes applied via batches
+     *
+     * - actionType: the high-level type of configuration action
+     * - roleHash: affected role hash (if applicable, otherwise 0)
+     * - functionSelector: affected function selector (if applicable, otherwise 0)
+     * - data: optional action-specific payload (kept minimal for size; decoded off-chain if needed)
+     */
+    event RoleConfigApplied(
+        RoleConfigActionType indexed actionType,
+        bytes32 indexed roleHash,
+        bytes4 indexed functionSelector,
+        bytes data
+    );
 
     /**
      * @notice Initializer to initialize DynamicRBAC
@@ -68,149 +91,47 @@ abstract contract DynamicRBAC is BaseStateMachine {
             permissions.roleHashes,
             permissions.functionPermissions
         );
-        
-        // Initialize role editing as enabled by default
-        roleEditingEnabled = true;
     }
 
-    // Role Editing Control Functions
+    // ============ ROLE CONFIGURATION BATCH INTERFACE ============
+
     /**
-     * @dev Creates execution options for updating the role editing flag
-     * @param enabled True to enable role editing, false to disable
-     * @return The execution options
+     * @dev Creates execution options for a RBAC configuration batch
+     * @param actions Encoded role configuration actions
+     * @return The execution options for StateAbstraction
      */
-    function updateRoleEditingToggleExecutionOptions(
-        bool enabled
+    function roleConfigBatchExecutionOptions(
+        RoleConfigAction[] memory actions
     ) public pure returns (bytes memory) {
         return _createStandardExecutionOptions(
-            DynamicRBACDefinitions.ROLE_EDITING_TOGGLE_SELECTOR,
-            abi.encode(enabled)
+            DynamicRBACDefinitions.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
+            abi.encode(actions)
         );
     }
 
     /**
-     * @dev Requests and approves a role editing toggle using a meta-transaction
+     * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record
+     * @notice OWNER signs, BROADCASTER executes according to DynamicRBACDefinitions
      */
-    function updateRoleEditingToggleRequestAndApprove(
+    function roleConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _requestAndApproveTransaction(
             metaTx,
-            DynamicRBACDefinitions.ROLE_EDITING_TOGGLE_META_SELECTOR,
+            DynamicRBACDefinitions.ROLE_CONFIG_BATCH_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
     }
 
     /**
-     * @dev External function that can only be called by the contract itself to execute role editing toggle
-     * @param enabled True to enable role editing, false to disable
+     * @dev External function that can only be called by the contract itself to execute a RBAC configuration batch
+     * @param actions Encoded role configuration actions
      */
-    function executeRoleEditingToggle(bool enabled) external {
-        SharedValidation.validateInternalCall(address(this));
-        _toggleRoleEditing(enabled);
-    }
-
-    // Core Role Management Functions
-    /**
-     * @dev Creates a new dynamic role with function permissions (always non-protected)
-     * @param roleName The name of the role to create
-     * @param maxWallets Maximum number of wallets allowed for this role
-     * @param functionPermissions Array of function permissions to grant to the role
-     * @return The hash of the created role
-     * @notice Role becomes uneditable after creation - all permissions must be set at creation time
-     */
-    function createNewRole(
-        string memory roleName,
-        uint256 maxWallets,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
-    ) external onlyOwner returns (bytes32) {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        SharedValidation.validateRoleNameNotEmpty(roleName);
-        SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);
-        
-        bytes32 roleHash = keccak256(bytes(roleName));
-        
-        // Create the role in the secure state with isProtected = false
-        // StateAbstraction.createRole already validates role doesn't exist
-        StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, false);
-        
-        // Add all function permissions to the role
-        for (uint i = 0; i < functionPermissions.length; i++) {
-            StateAbstraction.addFunctionToRole(
-                _getSecureState(), 
-                roleHash, 
-                functionPermissions[i]
-            );
-        }
-        
-        emit RoleCreated(roleHash, roleName, maxWallets, false);
-        return roleHash;
-    }
-
-      /**
-     * @dev Removes a role from the system
-     * @param roleHash The hash of the role to remove
-     * @notice Security: Cannot remove protected roles
-     * @notice Role editing must be enabled to remove roles
-     * @notice This will remove the role even if it has wallets assigned
-     */
-    function removeRole(bytes32 roleHash) external onlyOwner {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        // Validate that the role is not protected (early check)
-        if (_getSecureState().getRole(roleHash).isProtected) revert SharedValidation.CannotModifyProtectedRoles();
-        
-        // StateAbstraction.removeRole already validates:
-        // - role exists
-        // - role is not protected
-        StateAbstraction.removeRole(_getSecureState(), roleHash);
-        emit RoleRemoved(roleHash);
-    }
-
-    /**
-     * @dev Adds a wallet to a role
-     * @param roleHash The hash of the role
-     * @param wallet The wallet address to add
-     */
-    function addWalletToRole(bytes32 roleHash, address wallet) external onlyOwner {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        // Validate that the role is not protected
-        if (_getSecureState().getRole(roleHash).isProtected) revert SharedValidation.CannotModifyProtectedRoles();
-        
-        // StateAbstraction.assignWallet already validates:
-        // - wallet is not zero address
-        // - role exists
-        // - role has capacity
-        // - wallet is not already in role
-        StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
-        emit WalletAddedToRole(roleHash, wallet);
-    }
-
-    /**
-     * @dev Removes a wallet from a role
-     * @param roleHash The hash of the role
-     * @param wallet The wallet address to remove
-     * @notice Security: Cannot remove the last wallet from a role to prevent empty roles
-     */
-    function revokeWallet(bytes32 roleHash, address wallet) external onlyOwner {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        // Validate that the role is not protected
-        if (_getSecureState().getRole(roleHash).isProtected) revert SharedValidation.CannotModifyProtectedRoles();
-        
-        // StateAbstraction.revokeWallet already validates:
-        // - role exists
-        // - wallet exists in role
-        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
-        emit WalletRemovedFromRole(roleHash, wallet);
+    function executeRoleConfigBatch(RoleConfigAction[] calldata actions) external {
+        SharedValidation.validateInternalCallInternal(address(this));
+        _executeRoleConfigBatch(actions);
     }
 
     // Essential Query Functions Only
@@ -259,143 +180,20 @@ abstract contract DynamicRBAC is BaseStateMachine {
         );
     }
 
-    // ============ FUNCTION REGISTRATION ============
-
-    /**
-     * @dev Registers a function schema with its full signature
-     * @param functionSignature The full function signature (e.g., "transfer(address,uint256)")
-     * @param operationName The operation name (hashed to operationType)
-     * @param supportedActions Array of supported actions (converted to bitmap internally)
-     * @notice Function selector is automatically derived from the signature
-     * @notice Only callable by the owner
-     * @notice Role editing must be enabled to register functions
-     * @notice Only non-protected function schemas can be registered
-     */
-    function registerFunction(
-        string memory functionSignature,
-        string memory operationName,
-        StateAbstraction.TxAction[] memory supportedActions
-    ) external onlyOwner {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        // Derive function selector from signature
-        bytes4 functionSelector = bytes4(keccak256(bytes(functionSignature)));
-        
-        // Validate that function schema doesn't already exist
-        if (functionSchemaExists(functionSelector)) {
-            revert SharedValidation.FunctionError(functionSelector);
-        }
-        
-        // Derive operation type from name
-        bytes32 operationType = keccak256(bytes(operationName));
-        
-        // Convert actions array to bitmap
-        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
-        
-        // Create function schema directly (always non-protected)
-        StateAbstraction.createFunctionSchema(
-            _getSecureState(),
-            functionSignature,
-            functionSelector,
-            operationType,
-            operationName,
-            supportedActionsBitmap,
-            false // isProtected = false for dynamically registered functions
-        );
-        
-        emit FunctionRegistered(functionSelector, functionSignature, operationType);
-    }
-
-    /**
-     * @dev Unregisters a function schema and removes its signature
-     * @param functionSelector The function selector to remove
-     * @param safeRemoval If true, ensures no role currently references this function
-     * @notice Only callable by the owner
-     * @notice Role editing must be enabled to unregister functions
-     * @notice Role permissions should be removed separately via DynamicRBAC
-     */
-    function unregisterFunction(bytes4 functionSelector, bool safeRemoval) external onlyOwner {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
-        // Validate function exists
-        if (!functionSchemaExists(functionSelector)) {
-            revert SharedValidation.FunctionError(functionSelector);
-        }
-        
-        // Ensure not protected
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
-        if (schema.isProtected) {
-            revert SharedValidation.CannotModifyProtectedRoles();
-        }
-
-        // If safeRemoval is requested, ensure no role currently references this function
-        if (safeRemoval) {
-            bytes32[] memory roles = _getSecureState().getSupportedRolesList();
-            for (uint256 i = 0; i < roles.length; i++) {
-                StateAbstraction.FunctionPermission[] memory perms = _getSecureState().getRoleFunctionPermissions(roles[i]);
-                for (uint256 j = 0; j < perms.length; j++) {
-                    if (perms[j].functionSelector == functionSelector) {
-                        revert SharedValidation.FunctionError(functionSelector);
-                    }
-                }
-            }
-        }
-        
-        // Remove function schema directly
-        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
-        
-        emit FunctionUnregistered(functionSelector);
-    }
-
-    // ============ PUBLIC DEFINITION MANAGEMENT ============
-
-    /**
-     * @dev Public function to load function schemas and role permissions dynamically at runtime
-     * @param functionSchemas Array of function schema definitions to load
-     * @param roleHashes Array of role hashes to add permissions to
-     * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @notice Only non-protected function schemas can be loaded dynamically
-     * @notice Role editing must be enabled to load definitions
-     * @notice Only the owner can call this function
-     * @notice To unload definitions, use unregisterFunction and removeRole individually
-     */
-    function loadDefinitions(
-        StateAbstraction.FunctionSchema[] memory functionSchemas,
-        bytes32[] memory roleHashes,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
-    ) external onlyOwner {
-        _loadDynamicDefinitions(functionSchemas, roleHashes, functionPermissions);
-    }
-
     // ============ HELPER FUNCTIONS ============
 
     /**
-     * @dev Internal function to toggle role editing
-     * @param enabled True to enable role editing, false to disable
-     */
-    function _toggleRoleEditing(bool enabled) internal {
-        roleEditingEnabled = enabled;
-        emit RoleEditingToggled(enabled);
-    }
-
-     /**
      * @dev Loads function schemas and role permissions dynamically at runtime
      * @param functionSchemas Array of function schema definitions to load
      * @param roleHashes Array of role hashes to add permissions to
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
      * @notice Only non-protected function schemas can be loaded dynamically
-     * @notice Role editing must be enabled to load definitions
      */
     function _loadDynamicDefinitions(
         StateAbstraction.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
         StateAbstraction.FunctionPermission[] memory functionPermissions
     ) internal {
-        // Validate that role editing is enabled
-        if (!roleEditingEnabled) revert SharedValidation.RoleEditingDisabled();
-        
         // Validate array lengths match
         SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
         
@@ -423,9 +221,217 @@ abstract contract DynamicRBAC is BaseStateMachine {
         
         // Call the base implementation
         _loadDefinitions(functionSchemas, roleHashes, functionPermissions);
-        
-        // Emit event for successful loading
-        emit DefinitionsLoaded(functionSchemas.length, roleHashes.length);
+    }
+
+    /**
+     * @dev Internal helper to execute a RBAC configuration batch
+     * @param actions Encoded role configuration actions
+     */
+    function _executeRoleConfigBatch(RoleConfigAction[] calldata actions) internal {
+        for (uint256 i = 0; i < actions.length; i++) {
+            RoleConfigAction calldata action = actions[i];
+
+            if (action.actionType == RoleConfigActionType.CREATE_ROLE) {
+                (
+                    string memory roleName,
+                    uint256 maxWallets,
+                    StateAbstraction.FunctionPermission[] memory functionPermissions
+                ) = abi.decode(action.data, (string, uint256, StateAbstraction.FunctionPermission[]));
+
+                bytes32 roleHash = _createNewRole(roleName, maxWallets, functionPermissions);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.CREATE_ROLE,
+                    roleHash,
+                    bytes4(0),
+                    "" // optional: abi.encode(roleName, maxWallets)
+                );
+            } else if (action.actionType == RoleConfigActionType.REMOVE_ROLE) {
+                (bytes32 roleHash) = abi.decode(action.data, (bytes32));
+                _removeRole(roleHash);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.REMOVE_ROLE,
+                    roleHash,
+                    bytes4(0),
+                    ""
+                );
+            } else if (action.actionType == RoleConfigActionType.ADD_WALLET) {
+                (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
+                _addWalletToRole(roleHash, wallet);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.ADD_WALLET,
+                    roleHash,
+                    bytes4(0),
+                    "" // optional: abi.encode(wallet)
+                );
+            } else if (action.actionType == RoleConfigActionType.REVOKE_WALLET) {
+                (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
+                _revokeWallet(roleHash, wallet);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.REVOKE_WALLET,
+                    roleHash,
+                    bytes4(0),
+                    "" // optional: abi.encode(wallet)
+                );
+            } else if (action.actionType == RoleConfigActionType.REGISTER_FUNCTION) {
+                (
+                    string memory functionSignature,
+                    string memory operationName,
+                    StateAbstraction.TxAction[] memory supportedActions
+                ) = abi.decode(action.data, (string, string, StateAbstraction.TxAction[]));
+
+                bytes4 functionSelector =
+                    _registerFunction(functionSignature, operationName, supportedActions);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.REGISTER_FUNCTION,
+                    bytes32(0),
+                    functionSelector,
+                    "" // optional: abi.encode(operationName)
+                );
+            } else if (action.actionType == RoleConfigActionType.UNREGISTER_FUNCTION) {
+                (bytes4 functionSelector, bool safeRemoval) = abi.decode(action.data, (bytes4, bool));
+                _unregisterFunction(functionSelector, safeRemoval);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.UNREGISTER_FUNCTION,
+                    bytes32(0),
+                    functionSelector,
+                    ""
+                );
+            } else if (action.actionType == RoleConfigActionType.LOAD_DEFINITIONS) {
+                (
+                    StateAbstraction.FunctionSchema[] memory functionSchemas,
+                    bytes32[] memory roleHashes,
+                    StateAbstraction.FunctionPermission[] memory functionPermissions
+                ) = abi.decode(
+                        action.data,
+                        (StateAbstraction.FunctionSchema[], bytes32[], StateAbstraction.FunctionPermission[])
+                    );
+
+                _loadDynamicDefinitions(functionSchemas, roleHashes, functionPermissions);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.LOAD_DEFINITIONS,
+                    bytes32(0),
+                    bytes4(0),
+                    abi.encode(functionSchemas.length, roleHashes.length)
+                );
+            } else {
+                revert SharedValidation.OperationNotSupported();
+            }
+        }
+    }
+
+    // ============ INTERNAL ROLE / FUNCTION HELPERS ============
+
+    function _createNewRole(
+        string memory roleName,
+        uint256 maxWallets,
+        StateAbstraction.FunctionPermission[] memory functionPermissions
+    ) internal returns (bytes32 roleHash) {
+        SharedValidation.validateRoleNameNotEmpty(roleName);
+        SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);
+
+        roleHash = keccak256(bytes(roleName));
+
+        // Create the role in the secure state with isProtected = false
+        StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, false);
+
+        // Add all function permissions to the role
+        for (uint256 i = 0; i < functionPermissions.length; i++) {
+            StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermissions[i]);
+        }
+    }
+
+    function _removeRole(bytes32 roleHash) internal {
+        // Validate that the role is not protected (early check)
+        if (_getSecureState().getRole(roleHash).isProtected) {
+            revert SharedValidation.CannotModifyProtectedRoles();
+        }
+
+        StateAbstraction.removeRole(_getSecureState(), roleHash);
+    }
+
+    function _addWalletToRole(bytes32 roleHash, address wallet) internal {
+        // Validate that the role is not protected
+        if (_getSecureState().getRole(roleHash).isProtected) {
+            revert SharedValidation.CannotModifyProtectedRoles();
+        }
+
+        StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    function _revokeWallet(bytes32 roleHash, address wallet) internal {
+        // Validate that the role is not protected
+        if (_getSecureState().getRole(roleHash).isProtected) {
+            revert SharedValidation.CannotModifyProtectedRoles();
+        }
+
+        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    function _registerFunction(
+        string memory functionSignature,
+        string memory operationName,
+        StateAbstraction.TxAction[] memory supportedActions
+    ) internal returns (bytes4 functionSelector) {
+        // Derive function selector from signature
+        functionSelector = bytes4(keccak256(bytes(functionSignature)));
+
+        // Validate that function schema doesn't already exist
+        if (functionSchemaExists(functionSelector)) {
+            revert SharedValidation.FunctionError(functionSelector);
+        }
+
+        // Derive operation type from name
+        bytes32 operationType = keccak256(bytes(operationName));
+
+        // Convert actions array to bitmap
+        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
+
+        // Create function schema directly (always non-protected)
+        StateAbstraction.createFunctionSchema(
+            _getSecureState(),
+            functionSignature,
+            functionSelector,
+            operationType,
+            operationName,
+            supportedActionsBitmap,
+            false // isProtected = false for dynamically registered functions
+        );
+    }
+
+    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
+        // Validate function exists
+        if (!functionSchemaExists(functionSelector)) {
+            revert SharedValidation.FunctionError(functionSelector);
+        }
+
+        // Ensure not protected
+        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        if (schema.isProtected) {
+            revert SharedValidation.CannotModifyProtectedRoles();
+        }
+
+        // If safeRemoval is requested, ensure no role currently references this function
+        if (safeRemoval) {
+            bytes32[] memory roles = _getSecureState().getSupportedRolesList();
+            for (uint256 i = 0; i < roles.length; i++) {
+                StateAbstraction.FunctionPermission[] memory perms =
+                    _getSecureState().getRoleFunctionPermissions(roles[i]);
+                for (uint256 j = 0; j < perms.length; j++) {
+                    if (perms[j].functionSelector == functionSelector) {
+                        revert SharedValidation.FunctionError(functionSelector);
+                    }
+                }
+            }
+        }
+
+        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
     }
 
     /**
