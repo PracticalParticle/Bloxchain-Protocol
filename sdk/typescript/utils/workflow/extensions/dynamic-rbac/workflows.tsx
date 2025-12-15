@@ -14,9 +14,7 @@ import { buildWorkflow } from '../../core/workflow-builder';
  * Get all operation workflows for DynamicRBAC
  */
 export function getDynamicRBACWorkflows(): OperationWorkflow[] {
-  return [
-    getRoleEditingToggleWorkflow()
-  ];
+  return [getRoleConfigBatchWorkflow()];
 }
 
 /**
@@ -28,30 +26,30 @@ export function getDynamicRBACWorkflowForOperation(operationType: Hex): Operatio
 }
 
 /**
- * Role Editing Toggle Workflow
+ * RBAC Configuration Batch Workflow
  */
-function getRoleEditingToggleWorkflow(): OperationWorkflow {
+function getRoleConfigBatchWorkflow(): OperationWorkflow {
   const paths: WorkflowPath[] = [
-    // Meta-Transaction Role Toggle
+    // Meta-Transaction RBAC configuration batch
     {
-      name: "Meta-Transaction Role Toggle",
-      description: "Toggle role editing using meta-transaction (owner signs, broadcaster executes)",
+      name: 'Meta-Transaction RBAC Config Batch',
+      description: 'Apply a batch of RBAC configuration changes via meta-transaction (owner signs, broadcaster executes)',
       steps: [
         {
-          functionName: "signRoleEditingToggleRequestAndApprove",
+          functionName: 'signRoleConfigBatchRequestAndApprove',
           functionSelector: '0x00000000' as Hex,
           action: TxAction.SIGN_META_REQUEST_AND_APPROVE,
-          roles: ["OWNER"],
-          description: "Owner signs meta-transaction to toggle role editing",
+          roles: ['OWNER'],
+          description: 'Owner signs meta-transaction for RBAC configuration batch',
           isOffChain: true,
           phaseType: PhaseType.SIGNING
         },
         {
-          functionName: "updateRoleEditingToggleRequestAndApprove",
-          functionSelector: DYNAMIC_RBAC_FUNCTION_SELECTORS.ROLE_EDITING_TOGGLE_META_SELECTOR,
+          functionName: 'roleConfigBatchRequestAndApprove',
+          functionSelector: DYNAMIC_RBAC_FUNCTION_SELECTORS.ROLE_CONFIG_BATCH_META_SELECTOR,
           action: TxAction.EXECUTE_META_REQUEST_AND_APPROVE,
-          roles: ["BROADCASTER"],
-          description: "Broadcaster executes meta-transaction to toggle role editing",
+          roles: ['BROADCASTER'],
+          description: 'Broadcaster executes RBAC configuration batch',
           isOffChain: false,
           phaseType: PhaseType.EXECUTION
         }
@@ -64,10 +62,10 @@ function getRoleEditingToggleWorkflow(): OperationWorkflow {
   ];
 
   return buildWorkflow({
-    operationType: DYNAMIC_RBAC_OPERATION_TYPES.ROLE_EDITING_TOGGLE,
-    operationName: "ROLE_EDITING_TOGGLE",
+    operationType: DYNAMIC_RBAC_OPERATION_TYPES.ROLE_CONFIG_BATCH,
+    operationName: 'ROLE_CONFIG_BATCH',
     paths,
-    supportedRoles: ["OWNER", "BROADCASTER"]
+    supportedRoles: ['OWNER', 'BROADCASTER']
   });
 }
 

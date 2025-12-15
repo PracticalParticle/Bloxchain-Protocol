@@ -137,33 +137,25 @@ export interface ISecureOwnable {
  * may be provided but are not part of the core contract interface.
  */
 export interface IDynamicRBAC {
-  // Role Editing Control
-  roleEditingEnabled(): Promise<boolean>;
-  updateRoleEditingToggleExecutionOptions(enabled: boolean): Promise<Hex>;
-  updateRoleEditingToggleRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
+  /**
+   * @dev Creates execution options for a RBAC configuration batch
+   */
+  roleConfigBatchExecutionOptions(
+    actions: Array<{ actionType: number; data: Hex }>
+  ): Promise<Hex>;
 
-  // Role Management Functions (from contract)
-  createNewRole(
-    roleName: string,
-    maxWallets: bigint,
-    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
+  /**
+   * @dev Requests and approves a RBAC configuration batch using a meta-transaction
+   */
+  roleConfigBatchRequestAndApprove(
+    metaTx: MetaTransaction,
     options: TransactionOptions
   ): Promise<TransactionResult>;
-  removeRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult>;
 
-  // Wallet Management Functions (from contract)
-  addWalletToRole(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult>;
-  revokeWallet(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult>;
+  // Query Functions (from contract)
+  roleExists(roleHash: Hex): Promise<boolean>;
 
-  // Function Registration (from contract)
-  registerFunction(
-    functionSignature: string,
-    operationName: string,
-    supportedActions: TxAction[],
-    options: TransactionOptions
-  ): Promise<TransactionResult>;
-  unregisterFunction(functionSelector: Hex, safeRemoval: boolean, options: TransactionOptions): Promise<TransactionResult>;
-  // Note: functionSchemaExists is available through BaseStateMachine inheritance
+  // Note: getFunctionSchema remains available from the contract and is exposed via the wrapper
   getFunctionSchema(functionSelector: Hex): Promise<{
     functionName: string;
     functionSelectorReturn: Hex;
@@ -172,22 +164,4 @@ export interface IDynamicRBAC {
     supportedActions: TxAction[];
     isProtected: boolean;
   }>;
-
-  // Definition Management (from contract)
-  loadDefinitions(
-    functionSchemas: Array<{
-      functionName: string;
-      functionSelector: Hex;
-      operationType: Hex;
-      operationName: string;
-      supportedActionsBitmap: Uint16Bitmap;
-      isProtected: boolean;
-    }>,
-    roleHashes: Hex[],
-    functionPermissions: Array<{ functionSelector: Hex; grantedActionsBitmap: Uint16Bitmap }>,
-    options: TransactionOptions
-  ): Promise<TransactionResult>;
-
-  // Query Functions (from contract)
-  roleExists(roleHash: Hex): Promise<boolean>;
 }

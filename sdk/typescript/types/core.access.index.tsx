@@ -49,7 +49,7 @@ export type FunctionSelector = typeof FUNCTION_SELECTORS[keyof typeof FUNCTION_S
  * These match the keccak256 hashes defined in DynamicRBACDefinitions.sol
  */
 export const DYNAMIC_RBAC_OPERATION_TYPES = {
-  ROLE_EDITING_TOGGLE: keccak256(new TextEncoder().encode("ROLE_EDITING_TOGGLE"))
+  ROLE_CONFIG_BATCH: keccak256(new TextEncoder().encode("ROLE_CONFIG_BATCH"))
 } as const;
 
 /**
@@ -57,15 +57,13 @@ export const DYNAMIC_RBAC_OPERATION_TYPES = {
  * These match the selectors from DynamicRBACDefinitions.sol
  */
 export const DYNAMIC_RBAC_FUNCTION_SELECTORS = {
-  ROLE_EDITING_TOGGLE_SELECTOR: keccak256(new TextEncoder().encode("executeRoleEditingToggle(bool)")).slice(0, 10) as Hex,
-  ROLE_EDITING_TOGGLE_META_SELECTOR: keccak256(new TextEncoder().encode("updateRoleEditingToggleRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))")).slice(0, 10) as Hex,
-  CREATE_ROLE: keccak256(new TextEncoder().encode("createRole(string,uint256)")).slice(0, 10) as Hex,
-  UPDATE_ROLE: keccak256(new TextEncoder().encode("updateRole(bytes32,string,uint256)")).slice(0, 10) as Hex,
-  DELETE_ROLE: keccak256(new TextEncoder().encode("deleteRole(bytes32)")).slice(0, 10) as Hex,
-  ADD_WALLET_TO_ROLE: keccak256(new TextEncoder().encode("addWalletToRole(bytes32,address)")).slice(0, 10) as Hex,
-  REMOVE_WALLET_FROM_ROLE: keccak256(new TextEncoder().encode("revokeWallet(bytes32,address)")).slice(0, 10) as Hex,
-  REPLACE_WALLET_IN_ROLE: keccak256(new TextEncoder().encode("replaceWalletInRole(bytes32,address,address)")).slice(0, 10) as Hex,
-  ADD_FUNCTION_PERMISSION_TO_ROLE: keccak256(new TextEncoder().encode("addFunctionPermissionToRole(bytes32,bytes4,uint8)")).slice(0, 10) as Hex,
-  REMOVE_FUNCTION_PERMISSION_FROM_ROLE: keccak256(new TextEncoder().encode("removeFunctionPermissionFromRole(bytes32,bytes4)")).slice(0, 10) as Hex
+  ROLE_CONFIG_BATCH_EXECUTE_SELECTOR: keccak256(
+    new TextEncoder().encode("executeRoleConfigBatch((uint8,bytes)[])")
+  ).slice(0, 10) as Hex,
+  ROLE_CONFIG_BATCH_META_SELECTOR: keccak256(
+    new TextEncoder().encode(
+      "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
+    )
+  ).slice(0, 10) as Hex
 } as const;
 

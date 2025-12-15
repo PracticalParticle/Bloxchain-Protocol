@@ -43,7 +43,7 @@ type OperationType =
   | 'BROADCASTER_UPDATE'
   | 'RECOVERY_UPDATE'
   | 'TIMELOCK_UPDATE'
-  | 'ROLE_EDITING_TOGGLE'
+  | 'ROLE_CONFIG_BATCH'
   | 'CUSTOM'
 
 // Transaction actions
@@ -794,7 +794,7 @@ function isOperationType(value: unknown): value is OperationType {
     'BROADCASTER_UPDATE',
     'RECOVERY_UPDATE',
     'TIMELOCK_UPDATE',
-    'ROLE_EDITING_TOGGLE',
+    'ROLE_CONFIG_BATCH',
     'CUSTOM'
   ].includes(value)
 }

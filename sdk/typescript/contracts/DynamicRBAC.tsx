@@ -5,7 +5,7 @@ import { IDynamicRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
-import { Uint16Bitmap, fromContractValue } from '../utils/bitmap';
+import { Uint16Bitmap } from '../utils/bitmap';
 
 /**
  * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
@@ -43,123 +43,28 @@ export class DynamicRBAC extends BaseStateMachine implements IDynamicRBAC {
     super(client, walletClient, contractAddress, chain, DynamicRBACABIJson);
   }
 
-  // ============ ROLE EDITING CONTROL ============
+  // ============ ROLE CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution options for updating the role editing flag
-   * @param enabled True to enable role editing, false to disable
-   * @return The execution options bytes
+   * @dev Creates execution options for a RBAC configuration batch
+   * @param actions Encoded role configuration actions
    */
-  async updateRoleEditingToggleExecutionOptions(enabled: boolean): Promise<Hex> {
-    return this.executeReadContract<Hex>('updateRoleEditingToggleExecutionOptions', [enabled]);
+  async roleConfigBatchExecutionOptions(
+    actions: Array<{ actionType: number; data: Hex }>
+  ): Promise<Hex> {
+    return this.executeReadContract<Hex>('roleConfigBatchExecutionOptions', [actions]);
   }
 
   /**
-   * @dev Requests and approves a role editing toggle using a meta-transaction
+   * @dev Requests and approves a RBAC configuration batch using a meta-transaction
    * @param metaTx The meta-transaction
    * @param options Transaction options
-   * @return TransactionResult with hash and wait function
    */
-  async updateRoleEditingToggleRequestAndApprove(
+  async roleConfigBatchRequestAndApprove(
     metaTx: MetaTransaction,
     options: TransactionOptions
   ): Promise<TransactionResult> {
-    return this.executeWriteContract('updateRoleEditingToggleRequestAndApprove', [metaTx], options);
-  }
-
-  /**
-   * @dev Gets the role editing enabled flag
-   * @return True if role editing is enabled, false otherwise
-   */
-  async roleEditingEnabled(): Promise<boolean> {
-    return this.executeReadContract<boolean>('roleEditingEnabled');
-  }
-
-  // ============ ROLE MANAGEMENT ============
-
-  /**
-   * @dev Creates a new dynamic role with function permissions (always non-protected)
-   * @param roleName The name of the role to create
-   * @param maxWallets Maximum number of wallets allowed for this role
-   * @param functionPermissions Array of function permissions to grant to the role
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   * @notice Role becomes uneditable after creation - all permissions must be set at creation time
-   */
-  async createNewRole(
-    roleName: string,
-    maxWallets: bigint,
-    functionPermissions: StateAbstractionFunctionPermission[],
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    return this.executeWriteContract('createNewRole', [roleName, maxWallets, functionPermissions], options);
-  }
-
-  /**
-   * @dev Removes a role from the system
-   * @param roleHash The hash of the role to remove
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   * @notice Security: Cannot remove protected roles
-   */
-  async removeRole(roleHash: Hex, options: TransactionOptions): Promise<TransactionResult> {
-    return this.executeWriteContract('removeRole', [roleHash], options);
-  }
-
-  /**
-   * @dev Adds a wallet to a role
-   * @param roleHash The hash of the role
-   * @param wallet The wallet address to add
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   */
-  async addWalletToRole(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult> {
-    return this.executeWriteContract('addWalletToRole', [roleHash, wallet], options);
-  }
-
-  /**
-   * @dev Removes a wallet from a role
-   * @param roleHash The hash of the role
-   * @param wallet The wallet address to remove
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   */
-  async revokeWallet(roleHash: Hex, wallet: Address, options: TransactionOptions): Promise<TransactionResult> {
-    return this.executeWriteContract('revokeWallet', [roleHash, wallet], options);
-  }
-
-  // ============ FUNCTION REGISTRATION ============
-
-  /**
-   * @dev Registers a function schema with its full signature
-   * @param functionSignature The full function signature (e.g., "transfer(address,uint256)")
-   * @param operationName The operation name (hashed to operationType)
-   * @param supportedActions Array of supported actions (converted to bitmap internally)
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   */
-  async registerFunction(
-    functionSignature: string,
-    operationName: string,
-    supportedActions: TxAction[],
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    return this.executeWriteContract('registerFunction', [functionSignature, operationName, supportedActions], options);
-  }
-
-  /**
-   * @dev Unregisters a function schema and removes its signature
-   * @param functionSelector The function selector to remove
-   * @param safeRemoval If true, ensures no role currently references this function
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   */
-  async unregisterFunction(
-    functionSelector: Hex,
-    safeRemoval: boolean,
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    return this.executeWriteContract('unregisterFunction', [functionSelector, safeRemoval], options);
+    return this.executeWriteContract('roleConfigBatchRequestAndApprove', [metaTx], options);
   }
 
   /**
@@ -183,25 +88,6 @@ export class DynamicRBAC extends BaseStateMachine implements IDynamicRBAC {
       supportedActions: TxAction[];
       isProtected: boolean;
     }>('getFunctionSchema', [functionSelector]);
-  }
-
-  // ============ DEFINITION MANAGEMENT ============
-
-  /**
-   * @dev Public function to load function schemas and role permissions dynamically at runtime
-   * @param functionSchemas Array of function schema definitions to load
-   * @param roleHashes Array of role hashes to add permissions to
-   * @param functionPermissions Array of function permissions (parallel to roleHashes)
-   * @param options Transaction options
-   * @return TransactionResult with hash and wait function
-   */
-  async loadDefinitions(
-    functionSchemas: StateAbstractionFunctionSchema[],
-    roleHashes: Hex[],
-    functionPermissions: StateAbstractionFunctionPermission[],
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    return this.executeWriteContract('loadDefinitions', [functionSchemas, roleHashes, functionPermissions], options);
   }
 
   // ============ QUERY FUNCTIONS ============
