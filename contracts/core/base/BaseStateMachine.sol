@@ -10,6 +10,7 @@ import "./lib/StateAbstraction.sol";
 import "./lib/definitions/StateAbstractionDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
 import "../../utils/SharedValidation.sol";
+import "./interface/IBaseStateMachine.sol";
 
 /**
  * @title BaseStateMachine
@@ -147,9 +148,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     /**
      * @dev See {IERC165-supportsInterface}.
      * @notice Base implementation for ERC165 interface detection
+     * @notice Registers IBaseStateMachine interface ID for proper interface detection
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == type(IBaseStateMachine).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ============ TRANSACTION MANAGEMENT ============
