@@ -1,7 +1,7 @@
 [
   {
     "inputs": [],
-    "name": "ROLE_EDITING_TOGGLE",
+    "name": "ROLE_CONFIG_BATCH",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -15,7 +15,7 @@
   },
   {
     "inputs": [],
-    "name": "ROLE_EDITING_TOGGLE_META_SELECTOR",
+    "name": "ROLE_CONFIG_BATCH_EXECUTE_SELECTOR",
     "outputs": [
       {
         "internalType": "bytes4",
@@ -29,7 +29,7 @@
   },
   {
     "inputs": [],
-    "name": "ROLE_EDITING_TOGGLE_SELECTOR",
+    "name": "ROLE_CONFIG_BATCH_META_SELECTOR",
     "outputs": [
       {
         "internalType": "bytes4",

@@ -166,6 +166,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "OperationNotSupported",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -247,11 +252,6 @@
   },
   {
     "inputs": [],
-    "name": "RoleEditingDisabled",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "RoleEmpty",
     "type": "error"
   },
@@ -315,63 +315,6 @@
       }
     ],
     "name": "BroadcasterUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "functionSchemaCount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "rolePermissionCount",
-        "type": "uint256"
-      }
-    ],
-    "name": "DefinitionsLoaded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "functionSignature",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "operationType",
-        "type": "bytes32"
-      }
-    ],
-    "name": "FunctionRegistered",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "FunctionUnregistered",
     "type": "event"
   },
   {
@@ -462,56 +405,30 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
+        "internalType": "enum DynamicRBAC.RoleConfigActionType",
+        "name": "actionType",
+        "type": "uint8"
       },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "roleName",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "maxWallets",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isProtected",
-        "type": "bool"
-      }
-    ],
-    "name": "RoleCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "enabled",
-        "type": "bool"
-      }
-    ],
-    "name": "RoleEditingToggled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
       {
         "indexed": true,
         "internalType": "bytes32",
         "name": "roleHash",
         "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
       }
     ],
-    "name": "RoleRemoved",
+    "name": "RoleConfigApplied",
     "type": "event"
   },
   {
@@ -638,62 +555,6 @@
     ],
     "name": "TransactionRequested",
     "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "WalletAddedToRole",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "WalletRemovedFromRole",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "addWalletToRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "inputs": [
@@ -1503,48 +1364,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "roleName",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxWallets",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "uint16",
-            "name": "grantedActionsBitmap",
-            "type": "uint16"
-          }
-        ],
-        "internalType": "struct StateAbstraction.FunctionPermission[]",
-        "name": "functionPermissions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "createNewRole",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1576,12 +1395,24 @@
   {
     "inputs": [
       {
-        "internalType": "bool",
-        "name": "enabled",
-        "type": "bool"
+        "components": [
+          {
+            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "name": "actionType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "name": "actions",
+        "type": "tuple[]"
       }
     ],
-    "name": "executeRoleEditingToggle",
+    "name": "executeRoleConfigBatch",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1668,8 +1499,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -1900,8 +1730,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2162,8 +1991,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2194,8 +2022,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2208,8 +2035,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2253,8 +2079,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2267,8 +2092,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2281,8 +2105,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2321,8 +2144,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2341,8 +2163,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2355,8 +2176,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2369,8 +2189,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2383,8 +2202,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2397,8 +2215,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2513,8 +2330,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2634,8 +2450,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2659,8 +2474,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [],
@@ -2673,8 +2487,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -2698,74 +2511,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "functionName",
-            "type": "string"
-          },
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "operationType",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "string",
-            "name": "operationName",
-            "type": "string"
-          },
-          {
-            "internalType": "uint16",
-            "name": "supportedActionsBitmap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "bool",
-            "name": "isProtected",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct StateAbstraction.FunctionSchema[]",
-        "name": "functionSchemas",
-        "type": "tuple[]"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "roleHashes",
-        "type": "bytes32[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "uint16",
-            "name": "grantedActionsBitmap",
-            "type": "uint16"
-          }
-        ],
-        "internalType": "struct StateAbstraction.FunctionPermission[]",
-        "name": "functionPermissions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "loadDefinitions",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -2779,43 +2524,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "functionSignature",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "operationName",
-        "type": "string"
-      },
-      {
-        "internalType": "enum StateAbstraction.TxAction[]",
-        "name": "supportedActions",
-        "type": "uint8[]"
-      }
-    ],
-    "name": "registerFunction",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "removeRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -3106,34 +2814,313 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
+        "components": [
+          {
+            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "name": "actionType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "name": "actions",
+        "type": "tuple[]"
       }
     ],
-    "name": "revokeWallet",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "name": "roleConfigBatchExecutionOptions",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "roleEditingEnabled",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "txId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "releaseTime",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum StateAbstraction.TxStatus",
+                "name": "status",
+                "type": "uint8"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "address",
+                    "name": "requester",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "target",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "gasLimit",
+                    "type": "uint256"
+                  },
+                  {
+                    "internalType": "bytes32",
+                    "name": "operationType",
+                    "type": "bytes32"
+                  },
+                  {
+                    "internalType": "enum StateAbstraction.ExecutionType",
+                    "name": "executionType",
+                    "type": "uint8"
+                  },
+                  {
+                    "internalType": "bytes",
+                    "name": "executionOptions",
+                    "type": "bytes"
+                  }
+                ],
+                "internalType": "struct StateAbstraction.TxParams",
+                "name": "params",
+                "type": "tuple"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "message",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes",
+                "name": "result",
+                "type": "bytes"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "address",
+                    "name": "recipient",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "nativeTokenAmount",
+                    "type": "uint256"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "erc20TokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "erc20TokenAmount",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct StateAbstraction.PaymentDetails",
+                "name": "payment",
+                "type": "tuple"
+              }
+            ],
+            "internalType": "struct StateAbstraction.TxRecord",
+            "name": "txRecord",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "chainId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "handlerContract",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "handlerSelector",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "enum StateAbstraction.TxAction",
+                "name": "action",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "deadline",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "maxGasPrice",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "signer",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct StateAbstraction.MetaTxParams",
+            "name": "params",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "message",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct StateAbstraction.MetaTransaction",
+        "name": "metaTx",
+        "type": "tuple"
       }
     ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "name": "roleConfigBatchRequestAndApprove",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "txId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "releaseTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StateAbstraction.TxStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "requester",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "gasLimit",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "operationType",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "enum StateAbstraction.ExecutionType",
+                "name": "executionType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "bytes",
+                "name": "executionOptions",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct StateAbstraction.TxParams",
+            "name": "params",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "message",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "result",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nativeTokenAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "erc20TokenAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "erc20TokenAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct StateAbstraction.PaymentDetails",
+            "name": "payment",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct StateAbstraction.TxRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -3152,8 +3139,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -3172,8 +3158,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -4071,24 +4056,6 @@
         "type": "tuple"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bool",
-        "name": "safeRemoval",
-        "type": "bool"
-      }
-    ],
-    "name": "unregisterFunction",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -5014,8 +4981,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
@@ -5300,306 +5266,6 @@
   {
     "inputs": [
       {
-        "internalType": "bool",
-        "name": "enabled",
-        "type": "bool"
-      }
-    ],
-    "name": "updateRoleEditingToggleExecutionOptions",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "txId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "releaseTime",
-                "type": "uint256"
-              },
-              {
-                "internalType": "enum StateAbstraction.TxStatus",
-                "name": "status",
-                "type": "uint8"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "requester",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "target",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "gasLimit",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "bytes32",
-                    "name": "operationType",
-                    "type": "bytes32"
-                  },
-                  {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "executionOptions",
-                    "type": "bytes"
-                  }
-                ],
-                "internalType": "struct StateAbstraction.TxParams",
-                "name": "params",
-                "type": "tuple"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "message",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes",
-                "name": "result",
-                "type": "bytes"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "recipient",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "nativeTokenAmount",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "erc20TokenAddress",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "erc20TokenAmount",
-                    "type": "uint256"
-                  }
-                ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
-                "name": "payment",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct StateAbstraction.TxRecord",
-            "name": "txRecord",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "chainId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nonce",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "handlerContract",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes4",
-                "name": "handlerSelector",
-                "type": "bytes4"
-              },
-              {
-                "internalType": "enum StateAbstraction.TxAction",
-                "name": "action",
-                "type": "uint8"
-              },
-              {
-                "internalType": "uint256",
-                "name": "deadline",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "maxGasPrice",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "signer",
-                "type": "address"
-              }
-            ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "signature",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
-        "name": "metaTx",
-        "type": "tuple"
-      }
-    ],
-    "name": "updateRoleEditingToggleRequestAndApprove",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "txId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "releaseTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum StateAbstraction.TxStatus",
-            "name": "status",
-            "type": "uint8"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "requester",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "target",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "gasLimit",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "operationType",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
-              },
-              {
-                "internalType": "bytes",
-                "name": "executionOptions",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct StateAbstraction.TxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "result",
-            "type": "bytes"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nativeTokenAmount",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "erc20TokenAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "erc20TokenAmount",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
-            "name": "payment",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct StateAbstraction.TxRecord",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "newTimeLockPeriodSec",
         "type": "uint256"
@@ -5614,8 +5280,7 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function",
-    "constant": true
+    "type": "function"
   },
   {
     "inputs": [
