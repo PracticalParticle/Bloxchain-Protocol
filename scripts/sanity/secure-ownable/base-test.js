@@ -280,7 +280,22 @@ class BaseSecureOwnableTest {
             const result = await method.send({ from, gas });
             return result;
         } catch (error) {
-            throw new Error(`Transaction failed: ${error.message}`);
+            // Try to extract revert reason if available
+            let errorMessage = error.message;
+            if (error.data) {
+                // Try to decode revert reason
+                try {
+                    const revertReason = this.web3.eth.abi.decodeParameter('string', error.data);
+                    errorMessage = `${error.message} (Revert reason: ${revertReason})`;
+                } catch (decodeError) {
+                    // If decoding fails, include the raw data
+                    errorMessage = `${error.message} (Data: ${JSON.stringify(error.data)})`;
+                }
+            }
+            if (error.reason) {
+                errorMessage = `${errorMessage} (Reason: ${error.reason})`;
+            }
+            throw new Error(`Transaction failed: ${errorMessage}`);
         }
     }
 

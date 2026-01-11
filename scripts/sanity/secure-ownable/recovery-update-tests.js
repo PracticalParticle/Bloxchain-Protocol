@@ -39,7 +39,7 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
         // Check if recovery update functions exist
         const recoveryFunctions = [
             'updateRecoveryRequestAndApprove',
-            'updateRecoveryExecutionOptions'
+            'updateRecoveryExecutionParams'
         ];
         
         for (const funcName of recoveryFunctions) {
@@ -94,29 +94,33 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
         console.log(`  🎯 Testing recovery change to: ${description} (${newRecoveryAddress})`);
 
         try {
-            // Create execution options for recovery update
-            const executionOptions = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionOptions(newRecoveryAddress));
-            console.log(`    ✅ Execution options created for ${description}`);
+            // Create execution params for recovery update
+            const executionParams = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionParams(newRecoveryAddress));
+            console.log(`    ✅ Execution params created for ${description}`);
+
+            // Get the execution selector for executeRecoveryUpdate(address)
+            // This is keccak256("executeRecoveryUpdate(address)") first 4 bytes
+            const executionSelector = '0x9ce5606e'; // UPDATE_RECOVERY_SELECTOR
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0x2aa09cf6', // UPDATE_RECOVERY_META_SELECTOR
+                '0xfa3fb3e7', // UPDATE_RECOVERY_META_SELECTOR
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
                 this.getRoleWalletObject('owner').address // Owner signs the meta-transaction
             ));
 
-            // Create unsigned meta-transaction
+            // Create unsigned meta-transaction with new signature
             const unsignedMetaTx = await this.callContractMethod(this.contract.methods.generateUnsignedMetaTransactionForNew(
                 this.getRoleWalletObject('owner').address, // requester
                 this.contractAddress, // target
                 0, // no value
                 0, // no gas limit
                 this.getOperationType('RECOVERY_UPDATE'), // operation type
-                this.getExecutionType('STANDARD'), // execution type
-                executionOptions, // execution options
+                executionSelector, // execution selector
+                executionParams, // execution params
                 metaTxParams // meta-transaction parameters
             ));
 

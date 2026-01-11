@@ -42,13 +42,13 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('BROADCASTER UPDATE META-TRANSACTION CANCELLATION', [
             {
                 role: 'owner',
-                functionSelector: '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 expectedActions: [5], // SIGN_META_CANCEL
                 description: 'Owner can sign broadcaster update cancellation meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 expectedActions: [8], // EXECUTE_META_CANCEL
                 description: 'Broadcaster can execute broadcaster update cancellation meta-transaction'
             }
@@ -81,7 +81,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for cancellation
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 this.getTxAction('SIGN_META_CANCEL'),
                 3600, // 1 hour deadline
                 0, // no max gas price
@@ -208,13 +208,13 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('BROADCASTER UPDATE META-TRANSACTION APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 expectedActions: [4], // SIGN_META_APPROVE
                 description: 'Owner can sign broadcaster update approval meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 expectedActions: [7], // EXECUTE_META_REQUEST_AND_APPROVE
                 description: 'Broadcaster can execute broadcaster update request and approve meta-transaction'
             }
@@ -231,7 +231,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for approval
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 this.getTxAction('SIGN_META_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
