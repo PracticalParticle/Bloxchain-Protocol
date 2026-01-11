@@ -311,7 +311,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         // Validate that operation is Call (0)
         if (safeTx.operation != 0) revert SharedValidation.OperationNotSupported();
 
-        bytes memory executionOptions = createTransactionExecutionOptions(safeTx);
+        bytes memory executionParams = createTransactionExecutionParams(safeTx);
 
         // Create meta-transaction parameters
         StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
@@ -330,8 +330,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
             safeTx.value,
             safeTx.safeTxGas,
             EXEC_SAFE_TX,
-            StateAbstraction.ExecutionType.STANDARD,
-            executionOptions,
+            GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,
+            executionParams,
             metaTxParams
         );
     }
@@ -366,23 +366,18 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     }
 
      /**
-     * @notice Create execution options for a Safe transaction
+     * @notice Create execution params for a Safe transaction
      * @param safeTx The Safe transaction parameters
-     * @return The execution options bytes
+     * @return The execution params bytes
      */
-    function createTransactionExecutionOptions(
+    function createTransactionExecutionParams(
         SafeTx memory safeTx
     ) public pure returns (bytes memory) {
         SharedValidation.validateTargetAddress(safeTx.to);
 
         // Convert to calldata for helper function (we'll create a memory version)
         SafeTx memory memSafeTx = safeTx;
-        bytes memory executionData = _encodeSafeTxParamsMemory(memSafeTx);
-
-        return StateAbstraction.createStandardExecutionOptions(
-            GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,
-            executionData
-        );
+        return _encodeSafeTxParamsMemory(memSafeTx);
     }
 
     /**

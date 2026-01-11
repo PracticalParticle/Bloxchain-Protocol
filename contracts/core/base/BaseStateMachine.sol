@@ -160,7 +160,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Centralized function to request a standard transaction with common validation
      * @param requester The address requesting the transaction
      * @param operationType The type of operation
-     * @param functionSelector The function selector for execution options (the execution function, not the request function)
+     * @param functionSelector The function selector for execution (the execution function, not the request function)
      * @param params The encoded parameters for the function
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function), not the execution selector
@@ -179,11 +179,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         // Execution functions are internal-only and protected by validateInternalCallInternal
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
-        bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
-            functionSelector,
-            params
-        );
-
         return StateAbstraction.txRequest(
             _getSecureState(),
             requester,
@@ -191,48 +186,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             0, // value is always 0 for standard execution
             gasLimit,
             operationType,
-            StateAbstraction.ExecutionType.STANDARD,
-            executionOptions
+            functionSelector,
+            params
         );
     }
 
     /**
-     * @dev Centralized function to request a raw transaction with RAW execution type
-     * @param requester The address requesting the transaction
-     * @param target The target contract address
-     * @param gasLimit The gas limit for execution
-     * @param operationType The type of operation
-     * @param rawTxData The raw transaction data
-     * @return The created transaction record
-     * @notice Validates permissions for the calling function (request function selector)
-     * @notice This function is virtual to allow extensions to add hook functionality
-     */
-    function _requestRawTransaction(
-        address requester,
-        address target,
-        uint256 gasLimit,
-        bytes32 operationType,
-        bytes memory rawTxData
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (request function selector)
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
-
-        bytes memory executionOptions = StateAbstraction.createRawExecutionOptions(rawTxData);
-
-        return StateAbstraction.txRequest(
-            _getSecureState(),
-            requester,
-            target,
-            0, // value is always 0 for raw execution
-            gasLimit,
-            operationType,
-            StateAbstraction.ExecutionType.RAW,
-            executionOptions
-        );
-    }
-
-    /**
-     * @dev Centralized function to request a simple transaction with NONE execution type
+     * @dev Centralized function to request a simple transaction (ETH transfer without function call)
      * @param requester The address requesting the transaction
      * @param target The target contract address
      * @param value The ETH value to send
@@ -259,8 +219,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             value,
             gasLimit,
             operationType,
-            StateAbstraction.ExecutionType.NONE,
-            ""
+            bytes4(0), // 0x00000000 for simple ETH transfer
+            "" // empty params for simple ETH transfer
         );
     }
 
@@ -431,8 +391,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param value The ETH value to send
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param executionType The type of execution (STANDARD or RAW)
-     * @param executionOptions The encoded execution options
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
      * @param metaTxParams The meta-transaction parameters
      * @return The unsigned meta-transaction
      */
@@ -442,8 +402,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        StateAbstraction.ExecutionType executionType,
-        bytes memory executionOptions,
+        bytes4 executionSelector,
+        bytes memory executionParams,
         StateAbstraction.MetaTxParams memory metaTxParams
     ) public view returns (StateAbstraction.MetaTransaction memory) {
         StateAbstraction.TxParams memory txParams = StateAbstraction.TxParams({
@@ -452,8 +412,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             value: value,
             gasLimit: gasLimit,
             operationType: operationType,
-            executionType: executionType,
-            executionOptions: executionOptions
+            executionSelector: executionSelector,
+            executionParams: executionParams
         });
 
         return _secureState.generateUnsignedForNewMetaTx(txParams, metaTxParams);
@@ -655,31 +615,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
-    // ============ CENTRALIZED EXECUTION OPTIONS ============
-
-    /**
-     * @dev Centralized function to create standard execution options
-     * @param functionSelector The function selector
-     * @param params The encoded parameters
-     * @return The execution options
-     */
-    function _createStandardExecutionOptions(
-        bytes4 functionSelector,
-        bytes memory params
-    ) internal pure returns (bytes memory) {
-        return StateAbstraction.createStandardExecutionOptions(functionSelector, params);
-    }
-
-    /**
-     * @dev Centralized function to create raw execution options
-     * @param rawTxData The raw transaction data
-     * @return The execution options
-     */
-    function _createRawExecutionOptions(
-        bytes memory rawTxData
-    ) internal pure returns (bytes memory) {
-        return StateAbstraction.createRawExecutionOptions(rawTxData);
-    }
 
     // ============ DEFINITION LOADING ============
 

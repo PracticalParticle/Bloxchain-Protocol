@@ -21,13 +21,7 @@ export const TxStatus = {
 
 export type TxStatus = typeof TxStatus[keyof typeof TxStatus];
 
-export const ExecutionType = {
-  NONE: 0,
-  STANDARD: 1,
-  RAW: 2
-} as const;
-
-export type ExecutionType = typeof ExecutionType[keyof typeof ExecutionType];
+// ExecutionType enum removed - use executionSelector (0x00000000 for simple ETH transfers) and executionParams directly
 
 export const TxAction = {
   EXECUTE_TIME_DELAY_REQUEST: 0,

@@ -3,7 +3,7 @@ import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
-import { ExecutionType, TxAction } from '../types/lib.index';
+import { TxAction } from '../types/lib.index';
 import { handleViemError } from '../utils/viem-error-handler';
 
 /**
@@ -120,8 +120,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex,
+    executionSelector: Hex,
+    executionParams: Hex,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
     return this.executeReadContract<MetaTransaction>('generateUnsignedMetaTransactionForNew', [
@@ -130,8 +130,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
       value,
       gasLimit,
       operationType,
-      executionType,
-      executionOptions,
+      executionSelector,
+      executionParams,
       metaTxParams
     ]);
   }

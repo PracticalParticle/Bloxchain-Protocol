@@ -37,8 +37,8 @@ interface IBaseStateMachine {
      * @param value The ETH value to send
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param executionType The type of execution (STANDARD or RAW)
-     * @param executionOptions The encoded execution options
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
      * @param metaTxParams The meta-transaction parameters
      * @return The unsigned meta-transaction
      */
@@ -48,8 +48,8 @@ interface IBaseStateMachine {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        StateAbstraction.ExecutionType executionType,
-        bytes memory executionOptions,
+        bytes4 executionSelector,
+        bytes memory executionParams,
         StateAbstraction.MetaTxParams memory metaTxParams
     ) external view returns (StateAbstraction.MetaTransaction memory);
 

@@ -67,29 +67,14 @@ library StateAbstraction {
         EXECUTE_UPDATE_PAYMENT
     }
 
-    enum ExecutionType {
-        NONE,
-        STANDARD,
-        RAW
-    }
-
-    struct StandardExecutionOptions {
-        bytes4 functionSelector;
-        bytes params;
-    }
-
-    struct RawExecutionOptions {
-        bytes rawTxData;
-    }
-
     struct TxParams {
         address requester;
         address target;
         uint256 value;
         uint256 gasLimit;
         bytes32 operationType;
-        ExecutionType executionType;
-        bytes executionOptions;
+        bytes4 executionSelector;
+        bytes executionParams;
     }
 
     struct MetaTxParams {
@@ -186,7 +171,7 @@ library StateAbstraction {
     bytes32 constant RECOVERY_ROLE = keccak256(bytes("RECOVERY_ROLE"));
 
     // Function Selector Constants for core MultiPhase functions
-    bytes4 public constant TX_REQUEST_SELECTOR = bytes4(keccak256("txRequest(address,address,uint256,uint256,bytes32,uint8,bytes)"));
+    bytes4 public constant TX_REQUEST_SELECTOR = bytes4(keccak256("txRequest(address,address,uint256,uint256,bytes32,bytes4,bytes)"));
     bytes4 public constant TX_DELAYED_APPROVAL_SELECTOR = bytes4(keccak256("txDelayedApproval(uint256)"));
     bytes4 public constant TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellation(uint256)"));
     bytes4 public constant META_TX_APPROVAL_SELECTOR = bytes4(keccak256("txApprovalWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)"));
@@ -197,7 +182,7 @@ library StateAbstraction {
     bytes4 public constant UPDATE_PAYMENT_SELECTOR = bytes4(keccak256("updatePaymentForTransaction(uint256,(address,uint256,address,uint256))"));
    
     // EIP-712 Type Hashes
-    bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,uint8 executionType,bytes executionOptions)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
 
@@ -281,8 +266,8 @@ library StateAbstraction {
      * @param value The value to send with the transaction.
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
-     * @param executionType The type of execution (STANDARD or RAW).
-     * @param executionOptions The execution options for the transaction.
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers).
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers).
      * @return The created TxRecord.
      */
     function txRequest(
@@ -292,8 +277,8 @@ library StateAbstraction {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        ExecutionType executionType,
-        bytes memory executionOptions
+        bytes4 executionSelector,
+        bytes memory executionParams
     ) public returns (TxRecord memory) {
         if (!hasActionPermission(self, msg.sender, TX_REQUEST_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST) && !hasActionPermission(self, msg.sender, META_TX_REQUEST_AND_APPROVE_SELECTOR, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
@@ -307,8 +292,8 @@ library StateAbstraction {
             value,
             gasLimit,
             operationType,
-            executionType,
-            executionOptions
+            executionSelector,
+            executionParams
         );
     
         self.txRecords[txRequestRecord.txId] = txRequestRecord;
@@ -421,8 +406,8 @@ library StateAbstraction {
             metaTx.txRecord.params.value,
             metaTx.txRecord.params.gasLimit,
             metaTx.txRecord.params.operationType,
-            metaTx.txRecord.params.executionType,
-            metaTx.txRecord.params.executionOptions
+            metaTx.txRecord.params.executionSelector,
+            metaTx.txRecord.params.executionParams
         );
 
         metaTx.txRecord = txRecord;
@@ -494,54 +479,19 @@ library StateAbstraction {
     }
 
     /**
-     * @dev Prepares transaction data based on execution type without executing it.
+     * @dev Prepares transaction data from execution selector and params without executing it.
      * @param record The transaction record to prepare data for.
      * @return The prepared transaction data.
      */
     function prepareTransactionData(TxRecord memory record) private pure returns (bytes memory) {
-        if (record.params.executionType == ExecutionType.STANDARD) {
-            StandardExecutionOptions memory options = abi.decode(record.params.executionOptions, (StandardExecutionOptions));
-            return abi.encodePacked(options.functionSelector, options.params);
-        } else if (record.params.executionType == ExecutionType.RAW) {
-            RawExecutionOptions memory options = abi.decode(record.params.executionOptions, (RawExecutionOptions));
-            return options.rawTxData;
-        } else if (record.params.executionType == ExecutionType.NONE) {
+        // If executionSelector is 0x00000000, it's a simple ETH transfer (no function call)
+        if (record.params.executionSelector == bytes4(0)) {
             return "";
-        } else {
-            revert SharedValidation.OperationNotSupported();
         }
+        // Otherwise, encode the function selector with params
+        return abi.encodePacked(record.params.executionSelector, record.params.executionParams);
     }
 
-    /**
-     * @dev Creates StandardExecutionOptions with proper encoding
-     * @param functionSelector The function selector to call
-     * @param params The encoded parameters for the function
-     * @return Encoded execution options ready for use in a transaction
-     */
-    function createStandardExecutionOptions(
-        bytes4 functionSelector,
-        bytes memory params
-    ) public pure returns (bytes memory) {
-        StandardExecutionOptions memory options = StandardExecutionOptions({
-            functionSelector: functionSelector,
-            params: params
-        });
-        return abi.encode(options);
-    }
-
-    /**
-     * @dev Creates RawExecutionOptions with proper encoding
-     * @param rawTxData The raw transaction data
-     * @return Encoded execution options ready for use in a transaction
-     */
-    function createRawExecutionOptions(
-        bytes memory rawTxData
-    ) public pure returns (bytes memory) {
-        RawExecutionOptions memory options = RawExecutionOptions({
-            rawTxData: rawTxData
-        });
-        return abi.encode(options);
-    }
 
     /**
      * @notice Creates a new transaction record with basic fields populated
@@ -552,8 +502,8 @@ library StateAbstraction {
      * @param value The amount of native tokens to send with the transaction
      * @param gasLimit The maximum gas allowed for the transaction
      * @param operationType The type of operation being performed
-     * @param executionType The method of execution (STANDARD or RAW)
-     * @param executionOptions The encoded parameters for the execution
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
      * @return TxRecord A new transaction record with populated fields
      */
     function createNewTxRecord(
@@ -563,8 +513,8 @@ library StateAbstraction {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        ExecutionType executionType,
-        bytes memory executionOptions
+        bytes4 executionSelector,
+        bytes memory executionParams
     ) private view returns (TxRecord memory) {        
         return TxRecord({
             txId: self.txCounter + 1,
@@ -576,8 +526,8 @@ library StateAbstraction {
                 value: value,
                 gasLimit: gasLimit,
                 operationType: operationType,
-                executionType: executionType,
-                executionOptions: executionOptions
+                executionSelector: executionSelector,
+                executionParams: executionParams
             }),
             message: 0,
             result: "",
@@ -1259,8 +1209,8 @@ library StateAbstraction {
                 metaTx.txRecord.params.value,
                 metaTx.txRecord.params.gasLimit,
                 metaTx.txRecord.params.operationType,
-                uint8(metaTx.txRecord.params.executionType),
-                keccak256(metaTx.txRecord.params.executionOptions)
+                metaTx.txRecord.params.executionSelector,
+                keccak256(metaTx.txRecord.params.executionParams)
             )),
             metaTx.params.chainId,
             metaTx.params.nonce,
@@ -1336,8 +1286,8 @@ library StateAbstraction {
             txParams.value,
             txParams.gasLimit,
             txParams.operationType,
-            txParams.executionType,
-            txParams.executionOptions
+            txParams.executionSelector,
+            txParams.executionParams
         );
 
          MetaTransaction memory res = generateMetaTransaction(self, txRecord, metaTxParams);

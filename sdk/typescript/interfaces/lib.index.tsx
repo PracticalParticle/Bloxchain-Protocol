@@ -1,18 +1,6 @@
 import { Address, Hex } from 'viem';
-import { TxStatus, ExecutionType, TxAction } from '../types/lib.index';
+import { TxStatus, TxAction } from '../types/lib.index';
 // import { ReadableOperationType } from '../types/definition.index';
-
-/**
- * Interfaces for execution options
- */
-export interface StandardExecutionOptions {
-  functionSelector: Hex;
-  params: Hex;
-}
-
-export interface RawExecutionOptions {
-  rawTxData: Hex;
-}
 
 /**
  * Payment and transaction related interfaces
@@ -30,8 +18,8 @@ export interface TxParams {
   value: bigint;
   gasLimit: bigint;
   operationType: Hex;
-  executionType: ExecutionType;
-  executionOptions: Hex;
+  executionSelector: Hex;
+  executionParams: Hex;
 }
 
 export interface MetaTxParams {

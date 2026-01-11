@@ -96,17 +96,14 @@ abstract contract DynamicRBAC is BaseStateMachine {
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Creates execution options for a RBAC configuration batch
+     * @dev Creates execution params for a RBAC configuration batch
      * @param actions Encoded role configuration actions
-     * @return The execution options for StateAbstraction
+     * @return The execution params for StateAbstraction
      */
-    function roleConfigBatchExecutionOptions(
+    function roleConfigBatchExecutionParams(
         RoleConfigAction[] memory actions
     ) public pure returns (bytes memory) {
-        return _createStandardExecutionOptions(
-            DynamicRBACDefinitions.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
-            abi.encode(actions)
-        );
+        return abi.encode(actions);
     }
 
     /**

@@ -14,7 +14,7 @@ import {
   StandardExecutionOptions,
   RawExecutionOptions
 } from '../../interfaces/lib.index';
-import { TxAction, ExecutionType } from '../../types/lib.index';
+import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../../../abi/BaseStateMachine.abi.json';
 
 /**
@@ -317,38 +317,6 @@ export class MetaTransactionSigner {
  * @dev Helper functions for creating meta-transaction parameters
  */
 export class MetaTransactionBuilder {
-  /**
-   * @dev Creates standard execution options
-   * @param functionSelector Function selector
-   * @param params Encoded function parameters
-   * @returns Encoded standard execution options
-   */
-  static createStandardExecutionOptions(
-    functionSelector: Hex,
-    params: Hex
-  ): Hex {
-    const options: StandardExecutionOptions = {
-      functionSelector,
-      params
-    };
-    
-    // Encode as bytes (this would need proper ABI encoding in real implementation)
-    return `0x${functionSelector.slice(2)}${params.slice(2)}` as Hex;
-  }
-
-  /**
-   * @dev Creates raw execution options
-   * @param rawTxData Raw transaction data
-   * @returns Encoded raw execution options
-   */
-  static createRawExecutionOptions(rawTxData: Hex): Hex {
-    const options: RawExecutionOptions = {
-      rawTxData
-    };
-    
-    // Return raw data as-is
-    return rawTxData;
-  }
 
   /**
    * @dev Creates meta-transaction parameters

@@ -291,25 +291,21 @@ abstract contract GuardController is BaseStateMachine {
     }
     
     /**
-     * @dev Validates STANDARD execution type and extracts the execution function selector from a transaction record
-     * @param txRecord The transaction record containing execution type and options
+     * @dev Validates and extracts the execution function selector from a transaction record
+     * @param txRecord The transaction record containing execution selector and params
      * @return executionFunctionSelector The extracted function selector
-     * @notice Reverts if execution type is not STANDARD
+     * @notice Reverts if execution selector is zero (simple ETH transfer)
      */
     function _extractExecutionFunctionSelector(
         StateAbstraction.TxRecord memory txRecord
     ) internal pure returns (bytes4 executionFunctionSelector) {
-        // Require STANDARD execution type
-        if (txRecord.params.executionType != StateAbstraction.ExecutionType.STANDARD) {
+        // Require non-zero execution selector (not a simple ETH transfer)
+        if (txRecord.params.executionSelector == bytes4(0)) {
             revert SharedValidation.OperationNotSupported();
         }
         
-        // Extract execution function selector
-        StateAbstraction.StandardExecutionOptions memory execOptions = abi.decode(
-            txRecord.params.executionOptions,
-            (StateAbstraction.StandardExecutionOptions)
-        );
-        return execOptions.functionSelector;
+        // Return execution selector directly
+        return txRecord.params.executionSelector;
     }
 }
 

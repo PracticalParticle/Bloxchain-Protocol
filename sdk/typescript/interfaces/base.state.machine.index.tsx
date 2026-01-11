@@ -1,7 +1,7 @@
 import { Address, Hex } from 'viem';
 // import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
-import { ExecutionType, TxAction } from '../types/lib.index';
+import { TxAction } from '../types/lib.index';
 
 /**
  * Interface for BaseStateMachine contract events
@@ -63,8 +63,8 @@ export interface IBaseStateMachine {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex,
+    executionSelector: Hex,
+    executionParams: Hex,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction>;
 

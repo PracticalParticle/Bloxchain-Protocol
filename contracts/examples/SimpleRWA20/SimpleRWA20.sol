@@ -210,11 +210,8 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         bytes4 functionSelector,
         bytes4 metaTxSelector
     ) internal view returns (StateAbstraction.MetaTransaction memory) {
-        // Create execution options
-        bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
-            functionSelector,
-            abi.encode(account, amount)
-        );
+        // Create execution params
+        bytes memory executionParams = abi.encode(account, amount);
         
         // Create meta-transaction parameters
         StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
@@ -233,8 +230,8 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
             0, // no value
             gasleft(),
             operationType,
-            StateAbstraction.ExecutionType.STANDARD,
-            executionOptions,
+            functionSelector,
+            executionParams,
             metaTxParams
         );
     }
