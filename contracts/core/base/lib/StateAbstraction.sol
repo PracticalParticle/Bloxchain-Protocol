@@ -174,9 +174,9 @@ library StateAbstraction {
     bytes4 public constant TX_REQUEST_SELECTOR = bytes4(keccak256("txRequest(address,address,uint256,uint256,bytes32,bytes4,bytes)"));
     bytes4 public constant TX_DELAYED_APPROVAL_SELECTOR = bytes4(keccak256("txDelayedApproval(uint256)"));
     bytes4 public constant TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellation(uint256)"));
-    bytes4 public constant META_TX_APPROVAL_SELECTOR = bytes4(keccak256("txApprovalWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)"));
-    bytes4 public constant META_TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellationWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)"));
-    bytes4 public constant META_TX_REQUEST_AND_APPROVE_SELECTOR = bytes4(keccak256("requestAndApprove((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)"));
+    bytes4 public constant META_TX_APPROVAL_SELECTOR = bytes4(keccak256("txApprovalWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
+    bytes4 public constant META_TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellationWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
+    bytes4 public constant META_TX_REQUEST_AND_APPROVE_SELECTOR = bytes4(keccak256("requestAndApprove((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
     
     // Payment-related function selectors
     bytes4 public constant UPDATE_PAYMENT_SELECTOR = bytes4(keccak256("updatePaymentForTransaction(uint256,(address,uint256,address,uint256))"));
