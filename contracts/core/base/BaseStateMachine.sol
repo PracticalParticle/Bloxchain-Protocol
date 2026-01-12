@@ -7,8 +7,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Contracts imports
 import "./lib/StateAbstraction.sol";
-import "./lib/definitions/StateAbstractionDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
 import "../../utils/SharedValidation.sol";
 import "./interface/IBaseStateMachine.sol";
 
@@ -105,14 +103,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         __ERC165_init();
         
         _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
-        
-        // Load base state machine definitions
-        IDefinition.RolePermission memory multiPhasePermissions = StateAbstractionDefinitions.getRolePermissions();
-        _loadDefinitions(
-            StateAbstractionDefinitions.getFunctionSchemas(),
-            multiPhasePermissions.roleHashes,
-            multiPhasePermissions.functionPermissions
-        );
 
         _secureState.setEventForwarder(eventForwarder);
     }

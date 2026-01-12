@@ -24,9 +24,8 @@ import "../../../interfaces/IEventForwarder.sol";
  * - Payment handling for both native tokens and ERC20 tokens
  * - State machine-driven operation workflows
  * 
- * The library uses StateAbstractionDefinitions for modular configuration,
- * allowing easy customization of operation types, function schemas, and role permissions
- * without modifying the core library code.
+ * The library supports flexible configuration of operation types, function schemas, and role permissions
+ * through direct function calls without requiring external definition files.
  * 
  * The library is designed to be used as a building block for secure smart contract systems
  * that require high levels of security and flexibility through state abstraction.
@@ -170,17 +169,6 @@ library StateAbstraction {
     bytes32 constant BROADCASTER_ROLE = keccak256(bytes("BROADCASTER_ROLE"));
     bytes32 constant RECOVERY_ROLE = keccak256(bytes("RECOVERY_ROLE"));
 
-    // Function Selector Constants for core MultiPhase functions
-    bytes4 public constant TX_REQUEST_SELECTOR = bytes4(keccak256("txRequest(address,address,uint256,uint256,bytes32,bytes4,bytes)"));
-    bytes4 public constant TX_DELAYED_APPROVAL_SELECTOR = bytes4(keccak256("txDelayedApproval(uint256)"));
-    bytes4 public constant TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellation(uint256)"));
-    bytes4 public constant META_TX_APPROVAL_SELECTOR = bytes4(keccak256("txApprovalWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
-    bytes4 public constant META_TX_CANCELLATION_SELECTOR = bytes4(keccak256("txCancellationWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
-    bytes4 public constant META_TX_REQUEST_AND_APPROVE_SELECTOR = bytes4(keccak256("requestAndApprove((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes)"));
-    
-    // Payment-related function selectors
-    bytes4 public constant UPDATE_PAYMENT_SELECTOR = bytes4(keccak256("updatePaymentForTransaction(uint256,(address,uint256,address,uint256))"));
-   
     // EIP-712 Type Hashes
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -280,7 +268,7 @@ library StateAbstraction {
         bytes4 executionSelector,
         bytes memory executionParams
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, TX_REQUEST_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST) && !hasActionPermission(self, msg.sender, META_TX_REQUEST_AND_APPROVE_SELECTOR, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+        if (!hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST) && !hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         SharedValidation.validateNotZeroAddress(target);
@@ -302,7 +290,7 @@ library StateAbstraction {
         // Add to pending transactions list
         addToPendingTransactionsList(self, txRequestRecord.txId);
 
-        logTxEvent(self, txRequestRecord.txId, TX_REQUEST_SELECTOR);
+        logTxEvent(self, txRequestRecord.txId, executionSelector);
         
         return txRequestRecord;
     }
@@ -314,7 +302,7 @@ library StateAbstraction {
      * @return The updated TxRecord.
      */
     function txDelayedApproval(SecureOperationState storage self, uint256 txId) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, TX_DELAYED_APPROVAL_SELECTOR, TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
+        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         _validateTxPending(self, txId);
@@ -322,7 +310,7 @@ library StateAbstraction {
         
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
-        _completeTransaction(self, txId, success, result, TX_DELAYED_APPROVAL_SELECTOR);
+        _completeTransaction(self, txId, success, result, self.txRecords[txId].params.executionSelector);
         return self.txRecords[txId];
     }
 
@@ -333,12 +321,12 @@ library StateAbstraction {
      * @return The updated TxRecord.
      */
     function txCancellation(SecureOperationState storage self, uint256 txId) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, TX_CANCELLATION_SELECTOR, TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
+        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         _validateTxPending(self, txId);
         
-        _cancelTransaction(self, txId, TX_CANCELLATION_SELECTOR);
+        _cancelTransaction(self, txId, self.txRecords[txId].params.executionSelector);
         
         return self.txRecords[txId];
     }
@@ -351,14 +339,14 @@ library StateAbstraction {
      */
     function txCancellationWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
-        if (!hasActionPermission(self, msg.sender, META_TX_CANCELLATION_SELECTOR, TxAction.EXECUTE_META_CANCEL)) {
+        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
-        _cancelTransaction(self, txId, META_TX_CANCELLATION_SELECTOR);
+        _cancelTransaction(self, txId, metaTx.txRecord.params.executionSelector);
         
         return self.txRecords[txId];
     }
@@ -371,7 +359,7 @@ library StateAbstraction {
      */
     function txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
-        if (!hasActionPermission(self, msg.sender, META_TX_APPROVAL_SELECTOR, TxAction.EXECUTE_META_APPROVE)) {
+        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         _validateTxPending(self, txId);
@@ -380,7 +368,7 @@ library StateAbstraction {
         incrementSignerNonce(self, metaTx.params.signer);
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
-        _completeTransaction(self, txId, success, result, META_TX_APPROVAL_SELECTOR);
+        _completeTransaction(self, txId, success, result, metaTx.txRecord.params.executionSelector);
         
         return self.txRecords[txId];
     }
@@ -395,7 +383,7 @@ library StateAbstraction {
         SecureOperationState storage self,
         MetaTransaction memory metaTx
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, META_TX_REQUEST_AND_APPROVE_SELECTOR, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
@@ -582,14 +570,14 @@ library StateAbstraction {
         uint256 txId,
         PaymentDetails memory paymentDetails
     ) public {
-        if (!hasActionPermission(self, msg.sender, UPDATE_PAYMENT_SELECTOR, TxAction.EXECUTE_UPDATE_PAYMENT)) {
+        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_UPDATE_PAYMENT)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         _validateTxPending(self, txId);
            
         self.txRecords[txId].payment = paymentDetails;
         
-        logTxEvent(self, txId, UPDATE_PAYMENT_SELECTOR);
+        logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
     // ============ ROLE-BASED ACCESS CONTROL FUNCTIONS ============
@@ -1401,9 +1389,6 @@ library StateAbstraction {
     ) public {
         TxRecord memory txRecord = self.txRecords[txId];
         
-        // Validate that function exists
-        SharedValidation.validateFunctionSchemaExists(self.functions[functionSelector].functionSelector, functionSelector);
-
         // Emit only non-sensitive public data
         emit TransactionEvent(
             txId,
