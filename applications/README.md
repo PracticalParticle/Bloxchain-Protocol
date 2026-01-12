@@ -148,7 +148,7 @@ truffle compile --config ../truffle-config.js
 
 ```solidity
 // Import Guardian core contracts
-import "@core/access/SecureOwnable.sol";
+import "@core/security/SecureOwnable.sol";
 import "@lib/StateAbstraction.sol";
 import "@interfaces/IDefinition.sol";
 import "@utils/SharedValidation.sol";

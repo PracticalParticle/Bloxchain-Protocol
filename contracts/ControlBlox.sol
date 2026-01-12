@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import "./core/execution/GuardController.sol";
 import "./core/access/DynamicRBAC.sol";
-import "./core/access/SecureOwnable.sol";
+import "./core/security/SecureOwnable.sol";
 
 /**
  * @title ControlBlox

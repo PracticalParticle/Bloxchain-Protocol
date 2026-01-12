@@ -10,8 +10,8 @@ export * from './core';
 export { getSecureOwnableExtension } from './extensions/secure-ownable';
 export { getDynamicRBACExtension } from './extensions/dynamic-rbac';
 
-// Re-export extension constants from core.access.index for convenience
-export { OPERATION_TYPES as SECURE_OWNABLE_OPERATION_TYPES, OPERATION_TYPES, FUNCTION_SELECTORS as SECURE_OWNABLE_SELECTORS } from '../../types/core.access.index';
+// Re-export extension constants from core.security.index and core.access.index for convenience
+export { OPERATION_TYPES as SECURE_OWNABLE_OPERATION_TYPES, OPERATION_TYPES, FUNCTION_SELECTORS as SECURE_OWNABLE_SELECTORS } from '../../types/core.security.index';
 export { DYNAMIC_RBAC_OPERATION_TYPES, DYNAMIC_RBAC_FUNCTION_SELECTORS as DYNAMIC_RBAC_SELECTORS, DYNAMIC_RBAC_FUNCTION_SELECTORS } from '../../types/core.access.index';
 
 // Convenience function: create Workflow with default extensions

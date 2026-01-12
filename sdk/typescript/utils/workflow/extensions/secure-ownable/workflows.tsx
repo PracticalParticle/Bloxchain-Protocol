@@ -2,7 +2,7 @@ import { Hex } from 'viem';
 import { TxAction } from '../../../../types/lib.index';
 import { OperationWorkflow, WorkflowPath } from '../../core/workflow-types';
 import { WorkflowType, PhaseType } from '../../core/constants';
-import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../../types/core.access.index';
+import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../../types/core.security.index';
 import { buildWorkflow } from '../../core/workflow-builder';
 
 /**

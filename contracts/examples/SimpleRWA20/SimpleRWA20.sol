@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/access/SecureOwnable.sol";
+import "../../core/security/SecureOwnable.sol";
 import "../../utils/SharedValidation.sol";
 import "../../interfaces/IDefinition.sol";
 import "./SimpleRWA20Definitions.sol";
