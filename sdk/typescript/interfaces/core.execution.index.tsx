@@ -12,6 +12,7 @@ export interface IGuardController extends IBaseStateMachine {
   // Execution Functions
   executeWithTimeLock(
     target: Address,
+    value: bigint,
     functionSelector: Hex,
     params: Hex,
     gasLimit: bigint,

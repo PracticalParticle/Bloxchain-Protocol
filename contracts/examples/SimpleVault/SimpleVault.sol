@@ -92,10 +92,11 @@ contract SimpleVault is SecureOwnable {
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getEthBalance()) revert SharedValidation.OperationNotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SimpleVaultDefinitions.WITHDRAW_ETH,
             SimpleVaultDefinitions.WITHDRAW_ETH_SELECTOR,
             abi.encode(to, amount)
@@ -114,10 +115,11 @@ contract SimpleVault is SecureOwnable {
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getTokenBalance(token)) revert SharedValidation.OperationNotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SimpleVaultDefinitions.WITHDRAW_TOKEN,
             SimpleVaultDefinitions.WITHDRAW_TOKEN_SELECTOR,
             abi.encode(token, to, amount)

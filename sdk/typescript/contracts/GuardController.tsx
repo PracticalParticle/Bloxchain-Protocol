@@ -29,19 +29,23 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ EXECUTION FUNCTIONS ============
 
   /**
-   * @dev Requests a time-locked standard execution via StateAbstraction workflow
+   * @dev Requests a time-locked execution via StateAbstraction workflow
    * @param target The address of the target contract
-   * @param functionSelector The function selector to execute
-   * @param params The encoded parameters for the function
+   * @param value The ETH value to send (0 for standard function calls)
+   * @param functionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+   * @param params The encoded parameters for the function (empty for simple ETH transfers)
    * @param gasLimit The gas limit for execution
    * @param operationType The operation type hash
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
    * @notice Creates a time-locked transaction that must be approved after the timelock period
    * @notice Requires EXECUTE_TIME_DELAY_REQUEST permission for the function selector
+   * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
+   * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
    */
   async executeWithTimeLock(
     target: Address,
+    value: bigint,
     functionSelector: Hex,
     params: Hex,
     gasLimit: bigint,
@@ -50,7 +54,7 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'executeWithTimeLock',
-      [target, functionSelector, params, gasLimit, operationType],
+      [target, value, functionSelector, params, gasLimit, operationType],
       options
     );
   }

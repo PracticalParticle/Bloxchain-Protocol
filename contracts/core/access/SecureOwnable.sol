@@ -102,9 +102,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function transferOwnershipRequest() public onlyRecovery returns (StateAbstraction.TxRecord memory) {
         if (_hasOpenOwnershipRequest) revert SharedValidation.RequestAlreadyPending(0);
         
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
+            0, // value
             0, // no gas limit
             SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
             SecureOwnableDefinitions.TRANSFER_OWNERSHIP_SELECTOR,
@@ -182,10 +183,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         if (_hasOpenBroadcasterRequest) revert SharedValidation.RequestAlreadyPending(0);
         SharedValidation.validateAddressUpdate(newBroadcaster, getBroadcaster());
         
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
             SecureOwnableDefinitions.UPDATE_BROADCASTER_SELECTOR,
             abi.encode(newBroadcaster)

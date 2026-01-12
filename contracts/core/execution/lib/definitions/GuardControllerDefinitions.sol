@@ -30,8 +30,8 @@ library GuardControllerDefinitions {
     bytes32 public constant CONTROLLER_OPERATION = keccak256("CONTROLLER_OPERATION");
     
     // Function Selector Constants
-    // GuardController: executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)
-    bytes4 public constant EXECUTE_WITH_TIMELOCK_SELECTOR = bytes4(keccak256("executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)"));
+    // GuardController: executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)
+    bytes4 public constant EXECUTE_WITH_TIMELOCK_SELECTOR = bytes4(keccak256("executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)"));
     
     // GuardController: approveTimeLockExecution(uint256,bytes32)
     bytes4 public constant APPROVE_TIMELOCK_EXECUTION_SELECTOR = bytes4(keccak256("approveTimeLockExecution(uint256,bytes32)"));
@@ -98,7 +98,7 @@ library GuardControllerDefinitions {
         // ============ GUARDCONTROLLER FUNCTION SCHEMAS ============
         
         // Schema 0: GuardController.executeWithTimeLock
-        // Used by BaseStateMachine._requestStandardTransaction via _validateCallingFunctionPermission
+        // Used by BaseStateMachine._requestTransaction via _validateCallingFunctionPermission
         schemas[0] = StateAbstraction.FunctionSchema({
             functionName: "executeWithTimeLock",
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,

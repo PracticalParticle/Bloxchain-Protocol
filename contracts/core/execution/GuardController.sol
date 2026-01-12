@@ -74,18 +74,22 @@ abstract contract GuardController is BaseStateMachine {
     // ============ EXECUTION FUNCTIONS ============
     
     /**
-     * @dev Requests a time-locked standard execution via StateAbstraction workflow
+     * @dev Requests a time-locked execution via StateAbstraction workflow
      * @param target The address of the target contract
-     * @param functionSelector The function selector to execute
-     * @param params The encoded parameters for the function
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param functionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+     * @param params The encoded parameters for the function (empty for simple ETH transfers)
      * @param gasLimit The gas limit for execution
      * @param operationType The operation type hash
      * @return txId The transaction ID for the requested operation
      * @notice Creates a time-locked transaction that must be approved after the timelock period
      * @notice Requires EXECUTE_TIME_DELAY_REQUEST permission for the function selector
+     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
      */
     function executeWithTimeLock(
         address target,
+        uint256 value,
         bytes4 functionSelector,
         bytes memory params,
         uint256 gasLimit,
@@ -101,10 +105,11 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST
         );
         
-        // Request via BaseStateMachine helper (STANDARD execution)
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        // Request via BaseStateMachine helper
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             target,
+            value,
             gasLimit,
             operationType,
             functionSelector,

@@ -151,9 +151,10 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         // Use helper function to encode parameters and avoid stack too deep
         bytes memory params = _encodeSafeTxParams(safeTx);
         
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
+            0, // value
             safeTx.safeTxGas,
             EXEC_SAFE_TX,
             GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR,

@@ -147,19 +147,25 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     // ============ TRANSACTION MANAGEMENT ============
 
     /**
-     * @dev Centralized function to request a standard transaction with common validation
+     * @dev Centralized function to request a transaction with common validation
      * @param requester The address requesting the transaction
+     * @param target The target contract address
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param functionSelector The function selector for execution (the execution function, not the request function)
-     * @param params The encoded parameters for the function
+     * @param functionSelector The function selector for execution (0x00000000 for simple ETH transfers)
+     * @param params The encoded parameters for the function (empty for simple ETH transfers)
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
      */
-    function _requestStandardTransaction(
+    function _requestTransaction(
         address requester,
         address target,
+        uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
         bytes4 functionSelector,
@@ -173,44 +179,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             _getSecureState(),
             requester,
             target,
-            0, // value is always 0 for standard execution
+            value,
             gasLimit,
             operationType,
             functionSelector,
             params
-        );
-    }
-
-    /**
-     * @dev Centralized function to request a simple transaction (ETH transfer without function call)
-     * @param requester The address requesting the transaction
-     * @param target The target contract address
-     * @param value The ETH value to send
-     * @param gasLimit The gas limit for execution
-     * @param operationType The type of operation
-     * @return The created transaction record
-     * @notice Validates permissions for the calling function (request function selector)
-     * @notice This function is virtual to allow extensions to add hook functionality
-     */
-    function _requestSimpleTransaction(
-        address requester,
-        address target,
-        uint256 value,
-        uint256 gasLimit,
-        bytes32 operationType
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (request function selector)
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
-
-        return StateAbstraction.txRequest(
-            _getSecureState(),
-            requester,
-            target,
-            value,
-            gasLimit,
-            operationType,
-            bytes4(0), // 0x00000000 for simple ETH transfer
-            "" // empty params for simple ETH transfer
         );
     }
 
