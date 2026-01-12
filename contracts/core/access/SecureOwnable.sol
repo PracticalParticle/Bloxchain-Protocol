@@ -134,10 +134,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -160,10 +157,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -211,10 +205,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -237,10 +228,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -267,10 +255,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateRecoveryRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        return _requestAndApproveTransaction(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
+        return _requestAndApproveTransaction(metaTx);
     }
 
     // TimeLock Management
@@ -294,10 +279,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateTimeLockRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        return _requestAndApproveTransaction(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
+        return _requestAndApproveTransaction(metaTx);
     }
 
     // Execution Functions

@@ -188,10 +188,7 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
         
-        return _approveTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        return _approveTransactionWithMetaTx(metaTx);
     }
     
     /**
@@ -213,10 +210,7 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         
-        return _cancelTransactionWithMetaTx(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
+        return _cancelTransactionWithMetaTx(metaTx);
     }
     
     /**
@@ -240,10 +234,7 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
         
-        return _requestAndApproveTransaction(
-            metaTx,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
+        return _requestAndApproveTransaction(metaTx);
     }
     
     // Note: Meta-transaction utility functions (createMetaTxParams, 

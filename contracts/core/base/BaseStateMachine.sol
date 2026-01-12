@@ -208,20 +208,19 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     /**
      * @dev Centralized function to approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param requiredAction The required action for permission checking
      * @return The updated transaction record
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _approveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        StateAbstraction.TxAction requiredAction
+        StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_APPROVE);
         
         // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
@@ -249,20 +248,19 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     /**
      * @dev Centralized function to cancel a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param requiredAction The required action for permission checking
      * @return The updated transaction record
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_CANCEL action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        StateAbstraction.TxAction requiredAction
+        StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_CANCEL);
         
         // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
@@ -272,20 +270,19 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     /**
      * @dev Centralized function to request and approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param requiredAction The required action for permission checking
      * @return The transaction record
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_REQUEST_AND_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestAndApproveTransaction(
-        StateAbstraction.MetaTransaction memory metaTx,
-        StateAbstraction.TxAction requiredAction
+        StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, requiredAction);
+        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
         // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
