@@ -145,7 +145,6 @@ contract SimpleVault is SecureOwnable {
         return _approveTransactionWithMetaTx(
             metaTx,
             metaTx.txRecord.params.operationType,
-            SimpleVaultDefinitions.APPROVE_WITHDRAWAL_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
     }

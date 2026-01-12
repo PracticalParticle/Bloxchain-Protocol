@@ -117,7 +117,6 @@ abstract contract DynamicRBAC is BaseStateMachine {
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _requestAndApproveTransaction(
             metaTx,
-            DynamicRBACDefinitions.ROLE_CONFIG_BATCH_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
     }

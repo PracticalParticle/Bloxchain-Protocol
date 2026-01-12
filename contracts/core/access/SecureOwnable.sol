@@ -137,7 +137,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
             metaTx,
             SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
-            SecureOwnableDefinitions.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
         _hasOpenOwnershipRequest = false;
@@ -165,7 +164,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
             SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
-            SecureOwnableDefinitions.TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         _hasOpenOwnershipRequest = false;
@@ -218,7 +216,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
             metaTx,
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
-            SecureOwnableDefinitions.UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
         _hasOpenBroadcasterRequest = false;
@@ -246,7 +243,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
-            SecureOwnableDefinitions.UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         _hasOpenBroadcasterRequest = false;
@@ -277,7 +273,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _requestAndApproveTransaction(
             metaTx,
-            SecureOwnableDefinitions.UPDATE_RECOVERY_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
     }
@@ -305,7 +300,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _requestAndApproveTransaction(
             metaTx,
-            SecureOwnableDefinitions.UPDATE_TIMELOCK_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
     }

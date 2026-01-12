@@ -213,27 +213,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Centralized function to approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
      * @param expectedOperationType The expected operation type for validation
-     * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
-     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _approveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
-        bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, requiredAction);
         
-        // Validate handler selector permission
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
-        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
         return updatedRecord;
@@ -265,27 +262,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Centralized function to cancel a transaction using meta-transaction
      * @param metaTx The meta-transaction
      * @param expectedOperationType The expected operation type for validation
-     * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The updated transaction record
-     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
-        bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, requiredAction);
         
-        // Validate handler selector permission
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
-        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
         SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
         return updatedRecord;
@@ -294,26 +288,23 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     /**
      * @dev Centralized function to request and approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param requiredSelector The required handler selector for validation
      * @param requiredAction The required action for permission checking
      * @return The transaction record
-     * @notice Validates permissions for the calling function (msg.sig) and handler selector (requiredSelector)
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _requestAndApproveTransaction(
         StateAbstraction.MetaTransaction memory metaTx,
-        bytes4 requiredSelector,
         StateAbstraction.TxAction requiredAction
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, requiredAction);
         
-        // Validate handler selector permission
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, requiredAction)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         
-        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
 

@@ -206,7 +206,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         return _approveTransactionWithMetaTx(
             metaTx,
             EXEC_SAFE_TX,
-            GuardianSafeDefinitions.APPROVE_TX_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
     }
@@ -233,7 +232,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
             EXEC_SAFE_TX,
-            GuardianSafeDefinitions.CANCEL_TX_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         emit TransactionCancelled(updatedRecord.txId);
@@ -250,7 +248,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _requestAndApproveTransaction(
             metaTx,
-            GuardianSafeDefinitions.REQUEST_AND_APPROVE_TX_META_SELECTOR,
             StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
         );
     }
