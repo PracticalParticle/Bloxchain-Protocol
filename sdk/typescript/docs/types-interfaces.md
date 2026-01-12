@@ -27,7 +27,7 @@ type UserAddress = Address & { __brand: 'UserAddress' }
 type DefinitionType = 
   | 'SecureOwnable'
   | 'StateAbstraction'
-  | 'DynamicRBAC'
+  | 'RuntimeRBAC'
   | 'Generic'
 
 // Workflow classification types

@@ -1,7 +1,7 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import DynamicRBACABIJson from '../../../abi/DynamicRBAC.abi.json';
+import RuntimeRBACABIJson from '../../../abi/RuntimeRBAC.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
-import { IDynamicRBAC } from '../interfaces/core.access.index';
+import { IRuntimeRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
@@ -28,19 +28,19 @@ interface StateAbstractionFunctionSchema {
 }
 
 /**
- * @title DynamicRBAC
- * @notice TypeScript wrapper for DynamicRBAC smart contract
+ * @title RuntimeRBAC
+ * @notice TypeScript wrapper for RuntimeRBAC smart contract
  * @dev Matches the actual Solidity contract implementation
  * @dev Extends BaseStateMachine directly for modular architecture
  */
-export class DynamicRBAC extends BaseStateMachine implements IDynamicRBAC {
+export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
     chain: Chain
   ) {
-    super(client, walletClient, contractAddress, chain, DynamicRBACABIJson);
+    super(client, walletClient, contractAddress, chain, RuntimeRBACABIJson);
   }
 
   // ============ ROLE CONFIGURATION BATCH ============
@@ -143,4 +143,4 @@ export class DynamicRBAC extends BaseStateMachine implements IDynamicRBAC {
 
 }
 
-export default DynamicRBAC;
+export default RuntimeRBAC;

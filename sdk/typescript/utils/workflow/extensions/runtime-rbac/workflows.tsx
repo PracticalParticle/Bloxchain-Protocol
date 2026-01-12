@@ -2,26 +2,26 @@ import { Hex } from 'viem';
 import { TxAction } from '../../../../types/lib.index';
 import { OperationWorkflow, WorkflowPath } from '../../core/workflow-types';
 import { WorkflowType, PhaseType } from '../../core/constants';
-import { DYNAMIC_RBAC_OPERATION_TYPES, DYNAMIC_RBAC_FUNCTION_SELECTORS } from '../../../../types/core.access.index';
+import { RUNTIME_RBAC_OPERATION_TYPES, RUNTIME_RBAC_FUNCTION_SELECTORS } from '../../../../types/core.access.index';
 import { buildWorkflow } from '../../core/workflow-builder';
 
 /**
- * DynamicRBAC workflow definitions
- * These match the workflows defined in DynamicRBACWorkflows.sol
+ * RuntimeRBAC workflow definitions
+ * These match the workflows defined in RuntimeRBACWorkflows.sol
  */
 
 /**
- * Get all operation workflows for DynamicRBAC
+ * Get all operation workflows for RuntimeRBAC
  */
-export function getDynamicRBACWorkflows(): OperationWorkflow[] {
+export function getRuntimeRBACWorkflows(): OperationWorkflow[] {
   return [getRoleConfigBatchWorkflow()];
 }
 
 /**
- * Get workflow for a specific DynamicRBAC operation type
+ * Get workflow for a specific RuntimeRBAC operation type
  */
-export function getDynamicRBACWorkflowForOperation(operationType: Hex): OperationWorkflow | undefined {
-  const workflows = getDynamicRBACWorkflows();
+export function getRuntimeRBACWorkflowForOperation(operationType: Hex): OperationWorkflow | undefined {
+  const workflows = getRuntimeRBACWorkflows();
   return workflows.find(w => w.operationType === operationType);
 }
 
@@ -46,7 +46,7 @@ function getRoleConfigBatchWorkflow(): OperationWorkflow {
         },
         {
           functionName: 'roleConfigBatchRequestAndApprove',
-          functionSelector: DYNAMIC_RBAC_FUNCTION_SELECTORS.ROLE_CONFIG_BATCH_META_SELECTOR,
+          functionSelector: RUNTIME_RBAC_FUNCTION_SELECTORS.ROLE_CONFIG_BATCH_META_SELECTOR,
           action: TxAction.EXECUTE_META_REQUEST_AND_APPROVE,
           roles: ['BROADCASTER'],
           description: 'Broadcaster executes RBAC configuration batch',
@@ -62,10 +62,9 @@ function getRoleConfigBatchWorkflow(): OperationWorkflow {
   ];
 
   return buildWorkflow({
-    operationType: DYNAMIC_RBAC_OPERATION_TYPES.ROLE_CONFIG_BATCH,
+    operationType: RUNTIME_RBAC_OPERATION_TYPES.ROLE_CONFIG_BATCH,
     operationName: 'ROLE_CONFIG_BATCH',
     paths,
     supportedRoles: ['OWNER', 'BROADCASTER']
   });
 }
-

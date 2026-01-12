@@ -4,13 +4,13 @@ pragma solidity ^0.8.25;
 import "../../base/lib/StateAbstraction.sol";
 
 /**
- * @title IDynamicRBAC
- * @dev Interface for Dynamic Role-Based Access Control system
+ * @title IRuntimeRBAC
+ * @dev Interface for Runtime Role-Based Access Control system
  * 
- * This interface defines the standard functions for managing dynamic roles
+ * This interface defines the standard functions for managing runtime roles
  * in a secure multi-phase operation environment. It provides:
  * 
- * - Dynamic role creation and management
+ * - Runtime role creation and management
  * - Role-based permission assignment
  * - Wallet assignment to roles
  * - Role hierarchy and inheritance
@@ -19,7 +19,7 @@ import "../../base/lib/StateAbstraction.sol";
  * The interface supports both protected and non-protected roles,
  * allowing for flexible access control management.
  */
-interface IDynamicRBAC {
+interface IRuntimeRBAC {
     // Events
     event RoleCreated(bytes32 indexed roleHash, string roleName, uint256 maxWallets, bool isProtected);
     event RoleUpdated(bytes32 indexed roleHash, string newRoleName, uint256 newMaxWallets);
@@ -31,7 +31,7 @@ interface IDynamicRBAC {
 
     // Role Management Functions
     /**
-     * @dev Creates a new dynamic role (always non-protected)
+     * @dev Creates a new runtime role (always non-protected)
      * @param roleName The name of the role to create
      * @param maxWallets Maximum number of wallets allowed for this role
      * @return The hash of the created role
@@ -111,10 +111,10 @@ interface IDynamicRBAC {
 
     // Query Functions
     /**
-     * @dev Gets all dynamic roles (non-protected roles)
+     * @dev Gets all runtime roles (non-protected roles)
      * @return Array of role hashes
      */
-    function getDynamicRoles() external view returns (bytes32[] memory);
+    function getRuntimeRoles() external view returns (bytes32[] memory);
 
     /**
      * @dev Gets all roles (including protected roles)

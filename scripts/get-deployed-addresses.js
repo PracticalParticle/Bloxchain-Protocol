@@ -130,7 +130,7 @@ function displayEnvironmentConfig(addresses) {
     definitionLibraries: {
       MULTIPHASE_DEFINITIONS_ADDRESS: process.env.MULTIPHASE_DEFINITIONS_ADDRESS || 'Not set',
       SECURE_OWNABLE_DEFINITIONS_ADDRESS: process.env.SECURE_OWNABLE_DEFINITIONS_ADDRESS || 'Not set',
-      DYNAMIC_RBAC_DEFINITIONS_ADDRESS: process.env.DYNAMIC_RBAC_DEFINITIONS_ADDRESS || 'Not set'
+      RUNTIME_RBAC_DEFINITIONS_ADDRESS: process.env.RUNTIME_RBAC_DEFINITIONS_ADDRESS || 'Not set'
     },
     guardianContracts: {
       SECUREBLOX_ADDRESS: process.env.SECUREBLOX_ADDRESS || 'Not set',

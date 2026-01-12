@@ -4,7 +4,7 @@
 // Core Classes
 export { default as BaseStateMachine } from './contracts/BaseStateMachine';
 export { default as SecureOwnable } from './contracts/SecureOwnable';
-export { default as DynamicRBAC } from './contracts/DynamicRBAC';
+export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
 export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
 export { Workflow, createWorkflowWithDefaults } from './utils/workflow';
@@ -20,7 +20,7 @@ export * from './interfaces/definition.index';
 
 // Types and Constants
 export { 
-  DYNAMIC_RBAC_FUNCTION_SELECTORS
+  RUNTIME_RBAC_FUNCTION_SELECTORS
 } from './types/core.access.index';
 export { 
   OPERATION_TYPES

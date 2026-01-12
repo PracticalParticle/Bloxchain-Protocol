@@ -6,7 +6,7 @@
 import { BaseWorkflowTest } from './base-test';
 import { Workflow } from '../../../sdk/typescript/utils/workflow';
 import { getSecureOwnableExtension } from '../../../sdk/typescript/utils/workflow';
-import { getDynamicRBACExtension } from '../../../sdk/typescript/utils/workflow';
+import { getRuntimeRBACExtension } from '../../../sdk/typescript/utils/workflow';
 import { OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index';
 
 export class WorkflowCoreTests extends BaseWorkflowTest {
@@ -55,10 +55,10 @@ export class WorkflowCoreTests extends BaseWorkflowTest {
       // Create a new workflow and register extensions manually
       const newWorkflow = new Workflow();
       const secureOwnableExtension = getSecureOwnableExtension();
-      const dynamicRBACExtension = getDynamicRBACExtension();
+      const runtimeRBACExtension = getRuntimeRBACExtension();
 
       newWorkflow.registerExtension(secureOwnableExtension);
-      newWorkflow.registerExtension(dynamicRBACExtension);
+      newWorkflow.registerExtension(runtimeRBACExtension);
 
       this.assertTest(true, 'Extensions registered successfully');
       console.log('  🎉 Step 2 completed: Extensions registered');

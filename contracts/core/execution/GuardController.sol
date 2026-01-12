@@ -24,10 +24,10 @@ import "../../interfaces/IDefinition.sol";
  * - No target authorization list - relies on target contract's access control
  * 
  * Usage Flow:
- * 1. Deploy GuardController (or combine with DynamicRBAC/SecureOwnable for role management)
- * 2. Function schemas should be registered via definitions or DynamicRBAC if combined
- * 3. Create roles and assign function permissions with action bitmaps (via DynamicRBAC if combined)
- * 4. Assign wallets to roles (via DynamicRBAC if combined)
+ * 1. Deploy GuardController (or combine with RuntimeRBAC/SecureOwnable for role management)
+ * 2. Function schemas should be registered via definitions or RuntimeRBAC if combined
+ * 3. Create roles and assign function permissions with action bitmaps (via RuntimeRBAC if combined)
+ * 4. Assign wallets to roles (via RuntimeRBAC if combined)
  * 5. Execute operations via time-lock workflows based on action permissions
  * 6. Target contract validates access (ownership/role-based)
  * 
@@ -36,7 +36,7 @@ import "../../interfaces/IDefinition.sol";
  * - Time-locked approval: request + approve workflow
  * - Meta-transaction workflows: signed approvals/cancellations
  * 
- * @notice This contract is modular and can be combined with DynamicRBAC and SecureOwnable
+ * @notice This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
  * @custom:security-contact security@particlecrypto.com
  */
 abstract contract GuardController is BaseStateMachine {

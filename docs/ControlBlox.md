@@ -2,7 +2,7 @@
 
 # ControlBlox
 
-Minimal controller implementation using GuardController (DynamicRBAC + guarded execution)
+Minimal controller implementation using GuardController (RuntimeRBAC + guarded execution)
 
 
 

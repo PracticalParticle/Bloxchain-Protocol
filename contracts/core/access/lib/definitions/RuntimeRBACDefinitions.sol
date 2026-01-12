@@ -5,15 +5,15 @@ import "../../../base/lib/StateAbstraction.sol";
 import "../../../../interfaces/IDefinition.sol";
 
 /**
- * @title DynamicRBACDefinitions
- * @dev Library containing predefined definitions for DynamicRBAC initialization
- * This library holds static data that can be used to initialize DynamicRBAC contracts
+ * @title RuntimeRBACDefinitions
+ * @dev Library containing predefined definitions for RuntimeRBAC initialization
+ * This library holds static data that can be used to initialize RuntimeRBAC contracts
  * without increasing the main contract size
  * 
  * This library implements the IDefinition interface from StateAbstraction
- * and provides a direct initialization function for DynamicRBAC contracts
+ * and provides a direct initialization function for RuntimeRBAC contracts
  */
-library DynamicRBACDefinitions {
+library RuntimeRBACDefinitions {
     
     // Operation Type Constants
     bytes32 public constant ROLE_CONFIG_BATCH = keccak256("ROLE_CONFIG_BATCH");
@@ -37,7 +37,7 @@ library DynamicRBACDefinitions {
      * @return Array of function schema definitions
      *
      * Registers the meta-transaction handler for RBAC configuration batches.
-     * All dynamic RBAC changes must go through this single time-locked workflow.
+     * All runtime RBAC changes must go through this single time-locked workflow.
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
         StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](1);

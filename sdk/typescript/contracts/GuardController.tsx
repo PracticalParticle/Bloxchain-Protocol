@@ -14,7 +14,7 @@ import { BaseStateMachine } from './BaseStateMachine';
  * It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
  * execution patterns including time-locked transactions, meta-transactions, and payment management.
  * 
- * This contract is modular and can be combined with DynamicRBAC and SecureOwnable for role management.
+ * This contract is modular and can be combined with RuntimeRBAC and SecureOwnable for role management.
  */
 export class GuardController extends BaseStateMachine implements IGuardController {
   constructor(
@@ -162,7 +162,7 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // Note: Meta-transaction utility functions (createMetaTxParams,
   // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
   // are already available through inheritance from BaseStateMachine
-  // Note: For role management and function registration, combine with DynamicRBAC
+  // Note: For role management and function registration, combine with RuntimeRBAC
 }
 
 export default GuardController;

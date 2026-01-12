@@ -5,11 +5,11 @@
 Lightweight controller for generic contract delegation with full StateAbstraction workflows
 
 This contract provides a complete solution for delegating control to external addresses.
-It extends DynamicRBAC for runtime function registration and supports all StateAbstraction
+It extends RuntimeRBAC for runtime function registration and supports all StateAbstraction
 execution patterns including time-locked transactions, meta-transactions, and payment management.
 
 Key Features:
-- Runtime function schema registration via DynamicRBAC
+- Runtime function schema registration via RuntimeRBAC
 - Function selector to full signature mapping for interface tracking
 - Full StateAbstraction workflow support (STANDARD, RAW, NONE execution types)
 - Meta-transaction support for delegated approvals and cancellations
@@ -19,7 +19,7 @@ Key Features:
 
 Usage Flow:
 1. Deploy GuardController
-2. Register function schemas with full signatures via DynamicRBAC
+2. Register function schemas with full signatures via RuntimeRBAC
 3. Create roles and assign function permissions with action bitmaps
 4. Assign wallets to roles
 5. Execute operations via time-lock workflows based on action permissions

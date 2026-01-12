@@ -27,7 +27,7 @@ scripts/sanity-sdk/
 │   ├── timelock-period-tests.ts (coming soon)
 │   ├── eip712-signing-tests.ts (coming soon)
 │   └── run-tests.ts            # Test runner
-├── dynamic-rbac/
+├── runtime-rbac/
 │   └── (coming soon)
 ├── workflow/
 │   └── (coming soon)
@@ -70,7 +70,7 @@ RPC_URL=http://localhost:8545
 
 # Contract Addresses (for manual mode)
 SECUREBLOX_ADDRESS=0x...
-DYNAMICRBAC_ADDRESS=0x...
+RUNTIMERBAC_ADDRESS=0x...
 
 # Private Keys (for manual mode)
 TEST_WALLET_1_PRIVATE_KEY=0x...

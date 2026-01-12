@@ -5,14 +5,14 @@ pragma solidity ^0.8.25;
 import "../base/BaseStateMachine.sol";
 import "../base/lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
-import "./lib/definitions/DynamicRBACDefinitions.sol";
+import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
 
 /**
- * @title DynamicRBAC
- * @dev Minimal Dynamic Role-Based Access Control system based on StateAbstraction
+ * @title RuntimeRBAC
+ * @dev Minimal Runtime Role-Based Access Control system based on StateAbstraction
  * 
- * This contract provides essential dynamic RBAC functionality:
+ * This contract provides essential runtime RBAC functionality:
  * - Creation of non-protected roles
  * - Basic wallet assignment to roles
  * - Function permission management per role
@@ -24,7 +24,7 @@ import "../../interfaces/IDefinition.sol";
  * - Minimal interface for core RBAC operations
  * - Essential role management functions only
  */
-abstract contract DynamicRBAC is BaseStateMachine {
+abstract contract RuntimeRBAC is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
     using SharedValidation for *;
     
@@ -65,7 +65,7 @@ abstract contract DynamicRBAC is BaseStateMachine {
     );
 
     /**
-     * @notice Initializer to initialize DynamicRBAC
+     * @notice Initializer to initialize RuntimeRBAC
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address
@@ -84,10 +84,10 @@ abstract contract DynamicRBAC is BaseStateMachine {
             _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         }
         
-        // Load DynamicRBAC-specific definitions
-        IDefinition.RolePermission memory permissions = DynamicRBACDefinitions.getRolePermissions();
+        // Load RuntimeRBAC-specific definitions
+        IDefinition.RolePermission memory permissions = RuntimeRBACDefinitions.getRolePermissions();
         _loadDefinitions(
-            DynamicRBACDefinitions.getFunctionSchemas(),
+            RuntimeRBACDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions
         );
@@ -110,7 +110,7 @@ abstract contract DynamicRBAC is BaseStateMachine {
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record
-     * @notice OWNER signs, BROADCASTER executes according to DynamicRBACDefinitions
+     * @notice OWNER signs, BROADCASTER executes according to RuntimeRBACDefinitions
      */
     function roleConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx

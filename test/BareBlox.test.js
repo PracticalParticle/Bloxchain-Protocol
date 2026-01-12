@@ -124,7 +124,7 @@ contract("BareBlox", function (accounts) {
     it("should return complete role information including permissions", async function () {
       const OWNER_ROLE = "0x542ebd056dcb61d328d2ae572dc534147e13901e8b9f46a60701f85bee10689c";
       
-      // Test the enhanced getRoleInfo method (if available through DynamicRBAC)
+      // Test the enhanced getRoleInfo method (if available through RuntimeRBAC)
       // For GuardianBare, we'll test the basic getRole method
       const roleInfo = await bareBlox.getRole(OWNER_ROLE);
       

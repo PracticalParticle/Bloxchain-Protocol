@@ -6,7 +6,7 @@ import { IBaseStateMachine } from './base.state.machine.index';
 /**
  * Interface for GuardController contract methods
  * @notice GuardController extends BaseStateMachine and provides execution workflows
- * @notice For role management, combine GuardController with DynamicRBAC
+ * @notice For role management, combine GuardController with RuntimeRBAC
  */
 export interface IGuardController extends IBaseStateMachine {
   // Execution Functions

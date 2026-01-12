@@ -27,17 +27,17 @@ module.exports = async function(deployer, network, accounts) {
     const StateAbstraction = artifacts.require("StateAbstraction");
     const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
     const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
-    const DynamicRBACDefinitions = artifacts.require("DynamicRBACDefinitions");
+    const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
     
     const sa = await StateAbstraction.deployed();
     const sad = await StateAbstractionDefinitions.deployed();
     const sod = await SecureOwnableDefinitions.deployed();
-    const drd = await DynamicRBACDefinitions.deployed();
+    const drd = await RuntimeRBACDefinitions.deployed();
     
     console.log("✅ Using StateAbstraction at:", sa.address);
     console.log("✅ Using StateAbstractionDefinitions at:", sad.address);
     console.log("✅ Using SecureOwnableDefinitions at:", sod.address);
-    console.log("✅ Using DynamicRBACDefinitions at:", drd.address);
+    console.log("✅ Using RuntimeRBACDefinitions at:", drd.address);
     
     // Step 2: Deploy SecureBlox (if enabled)
     let secureBlox = null;
@@ -101,7 +101,7 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.link(StateAbstraction, RoleBlox);
         await deployer.link(StateAbstractionDefinitions, RoleBlox);
         await deployer.link(SecureOwnableDefinitions, RoleBlox);
-        await deployer.link(DynamicRBACDefinitions, RoleBlox);
+        await deployer.link(RuntimeRBACDefinitions, RoleBlox);
         
         // Deploy RoleBlox
         await deployer.deploy(RoleBlox);
@@ -203,11 +203,11 @@ module.exports = async function(deployer, network, accounts) {
     if (deployControlBlox) {
         console.log("\n📦 Step 5: Deploying ControlBlox...");
         
-        // Link all required libraries to ControlBlox (same as RoleBlox since both extend DynamicRBAC)
+        // Link all required libraries to ControlBlox (same as RoleBlox since both extend RuntimeRBAC)
         await deployer.link(StateAbstraction, ControlBlox);
         await deployer.link(StateAbstractionDefinitions, ControlBlox);
         await deployer.link(SecureOwnableDefinitions, ControlBlox);
-        await deployer.link(DynamicRBACDefinitions, ControlBlox);
+        await deployer.link(RuntimeRBACDefinitions, ControlBlox);
         
         // Deploy ControlBlox
         await deployer.deploy(ControlBlox);
@@ -264,7 +264,7 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   StateAbstraction: ${sa.address}`);
     console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
-    console.log(`   DynamicRBACDefinitions: ${drd.address}`);
+    console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
     if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
     if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);

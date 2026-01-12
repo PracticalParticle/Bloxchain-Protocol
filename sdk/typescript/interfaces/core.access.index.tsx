@@ -4,11 +4,11 @@ import { MetaTransaction } from './lib.index';
 import { TxAction } from '../types/lib.index';
 
 /**
- * Interface for DynamicRBAC contract methods
+ * Interface for RuntimeRBAC contract methods
  * Note: This interface matches the actual contract methods. Some convenience methods
  * may be provided but are not part of the core contract interface.
  */
-export interface IDynamicRBAC {
+export interface IRuntimeRBAC {
   /**
    * @dev Creates execution options for a RBAC configuration batch
    */
