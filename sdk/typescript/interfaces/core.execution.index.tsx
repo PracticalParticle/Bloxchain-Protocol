@@ -9,6 +9,16 @@ import { IBaseStateMachine } from './base.state.machine.index';
  * @notice For role management, combine GuardController with RuntimeRBAC
  */
 export interface IGuardController extends IBaseStateMachine {
+  // Initialization
+  initialize(
+    initialOwner: Address,
+    broadcaster: Address,
+    recovery: Address,
+    timeLockPeriodSec: bigint,
+    eventForwarder: Address,
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
   // Execution Functions
   executeWithTimeLock(
     target: Address,
@@ -22,33 +32,26 @@ export interface IGuardController extends IBaseStateMachine {
 
   approveTimeLockExecution(
     txId: bigint,
-    expectedOperationType: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
   cancelTimeLockExecution(
     txId: bigint,
-    expectedOperationType: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
   approveTimeLockExecutionWithMetaTx(
     metaTx: MetaTransaction,
-    expectedOperationType: Hex,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
   cancelTimeLockExecutionWithMetaTx(
     metaTx: MetaTransaction,
-    expectedOperationType: Hex,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
   requestAndApproveExecution(
     metaTx: MetaTransaction,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 }

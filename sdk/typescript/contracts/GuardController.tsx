@@ -26,6 +26,33 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
     super(client, walletClient, contractAddress, chain, GuardControllerABIJson);
   }
 
+  // ============ INITIALIZATION ============
+
+  /**
+   * @notice Initializer to initialize GuardController
+   * @param initialOwner The initial owner address
+   * @param broadcaster The broadcaster address
+   * @param recovery The recovery address
+   * @param timeLockPeriodSec The timelock period in seconds
+   * @param eventForwarder The event forwarder address
+   * @param options Transaction options including from address
+   * @return TransactionResult with hash and wait function
+   */
+  async initialize(
+    initialOwner: Address,
+    broadcaster: Address,
+    recovery: Address,
+    timeLockPeriodSec: bigint,
+    eventForwarder: Address,
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
+    return this.executeWriteContract(
+      'initialize',
+      [initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder],
+      options
+    );
+  }
+
   // ============ EXECUTION FUNCTIONS ============
 
   /**
@@ -61,99 +88,92 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
 
   /**
    * @dev Approves and executes a time-locked transaction
-   * @param txId The transaction ID to approve
-   * @param expectedOperationType The expected operation type for validation
+   * @param txId The transaction ID
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
+   * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_APPROVE permission for the execution function
    */
   async approveTimeLockExecution(
     txId: bigint,
-    expectedOperationType: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'approveTimeLockExecution',
-      [txId, expectedOperationType],
+      [txId],
       options
     );
   }
 
   /**
    * @dev Cancels a time-locked transaction
-   * @param txId The transaction ID to cancel
-   * @param expectedOperationType The expected operation type for validation
+   * @param txId The transaction ID
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
+   * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_CANCEL permission for the execution function
    */
   async cancelTimeLockExecution(
     txId: bigint,
-    expectedOperationType: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'cancelTimeLockExecution',
-      [txId, expectedOperationType],
+      [txId],
       options
     );
   }
 
   /**
    * @dev Approves a time-locked transaction using a meta-transaction
-   * @param metaTx The meta-transaction object
-   * @param expectedOperationType The expected operation type for validation
-   * @param requiredSelector The required function selector
+   * @param metaTx The meta-transaction containing the transaction record and signature
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
+   * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
    */
   async approveTimeLockExecutionWithMetaTx(
     metaTx: MetaTransaction,
-    expectedOperationType: Hex,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'approveTimeLockExecutionWithMetaTx',
-      [metaTx, expectedOperationType, requiredSelector],
+      [metaTx],
       options
     );
   }
 
   /**
    * @dev Cancels a time-locked transaction using a meta-transaction
-   * @param metaTx The meta-transaction object
-   * @param expectedOperationType The expected operation type for validation
-   * @param requiredSelector The required function selector
+   * @param metaTx The meta-transaction containing the transaction record and signature
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
+   * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
    */
   async cancelTimeLockExecutionWithMetaTx(
     metaTx: MetaTransaction,
-    expectedOperationType: Hex,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'cancelTimeLockExecutionWithMetaTx',
-      [metaTx, expectedOperationType, requiredSelector],
+      [metaTx],
       options
     );
   }
 
   /**
    * @dev Requests and approves a transaction in one step using a meta-transaction
-   * @param metaTx The meta-transaction object
-   * @param requiredSelector The required function selector
+   * @param metaTx The meta-transaction containing the transaction record and signature
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
+   * @notice Requires STANDARD execution type
+   * @notice Validates function schema and permissions for the execution function (same as executeWithTimeLock)
+   * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
    */
   async requestAndApproveExecution(
     metaTx: MetaTransaction,
-    requiredSelector: Hex,
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract(
       'requestAndApproveExecution',
-      [metaTx, requiredSelector],
+      [metaTx],
       options
     );
   }

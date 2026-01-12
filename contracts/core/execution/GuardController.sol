@@ -94,7 +94,7 @@ abstract contract GuardController is BaseStateMachine {
         bytes memory params,
         uint256 gasLimit,
         bytes32 operationType
-    ) public returns (uint256 txId) {
+    ) public returns (StateAbstraction.TxRecord memory) {
         // Validate inputs
         SharedValidation.validateNotZeroAddress(target);
         
@@ -108,7 +108,7 @@ abstract contract GuardController is BaseStateMachine {
             functionSelector,
             params
         );
-        return txRecord.txId;
+        return txRecord;
     }
     
     /**
@@ -119,10 +119,9 @@ abstract contract GuardController is BaseStateMachine {
      */
     function approveTimeLockExecution(
         uint256 txId
-    ) public returns (bytes memory result) {
+    ) public returns (StateAbstraction.TxRecord memory) {
         // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
-        return updatedRecord.result;
+        return _approveTransaction(txId);  
     }
     
     /**
