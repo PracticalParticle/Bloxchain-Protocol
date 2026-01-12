@@ -757,8 +757,8 @@ library StateAbstraction {
         // Check if role exists by checking if it's in the supported roles set
         if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
         
-        // Check if function exists by checking if it's in the supported functions set
-        if (self.functions[functionPermission.functionSelector].functionSelector != functionPermission.functionSelector) {
+        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        if (!self.supportedFunctionsSet.contains(bytes32(functionPermission.functionSelector))) {
             revert SharedValidation.FunctionError(functionPermission.functionSelector);
         }
         
@@ -792,9 +792,12 @@ library StateAbstraction {
         if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
         
         // Security check: Prevent removing protected functions from roles
-        FunctionSchema memory functionSchema = self.functions[functionSelector];
-        if (functionSchema.functionSelector == functionSelector && functionSchema.isProtected) {
-            revert SharedValidation.CannotRemoveProtectedRole();
+        // Check if function exists and is protected (works for all selectors including bytes4(0))
+        if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            FunctionSchema memory functionSchema = self.functions[functionSelector];
+            if (functionSchema.isProtected) {
+                revert SharedValidation.CannotRemoveProtectedRole();
+            }
         }
         
         Role storage role = self.roles[roleHash];
@@ -914,7 +917,8 @@ library StateAbstraction {
             self.supportedOperationTypesSet.add(operationType);
         }  
         
-        if (self.functions[functionSelector].functionSelector == functionSelector) {
+        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             revert SharedValidation.FunctionError(functionSelector);
         }
         
@@ -940,8 +944,10 @@ library StateAbstraction {
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public {
-        // Validate that the function schema exists
-        SharedValidation.validateFunctionSchemaExists(self.functions[functionSelector].functionSelector, functionSelector);
+        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.FunctionError(functionSelector);
+        }
         
         // Security check: Prevent removing protected function schemas
         if (self.functions[functionSelector].isProtected) {
@@ -984,11 +990,12 @@ library StateAbstraction {
         bytes4 functionSelector,
         TxAction action
     ) public view returns (bool) {
-        FunctionSchema memory functionSchema = self.functions[functionSelector];
-        if (functionSchema.functionSelector == 0) {
-            return false; 
+        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            return false;
         }
         
+        FunctionSchema memory functionSchema = self.functions[functionSelector];
         return hasActionInBitmap(functionSchema.supportedActionsBitmap, action);
     }
 
