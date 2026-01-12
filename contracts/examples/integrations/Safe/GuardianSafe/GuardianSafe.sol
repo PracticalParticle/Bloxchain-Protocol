@@ -191,7 +191,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @param txId The transaction ID to approve
      */
     function approveTransactionAfterDelay(uint256 txId) external onlyOwner returns (StateAbstraction.TxRecord memory) {
-        return _approveTransaction(txId, EXEC_SAFE_TX);
+        return _approveTransaction(txId);
     }
 
     /**
@@ -205,7 +205,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     {
         return _approveTransactionWithMetaTx(
             metaTx,
-            EXEC_SAFE_TX,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
     }
@@ -215,7 +214,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @param txId The transaction ID to cancel
      */
     function cancelTransaction(uint256 txId) external onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId, EXEC_SAFE_TX);
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         emit TransactionCancelled(txId);
         return updatedRecord;
     }
@@ -231,7 +230,6 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
-            EXEC_SAFE_TX,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         emit TransactionCancelled(updatedRecord.txId);

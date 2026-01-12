@@ -123,7 +123,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipDelayedApproval(uint256 txId) public onlyOwnerOrRecovery returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -136,7 +136,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
             metaTx,
-            SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
         _hasOpenOwnershipRequest = false;
@@ -149,7 +148,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipCancellation(uint256 txId) public onlyRecovery returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(txId);
         return updatedRecord;
@@ -163,7 +162,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
-            SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         _hasOpenOwnershipRequest = false;
@@ -202,7 +200,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterDelayedApproval(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -215,7 +213,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
             metaTx,
-            SecureOwnableDefinitions.BROADCASTER_UPDATE,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
         _hasOpenBroadcasterRequest = false;
@@ -228,7 +225,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterCancellation(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId, SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(txId);
         return updatedRecord;
@@ -242,7 +239,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
             metaTx,
-            SecureOwnableDefinitions.BROADCASTER_UPDATE,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
         _hasOpenBroadcasterRequest = false;

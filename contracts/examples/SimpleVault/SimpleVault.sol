@@ -132,8 +132,7 @@ contract SimpleVault is SecureOwnable {
      * @param txId The ID of the withdrawal transaction to approve
      */
     function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory existing = getTransaction(txId);
-        StateAbstraction.TxRecord memory updated = _approveTransaction(txId, existing.params.operationType);
+        StateAbstraction.TxRecord memory updated = _approveTransaction(txId);
         return updated;
     }
 
@@ -144,7 +143,6 @@ contract SimpleVault is SecureOwnable {
     function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
         return _approveTransactionWithMetaTx(
             metaTx,
-            metaTx.txRecord.params.operationType,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
     }
@@ -154,8 +152,7 @@ contract SimpleVault is SecureOwnable {
      * @param txId The ID of the withdrawal transaction to cancel
      */
     function cancelWithdrawal(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory existing = getTransaction(txId);
-        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId, existing.params.operationType);
+        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId);
         return updated;
     }
 

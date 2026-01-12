@@ -121,13 +121,11 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Approves and executes a time-locked transaction
      * @param txId The transaction ID
-     * @param expectedOperationType The expected operation type for validation
      * @return result The execution result
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_APPROVE permission for the execution function
      */
     function approveTimeLockExecution(
-        uint256 txId,
-        bytes32 expectedOperationType
+        uint256 txId
     ) public returns (bytes memory result) {
         // Get transaction to extract execution function
         StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
@@ -142,20 +140,18 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE
         );
         
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, expectedOperationType);
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         return updatedRecord.result;
     }
     
     /**
      * @dev Cancels a time-locked transaction
      * @param txId The transaction ID
-     * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_CANCEL permission for the execution function
      */
     function cancelTimeLockExecution(
-        uint256 txId,
-        bytes32 expectedOperationType
+        uint256 txId
     ) public returns (StateAbstraction.TxRecord memory) {
         // Get transaction to extract execution function
         StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
@@ -170,19 +166,17 @@ abstract contract GuardController is BaseStateMachine {
             StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL
         );
         
-        return _cancelTransaction(txId, expectedOperationType);
+        return _cancelTransaction(txId);
     }
     
     /**
      * @dev Approves a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
-     * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
      * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        bytes32 expectedOperationType
+        StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         // Extract execution function selector (validates STANDARD execution type)
         bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
@@ -196,7 +190,6 @@ abstract contract GuardController is BaseStateMachine {
         
         return _approveTransactionWithMetaTx(
             metaTx,
-            expectedOperationType,
             StateAbstraction.TxAction.EXECUTE_META_APPROVE
         );
     }
@@ -204,13 +197,11 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Cancels a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
-     * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
      * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        bytes32 expectedOperationType
+        StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         // Extract execution function selector (validates STANDARD execution type)
         bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
@@ -224,7 +215,6 @@ abstract contract GuardController is BaseStateMachine {
         
         return _cancelTransactionWithMetaTx(
             metaTx,
-            expectedOperationType,
             StateAbstraction.TxAction.EXECUTE_META_CANCEL
         );
     }
