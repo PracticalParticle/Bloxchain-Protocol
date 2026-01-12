@@ -98,14 +98,7 @@ abstract contract GuardController is BaseStateMachine {
         // Validate inputs
         SharedValidation.validateNotZeroAddress(target);
         
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            functionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST
-        );
-        
-        // Request via BaseStateMachine helper
+        // Request via BaseStateMachine helper (validates permissions in StateAbstraction)
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             target,
@@ -127,19 +120,7 @@ abstract contract GuardController is BaseStateMachine {
     function approveTimeLockExecution(
         uint256 txId
     ) public returns (bytes memory result) {
-        // Get transaction to extract execution function
-        StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
-        
-        // Extract execution function selector (validates STANDARD execution type)
-        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(txRecord);
-        
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            executionFunctionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE
-        );
-        
+        // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         return updatedRecord.result;
     }
@@ -153,19 +134,7 @@ abstract contract GuardController is BaseStateMachine {
     function cancelTimeLockExecution(
         uint256 txId
     ) public returns (StateAbstraction.TxRecord memory) {
-        // Get transaction to extract execution function
-        StateAbstraction.TxRecord memory txRecord = StateAbstraction.getTxRecord(_getSecureState(), txId);
-        
-        // Extract execution function selector (validates STANDARD execution type)
-        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(txRecord);
-        
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            executionFunctionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL
-        );
-        
+        // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _cancelTransaction(txId);
     }
     
@@ -178,16 +147,7 @@ abstract contract GuardController is BaseStateMachine {
     function approveTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        // Extract execution function selector (validates STANDARD execution type)
-        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
-        
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            executionFunctionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
-        
+        // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _approveTransactionWithMetaTx(metaTx);
     }
     
@@ -200,16 +160,7 @@ abstract contract GuardController is BaseStateMachine {
     function cancelTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        // Extract execution function selector (validates STANDARD execution type)
-        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
-        
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            executionFunctionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
-        
+        // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _cancelTransactionWithMetaTx(metaTx);
     }
     
@@ -224,66 +175,16 @@ abstract contract GuardController is BaseStateMachine {
     function requestAndApproveExecution(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        // Extract execution function selector (validates STANDARD execution type)
-        bytes4 executionFunctionSelector = _extractExecutionFunctionSelector(metaTx.txRecord);
-        
-        // Pre-execution validation (function schema + permissions)
-        _preExecutionValidation(
-            executionFunctionSelector,
-            msg.sender,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
-        
+        // Request and approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _requestAndApproveTransaction(metaTx);
     }
     
     // Note: Meta-transaction utility functions (createMetaTxParams, 
     // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
     // are already available through inheritance from BaseStateMachine
-
-    // ============ INTERNAL HELPER FUNCTIONS ============
-    
-    /**
-     * @dev Pre-execution validation that checks function schema and permissions
-     * @param executionFunctionSelector The execution function selector to validate
-     * @param caller The address requesting the execution
-     * @param action The required action permission
-     * @notice This function is virtual to allow extensions to add custom validation logic
-     * @notice Reverts if function schema doesn't exist or caller lacks permission
-     */
-    function _preExecutionValidation(
-        bytes4 executionFunctionSelector,
-        address caller,
-        StateAbstraction.TxAction action
-    ) internal view {
-        // Validate function schema (mandatory for all executions)
-        if (!functionSchemaExists(executionFunctionSelector)) {
-            revert SharedValidation.FunctionError(executionFunctionSelector);
-        }
-        
-        // Validate RBAC permissions
-        if (!_hasActionPermission(caller, executionFunctionSelector, action)) {
-            revert SharedValidation.NoPermission(caller);
-        }
-    }
-    
-    /**
-     * @dev Validates and extracts the execution function selector from a transaction record
-     * @param txRecord The transaction record containing execution selector and params
-     * @return executionFunctionSelector The extracted function selector
-     * @notice Reverts if execution selector is zero (simple ETH transfer)
-     */
-    function _extractExecutionFunctionSelector(
-        StateAbstraction.TxRecord memory txRecord
-    ) internal pure returns (bytes4 executionFunctionSelector) {
-        // Require non-zero execution selector (not a simple ETH transfer)
-        if (txRecord.params.executionSelector == bytes4(0)) {
-            revert SharedValidation.OperationNotSupported();
-        }
-        
-        // Return execution selector directly
-        return txRecord.params.executionSelector;
-    }
+    // 
+    // Note: Permission validation is handled by StateAbstraction library functions
+    // which validate both function schema existence and RBAC permissions for execution selectors
 }
 
 
