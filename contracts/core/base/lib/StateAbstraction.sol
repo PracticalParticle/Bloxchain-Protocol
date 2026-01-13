@@ -47,6 +47,7 @@ library StateAbstraction {
     enum TxStatus {
         UNDEFINED,
         PENDING,
+        EXECUTING,
         CANCELLED,
         COMPLETED,
         FAILED,
@@ -308,6 +309,10 @@ library StateAbstraction {
         _validateTxPending(self, txId);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
         
+        // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
+        self.txRecords[txId].status = TxStatus.EXECUTING;
+        
+        // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
         _completeTransaction(self, txId, success, result, self.txRecords[txId].params.executionSelector);
@@ -366,6 +371,11 @@ library StateAbstraction {
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
+        
+        // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
+        self.txRecords[txId].status = TxStatus.EXECUTING;
+        
+        // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
         
         _completeTransaction(self, txId, success, result, metaTx.txRecord.params.executionSelector);
@@ -1541,13 +1551,16 @@ library StateAbstraction {
     }
 
     /**
-     * @dev Validates that a transaction is in pending status
+     * @dev Validates that a transaction is in pending status and not executing
      * @param self The SecureOperationState to check
      * @param txId The transaction ID to validate
      * @notice This function consolidates the repeated pending transaction check pattern to reduce contract size
      */
     function _validateTxPending(SecureOperationState storage self, uint256 txId) internal view {
-        if (self.txRecords[txId].status != TxStatus.PENDING) revert SharedValidation.TransactionNotPending(uint8(self.txRecords[txId].status));
+        TxStatus currentStatus = self.txRecords[txId].status;
+        if (currentStatus != TxStatus.PENDING) {
+            revert SharedValidation.TransactionNotPending(uint8(currentStatus));
+        }
     }
 
     /**
