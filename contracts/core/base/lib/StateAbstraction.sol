@@ -567,7 +567,9 @@ library StateAbstraction {
         // Check if transaction ID is already in the set (O(1) operation)
         if (self.pendingTransactionsSet.contains(txId)) revert SharedValidation.RequestAlreadyPending(txId);
         
-        self.pendingTransactionsSet.add(txId);
+        if (!self.pendingTransactionsSet.add(txId)) {
+            revert SharedValidation.SetOperationFailed();
+        }
     }
 
     /**
@@ -644,7 +646,9 @@ library StateAbstraction {
         self.roles[roleHash].walletCount = 0;
         self.roles[roleHash].isProtected = isProtected;
         
-        self.supportedRolesSet.add(roleHash);
+        if (!self.supportedRolesSet.add(roleHash)) {
+            revert SharedValidation.SetOperationFailed();
+        }
     }
 
     /**
@@ -703,7 +707,9 @@ library StateAbstraction {
         // Check if wallet is already in the role
         if (roleData.authorizedWallets.contains(wallet)) revert SharedValidation.WalletError(wallet);
         
-        roleData.authorizedWallets.add(wallet);
+        if (!roleData.authorizedWallets.add(wallet)) {
+            revert SharedValidation.SetOperationFailed();
+        }
         roleData.walletCount = roleData.authorizedWallets.length();
     }
 
@@ -766,7 +772,9 @@ library StateAbstraction {
         }
         
         // Remove the wallet (O(1) operation)
-        roleData.authorizedWallets.remove(wallet);
+        if (!roleData.authorizedWallets.remove(wallet)) {
+            revert SharedValidation.SetOperationFailed();
+        }
         roleData.walletCount = roleData.authorizedWallets.length();
     }
 
@@ -801,7 +809,9 @@ library StateAbstraction {
         
         // If it doesn't exist, add it
         role.functionPermissions[functionPermission.functionSelector] = functionPermission;
-        role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector));
+        if (!role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector))) {
+            revert SharedValidation.SetOperationFailed();
+        }
     }
 
     /**
@@ -836,7 +846,9 @@ library StateAbstraction {
         
         // Remove the function permission
         delete role.functionPermissions[functionSelector];
-        role.functionSelectorsSet.remove(bytes32(functionSelector));
+        if (!role.functionSelectorsSet.remove(bytes32(functionSelector))) {
+            revert SharedValidation.SetOperationFailed();
+        }
     }
 
     /**
@@ -941,7 +953,9 @@ library StateAbstraction {
     ) public {
         if (!self.supportedOperationTypesSet.contains(operationType)) {
             SharedValidation.validateOperationTypeNotZero(operationType);
-            self.supportedOperationTypesSet.add(operationType);
+            if (!self.supportedOperationTypesSet.add(operationType)) {
+                revert SharedValidation.SetOperationFailed();
+            }
         }  
         
         // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
@@ -957,7 +971,9 @@ library StateAbstraction {
             supportedActionsBitmap: supportedActionsBitmap,
             isProtected: isProtected
         });
-        self.supportedFunctionsSet.add(bytes32(functionSelector)); 
+        if (!self.supportedFunctionsSet.add(bytes32(functionSelector))) {
+            revert SharedValidation.SetOperationFailed();
+        } 
     }
 
     /**
@@ -985,7 +1001,9 @@ library StateAbstraction {
         bytes32 operationType = self.functions[functionSelector].operationType;
         
         // Remove the function schema from the supported functions set (O(1) operation)
-        self.supportedFunctionsSet.remove(bytes32(functionSelector));
+        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
+            revert SharedValidation.SetOperationFailed();
+        }
         
         // Clear the function schema data
         delete self.functions[functionSelector];

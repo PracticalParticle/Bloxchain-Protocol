@@ -93,6 +93,7 @@ library SharedValidation {
     error ActionNotSupported();
     error ConflictingMetaTxPermissions(bytes4 functionSelector);
     error InvalidRange(uint256 from, uint256 to);
+    error SetOperationFailed();
     
     // Payment and balance errors with context
     error InsufficientBalance(uint256 currentBalance, uint256 requiredAmount);
