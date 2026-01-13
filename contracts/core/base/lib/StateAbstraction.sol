@@ -48,6 +48,7 @@ library StateAbstraction {
         UNDEFINED,
         PENDING,
         EXECUTING,
+        PROCESSING_PAYMENT,
         CANCELLED,
         COMPLETED,
         FAILED,
@@ -463,6 +464,7 @@ library StateAbstraction {
         // Validate that transaction is still in EXECUTING status
         // This ensures reentrancy protection is maintained
         _validateTxExecuting(self, record.txId);
+        self.txRecords[record.txId].status = TxStatus.PROCESSING_PAYMENT;
         
         PaymentDetails memory payment = record.payment;
         
