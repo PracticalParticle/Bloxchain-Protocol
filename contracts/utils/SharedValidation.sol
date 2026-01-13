@@ -81,6 +81,7 @@ library SharedValidation {
     error RoleAlreadyExists();
     error FunctionError(bytes4 functionSelector);
     error CannotRemoveProtectedFunctionSchema(bytes4 functionSelector);
+    error InternalFunctionNotAccessible(bytes4 functionSelector);
     error WalletError(address wallet);
     error RoleWalletLimitReached(uint256 currentCount, uint256 maxWallets);
     error RoleEmpty();

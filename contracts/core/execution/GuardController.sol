@@ -98,6 +98,9 @@ abstract contract GuardController is BaseStateMachine {
         // Validate inputs
         SharedValidation.validateNotZeroAddress(target);
         
+        // SECURITY: Prevent access to internal execution functions
+        _validateNotInternalFunction(target, functionSelector);
+        
         // Request via BaseStateMachine helper (validates permissions in StateAbstraction)
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -120,6 +123,13 @@ abstract contract GuardController is BaseStateMachine {
     function approveTimeLockExecution(
         uint256 txId
     ) public returns (StateAbstraction.TxRecord memory) {
+        // SECURITY: Prevent access to internal execution functions
+        StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
+        _validateNotInternalFunction(
+            txRecord.params.target,
+            txRecord.params.executionSelector
+        );
+        
         // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _approveTransaction(txId);  
     }
@@ -133,6 +143,13 @@ abstract contract GuardController is BaseStateMachine {
     function cancelTimeLockExecution(
         uint256 txId
     ) public returns (StateAbstraction.TxRecord memory) {
+        // SECURITY: Prevent access to internal execution functions
+        StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
+        _validateNotInternalFunction(
+            txRecord.params.target,
+            txRecord.params.executionSelector
+        );
+        
         // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _cancelTransaction(txId);
     }
@@ -146,6 +163,12 @@ abstract contract GuardController is BaseStateMachine {
     function approveTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
+        // SECURITY: Prevent access to internal execution functions
+        _validateNotInternalFunction(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector
+        );
+        
         // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _approveTransactionWithMetaTx(metaTx);
     }
@@ -159,6 +182,12 @@ abstract contract GuardController is BaseStateMachine {
     function cancelTimeLockExecutionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
+        // SECURITY: Prevent access to internal execution functions
+        _validateNotInternalFunction(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector
+        );
+        
         // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _cancelTransactionWithMetaTx(metaTx);
     }
@@ -174,6 +203,12 @@ abstract contract GuardController is BaseStateMachine {
     function requestAndApproveExecution(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
+        // SECURITY: Prevent access to internal execution functions
+        _validateNotInternalFunction(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector
+        );
+        
         // Request and approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _requestAndApproveTransaction(metaTx);
     }
@@ -184,6 +219,29 @@ abstract contract GuardController is BaseStateMachine {
     // 
     // Note: Permission validation is handled by StateAbstraction library functions
     // which validate both function schema existence and RBAC permissions for execution selectors
+
+    // ============ INTERNAL VALIDATION HELPERS ============
+
+    /**
+     * @dev Validates that GuardController is not attempting to access internal execution functions
+     * @param target The target contract address
+     * @param functionSelector The function selector to validate
+     * @notice Internal functions use validateInternalCallInternal and should only be called
+     *         through the contract's own workflow, not via GuardController
+     * @notice Blocks all calls to address(this) to prevent bypassing internal-only protection
+     */
+    function _validateNotInternalFunction(
+        address target,
+        bytes4 functionSelector
+    ) internal view {
+        // SECURITY: Prevent GuardController from accessing internal execution functions
+        // Internal functions use validateInternalCallInternal and should only be called
+        // through the contract's own workflow, not via GuardController
+        // Block all calls to address(this) to prevent bypassing internal-only protection
+        if (target == address(this)) {
+            revert SharedValidation.InternalFunctionNotAccessible(functionSelector);
+        }
+    }
 }
 
 
