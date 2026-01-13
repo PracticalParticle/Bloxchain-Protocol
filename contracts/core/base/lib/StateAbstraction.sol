@@ -676,6 +676,12 @@ library StateAbstraction {
         }
         
         // Clear the role data
+        // NOTE: Mappings (functionPermissions, authorizedWallets, functionSelectorsSet)
+        // are not deleted by Solidity's delete operator. This is acceptable because:
+        // 1. Role is removed from supportedRolesSet, making it inaccessible
+        // 2. All access checks iterate supportedRolesSet, so orphaned data is unreachable
+        // 3. Role recreation with same name would pass roleHash check but mappings
+        //    would be effectively reset since role is reinitialized from scratch
         delete self.roles[roleHash];
     }
 
