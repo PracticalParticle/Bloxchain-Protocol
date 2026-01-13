@@ -313,7 +313,7 @@ library StateAbstraction {
         self.txRecords[txId].status = TxStatus.EXECUTING;
         
         // INTERACT: External call after state update
-        (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
+        (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
         _completeTransaction(self, txId, success, result, self.txRecords[txId].params.executionSelector);
         return self.txRecords[txId];
@@ -376,7 +376,7 @@ library StateAbstraction {
         self.txRecords[txId].status = TxStatus.EXECUTING;
         
         // INTERACT: External call after state update
-        (bool success, bytes memory result) = executeTransaction(self.txRecords[txId]);
+        (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
         _completeTransaction(self, txId, success, result, metaTx.txRecord.params.executionSelector);
         
@@ -414,10 +414,15 @@ library StateAbstraction {
 
     /**
      * @dev Executes a transaction based on its execution type and attached payment.
+     * @param self The SecureOperationState storage reference (for validation)
      * @param record The transaction record to execute.
      * @return A tuple containing the success status and result of the execution.
      */
-    function executeTransaction(TxRecord memory record) private returns (bool, bytes memory) {
+    function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
+        // Validate that transaction is in EXECUTING status (set by caller before this function)
+        // This proves reentrancy protection is active at entry point
+        _validateTxExecuting(self, record.txId);
+
         bytes memory txData = prepareTransactionData(record);
         uint gas = record.params.gasLimit;
         if (gas == 0) {
@@ -435,7 +440,7 @@ library StateAbstraction {
             
             // Execute attached payment if transaction was successful
             if (record.payment.recipient != address(0)) {
-                executeAttachedPayment(record);
+                executeAttachedPayment(self, record);
             }
         } else {
             record.status = TxStatus.FAILED;
@@ -446,9 +451,19 @@ library StateAbstraction {
 
     /**
      * @dev Executes the payment attached to a transaction record
+     * @param self The SecureOperationState storage reference (for validation)
      * @param record The transaction record containing payment details
+     * @notice Reentrancy protection: Transaction must be in EXECUTING status,
+     *         which is maintained throughout execution to prevent reentrancy.
      */
-    function executeAttachedPayment(TxRecord memory record) private {
+    function executeAttachedPayment(
+        SecureOperationState storage self,
+        TxRecord memory record
+    ) private {
+        // Validate that transaction is still in EXECUTING status
+        // This ensures reentrancy protection is maintained
+        _validateTxExecuting(self, record.txId);
+        
         PaymentDetails memory payment = record.payment;
         
         // Execute native token payment if specified
@@ -1158,7 +1173,7 @@ library StateAbstraction {
     ) private view returns (bool) {
         // Basic validation
         SharedValidation.validateSignatureLength(metaTx.signature);
-        if (metaTx.txRecord.status != TxStatus.PENDING) revert SharedValidation.TransactionNotPending(uint8(metaTx.txRecord.status));
+        _validateTxPending(self, metaTx.txRecord.txId);
         
         // Transaction parameters validation
         SharedValidation.validateNotZeroAddress(metaTx.txRecord.params.requester);
@@ -1560,6 +1575,22 @@ library StateAbstraction {
         TxStatus currentStatus = self.txRecords[txId].status;
         if (currentStatus != TxStatus.PENDING) {
             revert SharedValidation.TransactionNotPending(uint8(currentStatus));
+        }
+    }
+
+    /**
+     * @dev Validates that a transaction is in executing status
+     * @param self The SecureOperationState to check
+     * @param txId The transaction ID to validate
+     * @notice This validation ensures reentrancy protection is active.
+     *         Transactions must be in EXECUTING status during execution.
+     *         This proves that the entry point set the status before calling
+     *         executeTransaction, preventing reentrancy attacks.
+     */
+    function _validateTxExecuting(SecureOperationState storage self, uint256 txId) private view {
+        TxStatus currentStatus = self.txRecords[txId].status;
+        if (currentStatus != TxStatus.EXECUTING) {
+            revert SharedValidation.TransactionNotExecuting(uint8(currentStatus));
         }
     }
 
