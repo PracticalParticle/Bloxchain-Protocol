@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Contracts imports
 import "./lib/StateAbstraction.sol";
@@ -35,7 +36,7 @@ import "./interface/IBaseStateMachine.sol";
  * - System configuration queries
  * - Event forwarding for external monitoring
  */
-abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
+abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, ReentrancyGuardUpgradeable {
     using StateAbstraction for StateAbstraction.SecureOperationState;
     using SharedValidation for *;
 
@@ -101,6 +102,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         address eventForwarder
     ) internal onlyInitializing {
         __ERC165_init();
+        __ReentrancyGuard_init();
         
         _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
 
@@ -194,10 +196,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @notice Validates permissions for the calling function (approval function selector), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _approveTransaction(
         uint256 txId
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (approval function selector), not the execution selector
         // Execution functions are internal-only and protected by validateInternalCallInternal
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE);
@@ -212,10 +215,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice Uses EXECUTE_META_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _approveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_APPROVE);
         
@@ -274,10 +278,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice Uses EXECUTE_META_REQUEST_AND_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _requestAndApproveTransaction(
         StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
