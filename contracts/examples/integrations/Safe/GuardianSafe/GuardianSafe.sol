@@ -296,7 +296,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         SafeMetaTxParams memory params
     ) public view returns (StateAbstraction.MetaTransaction memory) {
         // Validate that operation is Call (0)
-        if (safeTx.operation != 0) revert SharedValidation.OperationNotSupported();
+        if (safeTx.operation != 0) revert SharedValidation.NotSupported();
 
         bytes memory executionParams = createTransactionExecutionParams(safeTx);
 

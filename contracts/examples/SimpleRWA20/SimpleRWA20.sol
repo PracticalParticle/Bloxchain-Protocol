@@ -130,7 +130,7 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         TokenMetaTxParams memory params
     ) public view returns (StateAbstraction.MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(from);
-        if (balanceOf(from) < amount) revert SharedValidation.OperationNotSupported();
+        if (balanceOf(from) < amount) revert SharedValidation.NotSupported();
         
         return _generateUnsignedTokenMetaTx(
             from,

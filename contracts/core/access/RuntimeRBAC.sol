@@ -123,7 +123,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @param actions Encoded role configuration actions
      */
     function executeRoleConfigBatch(RoleConfigAction[] calldata actions) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _executeRoleConfigBatch(actions);
     }
 
@@ -157,7 +157,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     ) {
         StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.functionSelector != functionSelector) {
-            revert SharedValidation.FunctionError(functionSelector);
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
         
         // Convert bitmap to array
@@ -194,7 +194,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         // Convert supportedActions arrays to bitmaps
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             if (functionSchemas[i].isProtected) {
-                revert SharedValidation.CannotModifyProtectedRoles();
+                revert SharedValidation.CannotRemoveProtected(bytes32(functionSchemas[i].functionSelector));
             }
             // Convert supportedActions array to bitmap
             // Note: functionSchemas[i].supportedActions is passed as array but we need bitmap
@@ -205,10 +205,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         for (uint256 i = 0; i < roleHashes.length; i++) {
             StateAbstraction.Role storage role = _getSecureState().getRole(roleHashes[i]);
             if (role.roleHash == bytes32(0)) {
-                revert SharedValidation.RoleEmpty();
+                revert SharedValidation.ResourceNotFound(roleHashes[i]);
             }
             if (role.isProtected) {
-                revert SharedValidation.CannotModifyProtectedRoles();
+                revert SharedValidation.CannotRemoveProtected(roleHashes[i]);
             }
         }
         
@@ -314,7 +314,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     abi.encode(functionSchemas.length, roleHashes.length)
                 );
             } else {
-                revert SharedValidation.OperationNotSupported();
+                revert SharedValidation.NotSupported();
             }
         }
     }
@@ -361,7 +361,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      */
     function _ensureRoleNotProtected(bytes32 roleHash) internal view {
         if (_getSecureState().getRole(roleHash).isProtected) {
-            revert SharedValidation.CannotModifyProtectedRoles();
+            revert SharedValidation.CannotRemoveProtected(roleHash);
         }
     }
 
@@ -375,7 +375,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 
         // Validate that function schema doesn't already exist
         if (functionSchemaExists(functionSelector)) {
-            revert SharedValidation.FunctionError(functionSelector);
+            revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
         }
 
         // Derive operation type from name
@@ -399,13 +399,13 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
         // Validate function exists
         if (!functionSchemaExists(functionSelector)) {
-            revert SharedValidation.FunctionError(functionSelector);
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
 
         // Ensure not protected
         StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.isProtected) {
-            revert SharedValidation.CannotModifyProtectedRoles();
+            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
 
         // If safeRemoval is requested, ensure no role currently references this function
@@ -416,7 +416,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     _getSecureState().getRoleFunctionPermissions(roles[i]);
                 for (uint256 j = 0; j < perms.length; j++) {
                     if (perms[j].functionSelector == functionSelector) {
-                        revert SharedValidation.FunctionError(functionSelector);
+                        revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
                     }
                 }
             }

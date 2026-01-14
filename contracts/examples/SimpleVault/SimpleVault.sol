@@ -90,7 +90,7 @@ contract SimpleVault is SecureOwnable {
      */
     function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
         SharedValidation.validateNotZeroAddress(to);
-        if (amount > getEthBalance()) revert SharedValidation.OperationNotSupported();
+        if (amount > getEthBalance()) revert SharedValidation.NotSupported();
 
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -113,7 +113,7 @@ contract SimpleVault is SecureOwnable {
     function withdrawTokenRequest(address token, address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
         SharedValidation.validateNotZeroAddress(token);
         SharedValidation.validateNotZeroAddress(to);
-        if (amount > getTokenBalance(token)) revert SharedValidation.OperationNotSupported();
+        if (amount > getTokenBalance(token)) revert SharedValidation.NotSupported();
 
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -159,7 +159,7 @@ contract SimpleVault is SecureOwnable {
      * @param amount Amount to withdraw
      */
     function executeWithdrawEth(address payable to, uint256 amount) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _withdrawEth(to, amount);
     }
 
@@ -170,7 +170,7 @@ contract SimpleVault is SecureOwnable {
      * @param amount Amount to withdraw
      */
     function executeWithdrawToken(address token, address to, uint256 amount) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _withdrawToken(token, to, amount);
     }
 

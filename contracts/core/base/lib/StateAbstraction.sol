@@ -349,7 +349,7 @@ library StateAbstraction {
     ) public returns (TxRecord memory) {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE);
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
         
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
@@ -358,7 +358,7 @@ library StateAbstraction {
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
-        _completeTransaction(self, txId, success, result, self.txRecords[txId].params.executionSelector);
+        _completeTransaction(self, txId, success, result);
         return self.txRecords[txId];
     }
 
@@ -376,9 +376,9 @@ library StateAbstraction {
     ) public returns (TxRecord memory) {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_CANCEL);
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
         
-        _cancelTransaction(self, txId, self.txRecords[txId].params.executionSelector);
+        _cancelTransaction(self, txId);
         
         return self.txRecords[txId];
     }
@@ -393,11 +393,11 @@ library StateAbstraction {
         uint256 txId = metaTx.txRecord.txId;
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
-        _cancelTransaction(self, txId, metaTx.txRecord.params.executionSelector);
+        _cancelTransaction(self, txId);
         
         return self.txRecords[txId];
     }
@@ -425,7 +425,7 @@ library StateAbstraction {
      */
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -436,7 +436,7 @@ library StateAbstraction {
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
-        _completeTransaction(self, txId, success, result, metaTx.txRecord.params.executionSelector);
+        _completeTransaction(self, txId, success, result);
         
         return self.txRecords[txId];
     }
@@ -487,7 +487,7 @@ library StateAbstraction {
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
         // This proves reentrancy protection is active at entry point
-        _validateTxExecuting(self, record.txId);
+        _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
 
         bytes memory txData = prepareTransactionData(record);
         uint gas = record.params.gasLimit;
@@ -497,7 +497,7 @@ library StateAbstraction {
         
         // Execute the main transaction
         // REENTRANCY SAFE: Status is EXECUTING, preventing reentry through entry functions
-        // that require PENDING status. Any reentry attempt would fail at _validateTxPending.
+        // that require PENDING status. Any reentry attempt would fail at _validateTxStatus(..., PENDING).
         (bool success, bytes memory result) = record.params.target.call{value: record.params.value, gas: gas}(
             txData
         );
@@ -537,7 +537,7 @@ library StateAbstraction {
     ) private {
         // Validate that transaction is still in EXECUTING status
         // This ensures reentrancy protection is maintained throughout payment execution
-        _validateTxExecuting(self, record.txId);
+        _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
         self.txRecords[record.txId].status = TxStatus.PROCESSING_PAYMENT;
         
         PaymentDetails memory payment = record.payment;
@@ -642,13 +642,11 @@ library StateAbstraction {
      */
     function addToPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
         
-        // Check if transaction ID is already in the set (O(1) operation)
-        if (self.pendingTransactionsSet.contains(txId)) revert SharedValidation.RequestAlreadyPending(txId);
-        
+        // Try to add transaction ID to the set - add() returns false if already exists
         if (!self.pendingTransactionsSet.add(txId)) {
-            revert SharedValidation.SetOperationFailed();
+            revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(txId)));
         }
     }
 
@@ -662,7 +660,7 @@ library StateAbstraction {
         
         // Remove the transaction ID from the set (O(1) operation)
         if (!self.pendingTransactionsSet.remove(txId)) {
-            revert SharedValidation.TransactionNotFound(txId);
+            revert SharedValidation.ResourceNotFound(bytes32(uint256(txId)));
         }
     }
 
@@ -682,7 +680,7 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_UPDATE_PAYMENT)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
-        _validateTxPending(self, txId);
+        _validateTxStatus(self, txId, TxStatus.PENDING);
            
         self.txRecords[txId].payment = paymentDetails;
         
@@ -717,18 +715,18 @@ library StateAbstraction {
         bool isProtected
     ) public {
         bytes32 roleHash = keccak256(bytes(roleName));
-        if (self.roles[roleHash].roleHash == roleHash) revert SharedValidation.RoleAlreadyExists();
         
+        // Check if role already exists in mapping or set - if either is true, revert
+        if (self.roles[roleHash].roleHash == roleHash || !self.supportedRolesSet.add(roleHash)) {
+            revert SharedValidation.ResourceAlreadyExists(roleHash);
+        }
+
         // Create the role with empty arrays
         self.roles[roleHash].roleName = roleName;
         self.roles[roleHash].roleHash = roleHash;
         self.roles[roleHash].maxWallets = maxWallets;
         self.roles[roleHash].walletCount = 0;
         self.roles[roleHash].isProtected = isProtected;
-        
-        if (!self.supportedRolesSet.add(roleHash)) {
-            revert SharedValidation.SetOperationFailed();
-        }
     }
 
     /**
@@ -746,13 +744,13 @@ library StateAbstraction {
         
         // Security check: Prevent removing protected roles
         if (self.roles[roleHash].isProtected) {
-            revert SharedValidation.CannotRemoveProtectedRole();
+            revert SharedValidation.CannotRemoveProtected(roleHash);
         }
         
         // Remove the role from the supported roles set (O(1) operation)
         // Defensive check: ensure role was actually in the set
         if (!self.supportedRolesSet.remove(roleHash)) {
-            revert SharedValidation.RoleEmpty();
+            revert SharedValidation.ResourceNotFound(roleHash);
         }
         
         // Clear the role data
@@ -791,10 +789,10 @@ library StateAbstraction {
         SharedValidation.validateWalletLimit(roleData.authorizedWallets.length(), roleData.maxWallets);
         
         // Check if wallet is already in the role
-        if (roleData.authorizedWallets.contains(wallet)) revert SharedValidation.WalletError(wallet);
+        if (roleData.authorizedWallets.contains(wallet)) revert SharedValidation.ItemAlreadyExists(wallet);
         
         if (!roleData.authorizedWallets.add(wallet)) {
-            revert SharedValidation.SetOperationFailed();
+            revert SharedValidation.ItemAlreadyExists(wallet);
         }
         roleData.walletCount = roleData.authorizedWallets.length();
     }
@@ -809,31 +807,20 @@ library StateAbstraction {
     function updateAssignedWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
         _validateRoleExists(self, role);
         SharedValidation.validateNotZeroAddress(newWallet);
+        SharedValidation.validateNewAddress(newWallet, oldWallet);
         
         // Check if old wallet exists in the role
         Role storage roleData = self.roles[role];
-        if (!roleData.authorizedWallets.contains(oldWallet)) {
-            revert SharedValidation.WalletError(oldWallet);
-        }
-
-        // update the wallet if it's not the same
-        if (oldWallet != newWallet) {
-            // Remove old wallet (should succeed since we checked contains above)
-            if (!roleData.authorizedWallets.remove(oldWallet)) {
-                revert SharedValidation.WalletError(oldWallet);
-            }
-            
-            // Check if new wallet is already in the role to prevent duplicates
-            if (roleData.authorizedWallets.contains(newWallet)) {
-                revert SharedValidation.WalletError(newWallet);
-            }
-            
-            // Add new wallet (should always succeed since we verified it doesn't exist)
-            if (!roleData.authorizedWallets.add(newWallet)) {
-                revert SharedValidation.WalletError(newWallet);
-            }
+        
+        // Remove old wallet
+        if (!roleData.authorizedWallets.remove(oldWallet)) {
+            revert SharedValidation.ItemNotFound(oldWallet);
         }
         
+        // Add new wallet (should always succeed since we verified it doesn't exist)
+        if (!roleData.authorizedWallets.add(newWallet)) {
+            revert SharedValidation.OperationFailed();
+        }  
     }
 
     /**
@@ -848,18 +835,15 @@ library StateAbstraction {
         
         // Check if wallet exists in the role
         Role storage roleData = self.roles[role];
-        if (!roleData.authorizedWallets.contains(wallet)) {
-            revert SharedValidation.WalletError(wallet);
-        }
         
         // Security check: Prevent removing the last wallet from a role
         if (roleData.authorizedWallets.length() <= 1) {
-            revert SharedValidation.WalletError(wallet);
+            revert SharedValidation.InvalidOperation(wallet);
         }
         
         // Remove the wallet (O(1) operation)
         if (!roleData.authorizedWallets.remove(wallet)) {
-            revert SharedValidation.SetOperationFailed();
+            revert SharedValidation.ItemNotFound(wallet);
         }
         roleData.walletCount = roleData.authorizedWallets.length();
     }
@@ -876,28 +860,26 @@ library StateAbstraction {
         FunctionPermission memory functionPermission
     ) public {
         // Check if role exists by checking if it's in the supported roles set
-        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
+        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.ResourceNotFound(roleHash);
         
         // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
         if (!self.supportedFunctionsSet.contains(bytes32(functionPermission.functionSelector))) {
-            revert SharedValidation.FunctionError(functionPermission.functionSelector);
+            revert SharedValidation.ResourceNotFound(bytes32(functionPermission.functionSelector));
         }
         
         // Validate that all grantedActions are supported by the function
         _validateMetaTxPermissions(self, functionPermission);
         
+        // add the function permission to the role
         Role storage role = self.roles[roleHash];
         
-        // Check if permission already exists
-        if (role.functionSelectorsSet.contains(bytes32(functionPermission.functionSelector))) {
-            revert SharedValidation.FunctionPermissionExists(functionPermission.functionSelector);
+        // add the function selector to the role's function selectors set
+        if (!role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector))) {
+            revert SharedValidation.ResourceAlreadyExists(bytes32(functionPermission.functionSelector));
         }
         
         // If it doesn't exist, add it
         role.functionPermissions[functionPermission.functionSelector] = functionPermission;
-        if (!role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector))) {
-            revert SharedValidation.SetOperationFailed();
-        }
     }
 
     /**
@@ -912,28 +894,22 @@ library StateAbstraction {
         bytes4 functionSelector
     ) public {
         // Check if role exists by checking if it's in the supported roles set
-        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.RoleEmpty();
+        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.ResourceNotFound(roleHash);
         
         // Security check: Prevent removing protected functions from roles
         // Check if function exists and is protected (works for all selectors including bytes4(0))
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             FunctionSchema memory functionSchema = self.functions[functionSelector];
             if (functionSchema.isProtected) {
-                revert SharedValidation.CannotRemoveProtectedRole();
+                revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
             }
         }
         
-        Role storage role = self.roles[roleHash];
-        
-        // Check if permission exists and remove it
-        if (!role.functionSelectorsSet.contains(bytes32(functionSelector))) {
-            revert SharedValidation.FunctionError(functionSelector);
-        }
-        
         // Remove the function permission
+        Role storage role = self.roles[roleHash];
         delete role.functionPermissions[functionSelector];
         if (!role.functionSelectorsSet.remove(bytes32(functionSelector))) {
-            revert SharedValidation.SetOperationFailed();
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
     }
 
@@ -1037,28 +1013,28 @@ library StateAbstraction {
         uint16 supportedActionsBitmap,
         bool isProtected
     ) public {
-        if (!self.supportedOperationTypesSet.contains(operationType)) {
-            SharedValidation.validateOperationTypeNotZero(operationType);
-            if (!self.supportedOperationTypesSet.add(operationType)) {
-                revert SharedValidation.SetOperationFailed();
-            }
-        }  
+        SharedValidation.validateOperationTypeNotZero(operationType);
+
+        // register the operation type if it's not already in the set
+        if (self.supportedOperationTypesSet.add(operationType)) {
+            // do nothing
+        }
         
         // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
-            revert SharedValidation.FunctionError(functionSelector);
+            revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
         }
         
-        self.functions[functionSelector] = FunctionSchema({
-            functionName: functionName,
-            functionSelector: functionSelector,
-            operationType: operationType,
-            operationName: operationName,
-            supportedActionsBitmap: supportedActionsBitmap,
-            isProtected: isProtected
-        });
+        FunctionSchema storage schema = self.functions[functionSelector];
+        schema.functionName = functionName;
+        schema.functionSelector = functionSelector;
+        schema.operationType = operationType;
+        schema.operationName = operationName;
+        schema.supportedActionsBitmap = supportedActionsBitmap;
+        schema.isProtected = isProtected;
+        
         if (!self.supportedFunctionsSet.add(bytes32(functionSelector))) {
-            revert SharedValidation.SetOperationFailed();
+            revert SharedValidation.OperationFailed();
         } 
     }
 
@@ -1073,23 +1049,18 @@ library StateAbstraction {
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public {
-        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
-        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
-            revert SharedValidation.FunctionError(functionSelector);
+        // Remove the function schema from the supported functions set (O(1) operation)
+        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
         
         // Security check: Prevent removing protected function schemas
         if (self.functions[functionSelector].isProtected) {
-            SharedValidation.validateCanRemoveProtectedFunctionSchema(functionSelector);
+            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
         
         // Store the operation type before removing the function schema
         bytes32 operationType = self.functions[functionSelector].operationType;
-        
-        // Remove the function schema from the supported functions set (O(1) operation)
-        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
-            revert SharedValidation.SetOperationFailed();
-        }
         
         // Clear the function schema data
         delete self.functions[functionSelector];
@@ -1098,14 +1069,10 @@ library StateAbstraction {
         bytes4[] memory functionsUsingOperationType = getFunctionsByOperationType(self, operationType);
         if (functionsUsingOperationType.length == 0) {
             // Remove the operation type from supported operation types set if no longer in use
-            // Only attempt removal if it exists in the set (may have been cleaned up already)
-            if (self.supportedOperationTypesSet.contains(operationType)) {
-                // Remove operation type (should always succeed since we verified it exists)
-                if (!self.supportedOperationTypesSet.remove(operationType)) {
-                    // This should never happen, but defensive check for safety
-                    revert SharedValidation.OperationNotSupported();
-                }
-            }
+            if (!self.supportedOperationTypesSet.remove(operationType)) {
+                // This should never happen, but defensive check for safety
+                revert SharedValidation.OperationFailed();
+            } 
         }
     }
 
@@ -1279,7 +1246,7 @@ library StateAbstraction {
     ) private view returns (bool) {
         // Basic validation
         SharedValidation.validateSignatureLength(metaTx.signature);
-        _validateTxPending(self, metaTx.txRecord.txId);
+        _validateTxStatus(self, metaTx.txRecord.txId, TxStatus.PENDING);
         
         // Transaction parameters validation
         SharedValidation.validateNotZeroAddress(metaTx.txRecord.params.requester);
@@ -1420,8 +1387,7 @@ library StateAbstraction {
             txParams.executionParams
         );
 
-         MetaTransaction memory res = generateMetaTransaction(self, txRecord, metaTxParams);
-         return res;
+         return generateMetaTransaction(self, txRecord, metaTxParams);
     }
 
     /**
@@ -1433,7 +1399,7 @@ library StateAbstraction {
         MetaTxParams memory metaTxParams
     ) public view returns (MetaTransaction memory) {
         TxRecord memory txRecord = getTxRecord(self, txId);
-        if (txRecord.txId != txId) revert SharedValidation.TransactionNotFound(txId);
+        if (txRecord.txId != txId) revert SharedValidation.ResourceNotFound(bytes32(uint256(txId)));
         
         return generateMetaTransaction(self, txRecord, metaTxParams);
     }
@@ -1627,14 +1593,12 @@ library StateAbstraction {
      * @param txId The transaction ID to complete
      * @param success Whether the transaction execution was successful
      * @param result The result of the transaction execution
-     * @param functionSelector The function selector for logging
      */
     function _completeTransaction(
         SecureOperationState storage self,
         uint256 txId,
         bool success,
-        bytes memory result,
-        bytes4 functionSelector
+        bytes memory result
     ) private {
         // Update storage with new status and result
         if (success) {
@@ -1647,26 +1611,24 @@ library StateAbstraction {
         // Remove from pending transactions list
         removeFromPendingTransactionsList(self, txId);
         
-        logTxEvent(self, txId, functionSelector);
+        logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
     /**
      * @dev Helper function to cancel a transaction and remove from pending list
      * @param self The SecureOperationState to modify
      * @param txId The transaction ID to cancel
-     * @param functionSelector The function selector for logging
      */
     function _cancelTransaction(
         SecureOperationState storage self,
-        uint256 txId,
-        bytes4 functionSelector
+        uint256 txId
     ) private {
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
         removeFromPendingTransactionsList(self, txId);
         
-        logTxEvent(self, txId, functionSelector);
+        logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
         /**
@@ -1685,40 +1647,32 @@ library StateAbstraction {
      * @notice This function consolidates the repeated role existence check pattern to reduce contract size
      */
     function _validateRoleExists(SecureOperationState storage self, bytes32 roleHash) internal view {
-        if (self.roles[roleHash].roleHash == 0) revert SharedValidation.RoleEmpty();
+        if (self.roles[roleHash].roleHash == 0) revert SharedValidation.ResourceNotFound(roleHash);
     }
 
     /**
-     * @dev Validates that a transaction is in pending status and not executing
+     * @dev Validates that a transaction is in the expected status
      * @param self The SecureOperationState to check
      * @param txId The transaction ID to validate
-     * @notice This function consolidates the repeated pending transaction check pattern to reduce contract size
-     */
-    function _validateTxPending(SecureOperationState storage self, uint256 txId) internal view {
-        TxStatus currentStatus = self.txRecords[txId].status;
-        if (currentStatus != TxStatus.PENDING) {
-            revert SharedValidation.TransactionNotPending(uint8(currentStatus));
-        }
-    }
-
-    /**
-     * @dev Validates that a transaction is in executing status
-     * @param self The SecureOperationState to check
-     * @param txId The transaction ID to validate
-     * @notice REENTRANCY PROTECTION: This validation is a critical part of the state machine
-     *         reentrancy guard. It ensures:
+     * @param expectedStatus The expected transaction status
+     * @notice This function consolidates the repeated transaction status check pattern to reduce contract size.
+     *         REENTRANCY PROTECTION: This validation is a critical part of the state machine reentrancy guard:
      *         1. Entry functions set status to EXECUTING before calling executeTransaction
      *            (following Checks-Effects-Interactions pattern)
      *         2. If reentry is attempted, the transaction status is EXECUTING (not PENDING)
-     *         3. All entry functions check for PENDING status first via _validateTxPending
+     *         3. All entry functions check for PENDING status first via _validateTxStatus(..., PENDING)
      *         4. Reentry attempts fail because status check fails (EXECUTING != PENDING)
      *         This creates a one-way state machine: PENDING → EXECUTING → (COMPLETED/FAILED)
      *         that prevents reentrancy without additional storage overhead.
      */
-    function _validateTxExecuting(SecureOperationState storage self, uint256 txId) private view {
+    function _validateTxStatus(
+        SecureOperationState storage self,
+        uint256 txId,
+        TxStatus expectedStatus
+    ) internal view {
         TxStatus currentStatus = self.txRecords[txId].status;
-        if (currentStatus != TxStatus.EXECUTING) {
-            revert SharedValidation.TransactionNotExecuting(uint8(currentStatus));
+        if (currentStatus != expectedStatus) {
+            revert SharedValidation.TransactionStatusMismatch(uint8(expectedStatus), uint8(currentStatus));
         }
     }
 
@@ -1784,7 +1738,7 @@ library StateAbstraction {
         for (uint i = 0; i < 10; i++) { // TxAction enum has 10 values (0-9)
             if (hasActionInBitmap(bitmap, TxAction(i))) {
                 if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
-                    revert SharedValidation.ActionNotSupported();
+                    revert SharedValidation.NotSupported();
                 }
             }
         }

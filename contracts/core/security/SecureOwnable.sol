@@ -100,7 +100,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The transaction record
      */
     function transferOwnershipRequest() public onlyRecovery returns (StateAbstraction.TxRecord memory) {
-        if (_hasOpenOwnershipRequest) revert SharedValidation.RequestAlreadyPending(0);
+        if (_hasOpenOwnershipRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -170,7 +170,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The execution options
      */
     function updateBroadcasterRequest(address newBroadcaster) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        if (_hasOpenBroadcasterRequest) revert SharedValidation.RequestAlreadyPending(0);
+        if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         SharedValidation.validateAddressUpdate(newBroadcaster, getBroadcaster());
         
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
@@ -288,7 +288,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newOwner The new owner address
      */
     function executeTransferOwnership(address newOwner) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _transferOwnership(newOwner);
     }
 
@@ -297,7 +297,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newBroadcaster The new broadcaster address
      */
     function executeBroadcasterUpdate(address newBroadcaster) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateBroadcaster(newBroadcaster);
     }
 
@@ -306,7 +306,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newRecoveryAddress The new recovery address
      */
     function executeRecoveryUpdate(address newRecoveryAddress) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateRecoveryAddress(newRecoveryAddress);
     }
 
@@ -315,7 +315,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newTimeLockPeriodSec The new timelock period in seconds
      */
     function executeTimeLockUpdate(uint256 newTimeLockPeriodSec) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateTimeLockPeriod(newTimeLockPeriodSec);
     }
 
