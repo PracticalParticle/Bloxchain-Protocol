@@ -256,6 +256,7 @@ library StateAbstraction {
      * @param value The value to send with the transaction.
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
+     * @param handlerSelector The function selector of the handler/request function.
      * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers).
      * @param executionParams The encoded parameters for the function (empty for simple ETH transfers).
      * @return The created TxRecord.
@@ -267,12 +268,12 @@ library StateAbstraction {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
+        bytes4 handlerSelector,
         bytes4 executionSelector,
         bytes memory executionParams
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
         
         return _txRequest(
             self,
@@ -338,12 +339,16 @@ library StateAbstraction {
      * @dev Approves a pending transaction after the release time.
      * @param self The SecureOperationState to modify.
      * @param txId The ID of the transaction to approve.
+     * @param handlerSelector The function selector of the handler/approval function.
      * @return The updated TxRecord.
      */
-    function txDelayedApproval(SecureOperationState storage self, uint256 txId) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+    function txDelayedApproval(
+        SecureOperationState storage self,
+        uint256 txId,
+        bytes4 handlerSelector
+    ) public returns (TxRecord memory) {
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE);
         _validateTxPending(self, txId);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
         
@@ -361,12 +366,16 @@ library StateAbstraction {
      * @dev Cancels a pending transaction.
      * @param self The SecureOperationState to modify.
      * @param txId The ID of the transaction to cancel.
+     * @param handlerSelector The function selector of the handler/cancellation function.
      * @return The updated TxRecord.
      */
-    function txCancellation(SecureOperationState storage self, uint256 txId) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_CANCEL)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+    function txCancellation(
+        SecureOperationState storage self,
+        uint256 txId,
+        bytes4 handlerSelector
+    ) public returns (TxRecord memory) {
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_CANCEL);
         _validateTxPending(self, txId);
         
         _cancelTransaction(self, txId, self.txRecords[txId].params.executionSelector);
@@ -382,13 +391,8 @@ library StateAbstraction {
      */
     function txCancellationWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
-        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_CANCEL)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
@@ -405,13 +409,8 @@ library StateAbstraction {
      * @return The updated TxRecord.
      */
     function txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_APPROVE);
         
         return _txApprovalWithMetaTx(self, metaTx);
     }
@@ -452,13 +451,8 @@ library StateAbstraction {
         SecureOperationState storage self,
         MetaTransaction memory metaTx
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        // Validate both execution and handler selector permissions
+        _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
         TxRecord memory txRecord = _txRequest(
             self,
@@ -1725,6 +1719,33 @@ library StateAbstraction {
         TxStatus currentStatus = self.txRecords[txId].status;
         if (currentStatus != TxStatus.EXECUTING) {
             revert SharedValidation.TransactionNotExecuting(uint8(currentStatus));
+        }
+    }
+
+    /**
+     * @dev Validates that a wallet has permission for both execution selector and handler selector for a given action
+     * @param self The SecureOperationState to check
+     * @param wallet The wallet address to check permissions for
+     * @param executionSelector The execution function selector (underlying operation)
+     * @param handlerSelector The handler/calling function selector
+     * @param action The action to validate permissions for
+     * @notice This function consolidates the repeated dual permission check pattern to reduce contract size
+     * @notice Reverts with NoPermission if either permission check fails
+     */
+    function _validateExecutionAndHandlerPermissions(
+        SecureOperationState storage self,
+        address wallet,
+        bytes4 executionSelector,
+        bytes4 handlerSelector,
+        TxAction action
+    ) internal view {
+        // Validate permission for the execution selector (underlying operation)
+        if (!hasActionPermission(self, wallet, executionSelector, action)) {
+            revert SharedValidation.NoPermission(wallet);
+        }
+        // Validate permission for the handler/calling function selector (e.g. msg.sig)
+        if (!hasActionPermission(self, wallet, handlerSelector, action)) {
+            revert SharedValidation.NoPermission(wallet);
         }
     }
 

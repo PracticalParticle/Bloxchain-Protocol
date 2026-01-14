@@ -173,10 +173,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bytes4 functionSelector,
         bytes memory params
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (request function selector), not the execution selector
-        // Execution functions are internal-only and protected by validateInternalCallInternal
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST);
-
         return StateAbstraction.txRequest(
             _getSecureState(),
             requester,
@@ -184,6 +180,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
             value,
             gasLimit,
             operationType,
+            bytes4(msg.sig),
             functionSelector,
             params
         );
@@ -201,11 +198,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransaction(
         uint256 txId
     ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (approval function selector), not the execution selector
-        // Execution functions are internal-only and protected by validateInternalCallInternal
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE);
-
-        return StateAbstraction.txDelayedApproval(_getSecureState(), txId);
+        return StateAbstraction.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
@@ -220,9 +213,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_APPROVE);
-        
         return StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
     }
 
@@ -237,11 +227,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransaction(
         uint256 txId
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (cancellation function selector), not the execution selector
-        // Execution functions are internal-only and protected by validateInternalCallInternal
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL);
-
-        return StateAbstraction.txCancellation(_getSecureState(), txId);
+        return StateAbstraction.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
@@ -255,9 +241,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_CANCEL);
-        
         return StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
     }
 
@@ -273,9 +256,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _requestAndApproveTransaction(
         StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        // Validate permissions for the calling function (consistent with time-delay pattern)
-        _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
-        
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
 
@@ -580,23 +560,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     // ============ INTERNAL UTILITIES ============
-
-    /**
-     * @dev Validates that the caller has permission for the calling function (msg.sig) and specified action
-     * @param caller The address to check permissions for
-     * @param action The required action permission
-     * @notice Reverts if caller doesn't have permission for the calling function (msg.sig) and action
-     * @notice This helper centralizes the msg.sig permission validation pattern
-     */
-    function _validateCallingFunctionPermission(
-        address caller,
-        StateAbstraction.TxAction action
-    ) internal view {
-        bytes4 callingFunctionSelector = msg.sig;
-        if (!_hasActionPermission(caller, callingFunctionSelector, action)) {
-            revert SharedValidation.NoPermissionForFunction(caller, callingFunctionSelector);
-        }
-    }
 
     /**
      * @dev Internal function to get the secure state
