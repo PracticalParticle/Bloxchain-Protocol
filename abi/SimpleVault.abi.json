@@ -27,35 +27,8 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "selector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "InvalidHandlerSelector",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "actualType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedType",
-        "type": "bytes32"
-      }
-    ],
-    "name": "InvalidOperationType",
     "type": "error"
   },
   {
@@ -102,17 +75,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermission",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "NotInitializing",
     "type": "error"
@@ -152,6 +114,11 @@
   {
     "inputs": [],
     "name": "OperationNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {

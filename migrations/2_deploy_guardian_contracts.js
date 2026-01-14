@@ -57,6 +57,29 @@ module.exports = async function(deployer, network, accounts) {
         // Initialize SecureBlox
         console.log("🔧 Initializing SecureBlox...");
         try {
+            // Use estimateGas to get more detailed error information
+            try {
+                const gasEstimate = await secureBlox.initialize.estimateGas(
+                    accounts[0],  // initialOwner
+                    accounts[1],  // broadcaster
+                    accounts[2],  // recovery
+                    1,          // timeLockPeriodSec
+                    "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
+                );
+                console.log("   Gas estimate:", gasEstimate.toString());
+            } catch (gasError) {
+                console.log("   ⚠️  Gas estimation failed - this indicates the transaction will revert");
+                console.log("   Gas error:", gasError.message);
+                if (gasError.data) {
+                    console.log("   Gas error data:", gasError.data);
+                    // Try to decode error selector
+                    if (gasError.data.result) {
+                        const errorSelector = gasError.data.result.slice(0, 10);
+                        console.log("   Error selector:", errorSelector);
+                    }
+                }
+            }
+            
             const tx = await secureBlox.initialize(
                 accounts[0],  // initialOwner
                 accounts[1],  // broadcaster
@@ -70,23 +93,22 @@ module.exports = async function(deployer, network, accounts) {
             console.log("❌ SecureBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
-            console.log("   Error data:", error.data);
-            console.log("   Full error:", JSON.stringify(error, null, 2));
+            console.log("   Error data:", JSON.stringify(error.data, null, 2));
             
-            // Try to decode the error if it's a revert
-            if (error.data) {
-                try {
-                    const decodedError = await web3.eth.call({
-                        to: secureBlox.address,
-                        data: error.data
-                    });
-                    console.log("   Decoded error data:", decodedError);
-                } catch (decodeError) {
-                    console.log("   Could not decode error data:", decodeError.message);
-                }
+            // Extract error selector if available
+            if (error.data && error.data.result) {
+                const errorSelector = error.data.result.slice(0, 10);
+                console.log("   Error selector:", errorSelector);
+                console.log("   Full error result:", error.data.result);
+            }
+            
+            // Try to get more details from the transaction
+            if (error.receipt) {
+                console.log("   Transaction receipt:", JSON.stringify(error.receipt, null, 2));
             }
             
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
+            throw error; // Re-throw to stop migration
         }
     } else {
         console.log("\n📦 Step 2: Skipping SecureBlox deployment (disabled)");

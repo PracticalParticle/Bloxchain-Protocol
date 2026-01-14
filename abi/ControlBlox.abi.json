@@ -34,6 +34,17 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "InternalFunctionNotAccessible",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "provided",
         "type": "address"
@@ -43,35 +54,8 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "selector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "InvalidHandlerSelector",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "actualType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedType",
-        "type": "bytes32"
-      }
-    ],
-    "name": "InvalidOperationType",
     "type": "error"
   },
   {
@@ -118,17 +102,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermission",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "NotInitializing",
     "type": "error"
@@ -168,6 +141,11 @@
   {
     "inputs": [],
     "name": "OperationNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
@@ -405,7 +383,7 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "enum DynamicRBAC.RoleConfigActionType",
+        "internalType": "enum RuntimeRBAC.RoleConfigActionType",
         "name": "actionType",
         "type": "uint8"
       },
@@ -562,19 +540,110 @@
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedOperationType",
-        "type": "bytes32"
       }
     ],
     "name": "approveTimeLockExecution",
     "outputs": [
       {
-        "internalType": "bytes",
-        "name": "result",
-        "type": "bytes"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "txId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "releaseTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StateAbstraction.TxStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "requester",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "gasLimit",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "operationType",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "bytes",
+                "name": "executionParams",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct StateAbstraction.TxParams",
+            "name": "params",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "message",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "result",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nativeTokenAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "erc20TokenAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "erc20TokenAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct StateAbstraction.PaymentDetails",
+            "name": "payment",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct StateAbstraction.TxRecord",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "nonpayable",
@@ -751,16 +820,6 @@
         "internalType": "struct StateAbstraction.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedOperationType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "requiredSelector",
-        "type": "bytes4"
       }
     ],
     "name": "approveTimeLockExecutionWithMetaTx",
@@ -876,11 +935,6 @@
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedOperationType",
-        "type": "bytes32"
       }
     ],
     "name": "cancelTimeLockExecution",
@@ -1161,16 +1215,6 @@
         "internalType": "struct StateAbstraction.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedOperationType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "requiredSelector",
-        "type": "bytes4"
       }
     ],
     "name": "cancelTimeLockExecutionWithMetaTx",
@@ -1397,7 +1441,7 @@
       {
         "components": [
           {
-            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -1407,7 +1451,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -1451,6 +1495,11 @@
         "type": "address"
       },
       {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -1474,9 +1523,105 @@
     "name": "executeWithTimeLock",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "txId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "releaseTime",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum StateAbstraction.TxStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "requester",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "gasLimit",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "operationType",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "bytes",
+                "name": "executionParams",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct StateAbstraction.TxParams",
+            "name": "params",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "message",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "result",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "nativeTokenAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "erc20TokenAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "erc20TokenAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct StateAbstraction.PaymentDetails",
+            "name": "payment",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct StateAbstraction.TxRecord",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "nonpayable",
@@ -2697,11 +2842,6 @@
         "internalType": "struct StateAbstraction.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "requiredSelector",
-        "type": "bytes4"
       }
     ],
     "name": "requestAndApproveExecution",
@@ -2816,7 +2956,7 @@
       {
         "components": [
           {
-            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -2826,7 +2966,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

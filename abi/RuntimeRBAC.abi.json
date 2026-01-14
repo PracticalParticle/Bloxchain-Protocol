@@ -32,17 +32,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "selector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "InvalidHandlerSelector",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
     "type": "error"
@@ -75,17 +64,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermission",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "NotInitializing",
     "type": "error"
@@ -109,6 +87,11 @@
   {
     "inputs": [],
     "name": "OperationNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
@@ -150,7 +133,7 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "enum DynamicRBAC.RoleConfigActionType",
+        "internalType": "enum RuntimeRBAC.RoleConfigActionType",
         "name": "actionType",
         "type": "uint8"
       },
@@ -1425,7 +1408,7 @@
       {
         "components": [
           {
-            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -1435,7 +1418,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -1736,7 +1719,7 @@
       {
         "components": [
           {
-            "internalType": "enum DynamicRBAC.RoleConfigActionType",
+            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -1746,7 +1729,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct DynamicRBAC.RoleConfigAction[]",
+        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

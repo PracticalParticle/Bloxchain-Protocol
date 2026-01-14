@@ -191,8 +191,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Step 2 completed: Meta cancel executed');
 
@@ -240,7 +241,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER TIME DELAY CANCELLATION', [
             {
                 role: 'recovery',
-                functionSelector: '0x9d8f6f90', // TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR (actual)
+                functionSelector: '0x5f861ebf', // TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR
                 expectedActions: [2], // EXECUTE_TIME_DELAY_CANCEL
                 description: 'Recovery can cancel ownership transfer after timelock'
             }
@@ -308,8 +309,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Step 4 completed: Time delay cancel executed');
 
@@ -436,8 +438,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use recovery wallet since owner has changed)
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             console.log('  🎉 Step 6 completed: Meta approve executed');
 
@@ -586,7 +589,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER TIME DELAY APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0x6cd71b38', // TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR (actual)
+                functionSelector: '0xb7d254d6', // TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR
                 expectedActions: [1], // EXECUTE_TIME_DELAY_APPROVE
                 description: 'Owner can approve ownership transfer after timelock'
             }
@@ -653,8 +656,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use recovery wallet since owner has changed)
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             console.log('  🎉 Step 10 completed: Time delay approve executed');
 

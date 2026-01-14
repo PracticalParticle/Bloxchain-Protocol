@@ -139,6 +139,7 @@ module.exports = {
          enabled: true,
          runs: 1
        },
+       viaIR: true,  // Enable IR-based code generator to handle deep stack issues
        evmVersion: "shanghai"  // Minimum version that supports chainid and OpenZeppelin
       }
     }
