@@ -16,19 +16,14 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "CannotModifyProtectedRoles",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
       }
     ],
-    "name": "FunctionError",
+    "name": "CannotRemoveProtected",
     "type": "error"
   },
   {
@@ -123,6 +118,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "NotSupported",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -140,23 +140,29 @@
   },
   {
     "inputs": [],
-    "name": "OperationNotSupported",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
       }
     ],
-    "name": "RequestAlreadyPending",
+    "name": "ResourceAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ResourceNotFound",
     "type": "error"
   },
   {
@@ -226,11 +232,6 @@
       }
     ],
     "name": "RestrictedRecovery",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "RoleEmpty",
     "type": "error"
   },
   {

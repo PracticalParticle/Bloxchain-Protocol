@@ -209,6 +209,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "NotSupported",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -226,23 +231,18 @@
   },
   {
     "inputs": [],
-    "name": "OperationNotSupported",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
       }
     ],
-    "name": "RequestAlreadyPending",
+    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {
