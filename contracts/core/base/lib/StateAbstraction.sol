@@ -270,9 +270,46 @@ library StateAbstraction {
         bytes4 executionSelector,
         bytes memory executionParams
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST) && !hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+        if (!hasActionPermission(self, msg.sender, executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        
+        return _txRequest(
+            self,
+            requester,
+            target,
+            value,
+            gasLimit,
+            operationType,
+            executionSelector,
+            executionParams
+        );
+    }
+
+    /**
+     * @dev Internal helper function to request a transaction without permission checks.
+     * @param self The SecureOperationState to modify.
+     * @param requester The address of the requester.
+     * @param target The target contract address for the transaction.
+     * @param value The value to send with the transaction.
+     * @param gasLimit The gas limit for the transaction.
+     * @param operationType The type of operation.
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers).
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers).
+     * @return The created TxRecord.
+     * @notice This function skips permission validation and should only be called from functions
+     *         that have already validated permissions.
+     */
+    function _txRequest(
+        SecureOperationState storage self,
+        address requester,
+        address target,
+        uint256 value,
+        uint256 gasLimit,
+        bytes32 operationType,
+        bytes4 executionSelector,
+        bytes memory executionParams
+    ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
 
         TxRecord memory txRequestRecord = createNewTxRecord(
@@ -348,6 +385,10 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_CANCEL)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
         _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
@@ -364,10 +405,27 @@ library StateAbstraction {
      * @return The updated TxRecord.
      */
     function txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
-        uint256 txId = metaTx.txRecord.txId;
         if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_APPROVE)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+        
+        return _txApprovalWithMetaTx(self, metaTx);
+    }
+
+    /**
+     * @dev Internal helper function to approve a pending transaction using a meta-transaction without permission checks.
+     * @param self The SecureOperationState to modify.
+     * @param metaTx The meta-transaction containing the signature and nonce.
+     * @return The updated TxRecord.
+     * @notice This function skips permission validation and should only be called from functions
+     *         that have already validated permissions.
+     */
+    function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
+        uint256 txId = metaTx.txRecord.txId;
         _validateTxPending(self, txId);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
@@ -397,8 +455,12 @@ library StateAbstraction {
         if (!hasActionPermission(self, msg.sender, metaTx.txRecord.params.executionSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
+        // Validate handler selector permission using the handler selector from metaTx
+        if (!hasActionPermission(self, msg.sender, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
         
-        TxRecord memory txRecord = txRequest(
+        TxRecord memory txRecord = _txRequest(
             self,
             metaTx.txRecord.params.requester,
             metaTx.txRecord.params.target,
@@ -410,7 +472,7 @@ library StateAbstraction {
         );
 
         metaTx.txRecord = txRecord;
-        return txApprovalWithMetaTx(self, metaTx);
+        return _txApprovalWithMetaTx(self, metaTx);
     }
 
     /**
@@ -1243,16 +1305,20 @@ library StateAbstraction {
         if (metaTx.params.action == TxAction.SIGN_META_REQUEST_AND_APPROVE) {
             SharedValidation.validateTransactionId(metaTx.txRecord.txId, self.txCounter);
         }
-        
+
+        // Authorization check - verify signer has meta-transaction signing permissions for the function and action
+        bool isSignAction = metaTx.params.action == TxAction.SIGN_META_REQUEST_AND_APPROVE || metaTx.params.action == TxAction.SIGN_META_APPROVE || metaTx.params.action == TxAction.SIGN_META_CANCEL;
+        bool isHandlerAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
+        bool isExecutionAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.txRecord.params.executionSelector, metaTx.params.action);
+        if (!isSignAction || !isHandlerAuthorized || !isExecutionAuthorized) {
+            revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
+        }
+          
         // Signature verification
         bytes32 messageHash = generateMessageHash(metaTx);
         address recoveredSigner = recoverSigner(messageHash, metaTx.signature);
         if (recoveredSigner != metaTx.params.signer) revert SharedValidation.InvalidSignature(metaTx.signature);
 
-        // Authorization check - verify signer has meta-transaction signing permissions for the function and action
-        bool isAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
-        if (!isAuthorized) revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
-        
         return true;
     }
 

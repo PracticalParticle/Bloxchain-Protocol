@@ -45,6 +45,7 @@ library SharedValidation {
     
     // Permission and authorization errors with context
     error NoPermission(address caller);
+    error NoPermissionForFunction(address caller, bytes4 functionSelector);
     error RestrictedOwner(address caller, address owner);
     error RestrictedOwnerRecovery(address caller, address owner, address recovery);
     error RestrictedRecovery(address caller, address recovery);

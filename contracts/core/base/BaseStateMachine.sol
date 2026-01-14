@@ -223,11 +223,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_APPROVE);
         
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        
         return StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
     }
 
@@ -263,11 +258,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_CANCEL);
         
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_CANCEL)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        
         return StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
     }
 
@@ -285,11 +275,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Validate permissions for the calling function (consistent with time-delay pattern)
         _validateCallingFunctionPermission(msg.sender, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
-        
-        // Validate handler selector permission using the handler selector from metaTx
-        if (!_hasActionPermission(msg.sender, metaTx.params.handlerSelector, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
         
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
@@ -609,7 +594,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     ) internal view {
         bytes4 callingFunctionSelector = msg.sig;
         if (!_hasActionPermission(caller, callingFunctionSelector, action)) {
-            revert SharedValidation.NoPermission(caller);
+            revert SharedValidation.NoPermissionForFunction(caller, callingFunctionSelector);
         }
     }
 
