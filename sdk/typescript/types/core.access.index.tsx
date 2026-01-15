@@ -34,3 +34,6 @@ export const RUNTIME_RBAC_FUNCTION_SELECTORS = {
  * @deprecated Use RUNTIME_RBAC_FUNCTION_SELECTORS instead
  */
 export const DYNAMIC_RBAC_FUNCTION_SELECTORS = RUNTIME_RBAC_FUNCTION_SELECTORS;
+
+// Re-export SecureOwnable constants from core.security.index for convenience
+export { OPERATION_TYPES, FUNCTION_SELECTORS } from './core.security.index';

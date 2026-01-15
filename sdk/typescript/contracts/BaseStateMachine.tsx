@@ -46,6 +46,31 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     const walletClientAccount = this.walletClient!.account?.address;
     const requestedAccount = options.from.toLowerCase();
     
+    // For meta-transaction functions, ensure the structure is correct
+    if (functionName.includes('RequestAndApprove') || functionName.includes('MetaTx')) {
+      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'txRecord' in args[0]) {
+        const metaTx = args[0];
+        
+        // Ensure all nested structures are properly formatted
+        if (metaTx.txRecord && typeof metaTx.txRecord === 'object') {
+          // Ensure txRecord.params exists and is an object
+          if (!metaTx.txRecord.params || typeof metaTx.txRecord.params !== 'object') {
+            throw new Error('Invalid meta-transaction: txRecord.params must be an object');
+          }
+          // Ensure txRecord.payment exists and is an object
+          if (!metaTx.txRecord.payment || typeof metaTx.txRecord.payment !== 'object') {
+            throw new Error('Invalid meta-transaction: txRecord.payment must be an object');
+          }
+        }
+        if (metaTx.params && typeof metaTx.params === 'object') {
+          // Ensure params is properly formatted
+          if (typeof metaTx.params.action !== 'number') {
+            throw new Error('Invalid meta-transaction: params.action must be a number');
+          }
+        }
+      }
+    }
+    
     const writeContractParams: any = {
       chain: this.chain,
       address: this.contractAddress,
@@ -61,6 +86,17 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     }
     
     try {
+      // First, simulate the contract call to get better error messages
+      try {
+        await this.client.simulateContract({
+          ...writeContractParams,
+          account: writeContractParams.account || this.walletClient!.account
+        });
+      } catch (simulateError: any) {
+        // Re-throw to get better error handling
+        throw simulateError;
+      }
+      
       const hash = await this.walletClient!.writeContract(writeContractParams);
 
       return {
@@ -82,16 +118,37 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     functionName: string,
     args: any[] = []
   ): Promise<T> {
-    const result = await this.client.readContract({
-      address: this.contractAddress,
-      abi: this.abi,
-      functionName,
-      args,
-      // Include account for permission checks if wallet client is available
-      account: this.walletClient?.account
-    });
+    try {
+      const result = await this.client.readContract({
+        address: this.contractAddress,
+        abi: this.abi,
+        functionName,
+        args,
+        // Include account for permission checks if wallet client is available
+        account: this.walletClient?.account
+      });
 
-    return result as T;
+      return result as T;
+    } catch (error: any) {
+      // Try to decode the error if it's a contract revert
+      if (error.data || error.cause?.data) {
+        const errorData = error.data || error.cause?.data;
+        if (errorData && typeof errorData === 'string' && errorData.startsWith('0x')) {
+          try {
+            const { decodeErrorResult } = await import('viem');
+            const decoded = decodeErrorResult({
+              abi: this.abi,
+              data: errorData as `0x${string}`
+            });
+            throw new Error(`${decoded.errorName}(${JSON.stringify(decoded.args)})`);
+          } catch (decodeError) {
+            // If decoding fails, throw the original error
+            throw error;
+          }
+        }
+      }
+      throw error;
+    }
   }
 
   // ============ META-TRANSACTION UTILITIES ============

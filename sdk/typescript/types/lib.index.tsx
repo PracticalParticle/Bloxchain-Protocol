@@ -13,10 +13,12 @@ const keccak256 = (str: string): string => {
 export const TxStatus = {
   UNDEFINED: 0,
   PENDING: 1,
-  CANCELLED: 2,
-  COMPLETED: 3,
-  FAILED: 4,
-  REJECTED: 5
+  EXECUTING: 2,
+  PROCESSING_PAYMENT: 3,
+  CANCELLED: 4,
+  COMPLETED: 5,
+  FAILED: 6,
+  REJECTED: 7
 } as const;
 
 export type TxStatus = typeof TxStatus[keyof typeof TxStatus];

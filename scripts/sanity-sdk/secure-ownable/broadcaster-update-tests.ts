@@ -91,7 +91,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const tx = await this.secureOwnable.getTransaction(txId);
-      this.assertTest(Number(tx.status) === 2, 'Transaction cancelled successfully');
+      this.assertTest(Number(tx.status) === 4, 'Transaction cancelled successfully'); // CANCELLED = 4
 
       console.log('  🎉 Meta-transaction cancellation executed successfully');
     } catch (error: any) {
@@ -144,7 +144,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const tx = await this.secureOwnable.getTransaction(txId);
-      this.assertTest(Number(tx.status) === 2, 'Transaction cancelled successfully');
+      this.assertTest(Number(tx.status) === 4, 'Transaction cancelled successfully'); // CANCELLED = 4
 
       console.log('  🎉 Time delay cancellation executed successfully');
     } catch (error: any) {
@@ -212,7 +212,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const tx = await this.secureOwnable.getTransaction(txId);
-      this.assertTest(Number(tx.status) === 3, 'Transaction completed successfully');
+      this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully'); // COMPLETED = 5
 
       // Verify broadcaster changed
       const updatedBroadcaster = await this.secureOwnable.getBroadcaster();
@@ -281,7 +281,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const tx = await this.secureOwnable.getTransaction(txId);
-      this.assertTest(Number(tx.status) === 3, 'Transaction completed successfully');
+      this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully'); // COMPLETED = 5
 
       // Verify broadcaster changed
       const updatedBroadcaster = await this.secureOwnable.getBroadcaster();

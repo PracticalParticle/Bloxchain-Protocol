@@ -124,8 +124,8 @@ export class ContractValidations {
       throw new Error("Negative value not allowed");
     }
 
-    // Validate gas limit
-    if (params.gasLimit <= 0) {
+    // Validate gas limit (0 means use all available gas, which is valid)
+    if (params.gasLimit < 0) {
       throw new Error("Invalid gas limit");
     }
 
@@ -140,8 +140,8 @@ export class ContractValidations {
     }
 
     // Validate execution params (must be valid hex)
-    if (!(/^0x[0-9a-f]*$/i.test(params.executionParams))) {
-      throw new Error("Invalid execution params format");
+    if (!params.executionParams || !(/^0x[0-9a-f]*$/i.test(params.executionParams))) {
+      throw new Error("Missing or invalid parameters");
     }
   }
 

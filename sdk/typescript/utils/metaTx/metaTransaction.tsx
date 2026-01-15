@@ -68,7 +68,8 @@ export class MetaTransactionSigner {
     txParams: TxParams,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
-    const result = await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
+    // Call the private method which handles the contract call
+    return await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
     
     // The contract returns a complete MetaTransaction with data field populated
     // Extract all fields from the contract result
@@ -218,8 +219,8 @@ export class MetaTransactionSigner {
         txParams.value,
         txParams.gasLimit,
         txParams.operationType,
-        txParams.executionType,
-        txParams.executionOptions,
+        txParams.executionSelector,
+        txParams.executionParams,
         metaTxParams
       ],
       // Include account for permission checks if wallet client is available

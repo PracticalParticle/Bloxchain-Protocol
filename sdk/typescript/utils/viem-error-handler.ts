@@ -33,16 +33,41 @@ function extractErrorData(error: any): string | null {
 
   // Check common Viem error data locations
   if (error.data) {
-    return typeof error.data === 'string' ? error.data : error.data.data || null;
+    const data = typeof error.data === 'string' ? error.data : error.data.data || error.data;
+    if (data && typeof data === 'string' && data.startsWith('0x')) {
+      return data;
+    }
   }
 
   if (error.cause?.data) {
-    return typeof error.cause.data === 'string' ? error.cause.data : error.cause.data.data || null;
+    const data = typeof error.cause.data === 'string' ? error.cause.data : error.cause.data.data || error.cause.data;
+    if (data && typeof data === 'string' && data.startsWith('0x')) {
+      return data;
+    }
   }
 
   // Check for error in nested structures
   if (error.details) {
-    return typeof error.details === 'string' && error.details.startsWith('0x') ? error.details : null;
+    if (typeof error.details === 'string' && error.details.startsWith('0x')) {
+      return error.details;
+    }
+    // Check if details is an object with data
+    if (error.details.data && typeof error.details.data === 'string' && error.details.data.startsWith('0x')) {
+      return error.details.data;
+    }
+  }
+
+  // Check error.reason for Ganache/Truffle errors
+  if (error.reason && typeof error.reason === 'string' && error.reason.startsWith('0x')) {
+    return error.reason;
+  }
+
+  // Check error.message for hex data
+  if (error.message && typeof error.message === 'string') {
+    const hexMatch = error.message.match(/0x[0-9a-fA-F]+/);
+    if (hexMatch && hexMatch[0].length > 10) { // At least 4 bytes (selector) + some data
+      return hexMatch[0];
+    }
   }
 
   return null;
