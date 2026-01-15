@@ -626,8 +626,6 @@ export const COMMON_ERROR_PATTERNS = [
  */
 export function decodeRevertReason(data: string): GuardianContractError | null {
   try {
-    console.log(`🔍 [CONTRACT ERROR] Decoding revert reason from data: ${data}`)
-    
     // Ensure data is hex string without 0x prefix
     if (data.startsWith('0x')) {
       data = data.slice(2)
@@ -635,7 +633,6 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
 
     // Check if it starts with Error(string) selector (0x08c379a0)
     if (data.length >= 8 && data.startsWith('08c379a0')) {
-      console.log(`🔍 [CONTRACT ERROR] Detected Error(string) selector`)
       const stringData = data.slice(8) // Remove selector
       if (stringData.length < 64) return null
       
@@ -649,8 +646,6 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
       const stringHex = stringData.slice(64, 64 + length * 2)
       const bytes = Buffer.from(stringHex, 'hex')
       const message = bytes.toString('utf8').replace(/\0/g, '') // Remove null bytes
-      
-      console.log(`🔍 [CONTRACT ERROR] Decoded Error(string): ${message}`)
       
       return {
         name: 'CustomError',
@@ -670,8 +665,6 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
     for (const pattern of COMMON_ERROR_PATTERNS) {
       const hexPattern = Buffer.from(pattern, 'utf8').toString('hex')
       if (hexString.includes(hexPattern)) {
-        console.log(`🔍 [CONTRACT ERROR] Found pattern: ${pattern}`)
-        
         // Try to determine which specific error this is based on the pattern
         let errorName = 'UnknownError'
         let errorParams: Record<string, any> = {}
@@ -699,8 +692,6 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
           errorParams = { currentBalance: 'unknown', requiredAmount: 'unknown' }
         }
         
-        console.log(`🔍 [CONTRACT ERROR] Mapped to error: ${errorName} with params:`, errorParams)
-        
         return {
           name: errorName,
           signature: `CustomError(${Object.keys(errorParams).join(',')})`,
@@ -725,8 +716,6 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
     readableText = readableText.trim().replace(/\s+/g, ' ')
     
     if (readableText.length > 3 && readableText.length < 200) {
-      console.log(`🔍 [CONTRACT ERROR] Extracted readable text: ${readableText}`)
-      
       return {
         name: 'ReadableText',
         signature: 'Custom',
@@ -735,10 +724,8 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
       } as unknown as GuardianContractError
     }
 
-    console.log(`🔍 [CONTRACT ERROR] Could not decode revert reason from data: ${data}`)
     return null
   } catch (error) {
-    console.warn('Failed to decode revert reason:', error)
     return null
   }
 }
@@ -749,12 +736,9 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
  * @returns User-friendly error message
  */
 export function getUserFriendlyErrorMessage(error: GuardianContractError): string {
-  console.log(`🔍 [CONTRACT ERROR] Getting user-friendly message for:`, error)
-  
   // Check if it's a known error signature
   const errorSignature = ERROR_SIGNATURES[error.signature]
   if (errorSignature) {
-    console.log(`🔍 [CONTRACT ERROR] Found known signature: ${error.signature}`)
     return errorSignature.userMessage(error.params)
   }
 
@@ -787,7 +771,6 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
     case 'CustomError':
       return `CustomError: ${error.params.message || 'Custom contract error occurred'}`
     default:
-      console.log(`🔍 [CONTRACT ERROR] Unknown error name: ${error.name}`)
       return `${error.name}: ${error.message || 'Unknown contract error occurred'}`
   }
 }

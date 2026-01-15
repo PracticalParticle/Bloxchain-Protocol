@@ -14,7 +14,7 @@ import {
   StandardExecutionOptions,
   RawExecutionOptions
 } from '../../interfaces/lib.index';
-import { TxAction, ExecutionType } from '../../types/lib.index';
+import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../../../abi/BaseStateMachine.abi.json';
 
 /**
@@ -68,7 +68,8 @@ export class MetaTransactionSigner {
     txParams: TxParams,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
-    const result = await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
+    // Call the private method which handles the contract call
+    return await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
     
     // The contract returns a complete MetaTransaction with data field populated
     // Extract all fields from the contract result
@@ -218,8 +219,8 @@ export class MetaTransactionSigner {
         txParams.value,
         txParams.gasLimit,
         txParams.operationType,
-        txParams.executionType,
-        txParams.executionOptions,
+        txParams.executionSelector,
+        txParams.executionParams,
         metaTxParams
       ],
       // Include account for permission checks if wallet client is available
@@ -317,38 +318,6 @@ export class MetaTransactionSigner {
  * @dev Helper functions for creating meta-transaction parameters
  */
 export class MetaTransactionBuilder {
-  /**
-   * @dev Creates standard execution options
-   * @param functionSelector Function selector
-   * @param params Encoded function parameters
-   * @returns Encoded standard execution options
-   */
-  static createStandardExecutionOptions(
-    functionSelector: Hex,
-    params: Hex
-  ): Hex {
-    const options: StandardExecutionOptions = {
-      functionSelector,
-      params
-    };
-    
-    // Encode as bytes (this would need proper ABI encoding in real implementation)
-    return `0x${functionSelector.slice(2)}${params.slice(2)}` as Hex;
-  }
-
-  /**
-   * @dev Creates raw execution options
-   * @param rawTxData Raw transaction data
-   * @returns Encoded raw execution options
-   */
-  static createRawExecutionOptions(rawTxData: Hex): Hex {
-    const options: RawExecutionOptions = {
-      rawTxData
-    };
-    
-    // Return raw data as-is
-    return rawTxData;
-  }
 
   /**
    * @dev Creates meta-transaction parameters
@@ -391,8 +360,8 @@ export class MetaTransactionBuilder {
    * @param value Value to send
    * @param gasLimit Gas limit
    * @param operationType Operation type
-   * @param executionType Execution type
-   * @param executionOptions Execution options
+   * @param executionSelector Execution selector (bytes4)
+   * @param executionParams Execution parameters
    * @returns Transaction parameters
    */
   static createTxParams(
@@ -401,8 +370,8 @@ export class MetaTransactionBuilder {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex
+    executionSelector: Hex,
+    executionParams: Hex
   ): TxParams {
     return {
       requester,
@@ -410,8 +379,8 @@ export class MetaTransactionBuilder {
       value,
       gasLimit,
       operationType,
-      executionType,
-      executionOptions
+      executionSelector,
+      executionParams
     };
   }
 }

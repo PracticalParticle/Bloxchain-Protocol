@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/access/SecureOwnable.sol";
+import "../../core/security/SecureOwnable.sol";
 import "../../utils/SharedValidation.sol";
 import "../../interfaces/IDefinition.sol";
 import "./SimpleRWA20Definitions.sol";
@@ -130,7 +130,7 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         TokenMetaTxParams memory params
     ) public view returns (StateAbstraction.MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(from);
-        if (balanceOf(from) < amount) revert SharedValidation.OperationNotSupported();
+        if (balanceOf(from) < amount) revert SharedValidation.NotSupported();
         
         return _generateUnsignedTokenMetaTx(
             from,
@@ -210,11 +210,8 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         bytes4 functionSelector,
         bytes4 metaTxSelector
     ) internal view returns (StateAbstraction.MetaTransaction memory) {
-        // Create execution options
-        bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
-            functionSelector,
-            abi.encode(account, amount)
-        );
+        // Create execution params
+        bytes memory executionParams = abi.encode(account, amount);
         
         // Create meta-transaction parameters
         StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
@@ -233,8 +230,8 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
             0, // no value
             gasleft(),
             operationType,
-            StateAbstraction.ExecutionType.STANDARD,
-            executionOptions,
+            functionSelector,
+            executionParams,
             metaTxParams
         );
     }

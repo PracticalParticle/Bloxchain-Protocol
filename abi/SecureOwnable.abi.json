@@ -27,35 +27,8 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "selector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "InvalidHandlerSelector",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "actualType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "expectedType",
-        "type": "bytes32"
-      }
-    ],
-    "name": "InvalidOperationType",
     "type": "error"
   },
   {
@@ -88,17 +61,6 @@
       }
     ],
     "name": "NewTimelockSame",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermission",
     "type": "error"
   },
   {
@@ -139,14 +101,19 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
       }
     ],
-    "name": "RequestAlreadyPending",
+    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {
@@ -577,6 +544,25 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "functionSchemaExists",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
@@ -678,13 +664,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -833,13 +819,13 @@
         "type": "bytes32"
       },
       {
-        "internalType": "enum StateAbstraction.ExecutionType",
-        "name": "executionType",
-        "type": "uint8"
+        "internalType": "bytes4",
+        "name": "executionSelector",
+        "type": "bytes4"
       },
       {
         "internalType": "bytes",
-        "name": "executionOptions",
+        "name": "executionParams",
         "type": "bytes"
       },
       {
@@ -939,13 +925,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -1099,12 +1085,38 @@
   },
   {
     "inputs": [],
+    "name": "getBroadcaster",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getPendingTransactions",
     "outputs": [
       {
         "internalType": "uint256[]",
         "name": "",
         "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRecovery",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1275,13 +1287,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -1395,13 +1407,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -1517,6 +1529,38 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -1598,13 +1642,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -1713,13 +1757,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -1822,13 +1866,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -1993,13 +2037,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -2108,13 +2152,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -2217,13 +2261,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -2388,13 +2432,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -2503,13 +2547,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -2618,13 +2662,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -2727,13 +2771,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -2898,13 +2942,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -3013,13 +3057,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -3122,13 +3166,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -3293,13 +3337,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -3361,7 +3405,7 @@
         "type": "address"
       }
     ],
-    "name": "updateRecoveryExecutionOptions",
+    "name": "updateRecoveryExecutionParams",
     "outputs": [
       {
         "internalType": "bytes",
@@ -3421,13 +3465,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -3592,13 +3636,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -3660,7 +3704,7 @@
         "type": "uint256"
       }
     ],
-    "name": "updateTimeLockExecutionOptions",
+    "name": "updateTimeLockExecutionParams",
     "outputs": [
       {
         "internalType": "bytes",
@@ -3720,13 +3764,13 @@
                     "type": "bytes32"
                   },
                   {
-                    "internalType": "enum StateAbstraction.ExecutionType",
-                    "name": "executionType",
-                    "type": "uint8"
+                    "internalType": "bytes4",
+                    "name": "executionSelector",
+                    "type": "bytes4"
                   },
                   {
                     "internalType": "bytes",
-                    "name": "executionOptions",
+                    "name": "executionParams",
                     "type": "bytes"
                   }
                 ],
@@ -3891,13 +3935,13 @@
                 "type": "bytes32"
               },
               {
-                "internalType": "enum StateAbstraction.ExecutionType",
-                "name": "executionType",
-                "type": "uint8"
+                "internalType": "bytes4",
+                "name": "executionSelector",
+                "type": "bytes4"
               },
               {
                 "internalType": "bytes",
-                "name": "executionOptions",
+                "name": "executionParams",
                 "type": "bytes"
               }
             ],
@@ -4001,64 +4045,6 @@
     "name": "executeTimeLockUpdate",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getBroadcaster",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getRecovery",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

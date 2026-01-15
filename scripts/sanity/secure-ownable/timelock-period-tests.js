@@ -39,7 +39,7 @@ class TimelockPeriodTests extends BaseSecureOwnableTest {
         // Check if timelock update functions exist
         const timelockFunctions = [
             'updateTimeLockRequestAndApprove',
-            'updateTimeLockExecutionOptions'
+            'updateTimeLockExecutionParams'
         ];
         
         for (const funcName of timelockFunctions) {
@@ -95,29 +95,33 @@ class TimelockPeriodTests extends BaseSecureOwnableTest {
         console.log(`  🎯 Testing timelock change to: ${description}`);
 
         try {
-            // Create execution options for timelock update
-            const executionOptions = await this.callContractMethod(this.contract.methods.updateTimeLockExecutionOptions(newTimelockSeconds));
-            console.log(`    ✅ Execution options created for ${description}`);
+            // Create execution params for timelock update
+            const executionParams = await this.callContractMethod(this.contract.methods.updateTimeLockExecutionParams(newTimelockSeconds));
+            console.log(`    ✅ Execution params created for ${description}`);
+
+            // Get the execution selector for executeTimeLockUpdate(uint256)
+            // This is keccak256("executeTimeLockUpdate(uint256)") first 4 bytes
+            const executionSelector = '0x949ab909'; // UPDATE_TIMELOCK_SELECTOR
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0x59474230', // UPDATE_TIMELOCK_META_SELECTOR
+                '0x458102e4', // UPDATE_TIMELOCK_META_SELECTOR
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
                 this.getRoleWalletObject('owner').address // Owner signs the meta-transaction
             ));
 
-            // Create unsigned meta-transaction
+            // Create unsigned meta-transaction with new signature
             const unsignedMetaTx = await this.callContractMethod(this.contract.methods.generateUnsignedMetaTransactionForNew(
                 this.getRoleWalletObject('owner').address, // requester
                 this.contractAddress, // target
                 0, // no value
                 0, // no gas limit
                 this.getOperationType('TIMELOCK_UPDATE'), // operation type
-                this.getExecutionType('STANDARD'), // execution type
-                executionOptions, // execution options
+                executionSelector, // execution selector
+                executionParams, // execution params
                 metaTxParams // meta-transaction parameters
             ));
 

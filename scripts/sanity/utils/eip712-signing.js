@@ -93,7 +93,7 @@ class EIP712Signer {
             this.web3.utils.encodePacked(
                 'MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)',
                 'TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)',
-                'TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,uint8 executionType,bytes executionOptions)',
+                'TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)',
                 'MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)',
                 'PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)'
             )
@@ -135,8 +135,8 @@ class EIP712Signer {
                     txParams.value || txParams[2],
                     txParams.gasLimit || txParams[3],
                     txParams.operationType || txParams[4],
-                    txParams.executionType || txParams[5],
-                    txParams.executionOptions || txParams[6],
+                    txParams.executionSelector || txParams[5],
+                    txParams.executionParams || txParams[6],
                     metaTxParams
                 ).call();
             } else {
@@ -285,28 +285,21 @@ class EIP712Signer {
     }
 
     /**
-     * Prepare transaction data based on execution type
-     * Based on StateAbstraction.sol lines 513-523
+     * Prepare transaction data based on execution selector and params
+     * Based on StateAbstraction.sol lines 486-493
      */
     prepareTransactionData(txRecord) {
-        if (txRecord.params.executionType === 1) { // STANDARD
-            // Decode StandardExecutionOptions
-            const executionOptions = this.web3.eth.abi.decodeParameters(
-                ['bytes4', 'bytes'],
-                txRecord.params.executionOptions
-            );
-            
-            // Encode function call
-            return this.web3.eth.abi.encodeFunctionCall({
-                name: 'executeTransferOwnership',
-                type: 'function',
-                inputs: [{ type: 'address', name: 'newOwner' }]
-            }, [executionOptions[1]]);
-        } else if (txRecord.params.executionType === 2) { // RAW
-            return txRecord.params.executionOptions;
-        } else {
-            throw new Error('Unsupported execution type');
+        // Directly use executionSelector and executionParams
+        const executionSelector = txRecord.params.executionSelector || txRecord.params[5];
+        const executionParams = txRecord.params.executionParams || txRecord.params[6];
+        
+        // If executionSelector is 0x00000000, it's a simple ETH transfer (no function call)
+        if (executionSelector === '0x00000000' || executionSelector === '0x0' || !executionSelector) {
+            return '0x';
         }
+        
+        // Otherwise, encode the function selector with params
+        return this.web3.utils.encodePacked(executionSelector, executionParams);
     }
 }
 

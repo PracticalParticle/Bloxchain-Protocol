@@ -53,7 +53,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER REQUEST', [
             {
                 role: 'recovery',
-                functionSelector: '0x572be39b', // TRANSFER_OWNERSHIP_REQUEST_SELECTOR (actual)
+                functionSelector: '0x538cdba8', // TRANSFER_OWNERSHIP_REQUEST_SELECTOR
                 expectedActions: [0], // EXECUTE_TIME_DELAY_REQUEST
                 description: 'Recovery can create ownership transfer request'
             }
@@ -114,13 +114,13 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER META-TRANSACTION CANCELLATION', [
             {
                 role: 'owner',
-                functionSelector: '0x1ef7c2ec', // Ownership transfer cancellation selector
+                functionSelector: '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 expectedActions: [5], // SIGN_META_CANCEL
                 description: 'Owner can sign ownership transfer cancellation meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0x1ef7c2ec', // Ownership transfer cancellation selector
+                functionSelector: '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 expectedActions: [8], // EXECUTE_META_CANCEL
                 description: 'Broadcaster can execute ownership transfer cancellation meta-transaction'
             }
@@ -155,7 +155,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for cancellation
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0x1ef7c2ec', // Ownership transfer cancellation selector
+                '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 this.getTxAction('SIGN_META_CANCEL'),
                 3600, // 1 hour deadline
                 0, // no max gas price
@@ -191,8 +191,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Step 2 completed: Meta cancel executed');
 
@@ -240,7 +241,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER TIME DELAY CANCELLATION', [
             {
                 role: 'recovery',
-                functionSelector: '0x9d8f6f90', // TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR (actual)
+                functionSelector: '0x5f861ebf', // TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR
                 expectedActions: [2], // EXECUTE_TIME_DELAY_CANCEL
                 description: 'Recovery can cancel ownership transfer after timelock'
             }
@@ -308,8 +309,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Step 4 completed: Time delay cancel executed');
 
@@ -357,13 +359,13 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER META-TRANSACTION APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0xb51ff5ce', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR (from deployed contract)
+                functionSelector: '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
                 expectedActions: [4], // SIGN_META_APPROVE
                 description: 'Owner can sign ownership transfer approval meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xb51ff5ce', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR (from deployed contract)
+                functionSelector: '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
                 expectedActions: [7], // EXECUTE_META_APPROVE
                 description: 'Broadcaster can execute ownership transfer approval meta-transaction'
             }
@@ -400,7 +402,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for approval
         const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
             this.contractAddress,
-            '0xb51ff5ce', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR (from deployed contract)
+            '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
             this.getTxAction('SIGN_META_APPROVE'),
             3600, // 1 hour deadline
             0, // no max gas price
@@ -436,8 +438,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use recovery wallet since owner has changed)
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             console.log('  🎉 Step 6 completed: Meta approve executed');
 
@@ -488,28 +491,31 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  🛡️ Current recovery: ${currentRecovery}`);
             console.log(`  🛡️ New recovery: ${newRecovery}`);
 
-            // Create execution options for recovery update
-            const executionOptions = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionOptions(newRecovery));
+            // Create execution params for recovery update
+            const executionParams = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionParams(newRecovery));
+
+            // Get the execution selector for executeRecoveryUpdate(address)
+            const executionSelector = '0x9ce5606e'; // UPDATE_RECOVERY_SELECTOR
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0x2aa09cf6', // UPDATE_RECOVERY_META_SELECTOR
+                '0xfa3fb3e7', // UPDATE_RECOVERY_META_SELECTOR
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
                 this.getRoleWalletObject('owner').address // Current owner signs
             ));
 
-            // Create unsigned meta-transaction
+            // Create unsigned meta-transaction with new signature
             const unsignedMetaTx = await this.callContractMethod(this.contract.methods.generateUnsignedMetaTransactionForNew(
                 this.getRoleWalletObject('owner').address, // requester
                 this.contractAddress, // target
                 0, // no value
                 0, // no gas limit
                 this.getOperationType('RECOVERY_UPDATE'), // operation type
-                this.getExecutionType('STANDARD'), // execution type
-                executionOptions, // execution options
+                executionSelector, // execution selector
+                executionParams, // execution params
                 metaTxParams // meta-transaction parameters
             ));
 
@@ -583,7 +589,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER TIME DELAY APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0x6cd71b38', // TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR (actual)
+                functionSelector: '0xb7d254d6', // TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR
                 expectedActions: [1], // EXECUTE_TIME_DELAY_APPROVE
                 description: 'Owner can approve ownership transfer after timelock'
             }
@@ -650,8 +656,9 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use recovery wallet since owner has changed)
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             console.log('  🎉 Step 10 completed: Time delay approve executed');
 

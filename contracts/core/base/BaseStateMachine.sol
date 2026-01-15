@@ -4,12 +4,12 @@ pragma solidity ^0.8.25;
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Contracts imports
 import "./lib/StateAbstraction.sol";
-import "./lib/definitions/StateAbstractionDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
 import "../../utils/SharedValidation.sol";
+import "./interface/IBaseStateMachine.sol";
 
 /**
  * @title BaseStateMachine
@@ -36,7 +36,7 @@ import "../../utils/SharedValidation.sol";
  * - System configuration queries
  * - Event forwarding for external monitoring
  */
-abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
+abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, ReentrancyGuardUpgradeable {
     using StateAbstraction for StateAbstraction.SecureOperationState;
     using SharedValidation for *;
 
@@ -68,6 +68,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         bool success
     );
 
+    // ============ ACCESS CONTROL MODIFIERS ============
+
+    /**
+     * @dev Modifier to restrict access to the owner only
+     */
+    modifier onlyOwner() {
+        SharedValidation.validateOwner(owner());
+        _;
+    }
+
+    /**
+     * @dev Modifier to restrict access to broadcaster only
+     */
+    modifier onlyBroadcaster() {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        _;
+    }
+
     /**
      * @notice Initializes the base state machine core
      * @param initialOwner The initial owner address
@@ -84,101 +102,77 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         address eventForwarder
     ) internal onlyInitializing {
         __ERC165_init();
+        __ReentrancyGuard_init();
         
         _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
-        
-        // Load base state machine definitions
-        IDefinition.RolePermission memory multiPhasePermissions = StateAbstractionDefinitions.getRolePermissions();
-        _loadDefinitions(
-            StateAbstractionDefinitions.getFunctionSchemas(),
-            multiPhasePermissions.roleHashes,
-            multiPhasePermissions.functionPermissions
-        );
 
         _secureState.setEventForwarder(eventForwarder);
+    }
+
+    // ============ SYSTEM ROLE QUERY FUNCTIONS ============
+
+    /**
+     * @dev Returns the owner of the contract
+     * @return The owner of the contract
+     */
+    function owner() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.OWNER_ROLE, 0);
+    }
+
+    /**
+     * @dev Returns the broadcaster address
+     * @return The broadcaster address
+     */
+    function getBroadcaster() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, 0);
+    }
+
+    /**
+     * @dev Returns the recovery address
+     * @return The recovery address
+     */
+    function getRecovery() public view returns (address) {
+        return _getAuthorizedWalletAt(StateAbstraction.RECOVERY_ROLE, 0);
+    }
+
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Base implementation for ERC165 interface detection
+     * @notice Registers IBaseStateMachine interface ID for proper interface detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IBaseStateMachine).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ============ TRANSACTION MANAGEMENT ============
 
     /**
-     * @dev Centralized function to request a standard transaction with common validation
-     * @param requester The address requesting the transaction
-     * @param operationType The type of operation
-     * @param functionSelector The function selector for execution options
-     * @param params The encoded parameters for the function
-     * @return The created transaction record
-     */
-    function _requestStandardTransaction(
-        address requester,
-        address target,
-        uint256 gasLimit,
-        bytes32 operationType,
-        bytes4 functionSelector,
-        bytes memory params
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        bytes memory executionOptions = StateAbstraction.createStandardExecutionOptions(
-            functionSelector,
-            params
-        );
-
-        return StateAbstraction.txRequest(
-            _getSecureState(),
-            requester,
-            target,
-            0, // value is always 0 for standard execution
-            gasLimit,
-            operationType,
-            StateAbstraction.ExecutionType.STANDARD,
-            executionOptions
-        );
-    }
-
-    /**
-     * @dev Centralized function to request a raw transaction with RAW execution type
+     * @dev Centralized function to request a transaction with common validation
      * @param requester The address requesting the transaction
      * @param target The target contract address
+     * @param value The ETH value to send (0 for standard function calls)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param rawTxData The raw transaction data
+     * @param functionSelector The function selector for execution (0x00000000 for simple ETH transfers)
+     * @param params The encoded parameters for the function (empty for simple ETH transfers)
      * @return The created transaction record
+     * @notice Validates permissions for the calling function (request function), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
      */
-    function _requestRawTransaction(
-        address requester,
-        address target,
-        uint256 gasLimit,
-        bytes32 operationType,
-        bytes memory rawTxData
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        bytes memory executionOptions = StateAbstraction.createRawExecutionOptions(rawTxData);
-
-        return StateAbstraction.txRequest(
-            _getSecureState(),
-            requester,
-            target,
-            0, // value is always 0 for raw execution
-            gasLimit,
-            operationType,
-            StateAbstraction.ExecutionType.RAW,
-            executionOptions
-        );
-    }
-
-    /**
-     * @dev Centralized function to request a simple transaction with NONE execution type
-     * @param requester The address requesting the transaction
-     * @param target The target contract address
-     * @param value The ETH value to send
-     * @param gasLimit The gas limit for execution
-     * @param operationType The type of operation
-     * @return The created transaction record
-     */
-    function _requestSimpleTransaction(
+    function _requestTransaction(
         address requester,
         address target,
         uint256 value,
         uint256 gasLimit,
-        bytes32 operationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
+        bytes32 operationType,
+        bytes4 functionSelector,
+        bytes memory params
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
         return StateAbstraction.txRequest(
             _getSecureState(),
             requester,
@@ -186,102 +180,82 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             value,
             gasLimit,
             operationType,
-            StateAbstraction.ExecutionType.NONE,
-            ""
+            bytes4(msg.sig),
+            functionSelector,
+            params
         );
     }
 
     /**
      * @dev Centralized function to approve a pending transaction after release time
      * @param txId The transaction ID
-     * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (approval function selector), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _approveTransaction(
-        uint256 txId,
-        bytes32 expectedOperationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txDelayedApproval(_getSecureState(), txId);
-        SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
-        return updatedRecord;
+        uint256 txId
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
+        return StateAbstraction.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
      * @dev Centralized function to approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param expectedOperationType The expected operation type for validation
-     * @param requiredSelector The required handler selector for validation
-     * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_APPROVE action for permission checking
+     * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _approveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        bytes32 expectedOperationType,
-        bytes4 requiredSelector,
-        StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
-        StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
-        SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
-        return updatedRecord;
+        StateAbstraction.MetaTransaction memory metaTx
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
+        return StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
     }
 
     /**
      * @dev Centralized function to cancel a pending transaction
      * @param txId The transaction ID
-     * @param expectedOperationType The expected operation type for validation
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (cancellation function selector), not the execution selector
+     * @notice Execution functions are internal-only and don't need permission definitions
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransaction(
-        uint256 txId,
-        bytes32 expectedOperationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellation(_getSecureState(), txId);
-        SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
-        return updatedRecord;
+        uint256 txId
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        return StateAbstraction.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
      * @dev Centralized function to cancel a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param expectedOperationType The expected operation type for validation
-     * @param requiredSelector The required handler selector for validation
-     * @param requiredAction The required action for permission checking
      * @return The updated transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_CANCEL action for permission checking
+     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
-        bytes32 expectedOperationType,
-        bytes4 requiredSelector,
-        StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        SharedValidation.validateHandlerSelectorMatchInternal(metaTx.params.handlerSelector, requiredSelector);
-        StateAbstraction.TxRecord memory updatedRecord = StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
-        SharedValidation.validateOperationTypeInternal(updatedRecord.params.operationType, expectedOperationType);
-        return updatedRecord;
+        StateAbstraction.MetaTransaction memory metaTx
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        return StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
     }
 
     /**
      * @dev Centralized function to request and approve a transaction using meta-transaction
      * @param metaTx The meta-transaction
-     * @param requiredSelector The required handler selector for validation
-     * @param requiredAction The required action for permission checking
      * @return The transaction record
+     * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
+     * @notice Uses EXECUTE_META_REQUEST_AND_APPROVE action for permission checking
+     * @notice This function is virtual to allow extensions to add hook functionality
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _requestAndApproveTransaction(
-        StateAbstraction.MetaTransaction memory metaTx,
-        bytes4 requiredSelector,
-        StateAbstraction.TxAction requiredAction
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        if (!_hasActionPermission(msg.sender, requiredSelector, requiredAction)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
+        StateAbstraction.MetaTransaction memory metaTx
+    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
 
@@ -322,8 +296,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param value The ETH value to send
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param executionType The type of execution (STANDARD or RAW)
-     * @param executionOptions The encoded execution options
+     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
      * @param metaTxParams The meta-transaction parameters
      * @return The unsigned meta-transaction
      */
@@ -333,8 +307,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        StateAbstraction.ExecutionType executionType,
-        bytes memory executionOptions,
+        bytes4 executionSelector,
+        bytes memory executionParams,
         StateAbstraction.MetaTxParams memory metaTxParams
     ) public view returns (StateAbstraction.MetaTransaction memory) {
         StateAbstraction.TxParams memory txParams = StateAbstraction.TxParams({
@@ -343,8 +317,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
             value: value,
             gasLimit: gasLimit,
             operationType: operationType,
-            executionType: executionType,
-            executionOptions: executionOptions
+            executionSelector: executionSelector,
+            executionParams: executionParams
         });
 
         return _secureState.generateUnsignedForNewMetaTx(txParams, metaTxParams);
@@ -445,6 +419,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
     }
 
     /**
+     * @dev Checks if a function schema exists
+     * @param functionSelector The function selector to check
+     * @return True if the function schema exists, false otherwise
+     */
+    function functionSchemaExists(bytes4 functionSelector) public view returns (bool) {
+        return _secureState.functions[functionSelector].functionSelector == functionSelector;
+    }
+
+    /**
      * @dev Returns if an action is supported by a function
      * @param functionSelector The function selector to check
      * @param action The action to check
@@ -502,7 +485,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Returns the time lock period
      * @return The time lock period in seconds
      */
-    function getTimeLockPeriodSec() public view virtual returns (uint256) {
+    function getTimeLockPeriodSec() public view returns (uint256) {
         return _secureState.timeLockPeriodSec;
     }
 
@@ -510,7 +493,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @dev Returns whether the contract is initialized
      * @return bool True if the contract is initialized, false otherwise
      */
-    function initialized() public view virtual returns (bool) {
+    function initialized() public view returns (bool) {
         return _getInitializedVersion() != type(uint8).max && _secureState.initialized;
     }
 
@@ -531,44 +514,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
      * @param roleHash The role hash
      * @param newWallet The new wallet address
      * @param oldWallet The old wallet address
+     * @notice This function is virtual to allow extensions to add hook functionality or additional validation
      */
-    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal {
+    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
         StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
-    /**
-     * @dev Centralized function to update time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
-        StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
-    }
-
-    // ============ CENTRALIZED EXECUTION OPTIONS ============
-
-    /**
-     * @dev Centralized function to create standard execution options
-     * @param functionSelector The function selector
-     * @param params The encoded parameters
-     * @return The execution options
-     */
-    function _createStandardExecutionOptions(
-        bytes4 functionSelector,
-        bytes memory params
-    ) internal pure returns (bytes memory) {
-        return StateAbstraction.createStandardExecutionOptions(functionSelector, params);
-    }
-
-    /**
-     * @dev Centralized function to create raw execution options
-     * @param rawTxData The raw transaction data
-     * @return The execution options
-     */
-    function _createRawExecutionOptions(
-        bytes memory rawTxData
-    ) internal pure returns (bytes memory) {
-        return StateAbstraction.createRawExecutionOptions(rawTxData);
-    }
 
     // ============ DEFINITION LOADING ============
 

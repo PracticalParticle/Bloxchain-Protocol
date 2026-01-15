@@ -9,12 +9,11 @@ const path = require('path');
 // List of contract names to process
 const contractsToProcess = [
   'StateAbstraction',
-  'StateAbstractionDefinitions',
   'BaseStateMachine',
   'SecureOwnable',
   'SecureOwnableDefinitions',
-  'DynamicRBAC',
-  'DynamicRBACDefinitions',
+  'RuntimeRBAC',
+  'RuntimeRBACDefinitions',
   'GuardController',
   'IDefinition',
   'BareBlox',

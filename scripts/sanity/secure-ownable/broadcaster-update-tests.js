@@ -42,13 +42,13 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('BROADCASTER UPDATE META-TRANSACTION CANCELLATION', [
             {
                 role: 'owner',
-                functionSelector: '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 expectedActions: [5], // SIGN_META_CANCEL
                 description: 'Owner can sign broadcaster update cancellation meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 expectedActions: [8], // EXECUTE_META_CANCEL
                 description: 'Broadcaster can execute broadcaster update cancellation meta-transaction'
             }
@@ -81,7 +81,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for cancellation
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xf1209daa', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR from SecureOwnableDefinitions
+                '0x1100b576', // UPDATE_BROADCASTER_CANCEL_META_SELECTOR
                 this.getTxAction('SIGN_META_CANCEL'),
                 3600, // 1 hour deadline
                 0, // no max gas price
@@ -117,8 +117,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Meta-transaction cancellation test completed');
 
@@ -188,8 +189,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '2', 'Transaction cancelled successfully');
+            this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Time delay cancellation test completed');
 
@@ -208,13 +210,13 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('BROADCASTER UPDATE META-TRANSACTION APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 expectedActions: [4], // SIGN_META_APPROVE
                 description: 'Owner can sign broadcaster update approval meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                functionSelector: '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 expectedActions: [7], // EXECUTE_META_REQUEST_AND_APPROVE
                 description: 'Broadcaster can execute broadcaster update request and approve meta-transaction'
             }
@@ -231,7 +233,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for approval
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xd04d6238', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR from SecureOwnableDefinitions
+                '0x6511dd1e', // UPDATE_BROADCASTER_APPROVE_META_SELECTOR
                 this.getTxAction('SIGN_META_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
@@ -267,8 +269,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             // Verify broadcaster address changed
             const newBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
@@ -291,8 +294,8 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('BROADCASTER UPDATE TIME DELAY APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0xb7d254d6', // updateBroadcasterApproval
-                expectedActions: [1], // APPROVE
+                functionSelector: '0x383a01aa', // UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR
+                expectedActions: [1], // EXECUTE_TIME_DELAY_APPROVE
                 description: 'Owner can approve broadcaster update after timelock'
             }
         ]);
@@ -326,8 +329,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use owner wallet since broadcaster has changed)
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('owner'));
-            this.assertTest(tx.status === '3', 'Transaction completed successfully');
+            this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
             // Verify broadcaster address changed to target
             const finalBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());

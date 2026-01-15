@@ -45,6 +45,7 @@ library SharedValidation {
     
     // Permission and authorization errors with context
     error NoPermission(address caller);
+    error NoPermissionForFunction(address caller, bytes4 functionSelector);
     error RestrictedOwner(address caller, address owner);
     error RestrictedOwnerRecovery(address caller, address owner, address recovery);
     error RestrictedRecovery(address caller, address recovery);
@@ -53,13 +54,10 @@ library SharedValidation {
     error OnlyCallableByContract(address caller, address contractAddress);
     
     // Transaction and operation errors with context
-    error OperationNotSupported();
-    error OperationTypeExists();
+    error NotSupported();
     error InvalidOperationType(bytes32 actualType, bytes32 expectedType);
     error ZeroOperationTypeNotAllowed();
-    error TransactionNotFound(uint256 txId);
-    error TransactionNotPending(uint8 currentStatus);
-    error RequestAlreadyPending(uint256 txId);
+    error TransactionStatusMismatch(uint8 expectedStatus, uint8 currentStatus);
     error AlreadyInitialized();
     error TransactionIdMismatch(uint256 expectedTxId, uint256 providedTxId);
     
@@ -75,22 +73,23 @@ library SharedValidation {
     error ECDSAInvalidSignature(address recoveredSigner);
     error GasPriceExceedsMax(uint256 currentGasPrice, uint256 maxGasPrice);
     
+    // Consolidated resource errors
+    error ResourceNotFound(bytes32 resourceId);
+    error ResourceAlreadyExists(bytes32 resourceId);
+    error CannotRemoveProtected(bytes32 resourceId);
+    
+    // Consolidated item errors (for addresses: wallets, policies, etc.)
+    error ItemAlreadyExists(address item);
+    error ItemNotFound(address item);
+    error InvalidOperation(address item);
+    
     // Role and function errors with context
-    error RoleDoesNotExist();
-    error RoleAlreadyExists();
-    error FunctionError(bytes4 functionSelector);
-    error CannotRemoveProtectedFunctionSchema(bytes4 functionSelector);
-    error WalletError(address wallet);
     error RoleWalletLimitReached(uint256 currentCount, uint256 maxWallets);
-    error RoleEmpty();
     error MaxWalletsZero(uint256 provided);
-    error CannotModifyProtectedRoles();
-    error CannotRemoveProtectedRole();
-    error RoleEditingDisabled();
-    error FunctionPermissionExists(bytes4 functionSelector);
-    error ActionNotSupported();
     error ConflictingMetaTxPermissions(bytes4 functionSelector);
+    error InternalFunctionNotAccessible(bytes4 functionSelector);
     error InvalidRange(uint256 from, uint256 to);
+    error OperationFailed();
     
     // Payment and balance errors with context
     error InsufficientBalance(uint256 currentBalance, uint256 requiredAmount);
@@ -142,27 +141,11 @@ library SharedValidation {
     }
     
     /**
-     * @dev Validates that a requester address is not zero
-     * @param requester The requester address to validate
-     */
-    function validateRequesterAddress(address requester) internal pure {
-        if (requester == address(0)) revert InvalidAddress(requester);
-    }
-    
-    /**
      * @dev Validates that a handler contract address is not zero
      * @param handler The handler contract address to validate
      */
     function validateHandlerContract(address handler) internal pure {
         if (handler == address(0)) revert InvalidAddress(handler);
-    }
-    
-    /**
-     * @dev Validates that a signer address is not zero
-     * @param signer The signer address to validate
-     */
-    function validateSignerAddress(address signer) internal pure {
-        if (signer == address(0)) revert InvalidAddress(signer);
     }
     
     // ============ TIME AND DEADLINE VALIDATION FUNCTIONS ============
@@ -239,14 +222,6 @@ library SharedValidation {
         if (signer == address(0)) revert ECDSAInvalidSignature(signer);
     }
     
-    /**
-     * @dev Validates that a signature is not empty
-     * @param signature The signature to validate
-     */
-    function validateSignature(bytes memory signature) internal pure {
-        if (signature.length == 0) revert InvalidSignature(signature);
-    }
-    
     // ============ PERMISSION AND AUTHORIZATION FUNCTIONS ============
     
     /**
@@ -292,45 +267,7 @@ library SharedValidation {
         if (msg.sender != contractAddress) revert OnlyCallableByContract(msg.sender, contractAddress);
     }
     
-    /**
-     * @dev Validates that the caller has permission
-     * @param caller The caller address
-     */
-    function validatePermission(address caller) internal pure {
-        revert NoPermission(caller);
-    }
-    
-    /**
-     * @dev Validates that the caller has permission to execute a specific function
-     * @param caller The caller address
-     */
-    function validatePermissionExecute(address caller) internal pure {
-        revert NoPermission(caller);
-    }
-    
-    /**
-     * @dev Validates that a signer is authorized
-     * @param signer The signer address to validate
-     */
-    function validateSignerAuthorized(address signer) internal pure {
-        revert SignerNotAuthorized(signer);
-    }
-    
     // ============ TRANSACTION AND OPERATION VALIDATION FUNCTIONS ============
-    
-    /**
-     * @dev Validates that an operation type is supported
-     */
-    function validateOperationSupported() internal pure {
-        revert OperationNotSupported();
-    }
-    
-    /**
-     * @dev Validates that an operation type doesn't already exist
-     */
-    function validateOperationTypeNew() internal pure {
-        revert OperationTypeExists();
-    }
     
     /**
      * @dev Validates that an operation type is not zero
@@ -349,21 +286,12 @@ library SharedValidation {
         if (actualType != expectedType) revert InvalidOperationType(actualType, expectedType);
     }
     
-    
-    /**
-     * @dev Validates that a request is not already pending
-     * @param txId The transaction ID to validate
-     */
-    function validateNoOpenRequest(uint256 txId) internal pure {
-        if (txId > 0) revert RequestAlreadyPending(txId);
-    }
-    
     /**
      * @dev Validates that a transaction exists (has non-zero ID)
      * @param txId The transaction ID to validate
      */
     function validateTransactionExists(uint256 txId) internal pure {
-        if (txId == 0) revert TransactionNotFound(txId);
+        if (txId == 0) revert ResourceNotFound(bytes32(uint256(txId)));
     }
     
     /**
@@ -373,13 +301,6 @@ library SharedValidation {
      */
     function validateTransactionId(uint256 txId, uint256 expectedTxId) internal pure {
         if (txId != expectedTxId) revert TransactionIdMismatch(expectedTxId, txId);
-    }
-    
-    /**
-     * @dev Validates that a contract is not already initialized
-     */
-    function validateNotInitialized() internal pure {
-        revert AlreadyInitialized();
     }
     
     // ============ META-TRANSACTION VALIDATION FUNCTIONS ============
@@ -443,96 +364,12 @@ library SharedValidation {
     // ============ ROLE AND FUNCTION VALIDATION FUNCTIONS ============
     
     /**
-     * @dev Validates that a role exists
-     */
-    function validateRoleExists() internal pure {
-        revert RoleDoesNotExist();
-    }
-    
-    /**
-     * @dev Validates that a role doesn't already exist
-     */
-    function validateRoleNew() internal pure {
-        revert RoleAlreadyExists();
-    }
-    
-    /**
-     * @dev Validates that a function doesn't already exist
-     * @param functionSelector The function selector to check
-     */
-    function validateFunctionNew(bytes4 functionSelector) internal pure {
-        revert FunctionError(functionSelector);
-    }
-    
-    /**
-     * @dev Validates that a function exists (has non-zero selector)
-     * @param functionSelector The function selector to check
-     */
-    function validateFunctionExists(bytes4 functionSelector) internal pure {
-        if (functionSelector == bytes4(0)) revert FunctionError(functionSelector);
-    }
-    
-    /**
-     * @dev Validates that a function schema exists in a mapping
-     * @param actualSelector The actual function selector from the mapping
-     * @param expectedSelector The expected function selector to validate against
-     */
-    function validateFunctionSchemaExists(bytes4 actualSelector, bytes4 expectedSelector) internal pure {
-        if (actualSelector == bytes4(0)) revert FunctionError(expectedSelector);
-    }
-    
-    /**
-     * @dev Validates that a wallet is not already in a role
-     * @param wallet The wallet address to validate
-     */
-    function validateWalletNotInRole(address wallet) internal pure {
-        revert WalletError(wallet);
-    }
-    
-    /**
      * @dev Validates that a role hasn't reached its wallet limit
      * @param currentCount The current number of wallets in the role
      * @param maxWallets The maximum number of wallets allowed
      */
     function validateWalletLimit(uint256 currentCount, uint256 maxWallets) internal pure {
         if (currentCount >= maxWallets) revert RoleWalletLimitReached(currentCount, maxWallets);
-    }
-    
-    /**
-     * @dev Validates that a function permission doesn't already exist
-     * @param functionSelector The function selector
-     */
-    function validatePermissionNew(bytes4 functionSelector) internal pure {
-        revert FunctionPermissionExists(functionSelector);
-    }
-    
-    /**
-     * @dev Validates that an action is supported by a function
-     */
-    function validateActionSupported() internal pure {
-        revert ActionNotSupported();
-    }
-    
-    /**
-     * @dev Validates that a role name is not empty
-     * @param roleName The role name to validate
-     */
-    function validateRoleNameNotEmpty(string memory roleName) internal pure {
-        if (bytes(roleName).length == 0) revert RoleEmpty();
-    }
-    
-    /**
-     * @dev Validates that a role is not protected
-     */
-    function validateRoleNotProtected() internal pure {
-        revert CannotModifyProtectedRoles();
-    }
-    
-    /**
-     * @dev Validates that role editing is enabled
-     */
-    function validateRoleEditingEnabled() internal pure {
-        revert RoleEditingDisabled();
     }
     
     /**
@@ -544,97 +381,14 @@ library SharedValidation {
     }
     
     /**
-     * @dev Validates that a wallet can be removed from a role
-     * @param wallet The wallet address
+     * @dev Validates that a role name is not empty
+     * @param roleName The role name to validate
      */
-    function validateCanRemoveWallet(address wallet) internal pure {
-        revert WalletError(wallet);
-    }
-    
-    /**
-     * @dev Validates that a wallet exists in a role
-     * @param wallet The wallet address
-     */
-    function validateWalletInRole(address wallet) internal pure {
-        revert WalletError(wallet);
-    }
-    
-    /**
-     * @dev Validates that a protected role cannot be removed
-     */
-    function validateCanRemoveProtectedRole() internal pure {
-        revert CannotRemoveProtectedRole();
-    }
-    
-    /**
-     * @dev Validates that a protected function schema cannot be removed
-     * @param functionSelector The function selector of the protected schema
-     */
-    function validateCanRemoveProtectedFunctionSchema(bytes4 functionSelector) internal pure {
-        revert CannotRemoveProtectedFunctionSchema(functionSelector);
+    function validateRoleNameNotEmpty(string memory roleName) internal pure {
+        if (bytes(roleName).length == 0) revert ResourceNotFound(keccak256(bytes(roleName)));
     }
     
     // ============ UTILITY FUNCTIONS ============
-    
-    /**
-     * @dev Validates that a value is greater than zero
-     * @param value The value to validate
-     */
-    function validateGreaterThanZero(uint256 value) internal pure {
-        if (value == 0) revert TimeLockPeriodZero(value);
-    }
-    
-    /**
-     * @dev Validates that two values are equal
-     * @param actual The actual value
-     * @param expected The expected value
-     */
-    function validateEqual(uint256 actual, uint256 expected) internal pure {
-        if (actual != expected) revert TransactionIdMismatch(expected, actual);
-    }
-    
-    /**
-     * @dev Validates that two bytes4 values are equal
-     * @param actual The actual value
-     * @param expected The expected value
-     */
-    function validateEqual(bytes4 actual, bytes4 expected) internal pure {
-        if (actual != expected) revert InvalidHandlerSelector(actual);
-    }
-    
-    /**
-     * @dev Validates that two bytes32 values are equal
-     * @param actual The actual value
-     * @param expected The expected value
-     */
-    function validateEqual(bytes32 actual, bytes32 expected) internal pure {
-        if (actual != expected) revert InvalidOperationType(actual, expected);
-    }
-    
-    /**
-     * @dev Validates that two address values are equal
-     * @param actual The actual value
-     * @param expected The expected value
-     */
-    function validateEqual(address actual, address expected) internal pure {
-        if (actual != expected) revert HandlerContractMismatch(actual, expected);
-    }
-    
-    /**
-     * @dev Validates that a boolean condition is true
-     * @param condition The condition to validate
-     */
-    function validateTrue(bool condition) internal pure {
-        if (!condition) revert InvalidOperationType(bytes32(0), bytes32(0));
-    }
-    
-    /**
-     * @dev Validates that a boolean condition is false
-     * @param condition The condition to validate
-     */
-    function validateFalse(bool condition) internal pure {
-        if (condition) revert InvalidOperationType(bytes32(0), bytes32(0));
-    }
     
     /**
      * @dev Validates that the first value is less than the second value
@@ -643,16 +397,6 @@ library SharedValidation {
      */
     function validateLessThan(uint256 from, uint256 to) internal pure {
         if (from >= to) revert InvalidRange(from, to);
-    }
-    
-    /**
-     * @dev Validates that a value is within a valid range
-     * @param value The value to validate
-     * @param min The minimum allowed value
-     * @param max The maximum allowed value
-     */
-    function validateRange(uint256 value, uint256 min, uint256 max) internal pure {
-        if (value < min || value > max) revert InvalidRange(value, max);
     }
     
     /**
@@ -671,33 +415,5 @@ library SharedValidation {
      */
     function validateIndexInBounds(uint256 index, uint256 arrayLength) internal pure {
         if (index >= arrayLength) revert IndexOutOfBounds(index, arrayLength);
-    }
-    
-    // ============ INTERNAL VALIDATION WRAPPER FUNCTIONS ============
-    
-    /**
-     * @dev Internal function to validate operation type
-     * @param operationType The operation type to validate
-     * @param expectedType The expected operation type
-     */
-    function validateOperationTypeInternal(bytes32 operationType, bytes32 expectedType) internal pure {
-        validateOperationType(operationType, expectedType);
-    }
-
-    /**
-     * @dev Internal function to validate handler selector match
-     * @param handlerSelector The handler selector to validate
-     * @param expectedSelector The expected handler selector
-     */
-    function validateHandlerSelectorMatchInternal(bytes4 handlerSelector, bytes4 expectedSelector) internal pure {
-        validateHandlerSelectorMatch(handlerSelector, expectedSelector);
-    }
-
-    /**
-     * @dev Internal function to validate internal call
-     * @param expectedCaller The expected caller address
-     */
-    function validateInternalCallInternal(address expectedCaller) internal view {
-        validateInternalCall(expectedCaller);
     }
 }

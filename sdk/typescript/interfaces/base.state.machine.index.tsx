@@ -1,7 +1,7 @@
 import { Address, Hex } from 'viem';
 // import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
-import { ExecutionType, TxAction } from '../types/lib.index';
+import { TxAction } from '../types/lib.index';
 
 /**
  * Interface for BaseStateMachine contract events
@@ -63,8 +63,8 @@ export interface IBaseStateMachine {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex,
+    executionSelector: Hex,
+    executionParams: Hex,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction>;
 
@@ -87,6 +87,7 @@ export interface IBaseStateMachine {
     isProtected: boolean;
   }>;
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
+  functionSchemaExists(functionSelector: Hex): Promise<boolean>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   getSignerNonce(signer: Address): Promise<bigint>;
@@ -97,6 +98,11 @@ export interface IBaseStateMachine {
   getSupportedFunctions(): Promise<Hex[]>;
   getTimeLockPeriodSec(): Promise<bigint>;
   initialized(): Promise<boolean>;
+
+  // System role query functions
+  owner(): Promise<Address>;
+  getBroadcaster(): Promise<Address>;
+  getRecovery(): Promise<Address>;
 
   // Interface support
   supportsInterface(interfaceId: Hex): Promise<boolean>;

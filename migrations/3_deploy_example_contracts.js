@@ -8,7 +8,7 @@ const SimpleRWA20 = artifacts.require("SimpleRWA20");
 const StateAbstraction = artifacts.require("StateAbstraction");
 const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
 const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
-const DynamicRBACDefinitions = artifacts.require("DynamicRBACDefinitions");
+const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
 
 // Import the example-specific definitions
 const SimpleVaultDefinitions = artifacts.require("SimpleVaultDefinitions");
@@ -55,13 +55,13 @@ module.exports = async function(deployer, network, accounts) {
     const sa = await StateAbstraction.deployed();
     const sad = await StateAbstractionDefinitions.deployed();
     const sod = await SecureOwnableDefinitions.deployed();
-    const drbd = await DynamicRBACDefinitions.deployed();
+    const drbd = await RuntimeRBACDefinitions.deployed();
 
     console.log("\n📦 Step 2: Linking Foundation Libraries...");
     console.log(`✅ Using StateAbstraction at: ${sa.address}`);
     console.log(`✅ Using StateAbstractionDefinitions at: ${sad.address}`);
     console.log(`✅ Using SecureOwnableDefinitions at: ${sod.address}`);
-    console.log(`✅ Using DynamicRBACDefinitions at: ${drbd.address}`);
+    console.log(`✅ Using RuntimeRBACDefinitions at: ${drbd.address}`);
 
     // Step 3: Deploy SimpleVault (if enabled)
     let simpleVault = null;
@@ -175,7 +175,7 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   StateAbstraction: ${sa.address}`);
     console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
-    console.log(`   DynamicRBACDefinitions: ${drbd.address}`);
+    console.log(`   RuntimeRBACDefinitions: ${drbd.address}`);
     console.log("📋 Example-Specific Definitions:");
     if (simpleVaultDefinitions) console.log(`   SimpleVaultDefinitions: ${simpleVaultDefinitions.address}`);
     if (simpleRWA20Definitions) console.log(`   SimpleRWA20Definitions: ${simpleRWA20Definitions.address}`);

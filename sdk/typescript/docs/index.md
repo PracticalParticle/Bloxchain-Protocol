@@ -16,7 +16,7 @@ Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. Thi
 
 ### **🔧 Core SDK Components**
 - [**SecureOwnable**](./secure-ownable.md) - SecureOwnable contract integration
-- [**DynamicRBAC**](./dynamic-rbac.md) - DynamicRBAC contract integration
+- [**RuntimeRBAC**](./runtime-rbac.md) - RuntimeRBAC contract integration
 - [**Definitions**](./definition-contract.md) - Dynamic definition library interaction
 - [**Types & Interfaces**](./types-interfaces.md) - TypeScript type definitions
 
@@ -47,7 +47,7 @@ Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. Thi
 - **Learn about the state machine** → [State Machine Engine](./state-machine-engine.md)
 - **Understand the API** → [API Reference](./api-reference.md)
 - **Use SecureOwnable** → [SecureOwnable Guide](./secure-ownable.md)
-- **Use DynamicRBAC** → [DynamicRBAC Guide](./dynamic-rbac.md)
+- **Use RuntimeRBAC** → [RuntimeRBAC Guide](./runtime-rbac.md)
 - **Use Definitions** → [Definitions Guide](./definition-contract.md)
 - **See examples** → [Basic Examples](./examples-basic.md)
 - **Follow best practices** → [Best Practices](./best-practices.md)
@@ -57,7 +57,7 @@ Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. Thi
 
 **Core SDK:**
 - [SecureOwnable](./secure-ownable.md) - Ownership management
-- [DynamicRBAC](./dynamic-rbac.md) - Role-based access control
+- [RuntimeRBAC](./runtime-rbac.md) - Role-based access control
 - [Definitions](./definition-contract.md) - Dynamic definition library interaction
 - [Types & Interfaces](./types-interfaces.md) - Type definitions
 
@@ -81,7 +81,7 @@ Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. Thi
 | [Getting Started](./getting-started.md) | ✅ Complete | Sep 2025 |
 | [API Reference](./api-reference.md) | ✅ Complete | Sep 2025 |
 | [SecureOwnable](./secure-ownable.md) | ✅ Complete | Sep 2025 |
-| [DynamicRBAC](./dynamic-rbac.md) | ✅ Complete | Sep 2025 |
+| [RuntimeRBAC](./runtime-rbac.md) | ✅ Complete | Sep 2025 |
 | [Definitions](./definition-contract.md) | ✅ Complete | Sep 2025 |
 | [Types & Interfaces](./types-interfaces.md) | ✅ Complete | Sep 2025 |
 | [Best Practices](./best-practices.md) | ✅ Complete | Sep 2025 |

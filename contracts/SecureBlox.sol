@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "./core/access/SecureOwnable.sol";
+import "./core/security/SecureOwnable.sol";
 
 /**
  * @title SecureBlox

@@ -3,7 +3,7 @@ import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
-import { ExecutionType, TxAction } from '../types/lib.index';
+import { TxAction } from '../types/lib.index';
 import { handleViemError } from '../utils/viem-error-handler';
 
 /**
@@ -46,6 +46,31 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     const walletClientAccount = this.walletClient!.account?.address;
     const requestedAccount = options.from.toLowerCase();
     
+    // For meta-transaction functions, ensure the structure is correct
+    if (functionName.includes('RequestAndApprove') || functionName.includes('MetaTx')) {
+      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'txRecord' in args[0]) {
+        const metaTx = args[0];
+        
+        // Ensure all nested structures are properly formatted
+        if (metaTx.txRecord && typeof metaTx.txRecord === 'object') {
+          // Ensure txRecord.params exists and is an object
+          if (!metaTx.txRecord.params || typeof metaTx.txRecord.params !== 'object') {
+            throw new Error('Invalid meta-transaction: txRecord.params must be an object');
+          }
+          // Ensure txRecord.payment exists and is an object
+          if (!metaTx.txRecord.payment || typeof metaTx.txRecord.payment !== 'object') {
+            throw new Error('Invalid meta-transaction: txRecord.payment must be an object');
+          }
+        }
+        if (metaTx.params && typeof metaTx.params === 'object') {
+          // Ensure params is properly formatted
+          if (typeof metaTx.params.action !== 'number') {
+            throw new Error('Invalid meta-transaction: params.action must be a number');
+          }
+        }
+      }
+    }
+    
     const writeContractParams: any = {
       chain: this.chain,
       address: this.contractAddress,
@@ -61,6 +86,17 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     }
     
     try {
+      // First, simulate the contract call to get better error messages
+      try {
+        await this.client.simulateContract({
+          ...writeContractParams,
+          account: writeContractParams.account || this.walletClient!.account
+        });
+      } catch (simulateError: any) {
+        // Re-throw to get better error handling
+        throw simulateError;
+      }
+      
       const hash = await this.walletClient!.writeContract(writeContractParams);
 
       return {
@@ -82,16 +118,37 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     functionName: string,
     args: any[] = []
   ): Promise<T> {
-    const result = await this.client.readContract({
-      address: this.contractAddress,
-      abi: this.abi,
-      functionName,
-      args,
-      // Include account for permission checks if wallet client is available
-      account: this.walletClient?.account
-    });
+    try {
+      const result = await this.client.readContract({
+        address: this.contractAddress,
+        abi: this.abi,
+        functionName,
+        args,
+        // Include account for permission checks if wallet client is available
+        account: this.walletClient?.account
+      });
 
-    return result as T;
+      return result as T;
+    } catch (error: any) {
+      // Try to decode the error if it's a contract revert
+      if (error.data || error.cause?.data) {
+        const errorData = error.data || error.cause?.data;
+        if (errorData && typeof errorData === 'string' && errorData.startsWith('0x')) {
+          try {
+            const { decodeErrorResult } = await import('viem');
+            const decoded = decodeErrorResult({
+              abi: this.abi,
+              data: errorData as `0x${string}`
+            });
+            throw new Error(`${decoded.errorName}(${JSON.stringify(decoded.args)})`);
+          } catch (decodeError) {
+            // If decoding fails, throw the original error
+            throw error;
+          }
+        }
+      }
+      throw error;
+    }
   }
 
   // ============ META-TRANSACTION UTILITIES ============
@@ -120,8 +177,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex,
+    executionSelector: Hex,
+    executionParams: Hex,
     metaTxParams: MetaTxParams
   ): Promise<MetaTransaction> {
     return this.executeReadContract<MetaTransaction>('generateUnsignedMetaTransactionForNew', [
@@ -130,8 +187,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
       value,
       gasLimit,
       operationType,
-      executionType,
-      executionOptions,
+      executionSelector,
+      executionParams,
       metaTxParams
     ]);
   }
@@ -190,6 +247,10 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
   }
 
+  async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
+    return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
+  }
+
   async getSignerNonce(signer: Address): Promise<bigint> {
     return this.executeReadContract<bigint>('getSignerNonce', [signer]);
   }
@@ -214,6 +275,32 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   async initialized(): Promise<boolean> {
     return this.executeReadContract<boolean>('initialized');
+  }
+
+  // ============ SYSTEM ROLE QUERY FUNCTIONS ============
+
+  /**
+   * @dev Returns the owner of the contract
+   * @return The owner of the contract
+   */
+  async owner(): Promise<Address> {
+    return this.executeReadContract<Address>('owner');
+  }
+
+  /**
+   * @dev Returns the broadcaster address
+   * @return The broadcaster address
+   */
+  async getBroadcaster(): Promise<Address> {
+    return this.executeReadContract<Address>('getBroadcaster');
+  }
+
+  /**
+   * @dev Returns the recovery address
+   * @return The recovery address
+   */
+  async getRecovery(): Promise<Address> {
+    return this.executeReadContract<Address>('getRecovery');
   }
 
   // ============ INTERFACE SUPPORT ============

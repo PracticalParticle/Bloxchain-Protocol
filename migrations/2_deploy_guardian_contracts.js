@@ -27,17 +27,17 @@ module.exports = async function(deployer, network, accounts) {
     const StateAbstraction = artifacts.require("StateAbstraction");
     const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
     const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
-    const DynamicRBACDefinitions = artifacts.require("DynamicRBACDefinitions");
+    const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
     
     const sa = await StateAbstraction.deployed();
     const sad = await StateAbstractionDefinitions.deployed();
     const sod = await SecureOwnableDefinitions.deployed();
-    const drd = await DynamicRBACDefinitions.deployed();
+    const drd = await RuntimeRBACDefinitions.deployed();
     
     console.log("✅ Using StateAbstraction at:", sa.address);
     console.log("✅ Using StateAbstractionDefinitions at:", sad.address);
     console.log("✅ Using SecureOwnableDefinitions at:", sod.address);
-    console.log("✅ Using DynamicRBACDefinitions at:", drd.address);
+    console.log("✅ Using RuntimeRBACDefinitions at:", drd.address);
     
     // Step 2: Deploy SecureBlox (if enabled)
     let secureBlox = null;
@@ -57,6 +57,29 @@ module.exports = async function(deployer, network, accounts) {
         // Initialize SecureBlox
         console.log("🔧 Initializing SecureBlox...");
         try {
+            // Use estimateGas to get more detailed error information
+            try {
+                const gasEstimate = await secureBlox.initialize.estimateGas(
+                    accounts[0],  // initialOwner
+                    accounts[1],  // broadcaster
+                    accounts[2],  // recovery
+                    1,          // timeLockPeriodSec
+                    "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
+                );
+                console.log("   Gas estimate:", gasEstimate.toString());
+            } catch (gasError) {
+                console.log("   ⚠️  Gas estimation failed - this indicates the transaction will revert");
+                console.log("   Gas error:", gasError.message);
+                if (gasError.data) {
+                    console.log("   Gas error data:", gasError.data);
+                    // Try to decode error selector
+                    if (gasError.data.result) {
+                        const errorSelector = gasError.data.result.slice(0, 10);
+                        console.log("   Error selector:", errorSelector);
+                    }
+                }
+            }
+            
             const tx = await secureBlox.initialize(
                 accounts[0],  // initialOwner
                 accounts[1],  // broadcaster
@@ -70,23 +93,22 @@ module.exports = async function(deployer, network, accounts) {
             console.log("❌ SecureBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
-            console.log("   Error data:", error.data);
-            console.log("   Full error:", JSON.stringify(error, null, 2));
+            console.log("   Error data:", JSON.stringify(error.data, null, 2));
             
-            // Try to decode the error if it's a revert
-            if (error.data) {
-                try {
-                    const decodedError = await web3.eth.call({
-                        to: secureBlox.address,
-                        data: error.data
-                    });
-                    console.log("   Decoded error data:", decodedError);
-                } catch (decodeError) {
-                    console.log("   Could not decode error data:", decodeError.message);
-                }
+            // Extract error selector if available
+            if (error.data && error.data.result) {
+                const errorSelector = error.data.result.slice(0, 10);
+                console.log("   Error selector:", errorSelector);
+                console.log("   Full error result:", error.data.result);
+            }
+            
+            // Try to get more details from the transaction
+            if (error.receipt) {
+                console.log("   Transaction receipt:", JSON.stringify(error.receipt, null, 2));
             }
             
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
+            throw error; // Re-throw to stop migration
         }
     } else {
         console.log("\n📦 Step 2: Skipping SecureBlox deployment (disabled)");
@@ -101,7 +123,7 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.link(StateAbstraction, RoleBlox);
         await deployer.link(StateAbstractionDefinitions, RoleBlox);
         await deployer.link(SecureOwnableDefinitions, RoleBlox);
-        await deployer.link(DynamicRBACDefinitions, RoleBlox);
+        await deployer.link(RuntimeRBACDefinitions, RoleBlox);
         
         // Deploy RoleBlox
         await deployer.deploy(RoleBlox);
@@ -203,11 +225,11 @@ module.exports = async function(deployer, network, accounts) {
     if (deployControlBlox) {
         console.log("\n📦 Step 5: Deploying ControlBlox...");
         
-        // Link all required libraries to ControlBlox (same as RoleBlox since both extend DynamicRBAC)
+        // Link all required libraries to ControlBlox (same as RoleBlox since both extend RuntimeRBAC)
         await deployer.link(StateAbstraction, ControlBlox);
         await deployer.link(StateAbstractionDefinitions, ControlBlox);
         await deployer.link(SecureOwnableDefinitions, ControlBlox);
-        await deployer.link(DynamicRBACDefinitions, ControlBlox);
+        await deployer.link(RuntimeRBACDefinitions, ControlBlox);
         
         // Deploy ControlBlox
         await deployer.deploy(ControlBlox);
@@ -264,7 +286,7 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   StateAbstraction: ${sa.address}`);
     console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
-    console.log(`   DynamicRBACDefinitions: ${drd.address}`);
+    console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
     if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
     if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);

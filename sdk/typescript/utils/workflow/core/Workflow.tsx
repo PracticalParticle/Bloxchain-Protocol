@@ -15,7 +15,7 @@ import { WorkflowRegistry } from './WorkflowRegistry';
  * This class provides type-safe access to workflow definitions without requiring
  * contract calls. Workflows are now defined as TypeScript utilities.
  * 
- * Workflows can be registered via extensions (e.g., SecureOwnable, DynamicRBAC)
+ * Workflows can be registered via extensions (e.g., SecureOwnable, RuntimeRBAC)
  * or custom workflows can be added.
  * 
  * @example

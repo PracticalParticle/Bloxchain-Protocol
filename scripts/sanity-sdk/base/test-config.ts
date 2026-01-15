@@ -15,7 +15,7 @@ export interface TestConfig {
   chainId: number;
   contractAddresses: {
     secureBlox?: string;
-    dynamicRBAC?: string;
+    runtimeRBAC?: string;
     guardController?: string;
   };
   privateKeys: {
@@ -71,7 +71,7 @@ export function getTestConfig(): TestConfig {
     chainId: getChainId(),
     contractAddresses: {
       secureBlox: process.env.SECUREBLOX_ADDRESS,
-      dynamicRBAC: process.env.DYNAMICRBAC_ADDRESS,
+      runtimeRBAC: process.env.RUNTIMERBAC_ADDRESS,
       guardController: process.env.GUARDCONTROLLER_ADDRESS,
     },
     privateKeys: {

@@ -39,7 +39,7 @@ REMOTE_FROM=0x1234567890123456789012345678901234567890
 # Definition Library Addresses (update after deployment)
 MULTIPHASE_DEFINITIONS_ADDRESS=0x...
 SECURE_OWNABLE_DEFINITIONS_ADDRESS=0x...
-DYNAMIC_RBAC_DEFINITIONS_ADDRESS=0x...
+RUNTIME_RBAC_DEFINITIONS_ADDRESS=0x...
 ```
 
 ### 3. Deploy Contracts
@@ -128,7 +128,7 @@ CUSTOM_NETWORK_NAME=custom_network
 |----------|-------------|----------|
 | `MULTIPHASE_DEFINITIONS_ADDRESS` | StateAbstractionDefinitions address | Yes |
 | `SECURE_OWNABLE_DEFINITIONS_ADDRESS` | SecureOwnableDefinitions address | Yes |
-| `DYNAMIC_RBAC_DEFINITIONS_ADDRESS` | DynamicRBACDefinitions address | Yes |
+| `RUNTIME_RBAC_DEFINITIONS_ADDRESS` | RuntimeRBACDefinitions address | Yes |
 
 ### Contract Addresses
 

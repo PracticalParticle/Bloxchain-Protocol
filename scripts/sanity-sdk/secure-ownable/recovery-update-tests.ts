@@ -5,7 +5,7 @@
 
 import { Address, Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test';
-import { TxAction, ExecutionType } from '../../../sdk/typescript/types/lib.index';
+import { TxAction } from '../../../sdk/typescript/types/lib.index';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index';
 
 export class RecoveryUpdateTests extends BaseSecureOwnableTest {
@@ -86,9 +86,19 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
 
-      // Get execution options for recovery update
-      const executionOptions = await this.secureOwnable.updateRecoveryExecutionOptions(newRecoveryAddress);
-      console.log(`    ✅ Execution options created for ${description}`);
+      // Get execution params for recovery update
+      let executionOptions: Hex;
+      try {
+        const result = await this.secureOwnable.updateRecoveryExecutionParams(newRecoveryAddress);
+        console.log(`    🔍 Raw execution params result:`, result, `(type: ${typeof result})`);
+        executionOptions = result;
+        this.assertTest(!!executionOptions && typeof executionOptions === 'string' && executionOptions.startsWith('0x'), 'Execution params created successfully');
+        console.log(`    ✅ Execution params created for ${description}: ${executionOptions}`);
+      } catch (error: any) {
+        console.error(`    ❌ Failed to get execution params: ${error.message}`);
+        console.error(`    ❌ Error stack: ${error.stack}`);
+        throw new Error(`Failed to get execution params: ${error.message}`);
+      }
 
       // Create meta-transaction parameters
       const metaTxParams = await this.createMetaTxParams(
@@ -103,15 +113,39 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
       }
 
       // Create txParams for new recovery update
+      // Ensure executionParams is properly formatted as Hex
+      if (!executionOptions || typeof executionOptions !== 'string' || !executionOptions.startsWith('0x')) {
+        throw new Error(`Invalid execution params: ${executionOptions} (type: ${typeof executionOptions})`);
+      }
+      
+      // Validate all required parameters before creating txParams
+      if (!ownerWallet || !ownerWallet.address) {
+        throw new Error('Owner wallet or address is undefined');
+      }
+      if (!this.contractAddress) {
+        throw new Error('Contract address is undefined');
+      }
+      if (!executionOptions) {
+        throw new Error('Execution options is undefined');
+      }
+      
       const txParams = {
         requester: ownerWallet.address,
-        target: this.contractAddress!,
+        target: this.contractAddress,
         value: BigInt(0),
         gasLimit: BigInt(0),
         operationType: OPERATION_TYPES.RECOVERY_UPDATE,
-        executionType: ExecutionType.STANDARD,
-        executionOptions: executionOptions
+        executionSelector: FUNCTION_SELECTORS.UPDATE_RECOVERY_SELECTOR,
+        executionParams: executionOptions as Hex
       };
+      
+      console.log(`    🔍 txParams:`, {
+        requester: txParams.requester,
+        target: txParams.target,
+        operationType: txParams.operationType,
+        executionSelector: txParams.executionSelector,
+        executionParams: txParams.executionParams
+      });
 
       const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
         txParams,
@@ -128,6 +162,9 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
       this.assertTest(!!signedMetaTx.signature && signedMetaTx.signature.length > 0, 'Meta-transaction signed successfully');
 
       // Create fullMetaTx object matching sanity test structure
+      // For requestAndApprove, the contract expects txId to be 0 or match txCounter
+      // The contract will create a new txRecord and replace this one
+      // So we use the signedMetaTx structure directly as it comes from the contract
       const fullMetaTx = {
         txRecord: signedMetaTx.txRecord,
         params: signedMetaTx.params,
@@ -135,6 +172,23 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         signature: signedMetaTx.signature,
         data: signedMetaTx.data
       };
+      
+      console.log(`    🔍 Full meta-transaction structure:`, {
+        txRecord: {
+          txId: fullMetaTx.txRecord.txId.toString(),
+          status: fullMetaTx.txRecord.status,
+          params: {
+            requester: fullMetaTx.txRecord.params.requester,
+            executionSelector: fullMetaTx.txRecord.params.executionSelector
+          }
+        },
+        params: {
+          action: fullMetaTx.params.action,
+          handlerSelector: fullMetaTx.params.handlerSelector
+        },
+        message: fullMetaTx.message,
+        hasSignature: !!fullMetaTx.signature
+      });
 
       // Execute meta-transaction using broadcaster wallet (matches sanity test pattern)
       console.log(`    📡 Executing meta-transaction for ${description}...`);

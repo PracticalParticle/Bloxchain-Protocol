@@ -47,23 +47,21 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     event RecoveryAddressUpdated(address oldRecovery, address newRecovery);
     event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod);
 
-    modifier onlyOwner() {
-        SharedValidation.validateOwner(owner());
-        _;
-    }
+    // ============ RECOVERY ACCESS CONTROL MODIFIERS ============
 
+    /**
+     * @dev Modifier to restrict access to owner or recovery
+     */
     modifier onlyOwnerOrRecovery() {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
         _;
     }
     
+    /**
+     * @dev Modifier to restrict access to recovery only
+     */
     modifier onlyRecovery() {
         SharedValidation.validateRecovery(getRecovery());
-        _;
-    }
-
-    modifier onlyBroadcaster() {
-        SharedValidation.validateBroadcaster(getBroadcaster());
         _;
     }
 
@@ -82,8 +80,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         uint256 timeLockPeriodSec,    
         address eventForwarder
     ) public virtual onlyInitializing {
-        // Initialize base state machine
-        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        // Initialize base state machine (only if not already initialized)
+        if (!_secureState.initialized) {
+            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        }
         
         // Load SecureOwnable-specific definitions
         IDefinition.RolePermission memory secureOwnablePermissions = SecureOwnableDefinitions.getRolePermissions();
@@ -100,11 +100,12 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The transaction record
      */
     function transferOwnershipRequest() public onlyRecovery returns (StateAbstraction.TxRecord memory) {
-        if (_hasOpenOwnershipRequest) revert SharedValidation.RequestAlreadyPending(0);
+        if (_hasOpenOwnershipRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
+            0, // value
             0, // no gas limit
             SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
             SecureOwnableDefinitions.TRANSFER_OWNERSHIP_SELECTOR,
@@ -122,7 +123,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipDelayedApproval(uint256 txId) public onlyOwnerOrRecovery returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -133,12 +134,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
-            metaTx,
-            SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
-            SecureOwnableDefinitions.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -149,7 +145,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipCancellation(uint256 txId) public onlyRecovery returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(txId);
         return updatedRecord;
@@ -161,12 +157,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
-            metaTx,
-            SecureOwnableDefinitions.OWNERSHIP_TRANSFER,
-            SecureOwnableDefinitions.TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -179,13 +170,14 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The execution options
      */
     function updateBroadcasterRequest(address newBroadcaster) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        if (_hasOpenBroadcasterRequest) revert SharedValidation.RequestAlreadyPending(0);
+        if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         SharedValidation.validateAddressUpdate(newBroadcaster, getBroadcaster());
         
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
             SecureOwnableDefinitions.UPDATE_BROADCASTER_SELECTOR,
             abi.encode(newBroadcaster)
@@ -202,7 +194,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterDelayedApproval(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId, SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -213,12 +205,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(
-            metaTx,
-            SecureOwnableDefinitions.BROADCASTER_UPDATE,
-            SecureOwnableDefinitions.UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -229,7 +216,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterCancellation(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId, SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(txId);
         return updatedRecord;
@@ -241,12 +228,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(
-            metaTx,
-            SecureOwnableDefinitions.BROADCASTER_UPDATE,
-            SecureOwnableDefinitions.UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_CANCEL
-        );
+        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -254,18 +236,15 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // Recovery Management
     /**
-     * @dev Creates execution options for updating the recovery address
+     * @dev Creates execution params for updating the recovery address
      * @param newRecoveryAddress The new recovery address
-     * @return The execution options
+     * @return The execution params
      */
-    function updateRecoveryExecutionOptions(
+    function updateRecoveryExecutionParams(
         address newRecoveryAddress
     ) public view returns (bytes memory) {
         SharedValidation.validateAddressUpdate(newRecoveryAddress, getRecovery());
-        return _createStandardExecutionOptions(
-            SecureOwnableDefinitions.UPDATE_RECOVERY_SELECTOR,
-            abi.encode(newRecoveryAddress)
-        );
+        return abi.encode(newRecoveryAddress);
     }
 
     /**
@@ -276,27 +255,20 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateRecoveryRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        return _requestAndApproveTransaction(
-            metaTx,
-            SecureOwnableDefinitions.UPDATE_RECOVERY_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
+        return _requestAndApproveTransaction(metaTx);
     }
 
     // TimeLock Management
     /**
-     * @dev Creates execution options for updating the time lock period
+     * @dev Creates execution params for updating the time lock period
      * @param newTimeLockPeriodSec The new time lock period in seconds
-     * @return The execution options
+     * @return The execution params
      */
-    function updateTimeLockExecutionOptions(
+    function updateTimeLockExecutionParams(
         uint256 newTimeLockPeriodSec
     ) public view returns (bytes memory) {
         SharedValidation.validateTimeLockUpdate(newTimeLockPeriodSec, getTimeLockPeriodSec());
-        return _createStandardExecutionOptions(
-            SecureOwnableDefinitions.UPDATE_TIMELOCK_SELECTOR,
-            abi.encode(newTimeLockPeriodSec)
-        );
+        return abi.encode(newTimeLockPeriodSec);
     }
 
     /**
@@ -307,11 +279,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateTimeLockRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        return _requestAndApproveTransaction(
-            metaTx,
-            SecureOwnableDefinitions.UPDATE_TIMELOCK_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
+        return _requestAndApproveTransaction(metaTx);
     }
 
     // Execution Functions
@@ -320,7 +288,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newOwner The new owner address
      */
     function executeTransferOwnership(address newOwner) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _transferOwnership(newOwner);
     }
 
@@ -329,7 +297,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newBroadcaster The new broadcaster address
      */
     function executeBroadcasterUpdate(address newBroadcaster) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateBroadcaster(newBroadcaster);
     }
 
@@ -338,7 +306,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newRecoveryAddress The new recovery address
      */
     function executeRecoveryUpdate(address newRecoveryAddress) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateRecoveryAddress(newRecoveryAddress);
     }
 
@@ -347,34 +315,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newTimeLockPeriodSec The new timelock period in seconds
      */
     function executeTimeLockUpdate(uint256 newTimeLockPeriodSec) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _updateTimeLockPeriod(newTimeLockPeriodSec);
     }
 
-    // Ownership management
-    /**
-     * @dev Returns the owner of the contract
-     * @return The owner of the contract
-     */
-    function owner() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.OWNER_ROLE, 0);
-    }
-
-    /**
-     * @dev Returns the broadcaster address
-     * @return The broadcaster address
-     */
-    function getBroadcaster() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, 0);
-    }
-
-    /**
-     * @dev Returns the recovery address
-     * @return The recovery address
-     */
-    function getRecovery() public view virtual override returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.RECOVERY_ROLE, 0);
-    }
+    // ============ INTERNAL FUNCTIONS ============
 
     /**
      * @dev Transfers ownership of the contract
@@ -410,18 +355,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Updates the time lock period
      * @param newTimeLockPeriodSec The new time lock period in seconds
      */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
         uint256 oldPeriod = getTimeLockPeriodSec();
         StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
         emit TimeLockPeriodUpdated(oldPeriod, newTimeLockPeriodSec);
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(ISecureOwnable).interfaceId ||
-            super.supportsInterface(interfaceId);
     }
 }

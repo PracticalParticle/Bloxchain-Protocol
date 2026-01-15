@@ -4,7 +4,7 @@
 // Core Classes
 export { default as BaseStateMachine } from './contracts/BaseStateMachine';
 export { default as SecureOwnable } from './contracts/SecureOwnable';
-export { default as DynamicRBAC } from './contracts/DynamicRBAC';
+export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
 export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
 export { Workflow, createWorkflowWithDefaults } from './utils/workflow';
@@ -13,16 +13,19 @@ export { Workflow, createWorkflowWithDefaults } from './utils/workflow';
 export * from './interfaces/base.index';
 export * from './interfaces/base.state.machine.index';
 export * from './interfaces/core.access.index';
+export * from './interfaces/core.security.index';
 export * from './interfaces/core.execution.index';
 export * from './interfaces/lib.index';
 export * from './interfaces/definition.index';
 
 // Types and Constants
 export { 
-  OPERATION_TYPES, 
-  DYNAMIC_RBAC_FUNCTION_SELECTORS
+  RUNTIME_RBAC_FUNCTION_SELECTORS
 } from './types/core.access.index';
-export type { OperationType } from './types/core.access.index';
+export { 
+  OPERATION_TYPES
+} from './types/core.security.index';
+export type { OperationType } from './types/core.security.index';
 export * from './types/base.state.machine.index';
 export * from './types/lib.index';
 export * from './types/definition.index';

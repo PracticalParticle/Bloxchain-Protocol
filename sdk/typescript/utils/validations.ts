@@ -1,6 +1,6 @@
 import { Address, PublicClient, Hex, decodeAbiParameters } from 'viem';
-import { MetaTransaction, TxRecord, PaymentDetails, TxParams, StandardExecutionOptions, RawExecutionOptions } from '../interfaces/lib.index';
-import { TxStatus, ExecutionType } from '../types/lib.index';
+import { MetaTransaction, TxRecord, PaymentDetails, TxParams } from '../interfaces/lib.index';
+import { TxStatus } from '../types/lib.index';
 
 export class ContractValidations {
   constructor(
@@ -124,8 +124,8 @@ export class ContractValidations {
       throw new Error("Negative value not allowed");
     }
 
-    // Validate gas limit
-    if (params.gasLimit <= 0) {
+    // Validate gas limit (0 means use all available gas, which is valid)
+    if (params.gasLimit < 0) {
       throw new Error("Invalid gas limit");
     }
 
@@ -134,121 +134,17 @@ export class ContractValidations {
       throw new Error("Invalid operation type format");
     }
 
-    // Validate execution type
-    if (![ExecutionType.NONE, ExecutionType.STANDARD, ExecutionType.RAW].includes(params.executionType)) {
-      throw new Error("Invalid execution type");
+    // Validate execution selector (must be valid bytes4)
+    if (!(/^0x[0-9a-f]{8}$/i.test(params.executionSelector))) {
+      throw new Error("Invalid execution selector format");
     }
 
-    // Validate execution options based on execution type
-    if (params.executionType === ExecutionType.STANDARD) {
-      this.validateStandardExecutionOptions(params.executionOptions);
-    } else if (params.executionType === ExecutionType.RAW) {
-      this.validateRawExecutionOptions(params.executionOptions);
+    // Validate execution params (must be valid hex)
+    if (!params.executionParams || !(/^0x[0-9a-f]*$/i.test(params.executionParams))) {
+      throw new Error("Missing or invalid parameters");
     }
   }
 
-  /**
-   * @notice Decodes standard execution options from encoded bytes
-   * @param options The encoded execution options
-   * @returns Decoded StandardExecutionOptions
-   * @private
-   */
-  private decodeStandardExecutionOptions(options: Hex): StandardExecutionOptions {
-    try {
-      const [decoded] = decodeAbiParameters(
-        [{ 
-          type: 'tuple',
-          components: [
-            { name: 'functionSelector', type: 'bytes4' },
-            { name: 'params', type: 'bytes' }
-          ]
-        }],
-        options
-      );
-      
-      return {
-        functionSelector: decoded.functionSelector as Hex,
-        params: decoded.params as Hex
-      };
-    } catch (error) {
-      throw new Error("Failed to decode standard execution options");
-    }
-  }
-
-  /**
-   * @notice Decodes raw execution options from encoded bytes
-   * @param options The encoded execution options
-   * @returns Decoded RawExecutionOptions
-   * @private
-   */
-  private decodeRawExecutionOptions(options: Hex): RawExecutionOptions {
-    try {
-      const [decoded] = decodeAbiParameters(
-        [{ 
-          type: 'tuple',
-          components: [
-            { name: 'rawTxData', type: 'bytes' }
-          ]
-        }],
-        options
-      );
-      
-      return {
-        rawTxData: decoded.rawTxData as Hex
-      };
-    } catch (error) {
-      throw new Error("Failed to decode raw execution options");
-    }
-  }
-
-  /**
-   * @notice Validates standard execution options
-   * @param options The encoded execution options
-   * @throws Error if validation fails
-   * @private
-   */
-  private validateStandardExecutionOptions(options: Hex): void {
-    try {
-      const decoded = this.decodeStandardExecutionOptions(options);
-      
-      // Validate function selector (must be exactly 4 bytes)
-      if (!this.isValidHex(decoded.functionSelector, 4)) {
-        throw new Error("Invalid function selector format");
-      }
-
-      // Validate params (must be valid hex with even length)
-      if (!this.isValidHex(decoded.params)) {
-        throw new Error("Invalid params format");
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error("Invalid standard execution options format");
-    }
-  }
-
-  /**
-   * @notice Validates raw execution options
-   * @param options The encoded execution options
-   * @throws Error if validation fails
-   * @private
-   */
-  private validateRawExecutionOptions(options: Hex): void {
-    try {
-      const decoded = this.decodeRawExecutionOptions(options);
-      
-      // Validate raw transaction data (must be valid non-empty hex)
-      if (!this.isValidHex(decoded.rawTxData) || decoded.rawTxData === '0x') {
-        throw new Error("Invalid or empty raw transaction data");
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error("Invalid raw execution options format");
-    }
-  }
 
   /**
    * @notice Validates if a string is a valid hex value

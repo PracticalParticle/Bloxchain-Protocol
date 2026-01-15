@@ -2,7 +2,7 @@
 
 # RoleBlox
 
-A basic implementation of state abstraction with dynamic role-based access control using DynamicRBAC
+A basic implementation of state abstraction with runtime role-based access control using RuntimeRBAC
 
 
 

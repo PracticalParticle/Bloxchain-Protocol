@@ -4,7 +4,7 @@
  */
 
 import { BaseSecureOwnableTest } from './base-test';
-import { TxAction, ExecutionType } from '../../../sdk/typescript/types/lib.index';
+import { TxAction } from '../../../sdk/typescript/types/lib.index';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index';
 
 export class TimelockPeriodTests extends BaseSecureOwnableTest {
@@ -85,9 +85,16 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
 
-      // Get execution options for timelock update
-      const executionOptions = await this.secureOwnable.updateTimeLockExecutionOptions(newTimelockSeconds);
-      console.log(`    ✅ Execution options created for ${description}`);
+      // Get execution params for timelock update
+      let executionOptions: Hex;
+      try {
+        executionOptions = await this.secureOwnable.updateTimeLockExecutionParams(newTimelockSeconds);
+        this.assertTest(!!executionOptions && typeof executionOptions === 'string' && executionOptions.startsWith('0x'), 'Execution params created successfully');
+        console.log(`    ✅ Execution params created for ${description}`);
+      } catch (error: any) {
+        console.error(`    ❌ Failed to get execution params: ${error.message}`);
+        throw new Error(`Failed to get execution params: ${error.message}`);
+      }
 
       // Create meta-transaction parameters
       const metaTxParams = await this.createMetaTxParams(
@@ -102,15 +109,39 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       }
 
       // Create txParams for new timelock update
+      // Ensure executionParams is properly formatted as Hex
+      if (!executionOptions || typeof executionOptions !== 'string' || !executionOptions.startsWith('0x')) {
+        throw new Error(`Invalid execution params: ${executionOptions} (type: ${typeof executionOptions})`);
+      }
+      
+      // Validate all required parameters before creating txParams
+      if (!ownerWallet || !ownerWallet.address) {
+        throw new Error('Owner wallet or address is undefined');
+      }
+      if (!this.contractAddress) {
+        throw new Error('Contract address is undefined');
+      }
+      if (!executionOptions) {
+        throw new Error('Execution options is undefined');
+      }
+      
       const txParams = {
         requester: ownerWallet.address,
-        target: this.contractAddress!,
+        target: this.contractAddress,
         value: BigInt(0),
         gasLimit: BigInt(0),
         operationType: OPERATION_TYPES.TIMELOCK_UPDATE,
-        executionType: ExecutionType.STANDARD,
-        executionOptions: executionOptions
+        executionSelector: FUNCTION_SELECTORS.UPDATE_TIMELOCK_SELECTOR,
+        executionParams: executionOptions as Hex
       };
+      
+      console.log(`    🔍 txParams:`, {
+        requester: txParams.requester,
+        target: txParams.target,
+        operationType: txParams.operationType,
+        executionSelector: txParams.executionSelector,
+        executionParams: txParams.executionParams
+      });
 
       const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
         txParams,

@@ -2,12 +2,19 @@
 pragma solidity ^0.8.25;
 
 import "./core/execution/GuardController.sol";
+import "./core/access/RuntimeRBAC.sol";
+import "./core/security/SecureOwnable.sol";
 
 /**
  * @title ControlBlox
- * @dev Minimal controller implementation using GuardController (DynamicRBAC + guarded execution)
+ * @dev Complete controller implementation using GuardController, RuntimeRBAC, and SecureOwnable
+ * 
+ * This contract combines:
+ * - GuardController: Execution workflows and time-locked transactions
+ * - RuntimeRBAC: Runtime role creation and management
+ * - SecureOwnable: Secure ownership transfer and management
  */
-contract ControlBlox is GuardController {
+contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
     /**
      * @notice Initializer to initialize ControlBlox
      * @param initialOwner The initial owner address
@@ -22,14 +29,12 @@ contract ControlBlox is GuardController {
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder
-    ) public virtual override initializer {
-        super.initialize(
-            initialOwner,
-            broadcaster,
-            recovery,
-            timeLockPeriodSec,
-            eventForwarder
-        );
+    ) public virtual override(GuardController, RuntimeRBAC, SecureOwnable) initializer {
+        // Initialize all parent contracts
+        // The guarded initialization ensures BaseStateMachine is only initialized once
+        GuardController.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        RuntimeRBAC.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
     }
 }
 

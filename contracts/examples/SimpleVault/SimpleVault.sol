@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/access/SecureOwnable.sol";
+import "../../core/security/SecureOwnable.sol";
 import "../../utils/SharedValidation.sol";
 import "../../interfaces/IDefinition.sol";
 import "./SimpleVaultDefinitions.sol";
@@ -90,12 +90,13 @@ contract SimpleVault is SecureOwnable {
      */
     function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
         SharedValidation.validateNotZeroAddress(to);
-        if (amount > getEthBalance()) revert SharedValidation.OperationNotSupported();
+        if (amount > getEthBalance()) revert SharedValidation.NotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SimpleVaultDefinitions.WITHDRAW_ETH,
             SimpleVaultDefinitions.WITHDRAW_ETH_SELECTOR,
             abi.encode(to, amount)
@@ -112,12 +113,13 @@ contract SimpleVault is SecureOwnable {
     function withdrawTokenRequest(address token, address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
         SharedValidation.validateNotZeroAddress(token);
         SharedValidation.validateNotZeroAddress(to);
-        if (amount > getTokenBalance(token)) revert SharedValidation.OperationNotSupported();
+        if (amount > getTokenBalance(token)) revert SharedValidation.NotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestStandardTransaction(
+        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
-            0,
+            0, // value
+            0, // gas limit
             SimpleVaultDefinitions.WITHDRAW_TOKEN,
             SimpleVaultDefinitions.WITHDRAW_TOKEN_SELECTOR,
             abi.encode(token, to, amount)
@@ -130,8 +132,7 @@ contract SimpleVault is SecureOwnable {
      * @param txId The ID of the withdrawal transaction to approve
      */
     function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory existing = getTransaction(txId);
-        StateAbstraction.TxRecord memory updated = _approveTransaction(txId, existing.params.operationType);
+        StateAbstraction.TxRecord memory updated = _approveTransaction(txId);
         return updated;
     }
 
@@ -140,12 +141,7 @@ contract SimpleVault is SecureOwnable {
      * @param metaTx Meta transaction data
      */
     function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
-        return _approveTransactionWithMetaTx(
-            metaTx,
-            metaTx.txRecord.params.operationType,
-            SimpleVaultDefinitions.APPROVE_WITHDRAWAL_META_SELECTOR,
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE
-        );
+        return _approveTransactionWithMetaTx(metaTx);
     }
 
     /**
@@ -153,8 +149,7 @@ contract SimpleVault is SecureOwnable {
      * @param txId The ID of the withdrawal transaction to cancel
      */
     function cancelWithdrawal(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.TxRecord memory existing = getTransaction(txId);
-        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId, existing.params.operationType);
+        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId);
         return updated;
     }
 
@@ -164,7 +159,7 @@ contract SimpleVault is SecureOwnable {
      * @param amount Amount to withdraw
      */
     function executeWithdrawEth(address payable to, uint256 amount) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _withdrawEth(to, amount);
     }
 
@@ -175,7 +170,7 @@ contract SimpleVault is SecureOwnable {
      * @param amount Amount to withdraw
      */
     function executeWithdrawToken(address token, address to, uint256 amount) external {
-        SharedValidation.validateInternalCallInternal(address(this));
+        SharedValidation.validateInternalCall(address(this));
         _withdrawToken(token, to, amount);
     }
 
