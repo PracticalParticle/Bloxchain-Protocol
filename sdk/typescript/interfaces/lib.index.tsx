@@ -75,8 +75,8 @@ export interface RequestedTxEvent {
   txId: bigint;
   releaseTime: bigint;
   target: Address;
-  executionType: ExecutionType;
-  executionOptions: Hex;
+  executionSelector: Hex;
+  executionParams: Hex;
 }
 
 export interface TxApprovedEvent {

@@ -46,13 +46,13 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   // ============ ROLE CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution options for a RBAC configuration batch
+   * @dev Creates execution params for a RBAC configuration batch
    * @param actions Encoded role configuration actions
    */
-  async roleConfigBatchExecutionOptions(
+  async roleConfigBatchExecutionParams(
     actions: Array<{ actionType: number; data: Hex }>
   ): Promise<Hex> {
-    return this.executeReadContract<Hex>('roleConfigBatchExecutionOptions', [actions]);
+    return this.executeReadContract<Hex>('roleConfigBatchExecutionParams', [actions]);
   }
 
   /**

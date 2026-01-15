@@ -360,8 +360,8 @@ export class MetaTransactionBuilder {
    * @param value Value to send
    * @param gasLimit Gas limit
    * @param operationType Operation type
-   * @param executionType Execution type
-   * @param executionOptions Execution options
+   * @param executionSelector Execution selector (bytes4)
+   * @param executionParams Execution parameters
    * @returns Transaction parameters
    */
   static createTxParams(
@@ -370,8 +370,8 @@ export class MetaTransactionBuilder {
     value: bigint,
     gasLimit: bigint,
     operationType: Hex,
-    executionType: ExecutionType,
-    executionOptions: Hex
+    executionSelector: Hex,
+    executionParams: Hex
   ): TxParams {
     return {
       requester,
@@ -379,8 +379,8 @@ export class MetaTransactionBuilder {
       value,
       gasLimit,
       operationType,
-      executionType,
-      executionOptions
+      executionSelector,
+      executionParams
     };
   }
 }

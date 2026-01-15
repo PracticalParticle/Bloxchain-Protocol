@@ -266,6 +266,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         isExecutingThroughGuardian = false;
         
         require(success, "Safe transaction execution failed");
+        
+        // Emit event for successful execution
+        emit TransactionExecuted(EXEC_SAFE_TX, abi.encode(safeTx));
     }
 
 

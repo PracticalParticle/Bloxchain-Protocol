@@ -10,9 +10,9 @@ import { TxAction } from '../types/lib.index';
  */
 export interface IRuntimeRBAC {
   /**
-   * @dev Creates execution options for a RBAC configuration batch
+   * @dev Creates execution params for a RBAC configuration batch
    */
-  roleConfigBatchExecutionOptions(
+  roleConfigBatchExecutionParams(
     actions: Array<{ actionType: number; data: Hex }>
   ): Promise<Hex>;
 
