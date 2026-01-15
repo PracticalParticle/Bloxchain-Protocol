@@ -347,8 +347,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     function _addWalletToRole(bytes32 roleHash, address wallet) internal {
-        _ensureRoleNotProtected(roleHash);
-
         StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
     }
 
