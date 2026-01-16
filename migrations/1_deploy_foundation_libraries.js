@@ -3,6 +3,7 @@ const SA = artifacts.require("StateAbstraction");
 const SAD = artifacts.require("StateAbstractionDefinitions");
 const SOD = artifacts.require("SecureOwnableDefinitions");
 const DRD = artifacts.require("RuntimeRBACDefinitions");
+const GCD = artifacts.require("GuardControllerDefinitions");
 
 module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 1: Deploying Foundation Libraries on ${network}`);
@@ -34,11 +35,17 @@ module.exports = async function(deployer, network, accounts) {
     const drd = await DRD.deployed();
     console.log("✅ RuntimeRBACDefinitions deployed at:", drd.address);
     
+    // Deploy GuardControllerDefinitions (no linking needed - it's a library)
+    await deployer.deploy(GCD);
+    const gcd = await GCD.deployed();
+    console.log("✅ GuardControllerDefinitions deployed at:", gcd.address);
+    
     console.log("\n🎉 Migration 1 completed successfully!");
     console.log("📋 Foundation Libraries Deployed:");
     console.log(`   StateAbstraction: ${sa.address}`);
     console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
+    console.log(`   GuardControllerDefinitions: ${gcd.address}`);
     console.log("\n🎯 Ready for Migration 2: Guardian Contracts");
 };
