@@ -119,16 +119,16 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     args: any[] = []
   ): Promise<T> {
     try {
-      const result = await this.client.readContract({
-        address: this.contractAddress,
-        abi: this.abi,
-        functionName,
-        args,
-        // Include account for permission checks if wallet client is available
-        account: this.walletClient?.account
-      });
+    const result = await this.client.readContract({
+      address: this.contractAddress,
+      abi: this.abi,
+      functionName,
+      args,
+      // Include account for permission checks if wallet client is available
+      account: this.walletClient?.account
+    });
 
-      return result as T;
+    return result as T;
     } catch (error: any) {
       // Try to decode the error if it's a contract revert
       if (error.data || error.cause?.data) {
