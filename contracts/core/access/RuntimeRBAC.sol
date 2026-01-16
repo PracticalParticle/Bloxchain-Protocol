@@ -133,7 +133,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @param roleHash The hash of the role
      * @return True if the role exists, false otherwise
      */
-    function roleExists(bytes32 roleHash) external view returns (bool) {
+    function roleExists(bytes32 roleHash) public view returns (bool) {
         return _getSecureState().getRole(roleHash).roleHash != bytes32(0);
     }
 
@@ -191,14 +191,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
         
         // Validate that all function schemas are non-protected
-        // Convert supportedActions arrays to bitmaps
+        // Note: FunctionSchema.supportedActionsBitmap must already be set (not an array)
+        // The bitmap is expected to be pre-converted from actions array if needed
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             if (functionSchemas[i].isProtected) {
                 revert SharedValidation.CannotRemoveProtected(bytes32(functionSchemas[i].functionSelector));
             }
-            // Convert supportedActions array to bitmap
-            // Note: functionSchemas[i].supportedActions is passed as array but we need bitmap
-            // This will be handled in _loadDefinitions via createFunctionSchema
         }
         
         // Validate that all target roles exist and are non-protected
@@ -358,6 +356,9 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @dev Validates that a role is not protected
      */
     function _ensureRoleNotProtected(bytes32 roleHash) internal view {
+        if (!roleExists(roleHash)) {
+            revert SharedValidation.ResourceNotFound(roleHash);
+        }
         if (_getSecureState().getRole(roleHash).isProtected) {
             revert SharedValidation.CannotRemoveProtected(roleHash);
         }
