@@ -38,6 +38,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         REVOKE_WALLET,
         REGISTER_FUNCTION,
         UNREGISTER_FUNCTION,
+        ADD_FUNCTION_TO_ROLE,
+        REMOVE_FUNCTION_FROM_ROLE,
         LOAD_DEFINITIONS
     }
 
@@ -256,6 +258,30 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     functionSelector,
                     ""
                 );
+            } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
+                (
+                    bytes32 roleHash,
+                    StateAbstraction.FunctionPermission memory functionPermission
+                ) = abi.decode(action.data, (bytes32, StateAbstraction.FunctionPermission));
+
+                _addFunctionToRole(roleHash, functionPermission);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+                    roleHash,
+                    functionPermission.functionSelector,
+                    ""
+                );
+            } else if (action.actionType == RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE) {
+                (bytes32 roleHash, bytes4 functionSelector) = abi.decode(action.data, (bytes32, bytes4));
+                _removeFunctionFromRole(roleHash, functionSelector);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+                    roleHash,
+                    functionSelector,
+                    ""
+                );
             } else if (action.actionType == RoleConfigActionType.LOAD_DEFINITIONS) {
                 (
                     StateAbstraction.FunctionSchema[] memory functionSchemas,
@@ -425,6 +451,32 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
 
         StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
+    }
+
+    /**
+     * @dev Adds a function permission to an existing role
+     * @param roleHash The role hash to add the function permission to
+     * @param functionPermission The function permission to add
+     * @notice StateAbstraction.addFunctionToRole validates that the role exists and the function is registered
+     */
+    function _addFunctionToRole(
+        bytes32 roleHash,
+        StateAbstraction.FunctionPermission memory functionPermission
+    ) internal {
+        StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
+    }
+
+    /**
+     * @dev Removes a function permission from an existing role
+     * @param roleHash The role hash to remove the function permission from
+     * @param functionSelector The function selector to remove from the role
+     * @notice StateAbstraction.removeFunctionFromRole validates that the role exists and prevents removing protected functions
+     */
+    function _removeFunctionFromRole(
+        bytes32 roleHash,
+        bytes4 functionSelector
+    ) internal {
+        StateAbstraction.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
     }
 
 }
