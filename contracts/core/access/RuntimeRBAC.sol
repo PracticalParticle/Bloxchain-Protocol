@@ -134,6 +134,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @return True if the role exists, false otherwise
      */
     function roleExists(bytes32 roleHash) public view returns (bool) {
+        // must have an active role in the system to ask about other roles
         return _getSecureState().getRole(roleHash).roleHash != bytes32(0);
     }
 
@@ -304,7 +305,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         
         // Validate that all target roles exist and are non-protected
         for (uint256 i = 0; i < roleHashes.length; i++) {
-            StateAbstraction.Role storage role = _getSecureState().getRole(roleHashes[i]);
+            StateAbstraction.Role storage role = _getSecureState().roles[roleHashes[i]];
             if (role.roleHash == bytes32(0)) {
                 revert SharedValidation.ResourceNotFound(roleHashes[i]);
             }
@@ -356,10 +357,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @dev Validates that a role is not protected
      */
     function _ensureRoleNotProtected(bytes32 roleHash) internal view {
-        if (!roleExists(roleHash)) {
+        StateAbstraction.Role storage role = _getSecureState().roles[roleHash];
+        if (role.roleHash == bytes32(0)) {
             revert SharedValidation.ResourceNotFound(roleHash);
         }
-        if (_getSecureState().getRole(roleHash).isProtected) {
+        if (role.isProtected) {
             revert SharedValidation.CannotRemoveProtected(roleHash);
         }
     }
@@ -396,13 +398,13 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        // Validate function exists
-        if (!functionSchemaExists(functionSelector)) {
+        // Load schema and validate it exists
+        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        if (schema.functionSelector != functionSelector) {
             revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
 
         // Ensure not protected
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.isProtected) {
             revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
