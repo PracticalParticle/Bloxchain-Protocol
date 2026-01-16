@@ -76,7 +76,7 @@ export class Definitions implements IDefinition {
       }) as any[];
 
       return result.map((item: any) => ({
-        functionName: item.functionName as string,
+        functionSignature: item.functionSignature as string,
         functionSelector: item.functionSelector as Hex,
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,

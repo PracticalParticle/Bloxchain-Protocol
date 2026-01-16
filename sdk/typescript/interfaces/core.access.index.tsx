@@ -29,7 +29,7 @@ export interface IRuntimeRBAC {
 
   // Note: getFunctionSchema remains available from the contract and is exposed via the wrapper
   getFunctionSchema(functionSelector: Hex): Promise<{
-    functionName: string;
+    functionSignature: string;
     functionSelectorReturn: Hex;
     operationType: Hex;
     operationName: string;

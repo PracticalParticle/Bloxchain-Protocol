@@ -21,7 +21,7 @@ export interface FunctionPermission {
  * Function schema structure matching StateAbstraction.FunctionSchema
  */
 export interface FunctionSchema {
-  functionName: string;
+  functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;

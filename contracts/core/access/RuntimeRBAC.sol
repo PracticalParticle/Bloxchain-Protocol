@@ -140,7 +140,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
-     * @return functionName The name of the function
+     * @return functionSignature The function signature or name
      * @return functionSelectorReturn The function selector
      * @return operationType The operation type
      * @return operationName The operation name
@@ -148,7 +148,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @return isProtected Whether the function schema is protected
      */
     function getFunctionSchema(bytes4 functionSelector) external view returns (
-        string memory functionName,
+        string memory functionSignature,
         bytes4 functionSelectorReturn,
         bytes32 operationType,
         string memory operationName,
@@ -164,7 +164,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         supportedActions = StateAbstraction.convertBitmapToActions(schema.supportedActionsBitmap);
         
         return (
-            schema.functionName,
+            schema.functionSignature,
             schema.functionSelector,
             schema.operationType,
             schema.operationName,

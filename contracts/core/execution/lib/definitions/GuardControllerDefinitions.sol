@@ -103,7 +103,7 @@ library GuardControllerDefinitions {
         
         // Schema 0: GuardController.executeWithTimeLock
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "executeWithTimeLock",
+            functionSignature: "executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)",
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
@@ -113,7 +113,7 @@ library GuardControllerDefinitions {
         
         // Schema 1: GuardController.approveTimeLockExecution
         schemas[1] = StateAbstraction.FunctionSchema({
-            functionName: "approveTimeLockExecution",
+            functionSignature: "approveTimeLockExecution(uint256)",
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
@@ -123,7 +123,7 @@ library GuardControllerDefinitions {
         
         // Schema 2: GuardController.cancelTimeLockExecution
         schemas[2] = StateAbstraction.FunctionSchema({
-            functionName: "cancelTimeLockExecution",
+            functionSignature: "cancelTimeLockExecution(uint256)",
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
@@ -133,7 +133,7 @@ library GuardControllerDefinitions {
         
         // Schema 3: GuardController.approveTimeLockExecutionWithMetaTx
         schemas[3] = StateAbstraction.FunctionSchema({
-            functionName: "approveTimeLockExecutionWithMetaTx",
+            functionSignature: "approveTimeLockExecutionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
@@ -143,7 +143,7 @@ library GuardControllerDefinitions {
         
         // Schema 4: GuardController.cancelTimeLockExecutionWithMetaTx
         schemas[4] = StateAbstraction.FunctionSchema({
-            functionName: "cancelTimeLockExecutionWithMetaTx",
+            functionSignature: "cancelTimeLockExecutionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
@@ -153,7 +153,7 @@ library GuardControllerDefinitions {
         
         // Schema 5: GuardController.requestAndApproveExecution
         schemas[5] = StateAbstraction.FunctionSchema({
-            functionName: "requestAndApproveExecution",
+            functionSignature: "requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",

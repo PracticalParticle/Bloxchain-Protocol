@@ -19,7 +19,7 @@ interface StateAbstractionFunctionPermission {
  * FunctionSchema structure matching Solidity StateAbstraction.FunctionSchema for loadDefinitions
  */
 interface StateAbstractionFunctionSchema {
-  functionName: string;
+  functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
@@ -73,7 +73,7 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
    * @return Function schema information
    */
   async getFunctionSchema(functionSelector: Hex): Promise<{
-    functionName: string;
+    functionSignature: string;
     functionSelectorReturn: Hex;
     operationType: Hex;
     operationName: string;
@@ -81,7 +81,7 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     isProtected: boolean;
   }> {
     return this.executeReadContract<{
-      functionName: string;
+      functionSignature: string;
       functionSelectorReturn: Hex;
       operationType: Hex;
       operationName: string;

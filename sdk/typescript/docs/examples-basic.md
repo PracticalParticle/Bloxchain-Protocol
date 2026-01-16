@@ -368,7 +368,7 @@ async function getFunctionSchemas() {
     
     console.log('Function schemas:')
     functionSchemas.forEach(schema => {
-      console.log(`- ${schema.functionName}: ${schema.functionSelector}`)
+      console.log(`- ${schema.functionSignature}: ${schema.functionSelector}`)
       console.log(`  Parameters: ${schema.parameters.join(', ')}`)
       console.log(`  Returns: ${schema.returnTypes.join(', ')}`)
       console.log(`  Description: ${schema.description}`)
@@ -511,7 +511,7 @@ async function getFunctionBySelector(functionSelector: Hex) {
     const schema = await definitions.getFunctionSchemaBySelector(functionSelector)
     
     if (schema) {
-      console.log(`Found function: ${schema.functionName}`)
+        console.log(`Found function: ${schema.functionSignature}`)
       console.log(`Parameters: ${schema.parameters.join(', ')}`)
       console.log(`Returns: ${schema.returnTypes.join(', ')}`)
       return schema

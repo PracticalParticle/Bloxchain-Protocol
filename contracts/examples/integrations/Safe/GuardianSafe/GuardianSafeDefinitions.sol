@@ -63,7 +63,7 @@ library GuardianSafeDefinitions {
         
         // Time-delay functions
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "requestTransaction",
+            functionSignature: "requestTransaction((address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes))",
             functionSelector: REQUEST_TX_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -72,7 +72,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
-            functionName: "approveTransactionAfterDelay",
+            functionSignature: "approveTransactionAfterDelay(uint256)",
             functionSelector: APPROVE_TX_DELAYED_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -81,7 +81,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
-            functionName: "cancelTransaction",
+            functionSignature: "cancelTransaction(uint256)",
             functionSelector: CANCEL_TX_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -91,7 +91,7 @@ library GuardianSafeDefinitions {
         
         // Meta-transaction functions
         schemas[3] = StateAbstraction.FunctionSchema({
-            functionName: "approveTransactionWithMetaTx",
+            functionSignature: "approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -100,7 +100,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
-            functionName: "cancelTransactionWithMetaTx",
+            functionSignature: "cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: CANCEL_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -109,7 +109,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
-            functionName: "requestAndApproveTransactionWithMetaTx",
+            functionSignature: "requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",

@@ -48,7 +48,7 @@ library RuntimeRBACDefinitions {
         metaRequestApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "roleConfigBatchRequestAndApprove",
+            functionSignature: "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",

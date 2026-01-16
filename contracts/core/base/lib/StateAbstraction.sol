@@ -131,7 +131,7 @@ library StateAbstraction {
     }
 
     struct FunctionSchema {
-        string functionName;
+        string functionSignature;
         bytes4 functionSelector;
         bytes32 operationType;
         string operationName;
@@ -997,7 +997,7 @@ library StateAbstraction {
     /**
      * @dev Creates a function access control with specified permissions.
      * @param self The SecureOperationState to check.
-     * @param functionName Name of the function.
+     * @param functionSignature Function signature (e.g., "transfer(address,uint256)") or function name.
      * @param functionSelector Hash identifier for the function.
      * @param operationType The operation type this function belongs to.
      * @param operationName The name of the operation type.
@@ -1006,7 +1006,7 @@ library StateAbstraction {
      */
     function createFunctionSchema(
         SecureOperationState storage self,
-        string memory functionName,
+        string memory functionSignature,
         bytes4 functionSelector,
         bytes32 operationType,
         string memory operationName,
@@ -1014,6 +1014,12 @@ library StateAbstraction {
         bool isProtected
     ) public {
         SharedValidation.validateOperationTypeNotZero(operationType);
+
+        // Validate that functionSignature matches functionSelector
+        bytes4 derivedSelector = bytes4(keccak256(bytes(functionSignature)));
+        if (derivedSelector != functionSelector) {
+            revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
+        }
 
         // register the operation type if it's not already in the set
         if (self.supportedOperationTypesSet.add(operationType)) {
@@ -1026,7 +1032,7 @@ library StateAbstraction {
         }
         
         FunctionSchema storage schema = self.functions[functionSelector];
-        schema.functionName = functionName;
+        schema.functionSignature = functionSignature;
         schema.functionSelector = functionSelector;
         schema.operationType = operationType;
         schema.operationName = operationName;

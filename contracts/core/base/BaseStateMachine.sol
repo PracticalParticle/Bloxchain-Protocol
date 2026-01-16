@@ -539,7 +539,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             StateAbstraction.createFunctionSchema(
                 _getSecureState(),
-                functionSchemas[i].functionName,
+                functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationType,
                 functionSchemas[i].operationName,
