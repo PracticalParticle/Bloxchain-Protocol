@@ -161,7 +161,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
         
         // Convert bitmap to array
-        supportedActions = _convertBitmapToActions(schema.supportedActionsBitmap);
+        supportedActions = StateAbstraction.convertBitmapToActions(schema.supportedActionsBitmap);
         
         return (
             schema.functionName,
@@ -421,33 +421,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
 
         StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
-    }
-
-    /**
-     * @dev Converts a bitmap to an array of TxActions
-     * @param bitmap The bitmap to convert
-     * @return Array of TxActions represented by the bitmap
-     */
-    function _convertBitmapToActions(uint16 bitmap) internal pure returns (StateAbstraction.TxAction[] memory) {
-        // Count how many actions are set
-        uint256 count = 0;
-        for (uint8 i = 0; i < 16; i++) {
-            if ((bitmap & (1 << i)) != 0) {
-                count++;
-            }
-        }
-        
-        // Create array and populate it
-        StateAbstraction.TxAction[] memory actions = new StateAbstraction.TxAction[](count);
-        uint256 index = 0;
-        for (uint8 i = 0; i < 16; i++) {
-            if ((bitmap & (1 << i)) != 0) {
-                actions[index] = StateAbstraction.TxAction(i);
-                index++;
-            }
-        }
-        
-        return actions;
     }
 
 }

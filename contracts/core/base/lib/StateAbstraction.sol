@@ -1584,6 +1584,33 @@ library StateAbstraction {
         return bitmap;
     }
 
+    /**
+     * @dev Converts a bitmap to an array of TxActions
+     * @param bitmap The bitmap to convert
+     * @return Array of TxActions represented by the bitmap
+     */
+    function convertBitmapToActions(uint16 bitmap) internal pure returns (TxAction[] memory) {
+        // Count how many actions are set
+        uint256 count = 0;
+        for (uint8 i = 0; i < 16; i++) {
+            if ((bitmap & (1 << i)) != 0) {
+                count++;
+            }
+        }
+        
+        // Create array and populate it
+        TxAction[] memory actions = new TxAction[](count);
+        uint256 index = 0;
+        for (uint8 i = 0; i < 16; i++) {
+            if ((bitmap & (1 << i)) != 0) {
+                actions[index] = TxAction(i);
+                index++;
+            }
+        }
+        
+        return actions;
+    }
+
 
     // ============ OPTIMIZATION HELPER FUNCTIONS ============
 
