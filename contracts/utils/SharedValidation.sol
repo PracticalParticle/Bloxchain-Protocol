@@ -261,6 +261,15 @@ library SharedValidation {
     }
     
     /**
+     * @dev Validates that the signer of a meta-transaction is the owner
+     * @param signer The signer address from the meta-transaction
+     * @param owner The current owner address
+     */
+    function validateOwnerIsSigner(address signer, address owner) internal pure {
+        if (signer != owner) revert NoPermission(signer);
+    }
+    
+    /**
      * @dev Validates that the function is being called internally by the contract itself
      * @param contractAddress The address of the contract
      */
