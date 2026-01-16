@@ -123,6 +123,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev See {IERC165-supportsInterface}.
      * @notice Base implementation for ERC165 interface detection
      * @notice Registers IBaseStateMachine interface ID for proper interface detection
+     * @notice Component contracts (SecureOwnable, RuntimeRBAC, GuardController) should override
+     *         to add their respective interface IDs for component detection
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IBaseStateMachine).interfaceId || super.supportsInterface(interfaceId);

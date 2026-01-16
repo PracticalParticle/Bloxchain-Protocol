@@ -77,6 +77,16 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
     }
 
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Adds ISecureOwnable interface ID for component detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(ISecureOwnable).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     // Ownership Management
     /**
      * @dev Requests a transfer of ownership

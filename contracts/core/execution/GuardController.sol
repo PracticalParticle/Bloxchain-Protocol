@@ -5,6 +5,7 @@ import "../base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/GuardControllerDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
+import "./interface/IGuardController.sol";
 
 /**
  * @title GuardController
@@ -69,6 +70,16 @@ abstract contract GuardController is BaseStateMachine {
             guardControllerPermissions.roleHashes,
             guardControllerPermissions.functionPermissions
         );
+    }
+
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Adds IGuardController interface ID for component detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IGuardController).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ============ EXECUTION FUNCTIONS ============

@@ -7,6 +7,7 @@ import "../base/lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
+import "./interface/IRuntimeRBAC.sol";
 
 /**
  * @title RuntimeRBAC
@@ -93,6 +94,16 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             permissions.roleHashes,
             permissions.functionPermissions
         );
+    }
+
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Adds IRuntimeRBAC interface ID for component detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IRuntimeRBAC).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============

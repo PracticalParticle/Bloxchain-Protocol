@@ -308,6 +308,16 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
   async supportsInterface(interfaceId: Hex): Promise<boolean> {
     return this.executeReadContract<boolean>('supportsInterface', [interfaceId]);
   }
+
+  /**
+   * @dev Check if this contract supports IBaseStateMachine interface
+   * @return Promise<boolean> indicating if IBaseStateMachine is supported
+   */
+  async supportsBaseStateMachineInterface(): Promise<boolean> {
+    // Import dynamically to avoid circular dependencies
+    const { INTERFACE_IDS } = await import('../utils/interface-ids');
+    return this.supportsInterface(INTERFACE_IDS.IBaseStateMachine);
+  }
 }
 
 export default BaseStateMachine;

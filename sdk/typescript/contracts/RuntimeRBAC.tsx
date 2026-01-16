@@ -6,6 +6,7 @@ import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { Uint16Bitmap } from '../utils/bitmap';
+import { INTERFACE_IDS } from '../utils/interface-ids';
 
 /**
  * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
@@ -99,6 +100,16 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
    */
   async roleExists(roleHash: Hex): Promise<boolean> {
     return this.executeReadContract<boolean>('roleExists', [roleHash]);
+  }
+
+  // ============ INTERFACE SUPPORT ============
+
+  /**
+   * @dev Check if this contract supports IRuntimeRBAC interface
+   * @return Promise<boolean> indicating if IRuntimeRBAC is supported
+   */
+  async supportsRuntimeRBACInterface(): Promise<boolean> {
+    return this.supportsInterface(INTERFACE_IDS.IRuntimeRBAC);
   }
 
   // ============ HELPER FUNCTIONS (Computed from base class) ============

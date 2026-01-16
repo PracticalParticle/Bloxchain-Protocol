@@ -4,6 +4,7 @@ import { TransactionOptions, TransactionResult } from '../interfaces/base.index'
 import { IGuardController } from '../interfaces/core.execution.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
+import { INTERFACE_IDS } from '../utils/interface-ids';
 
 /**
  * @title GuardController
@@ -176,6 +177,16 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
       [metaTx],
       options
     );
+  }
+
+  // ============ INTERFACE SUPPORT ============
+
+  /**
+   * @dev Check if this contract supports IGuardController interface
+   * @return Promise<boolean> indicating if IGuardController is supported
+   */
+  async supportsGuardControllerInterface(): Promise<boolean> {
+    return this.supportsInterface(INTERFACE_IDS.IGuardController);
   }
 
   // Note: Function schema query (functionSchemaExists) is available through inheritance from BaseStateMachine
