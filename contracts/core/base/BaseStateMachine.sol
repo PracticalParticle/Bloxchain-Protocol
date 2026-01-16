@@ -68,24 +68,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool success
     );
 
-    // ============ ACCESS CONTROL MODIFIERS ============
-
-    /**
-     * @dev Modifier to restrict access to the owner only
-     */
-    modifier onlyOwner() {
-        SharedValidation.validateOwner(owner());
-        _;
-    }
-
-    /**
-     * @dev Modifier to restrict access to broadcaster only
-     */
-    modifier onlyBroadcaster() {
-        SharedValidation.validateBroadcaster(getBroadcaster());
-        _;
-    }
-
     /**
      * @notice Initializes the base state machine core
      * @param initialOwner The initial owner address

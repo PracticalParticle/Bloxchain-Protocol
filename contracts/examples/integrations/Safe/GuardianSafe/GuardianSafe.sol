@@ -134,7 +134,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Enable or disable delegated calls
      * @param enabled True to enable delegated calls, false to disable
      */
-    function setDelegatedCallEnabled(bool enabled) external onlyOwner {
+    function setDelegatedCallEnabled(bool enabled) external {
+        SharedValidation.validateOwner(owner());
         delegatedCallEnabled = enabled;
         emit DelegatedCallStatusChanged(enabled);
     }
@@ -145,9 +146,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function requestTransaction(SafeTx calldata safeTx) 
         external 
-        onlyOwner 
         returns (StateAbstraction.TxRecord memory) 
     {
+        SharedValidation.validateOwner(owner());
         // Use helper function to encode parameters and avoid stack too deep
         bytes memory params = _encodeSafeTxParams(safeTx);
         
@@ -190,7 +191,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Approve a pending transaction after timelock period
      * @param txId The transaction ID to approve
      */
-    function approveTransactionAfterDelay(uint256 txId) external onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function approveTransactionAfterDelay(uint256 txId) external returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         return _approveTransaction(txId);
     }
 
@@ -200,9 +202,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function approveTransactionWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
         external 
-        onlyBroadcaster 
         returns (StateAbstraction.TxRecord memory) 
     {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _approveTransactionWithMetaTx(metaTx);
     }
 
@@ -210,7 +212,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Cancel a pending transaction
      * @param txId The transaction ID to cancel
      */
-    function cancelTransaction(uint256 txId) external onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function cancelTransaction(uint256 txId) external returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         emit TransactionCancelled(txId);
         return updatedRecord;
@@ -222,9 +225,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function cancelTransactionWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
         external 
-        onlyBroadcaster 
         returns (StateAbstraction.TxRecord memory) 
     {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         emit TransactionCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -237,7 +240,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function requestAndApproveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
-    ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _requestAndApproveTransaction(metaTx);
     }
 

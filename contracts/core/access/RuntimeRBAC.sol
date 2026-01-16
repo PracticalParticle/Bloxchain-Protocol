@@ -114,7 +114,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      */
     function roleConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
-    ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _requestAndApproveTransaction(metaTx);
     }
 
