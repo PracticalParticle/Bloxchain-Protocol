@@ -179,6 +179,30 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         );
     }
 
+    /**
+     * @dev Gets all authorized wallets for a role
+     * @param roleHash The role hash to get wallets for
+     * @return Array of authorized wallet addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
+     */
+    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
+        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        StateAbstraction._validateAnyRole(state);
+        StateAbstraction._validateRoleExists(state, roleHash);
+        
+        // Get role info to determine wallet count
+        StateAbstraction.Role storage role = state.getRole(roleHash);
+        uint256 walletCount = role.walletCount;
+        
+        // Build array by iterating through wallets using _getAuthorizedWalletAt
+        address[] memory wallets = new address[](walletCount);
+        for (uint256 i = 0; i < walletCount; i++) {
+            wallets[i] = _getAuthorizedWalletAt(roleHash, i);
+        }
+        
+        return wallets;
+    }
+
     // ============ HELPER FUNCTIONS ============
 
     /**

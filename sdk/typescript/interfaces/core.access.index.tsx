@@ -33,4 +33,11 @@ export interface IRuntimeRBAC {
     supportedActions: TxAction[];
     isProtected: boolean;
   }>;
+
+  /**
+   * @dev Gets all authorized wallets for a role
+   * @param roleHash The role hash to get wallets for
+   * @return Array of authorized wallet addresses
+   */
+  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
 }
