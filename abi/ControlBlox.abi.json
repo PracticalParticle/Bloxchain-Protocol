@@ -2615,6 +2615,25 @@
         "internalType": "bytes32",
         "name": "roleHash",
         "type": "bytes32"
+      }
+    ],
+    "name": "getWalletsInRole",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "roleHash",
+        "type": "bytes32"
       },
       {
         "internalType": "address",
@@ -3272,25 +3291,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "roleExists",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

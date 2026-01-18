@@ -206,17 +206,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "item",
-        "type": "address"
-      }
-    ],
-    "name": "InvalidOperation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "s",
         "type": "bytes32"

@@ -10,9 +10,7 @@ import {
   TxRecord, 
   MetaTxParams, 
   TxParams,
-  PaymentDetails,
-  StandardExecutionOptions,
-  RawExecutionOptions
+  PaymentDetails
 } from '../../interfaces/lib.index';
 import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../../../abi/BaseStateMachine.abi.json';
@@ -70,16 +68,6 @@ export class MetaTransactionSigner {
   ): Promise<MetaTransaction> {
     // Call the private method which handles the contract call
     return await this.generateUnsignedMetaTransactionForNew(txParams, metaTxParams);
-    
-    // The contract returns a complete MetaTransaction with data field populated
-    // Extract all fields from the contract result
-    return {
-      txRecord: result.txRecord,
-      params: result.params,
-      message: result.message,
-      signature: result.signature as Hex,
-      data: result.data as Hex
-    };
   }
 
   /**

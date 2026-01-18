@@ -257,7 +257,10 @@ export abstract class BaseSDKTest {
   ): Promise<void> {
     this.assertTest(!!result.hash, `${message}: Transaction hash exists`);
     const receipt = await result.wait();
-    this.assertTest(receipt.status === 'success', `${message}: Transaction succeeded`);
+    // Viem returns status as 'success' or 'reverted', or as number 1/0
+    const status = receipt.status as any;
+    const isSuccess = status === 'success' || status === 1 || String(status) === '1';
+    this.assertTest(isSuccess, `${message}: Transaction succeeded (status: ${status})`);
   }
 
   /**

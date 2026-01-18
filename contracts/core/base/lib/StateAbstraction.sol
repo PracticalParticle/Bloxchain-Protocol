@@ -720,18 +720,23 @@ library StateAbstraction {
     ) public {
         bytes32 roleHash = keccak256(bytes(roleName));
         
-        // Check if role already exists in mapping or set - if either is true, revert
-        if (self.roles[roleHash].roleHash == roleHash || !self.supportedRolesSet.add(roleHash)) {
+        // Check if role already exists in mapping - if so, revert
+        if (self.roles[roleHash].roleHash == roleHash) {
             revert SharedValidation.ResourceAlreadyExists(roleHash);
         }
-
-        // Create the role with empty arrays
+        
+        // Add the role to the set - if it already exists, revert to prevent inconsistent state
+        if (!self.supportedRolesSet.add(roleHash)) {
+            revert SharedValidation.ResourceAlreadyExists(roleHash);
+        }
+        
+        // Initialize the role mapping
         self.roles[roleHash].roleName = roleName;
         self.roles[roleHash].roleHash = roleHash;
         self.roles[roleHash].maxWallets = maxWallets;
         self.roles[roleHash].walletCount = 0;
         self.roles[roleHash].isProtected = isProtected;
-
+        
         _validateRoleExists(self, roleHash);
     }
 
