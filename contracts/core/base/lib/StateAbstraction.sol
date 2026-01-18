@@ -1025,6 +1025,12 @@ library StateAbstraction {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
         }
 
+        // Validate that the operation type match the operation name
+        bytes32 derivedOperationType = keccak256(bytes(operationName));
+        if (operationType != derivedOperationType) {
+            revert SharedValidation.OperationTypeMismatch(operationType, derivedOperationType);
+        }
+
         // register the operation type if it's not already in the set
         SharedValidation.validateOperationTypeNotZero(operationType);
         if (self.supportedOperationTypesSet.add(operationType)) {
