@@ -24,9 +24,6 @@ export interface IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
-  // Query Functions (from contract)
-  roleExists(roleHash: Hex): Promise<boolean>;
-
   // Note: getFunctionSchema remains available from the contract and is exposed via the wrapper
   getFunctionSchema(functionSelector: Hex): Promise<{
     functionSignature: string;

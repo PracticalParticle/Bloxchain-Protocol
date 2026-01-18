@@ -11,17 +11,6 @@ import "../../base/lib/StateAbstraction.sol";
  * @notice Note: owner(), getBroadcaster(), and getRecovery() are available through BaseStateMachine
  */
 interface ISecureOwnable {
-    // ============ EVENTS ============
-    
-    event OwnershipTransferRequest(address currentOwner, address newOwner);
-    event OwnershipTransferCancelled(uint256 indexed txId);
-    event OwnershipTransferUpdated(address oldOwner, address newOwner);
-    event BroadcasterUpdateRequest(address currentBroadcaster, address newBroadcaster);
-    event BroadcasterUpdateCancelled(uint256 indexed txId);
-    event BroadcasterUpdated(address oldBroadcaster, address newBroadcaster);
-    event RecoveryAddressUpdated(address oldRecovery, address newRecovery);
-    event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod);
-
     // ============ OWNERSHIP MANAGEMENT ============
 
     /**

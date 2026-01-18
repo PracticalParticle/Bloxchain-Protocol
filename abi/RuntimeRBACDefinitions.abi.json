@@ -49,7 +49,7 @@
         "components": [
           {
             "internalType": "string",
-            "name": "functionName",
+            "name": "functionSignature",
             "type": "string"
           },
           {

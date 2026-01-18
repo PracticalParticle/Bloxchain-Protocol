@@ -84,7 +84,6 @@ export const INTERFACE_IDS = {
     'hasRole(bytes32,address)',
     'getWalletsInRole(bytes32)',
     'getRolePermissions(bytes32)',
-    'roleExists(bytes32)',
     'isRoleProtected(bytes32)',
     'getRoleWalletCount(bytes32)',
     'isRoleAtCapacity(bytes32)'

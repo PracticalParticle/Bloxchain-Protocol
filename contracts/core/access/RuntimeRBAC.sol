@@ -142,15 +142,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     // Essential Query Functions Only
-    /**
-     * @dev Checks if a role exists
-     * @param roleHash The hash of the role
-     * @return True if the role exists, false otherwise
-     */
-    function roleExists(bytes32 roleHash) public view returns (bool) {
-        // must have an active role in the system to ask about other roles
-        return _getSecureState().getRole(roleHash).roleHash != bytes32(0);
-    }
 
     /**
      * @dev Gets function schema information
@@ -199,6 +190,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             RoleConfigAction calldata action = actions[i];
 
             if (action.actionType == RoleConfigActionType.CREATE_ROLE) {
+                // Decode CREATE_ROLE action data
+                // Format: (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
+                // FunctionPermission is struct(bytes4 functionSelector, uint16 grantedActionsBitmap)
+                // When encoding from JavaScript, it's encoded as tuple(bytes4,uint16)[]
+                // Solidity can decode tuple[] directly into struct[] if the layout matches
                 (
                     string memory roleName,
                     uint256 maxWallets,
@@ -372,7 +368,20 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, false);
 
         // Add all function permissions to the role
+        // NOTE: Function schemas must be registered BEFORE adding permissions to roles
+        // This is the same pattern used in _loadDefinitions: schemas first, then permissions
+        // The function selectors in functionPermissions must exist in supportedFunctionsSet
+        // (they should be registered during initialize() via RuntimeRBACDefinitions)
+        // 
+        // CRITICAL: The order matters - _loadDefinitions loads schemas FIRST, then permissions
+        // In _createNewRole, we assume schemas are already registered (from initialize)
+        // If schemas aren't registered, addFunctionToRole will revert with ResourceNotFound
         for (uint256 i = 0; i < functionPermissions.length; i++) {
+            // Add function permission to role
+            // addFunctionToRole will check:
+            // 1. Role exists in supportedRolesSet (✅ just created)
+            // 2. Function selector exists in supportedFunctionsSet (must be registered during initialize)
+            // 3. Actions are supported by function schema (via _validateMetaTxPermissions)
             StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermissions[i]);
         }
     }
@@ -447,21 +456,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
 
-        // If safeRemoval is requested, ensure no role currently references this function
-        if (safeRemoval) {
-            bytes32[] memory roles = _getSecureState().getSupportedRolesList();
-            for (uint256 i = 0; i < roles.length; i++) {
-                StateAbstraction.FunctionPermission[] memory perms =
-                    _getSecureState().getRoleFunctionPermissions(roles[i]);
-                for (uint256 j = 0; j < perms.length; j++) {
-                    if (perms[j].functionSelector == functionSelector) {
-                        revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
-                    }
-                }
-            }
-        }
-
-        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
+        // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
+        // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
+        // during meta-tx execution msg.sender is the contract, causing NoPermission)
+        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
     }
 
     /**

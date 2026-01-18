@@ -91,17 +91,6 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     }>('getFunctionSchema', [functionSelector]);
   }
 
-  // ============ QUERY FUNCTIONS ============
-
-  /**
-   * @dev Checks if a role exists
-   * @param roleHash The hash of the role
-   * @return True if the role exists, false otherwise
-   */
-  async roleExists(roleHash: Hex): Promise<boolean> {
-    return this.executeReadContract<boolean>('roleExists', [roleHash]);
-  }
-
   // ============ INTERFACE SUPPORT ============
 
   /**

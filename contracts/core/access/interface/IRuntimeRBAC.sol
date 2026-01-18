@@ -164,13 +164,6 @@ interface IRuntimeRBAC {
     );
 
     /**
-     * @dev Checks if a role exists
-     * @param roleHash The hash of the role
-     * @return True if the role exists, false otherwise
-     */
-    function roleExists(bytes32 roleHash) external view returns (bool);
-
-    /**
      * @dev Checks if a role is protected
      * @param roleHash The hash of the role
      * @return True if the role is protected, false otherwise

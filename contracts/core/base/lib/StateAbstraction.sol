@@ -512,6 +512,7 @@ library StateAbstraction {
             }
         } else {
             record.status = TxStatus.FAILED;
+            record.result = result;
         }
 
         return (success, result);
@@ -584,6 +585,8 @@ library StateAbstraction {
             return "";
         }
         // Otherwise, encode the function selector with params
+        // For low-level calls, we need: selector (4 bytes) + ABI-encoded params
+        // abi.encodePacked concatenates bytes4 and bytes memory correctly
         return abi.encodePacked(record.params.executionSelector, record.params.executionParams);
     }
 
@@ -698,6 +701,7 @@ library StateAbstraction {
      */
     function getRole(SecureOperationState storage self, bytes32 role) public view returns (Role storage) {
         _validateAnyRole(self);
+        _validateRoleExists(self, role);
         return self.roles[role];
     }
 
@@ -727,6 +731,8 @@ library StateAbstraction {
         self.roles[roleHash].maxWallets = maxWallets;
         self.roles[roleHash].walletCount = 0;
         self.roles[roleHash].isProtected = isProtected;
+
+        _validateRoleExists(self, roleHash);
     }
 
     /**
@@ -739,7 +745,7 @@ library StateAbstraction {
         SecureOperationState storage self,
         bytes32 roleHash
     ) public {
-        // Validate that the role exists
+        // Validate that the role exists (checks both roles mapping and supportedRolesSet)
         _validateRoleExists(self, roleHash);
         
         // Security check: Prevent removing protected roles
@@ -747,20 +753,18 @@ library StateAbstraction {
             revert SharedValidation.CannotRemoveProtected(roleHash);
         }
         
+        // Clear the role data from roles mapping
         // Remove the role from the supported roles set (O(1) operation)
-        // Defensive check: ensure role was actually in the set
-        if (!self.supportedRolesSet.remove(roleHash)) {
-            revert SharedValidation.ResourceNotFound(roleHash);
-        }
-        
-        // Clear the role data
         // NOTE: Mappings (functionPermissions, authorizedWallets, functionSelectorsSet)
         // are not deleted by Solidity's delete operator. This is acceptable because:
         // 1. Role is removed from supportedRolesSet, making it inaccessible
         // 2. All access checks iterate supportedRolesSet, so orphaned data is unreachable
         // 3. Role recreation with same name would pass roleHash check but mappings
         //    would be effectively reset since role is reinitialized from scratch
-        delete self.roles[roleHash];
+        delete self.roles[roleHash];  
+        if (!self.supportedRolesSet.remove(roleHash)) {
+            revert SharedValidation.ResourceNotFound(roleHash);
+        }   
     }
 
     /**
@@ -828,17 +832,16 @@ library StateAbstraction {
      * @param self The SecureOperationState to modify.
      * @param role The role to remove the wallet from.
      * @param wallet The wallet address to remove.
-     * @notice Security: Cannot remove the last wallet from a role to prevent empty roles.
+     * @notice Security: Cannot remove the last wallet from a protected role
      */
     function revokeWallet(SecureOperationState storage self, bytes32 role, address wallet) public {
         _validateRoleExists(self, role);
         
-        // Check if wallet exists in the role
         Role storage roleData = self.roles[role];
         
-        // Security check: Prevent removing the last wallet from a role
-        if (roleData.authorizedWallets.length() <= 1) {
-            revert SharedValidation.InvalidOperation(wallet);
+        // Security check: Prevent removing the last wallet from a protected role
+        if (roleData.isProtected && roleData.authorizedWallets.length() <= 1) {
+            revert SharedValidation.CannotRemoveProtected(bytes32(role));
         }
         
         // Remove the wallet (O(1) operation)
@@ -859,27 +862,25 @@ library StateAbstraction {
         bytes32 roleHash,
         FunctionPermission memory functionPermission
     ) public {
-        // Check if role exists by checking if it's in the supported roles set
-        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.ResourceNotFound(roleHash);
+        bytes32 functionSelectorHash = bytes32(functionPermission.functionSelector);
+
+        // Check if role exists (checks both roles mapping and supportedRolesSet)
+        _validateRoleExists(self, roleHash);
         
         // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
-        if (!self.supportedFunctionsSet.contains(bytes32(functionPermission.functionSelector))) {
-            revert SharedValidation.ResourceNotFound(bytes32(functionPermission.functionSelector));
+        if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
+            revert SharedValidation.ResourceNotFound(functionSelectorHash);
         }
         
         // Validate that all grantedActions are supported by the function
         _validateMetaTxPermissions(self, functionPermission);
         
-        // add the function permission to the role
+        // add the function selector to the role's function selectors set and mapping
         Role storage role = self.roles[roleHash];
-        
-        // add the function selector to the role's function selectors set
-        if (!role.functionSelectorsSet.add(bytes32(functionPermission.functionSelector))) {
-            revert SharedValidation.ResourceAlreadyExists(bytes32(functionPermission.functionSelector));
-        }
-        
-        // If it doesn't exist, add it
         role.functionPermissions[functionPermission.functionSelector] = functionPermission;
+        if (!role.functionSelectorsSet.add(functionSelectorHash)) {
+            revert SharedValidation.ResourceAlreadyExists(functionSelectorHash);
+        }
     }
 
     /**
@@ -893,8 +894,8 @@ library StateAbstraction {
         bytes32 roleHash,
         bytes4 functionSelector
     ) public {
-        // Check if role exists by checking if it's in the supported roles set
-        if (!self.supportedRolesSet.contains(roleHash)) revert SharedValidation.ResourceNotFound(roleHash);
+        // Check if role exists (checks both roles mapping and supportedRolesSet)
+        _validateRoleExists(self, roleHash);
         
         // Security check: Prevent removing protected functions from roles
         // Check if function exists and is protected (works for all selectors including bytes4(0))
@@ -1013,8 +1014,6 @@ library StateAbstraction {
         uint16 supportedActionsBitmap,
         bool isProtected
     ) public {
-        SharedValidation.validateOperationTypeNotZero(operationType);
-
         // Validate that functionSignature matches functionSelector
         bytes4 derivedSelector = bytes4(keccak256(bytes(functionSignature)));
         if (derivedSelector != functionSelector) {
@@ -1022,6 +1021,7 @@ library StateAbstraction {
         }
 
         // register the operation type if it's not already in the set
+        SharedValidation.validateOperationTypeNotZero(operationType);
         if (self.supportedOperationTypesSet.add(operationType)) {
             // do nothing
         }
@@ -1048,37 +1048,55 @@ library StateAbstraction {
      * @dev Removes a function schema from the system.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector to remove.
+     * @param safeRemoval If true, reverts with ResourceAlreadyExists when any role still references this function.
+     *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) to avoid
+     *        calling getSupportedRolesList/getRoleFunctionPermissions, which use _validateAnyRole and would
+     *        revert NoPermission when the caller is the contract itself (e.g. during executeRoleConfigBatch).
      * @notice Security: Cannot remove protected function schemas to maintain system integrity.
      * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
      */
     function removeFunctionSchema(
         SecureOperationState storage self,
-        bytes4 functionSelector
+        bytes4 functionSelector,
+        bool safeRemoval
     ) public {
-        // Remove the function schema from the supported functions set (O(1) operation)
-        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
-            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
-        }
-        
         // Security check: Prevent removing protected function schemas
+        // MUST check BEFORE removing from set to avoid inconsistent state
         if (self.functions[functionSelector].isProtected) {
             revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
-        
-        // Store the operation type before removing the function schema
+
+        // If safeRemoval: ensure no role references this function. Iterate supportedRolesSet directly
+        // to avoid getSupportedRolesList/getRoleFunctionPermissions which use _validateAnyRole and
+        // would revert NoPermission when called from contract-internal paths (msg.sender = contract).
+        if (safeRemoval) {
+            uint256 rolesLength = self.supportedRolesSet.length();
+            for (uint256 i = 0; i < rolesLength; i++) {
+                bytes32 roleHash = self.supportedRolesSet.at(i);
+                if (self.roles[roleHash].functionSelectorsSet.contains(bytes32(functionSelector))) {
+                    revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
+                }
+            }
+        }
+
+        // Check if the operation type is still in use by other functions.
+        // Use _getFunctionsByOperationType to avoid _validateAnyRole when called from
+        // contract-internal paths (e.g. _unregisterFunction -> removeFunctionSchema).
         bytes32 operationType = self.functions[functionSelector].operationType;
-        
-        // Clear the function schema data
-        delete self.functions[functionSelector];
-        
-        // Check if the operation type is still in use by other functions
-        bytes4[] memory functionsUsingOperationType = getFunctionsByOperationType(self, operationType);
+        bytes4[] memory functionsUsingOperationType = _getFunctionsByOperationType(self, operationType);
         if (functionsUsingOperationType.length == 0) {
             // Remove the operation type from supported operation types set if no longer in use
             if (!self.supportedOperationTypesSet.remove(operationType)) {
                 // This should never happen, but defensive check for safety
                 revert SharedValidation.OperationFailed();
             } 
+        }
+
+        // Clear the function schema data
+        // Remove the function schema from the supported functions set (O(1) operation)
+        delete self.functions[functionSelector];
+        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
     }
 
@@ -1114,6 +1132,19 @@ library StateAbstraction {
         bytes32 operationType
     ) public view returns (bytes4[] memory) {
         _validateAnyRole(self);
+        return _getFunctionsByOperationType(self, operationType);
+    }
+
+    /**
+     * @dev Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
+     * Used by removeFunctionSchema when called from contract-internal paths (e.g. _unregisterFunction)
+     * where msg.sender is the contract and would fail _validateAnyRole.
+     * Also used by getFunctionsByOperationType after role validation.
+     */
+    function _getFunctionsByOperationType(
+        SecureOperationState storage self,
+        bytes32 operationType
+    ) internal view returns (bytes4[] memory) {
         uint256 functionsLength = self.supportedFunctionsSet.length();
         bytes4[] memory tempResults = new bytes4[](functionsLength);
         uint256 resultCount = 0;
@@ -1127,7 +1158,6 @@ library StateAbstraction {
             }
         }
         
-        // Create properly sized result array
         bytes4[] memory result = new bytes4[](resultCount);
         for (uint i = 0; i < resultCount; i++) {
             result[i] = tempResults[i];
@@ -1166,12 +1196,7 @@ library StateAbstraction {
      */
     function getSupportedFunctionsList(SecureOperationState storage self) public view returns (bytes4[] memory) {
         _validateAnyRole(self);
-        uint256 length = self.supportedFunctionsSet.length();
-        bytes4[] memory result = new bytes4[](length);
-        for (uint256 i = 0; i < length; i++) {
-            result[i] = bytes4(self.supportedFunctionsSet.at(i));
-        }
-        return result;
+        return _convertBytes4SetToArray(self.supportedFunctionsSet);
     }
 
     /**
@@ -1639,6 +1664,10 @@ library StateAbstraction {
             self.txRecords[txId].result = result;
         } else {
             self.txRecords[txId].status = TxStatus.FAILED;
+            self.txRecords[txId].result = result; // Store failure reason for debugging
+            // Note: FAILED status is intentional - transactions can be valid when requested
+            // but fail when executed (e.g., conditions changed, insufficient balance, etc.)
+            // Users can query status via getTransaction() or listen to TransactionEvent
         }
         
         // Remove from pending transactions list
@@ -1680,7 +1709,9 @@ library StateAbstraction {
      * @notice This function consolidates the repeated role existence check pattern to reduce contract size
      */
     function _validateRoleExists(SecureOperationState storage self, bytes32 roleHash) internal view {
-        if (self.roles[roleHash].roleHash == 0) revert SharedValidation.ResourceNotFound(roleHash);
+        if (self.roles[roleHash].roleHash == 0 || !self.supportedRolesSet.contains(roleHash)) {
+            revert SharedValidation.ResourceNotFound(roleHash);
+        }
     }
 
     /**
@@ -1748,6 +1779,11 @@ library StateAbstraction {
     ) internal view {
         uint16 bitmap = functionPermission.grantedActionsBitmap;
         
+        // Revert if permissions are empty (bitmap is 0) to prevent silent failures
+        if (bitmap == 0) {
+            revert SharedValidation.NotSupported();
+        }
+        
         // Create bitmasks for meta-sign and meta-execute actions
         // Meta-sign actions: SIGN_META_REQUEST_AND_APPROVE (3), SIGN_META_APPROVE (4), SIGN_META_CANCEL (5)
         uint16 metaSignMask = (1 << 3) | (1 << 4) | (1 << 5);
@@ -1803,6 +1839,21 @@ library StateAbstraction {
         bytes32[] memory result = new bytes32[](length);
         for (uint256 i = 0; i < length; i++) {
             result[i] = set.at(i);
+        }
+        return result;
+    }
+
+    /**
+     * @dev Generic helper to convert Bytes32Set (containing bytes4 selectors) to bytes4 array
+     * @param set The EnumerableSet.Bytes32Set to convert (stores bytes4 selectors as bytes32)
+     * @return Array of bytes4 function selectors
+     */
+    function _convertBytes4SetToArray(EnumerableSet.Bytes32Set storage set) 
+        internal view returns (bytes4[] memory) {
+        uint256 length = set.length();
+        bytes4[] memory result = new bytes4[](length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = bytes4(set.at(i));
         }
         return result;
     }

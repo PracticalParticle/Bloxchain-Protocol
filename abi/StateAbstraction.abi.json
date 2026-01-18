@@ -88,6 +88,22 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "providedSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "derivedSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "FunctionSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "currentGasPrice",
         "type": "uint256"

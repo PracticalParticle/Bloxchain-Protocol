@@ -37,6 +37,11 @@ contract RoleBlox is RuntimeRBAC, SecureOwnable {
         // Add any RoleBlox-specific initialization logic here
     }
 
-    // add your implementation here
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(RuntimeRBAC, SecureOwnable) returns (bool) {
+        return RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
+    }
 }
 
