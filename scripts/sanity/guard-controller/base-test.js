@@ -96,8 +96,9 @@ class BaseGuardControllerTest {
         };
         
         // GuardController constants
-        this.ETH_TRANSFER_OPERATION_TYPE = this.web3.utils.keccak256('ETH_TRANSFER');
-        this.ETH_TRANSFER_SELECTOR = '0x00000000'; // bytes4(0)
+        // NATIVE_TRANSFER uses a reserved signature: __bloxchain_native_transfer__(address,uint256)
+        this.NATIVE_TRANSFER_OPERATION_TYPE = this.web3.utils.keccak256('NATIVE_TRANSFER');
+        this.NATIVE_TRANSFER_SELECTOR = '0x58e2cfdb'; // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
         this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR = this.web3.utils.keccak256(
             'requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
@@ -360,31 +361,69 @@ class BaseGuardControllerTest {
     }
 
     async sendTransaction(method, wallet) {
+        return await this.sendTransactionWithValue(method, wallet, '0');
+    }
+
+    async sendTransactionWithValue(method, wallet, value) {
         try {
             const from = wallet.address;
-            const gas = await method.estimateGas({ from });
-            const result = await method.send({ from, gas });
+            const gas = await method.estimateGas({ from, value });
+            const result = await method.send({ from, gas, value });
             return result;
         } catch (error) {
             let errorMessage = error.message;
             if (error.data) {
                 try {
-                    // Try to decode RestrictedBroadcaster error
+                    // Try to decode error
                     const errorData = error.data.result || error.data;
-                    if (errorData && typeof errorData === 'string' && errorData.startsWith('0xf37a3442')) {
-                        // RestrictedBroadcaster(address,address) selector: 0xf37a3442
-                        const decoded = this.web3.eth.abi.decodeParameters(
-                            ['address', 'address'],
-                            '0x' + errorData.slice(10)
-                        );
-                        errorMessage = `RestrictedBroadcaster: caller=${decoded[0]}, expected broadcaster=${decoded[1]}`;
+                    if (errorData && typeof errorData === 'string' && errorData.length >= 10) {
+                        const errorSelector = errorData.slice(0, 10);
+                        console.log(`  🔍 Error selector: ${errorSelector}`);
+                        console.log(`  🔍 Full error data: ${errorData}`);
+                        
+                        // Check for common errors
+                        const resourceNotFound = this.web3.utils.keccak256('ResourceNotFound(bytes32)').slice(0, 10);
+                        const resourceExists = this.web3.utils.keccak256('ResourceAlreadyExists(bytes32)').slice(0, 10);
+                        const noPermission = this.web3.utils.keccak256('NoPermission(address)').slice(0, 10);
+                        const signerNotAuthorized = this.web3.utils.keccak256('SignerNotAuthorized(address)').slice(0, 10);
+                        const restrictedBroadcaster = this.web3.utils.keccak256('RestrictedBroadcaster(address,address)').slice(0, 10);
+                        const conflictingMetaTx = this.web3.utils.keccak256('ConflictingMetaTxPermissions(bytes4)').slice(0, 10);
+                        const notSupported = this.web3.utils.keccak256('NotSupported()').slice(0, 10);
+                        
+                        if (errorSelector === resourceNotFound) {
+                            const decoded = this.web3.eth.abi.decodeParameter('bytes32', '0x' + errorData.slice(10));
+                            errorMessage = `ResourceNotFound: ${decoded}`;
+                        } else if (errorSelector === resourceExists) {
+                            const decoded = this.web3.eth.abi.decodeParameter('bytes32', '0x' + errorData.slice(10));
+                            errorMessage = `ResourceAlreadyExists: ${decoded}`;
+                        } else if (errorSelector === noPermission) {
+                            const decoded = this.web3.eth.abi.decodeParameter('address', '0x' + errorData.slice(10));
+                            errorMessage = `NoPermission: ${decoded}`;
+                        } else if (errorSelector === signerNotAuthorized) {
+                            const decoded = this.web3.eth.abi.decodeParameter('address', '0x' + errorData.slice(10));
+                            errorMessage = `SignerNotAuthorized: ${decoded}`;
+                        } else if (errorSelector === restrictedBroadcaster) {
+                            const decoded = this.web3.eth.abi.decodeParameters(['address', 'address'], '0x' + errorData.slice(10));
+                            errorMessage = `RestrictedBroadcaster: caller=${decoded[0]}, expected broadcaster=${decoded[1]}`;
+                        } else if (errorSelector === conflictingMetaTx) {
+                            const decoded = this.web3.eth.abi.decodeParameter('bytes4', '0x' + errorData.slice(10));
+                            errorMessage = `ConflictingMetaTxPermissions: ${decoded}`;
+                        } else if (errorSelector === notSupported) {
+                            errorMessage = `NotSupported`;
+                        } else {
+                            // Try to decode as string
+                            try {
+                                const revertReason = this.web3.eth.abi.decodeParameter('string', errorData);
+                                errorMessage = `${error.message} (Revert reason: ${revertReason})`;
+                            } catch (e) {
+                                errorMessage = `${error.message} (Unknown error selector: ${errorSelector}, Data: ${errorData})`;
+                            }
+                        }
                     } else {
-                        // Try to decode as string
-                        const revertReason = this.web3.eth.abi.decodeParameter('string', errorData);
-                        errorMessage = `${error.message} (Revert reason: ${revertReason})`;
+                        errorMessage = `${error.message} (Data: ${JSON.stringify(error.data)})`;
                     }
                 } catch (decodeError) {
-                    errorMessage = `${error.message} (Data: ${JSON.stringify(error.data)})`;
+                    errorMessage = `${error.message} (Decode error: ${decodeError.message}, Data: ${JSON.stringify(error.data)})`;
                 }
             }
             if (error.reason) {
@@ -662,10 +701,12 @@ class BaseGuardControllerTest {
     async createEthTransferMetaTx(target, value, signerAddress) {
         try {
             // Create meta-transaction parameters
+            // handlerContract should be the contract itself (ControlBlox)
+            // handlerSelector should be requestAndApproveExecution
             const metaParams = await this.callContractMethod(
                 this.contract.methods.createMetaTxParams(
-                    target,
-                    this.ETH_TRANSFER_SELECTOR,
+                    this.contractAddress, // handlerContract is the contract itself
+                    this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, // handlerSelector for requestAndApproveExecution
                     this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                     3600, // 1 hour default
                     0, // maxGasPrice
@@ -679,10 +720,10 @@ class BaseGuardControllerTest {
                     signerAddress,
                     target,
                     value,
-                    100000, // gasLimit for ETH transfer
-                    this.ETH_TRANSFER_OPERATION_TYPE,
-                    this.ETH_TRANSFER_SELECTOR,
-                    '0x', // empty params for ETH transfer
+                    100000, // gasLimit for native token transfer
+                    this.NATIVE_TRANSFER_OPERATION_TYPE,
+                    this.NATIVE_TRANSFER_SELECTOR,
+                    '0x', // empty params for native token transfer
                     metaParams
                 )
             );
@@ -724,9 +765,13 @@ class BaseGuardControllerTest {
             );
             
             // Execute via broadcaster using requestAndApproveExecution
-            const receipt = await this.sendTransaction(
+            // For native transfers, we need to send ETH with the transaction
+            // The value should match the value in the meta-transaction
+            const txValue = signedMetaTx.txRecord.params.value || '0';
+            const receipt = await this.sendTransactionWithValue(
                 this.contract.methods.requestAndApproveExecution(signedMetaTx),
-                broadcasterWallet
+                broadcasterWallet,
+                txValue
             );
             
             return receipt;
@@ -802,6 +847,43 @@ class BaseGuardControllerTest {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Extract transaction ID from receipt by finding TransactionEvent log
+     * @param {Object} receipt - Transaction receipt
+     * @returns {string|null} Transaction ID or null if not found
+     */
+    extractTxIdFromReceipt(receipt) {
+        if (!receipt || !receipt.logs || receipt.logs.length === 0) {
+            return null;
+        }
+        
+        const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)');
+        
+        for (const log of receipt.logs) {
+            if (log.topics && log.topics[0] === eventSignature) {
+                try {
+                    const decoded = this.web3.eth.abi.decodeLog(
+                        [
+                            { type: 'uint256', name: 'txId', indexed: true },
+                            { type: 'bytes4', name: 'functionHash', indexed: true },
+                            { type: 'uint8', name: 'status' },
+                            { type: 'address', name: 'requester', indexed: true },
+                            { type: 'address', name: 'target' },
+                            { type: 'bytes32', name: 'operationType' }
+                        ],
+                        log.data,
+                        log.topics.slice(1)
+                    );
+                    return decoded.txId.toString();
+                } catch (e) {
+                    console.log(`  ⚠️  Could not decode TransactionEvent: ${e.message}`);
+                }
+            }
+        }
+        
+        return null;
     }
 
     printTestResults() {
