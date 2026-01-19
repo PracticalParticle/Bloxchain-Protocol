@@ -171,6 +171,10 @@ library StateAbstraction {
     bytes32 constant BROADCASTER_ROLE = keccak256(bytes("BROADCASTER_ROLE"));
     bytes32 constant RECOVERY_ROLE = keccak256(bytes("RECOVERY_ROLE"));
 
+    // Native token transfer selector (reserved signature unlikely to exist in real contracts)
+    bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"));
+    bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
+
     // EIP-712 Type Hashes
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -257,8 +261,8 @@ library StateAbstraction {
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
      * @param handlerSelector The function selector of the handler/request function.
-     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers).
-     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers).
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers).
      * @return The created TxRecord.
      */
     function txRequest(
@@ -295,8 +299,8 @@ library StateAbstraction {
      * @param value The value to send with the transaction.
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
-     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers).
-     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers).
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers).
      * @return The created TxRecord.
      * @notice This function skips permission validation and should only be called from functions
      *         that have already validated permissions.
@@ -580,9 +584,13 @@ library StateAbstraction {
      * @return The prepared transaction data.
      */
     function prepareTransactionData(TxRecord memory record) private pure returns (bytes memory) {
-        // If executionSelector is 0x00000000, it's a simple ETH transfer (no function call)
-        if (record.params.executionSelector == bytes4(0)) {
-            return "";
+        // If executionSelector is NATIVE_TRANSFER_SELECTOR, it's a simple native token transfer (no function call)
+        if (record.params.executionSelector == NATIVE_TRANSFER_SELECTOR) {
+            // SECURITY: Validate empty params to prevent confusion with real function calls
+            if (record.params.executionParams.length != 0) {
+                revert SharedValidation.NotSupported();
+            }
+            return ""; // Empty calldata for native token transfer
         }
         // Otherwise, encode the function selector with params
         // For low-level calls, we need: selector (4 bytes) + ABI-encoded params
@@ -600,8 +608,8 @@ library StateAbstraction {
      * @param value The amount of native tokens to send with the transaction
      * @param gasLimit The maximum gas allowed for the transaction
      * @param operationType The type of operation being performed
-     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
-     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers)
      * @return TxRecord A new transaction record with populated fields
      */
     function createNewTxRecord(
@@ -872,7 +880,7 @@ library StateAbstraction {
         // Check if role exists (checks both roles mapping and supportedRolesSet)
         _validateRoleExists(self, roleHash);
         
-        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        // Check if function exists in supportedFunctionsSet
         if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
             revert SharedValidation.ResourceNotFound(functionSelectorHash);
         }
@@ -883,6 +891,8 @@ library StateAbstraction {
         // add the function selector to the role's function selectors set and mapping
         Role storage role = self.roles[roleHash];
         role.functionPermissions[functionPermission.functionSelector] = functionPermission;
+        
+        // Add to role's function selectors set
         if (!role.functionSelectorsSet.add(functionSelectorHash)) {
             revert SharedValidation.ResourceAlreadyExists(functionSelectorHash);
         }
@@ -903,7 +913,7 @@ library StateAbstraction {
         _validateRoleExists(self, roleHash);
         
         // Security check: Prevent removing protected functions from roles
-        // Check if function exists and is protected (works for all selectors including bytes4(0))
+        // Check if function exists and is protected
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             FunctionSchema memory functionSchema = self.functions[functionSelector];
             if (functionSchema.isProtected) {
@@ -1020,6 +1030,8 @@ library StateAbstraction {
         bool isProtected
     ) public {
         // Validate that functionSignature matches functionSelector
+        // Note: NATIVE_TRANSFER_SELECTOR uses a reserved signature that represents native token transfers
+        // and doesn't correspond to a real function, but still requires signature validation
         bytes4 derivedSelector = bytes4(keccak256(bytes(functionSignature)));
         if (derivedSelector != functionSelector) {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
@@ -1037,7 +1049,7 @@ library StateAbstraction {
             // do nothing
         }
         
-        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        // Check if function already exists in the set
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
         }
@@ -1050,9 +1062,10 @@ library StateAbstraction {
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.isProtected = isProtected;
         
+        // Add to supportedFunctionsSet
         if (!self.supportedFunctionsSet.add(bytes32(functionSelector))) {
             revert SharedValidation.OperationFailed();
-        } 
+        }
     }
 
     /**
@@ -1123,7 +1136,7 @@ library StateAbstraction {
         bytes4 functionSelector,
         TxAction action
     ) public view returns (bool) {
-        // Use supportedFunctionsSet as source of truth for all selectors (including bytes4(0))
+        // Check if function exists in supportedFunctionsSet
         if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             return false;
         }

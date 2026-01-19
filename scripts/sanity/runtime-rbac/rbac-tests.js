@@ -26,6 +26,7 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
         console.log('   6. Unregister mint function from schema');
         console.log('   7. Revoke wallet from REGISTRY_ADMIN (switch to owner)');
         console.log('   8. Remove REGISTRY_ADMIN role');
+        console.log('   9. Register native token transfer selector with meta sign/execute permissions');
 
         await this.testStep1CreateRegistryAdminRole();
         await this.testStep2AddWalletToRegistryAdmin();
@@ -35,6 +36,7 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
         await this.testStep6UnregisterMintFunction();
         await this.testStep7RevokeWalletFromRegistryAdmin();
         await this.testStep8RemoveRegistryAdminRole();
+        await this.testNativeTransferSelectorRegistration();
     }
 
     /**
@@ -2014,6 +2016,187 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             
         } catch (error) {
             await this.failTest('Remove REGISTRY_ADMIN role', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Sanity test: owner registers native token transfer selector with
+     * SIGN_META_REQUEST_AND_APPROVE and EXECUTE_META_REQUEST_AND_APPROVE permissions.
+     *
+     * This verifies that:
+     * - createFunctionSchema accepts NATIVE_TRANSFER_SELECTOR via REGISTER_FUNCTION
+     * - RuntimeRBAC can add FunctionPermission entries for native transfer selector
+     * - The native transfer selector is fully supported in dynamic RBAC flows
+     */
+    async testNativeTransferSelectorRegistration() {
+        await this.startTest('Register native token transfer selector with meta sign/execute permissions');
+
+        try {
+            // Reserved signature for native token transfers (matches StateAbstraction.NATIVE_TRANSFER_SELECTOR)
+            const functionSignature = '__bloxchain_native_transfer__(address,uint256)';
+            const operationName = 'NATIVE_TRANSFER';
+
+            // Calculate the selector from signature (must match StateAbstraction.NATIVE_TRANSFER_SELECTOR)
+            const nativeTransferSelector = this.web3.utils.keccak256(functionSignature).slice(0, 10);
+
+            // TxAction.SIGN_META_REQUEST_AND_APPROVE (3) and EXECUTE_META_REQUEST_AND_APPROVE (6)
+            const signAction = this.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+            const executeAction = this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+
+            // Supported actions for the native transfer function schema
+            const supportedActions = [signAction, executeAction];
+
+            console.log('  📝 Registering native token transfer function schema...');
+
+            const registerAction = this.encodeRoleConfigAction(
+                this.RoleConfigActionType.REGISTER_FUNCTION,
+                {
+                    functionSignature: functionSignature,
+                    operationName: operationName,
+                    supportedActions: supportedActions
+                }
+            );
+
+            // Execute REGISTER_FUNCTION via owner (sign) and broadcaster (execute)
+            const registerReceipt = await this.executeRoleConfigBatch(
+                [registerAction],
+                this.getRoleWallet('owner'),
+                this.getRoleWalletObject('broadcaster')
+            );
+
+            console.log(`  ✅ Native transfer function registration tx hash: ${registerReceipt.transactionHash}`);
+
+            // Verify that schema for native transfer selector exists and matches expectations
+            console.log('  🔍 Verifying native transfer function schema...');
+            const nativeSchema = await this.callContractMethod(
+                this.contract.methods.getFunctionSchema(nativeTransferSelector)
+            );
+
+            if (!nativeSchema || nativeSchema.functionSelectorReturn !== nativeTransferSelector) {
+                throw new Error('Native transfer function schema was not registered correctly');
+            }
+
+            console.log(`  📋 Native transfer functionSignature: ${nativeSchema.functionSignature}`);
+            console.log(`  📋 Native transfer operationName: ${nativeSchema.operationName}`);
+
+            // DIAGNOSTIC: Check if native transfer selector is in supported functions set
+            console.log('  🔍 DIAGNOSTIC: Checking if native transfer selector is in supportedFunctionsSet...');
+            const supportedFunctions = await this.callContractMethod(
+                this.contract.methods.getSupportedFunctions()
+            );
+            console.log(`  📋 Total supported functions: ${supportedFunctions.length}`);
+            const nativeSelectorInSet = supportedFunctions.includes(nativeTransferSelector);
+            console.log(`  📋 Native transfer selector (${nativeTransferSelector}) in supportedFunctionsSet: ${nativeSelectorInSet}`);
+            if (!nativeSelectorInSet) {
+                console.log(`  ⚠️  WARNING: Native transfer selector not found in supportedFunctionsSet!`);
+                console.log(`  📋 Supported functions: ${supportedFunctions.map(f => f).join(', ')}`);
+            }
+
+            // DIAGNOSTIC: Check functionSchemaExists
+            const schemaExists = await this.callContractMethod(
+                this.contract.methods.functionSchemaExists(nativeTransferSelector)
+            );
+            console.log(`  📋 functionSchemaExists(${nativeTransferSelector}): ${schemaExists}`);
+
+            // Add FunctionPermission for native transfer selector:
+            // - OWNER_ROLE: SIGN_META_REQUEST_AND_APPROVE
+            // - BROADCASTER_ROLE: EXECUTE_META_REQUEST_AND_APPROVE
+            console.log('  📝 Adding FunctionPermission for native transfer selector to OWNER_ROLE and BROADCASTER_ROLE...');
+
+            const ownerNativePermission = this.createFunctionPermission(
+                nativeTransferSelector,
+                [signAction]
+            );
+
+            const broadcasterNativePermission = this.createFunctionPermission(
+                nativeTransferSelector,
+                [executeAction]
+            );
+
+            const addPermOwnerAction = this.encodeRoleConfigAction(
+                this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+                {
+                    roleHash: this.OWNER_ROLE_HASH,
+                    functionPermission: ownerNativePermission
+                }
+            );
+
+            const addPermBroadcasterAction = this.encodeRoleConfigAction(
+                this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+                {
+                    roleHash: this.BROADCASTER_ROLE_HASH,
+                    functionPermission: broadcasterNativePermission
+                }
+            );
+
+            const addPermReceipt = await this.executeRoleConfigBatch(
+                [addPermOwnerAction, addPermBroadcasterAction],
+                this.getRoleWallet('owner'),
+                this.getRoleWalletObject('broadcaster')
+            );
+
+            console.log(`  ✅ Native transfer permission add tx hash: ${addPermReceipt.transactionHash}`);
+
+            // Verify that OWNER_ROLE and BROADCASTER_ROLE now have expected actions for native transfer selector
+            console.log('  🔍 Verifying OWNER_ROLE permissions for native transfer selector...');
+
+            const ownerPerms = await this.callContractMethod(
+                this.contract.methods.getActiveRolePermissions(this.OWNER_ROLE_HASH)
+            );
+
+            let bitmap = 0;
+            for (const perm of ownerPerms) {
+                if (perm.functionSelector === nativeTransferSelector) {
+                    bitmap = typeof perm.grantedActionsBitmap === 'string'
+                        ? parseInt(perm.grantedActionsBitmap, 16)
+                        : parseInt(perm.grantedActionsBitmap);
+                    break;
+                }
+            }
+            const ownerHasSign = (bitmap & (1 << signAction)) !== 0;
+            const ownerHasExecute = (bitmap & (1 << executeAction)) !== 0;
+
+            if (!ownerHasSign || ownerHasExecute) {
+                throw new Error(`OWNER_ROLE native transfer selector permissions unexpected. SIGN_META_REQUEST_AND_APPROVE=${ownerHasSign}, EXECUTE_META_REQUEST_AND_APPROVE=${ownerHasExecute} (execute should be false)`);
+            }
+
+            console.log('  ✅ OWNER_ROLE has expected native transfer selector meta SIGN permission only');
+
+            console.log('  🔍 Verifying BROADCASTER_ROLE permissions for native transfer selector...');
+
+            const broadcasterPerms = await this.callContractMethod(
+                this.contract.methods.getActiveRolePermissions(this.BROADCASTER_ROLE_HASH)
+            );
+
+            bitmap = 0;
+            for (const perm of broadcasterPerms) {
+                if (perm.functionSelector === nativeTransferSelector) {
+                    bitmap = typeof perm.grantedActionsBitmap === 'string'
+                        ? parseInt(perm.grantedActionsBitmap, 16)
+                        : parseInt(perm.grantedActionsBitmap);
+                    break;
+                }
+            }
+
+            const broadcasterHasSign = (bitmap & (1 << signAction)) !== 0;
+            const broadcasterHasExecute = (bitmap & (1 << executeAction)) !== 0;
+
+            if (broadcasterHasSign || !broadcasterHasExecute) {
+                throw new Error(`BROADCASTER_ROLE native transfer selector permissions unexpected. SIGN_META_REQUEST_AND_APPROVE=${broadcasterHasSign}, EXECUTE_META_REQUEST_AND_APPROVE=${broadcasterHasExecute} (sign should be false)`);
+            }
+
+            console.log('  ✅ BROADCASTER_ROLE has expected native transfer selector meta EXECUTE permission only');
+
+            await this.passTest(
+                'Register native token transfer selector with meta sign/execute permissions',
+                'Native transfer selector schema and permissions successfully registered'
+            );
+        } catch (error) {
+            await this.failTest(
+                'Register ETH transfer zero selector with meta sign/execute permissions',
+                error
+            );
             throw error;
         }
     }

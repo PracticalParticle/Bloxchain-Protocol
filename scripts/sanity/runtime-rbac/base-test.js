@@ -67,6 +67,10 @@ class BaseRuntimeRBACTest {
         ).slice(0, 10); // First 4 bytes
         
         this.ROLE_CONFIG_BATCH_OPERATION_TYPE = this.web3.utils.keccak256('ROLE_CONFIG_BATCH');
+
+        // Precomputed role hashes (must match StateAbstraction constants)
+        this.OWNER_ROLE_HASH = this.web3.utils.keccak256('OWNER_ROLE');
+        this.BROADCASTER_ROLE_HASH = this.web3.utils.keccak256('BROADCASTER_ROLE');
         
         // RoleConfigActionType enum values
         this.RoleConfigActionType = {
@@ -103,6 +107,23 @@ class BaseRuntimeRBACTest {
             startTime: null,
             endTime: null
         };
+    }
+
+    /**
+     * Check if a function schema exists on the RuntimeRBAC/BaseStateMachine contract.
+     * @param {string} functionSelector - 4-byte selector as 0x-prefixed hex string
+     * @returns {Promise<boolean>} true if schema exists, false otherwise
+     */
+    async functionSchemaExists(functionSelector) {
+        try {
+            const exists = await this.callContractMethod(
+                this.contract.methods.functionSchemaExists(functionSelector)
+            );
+            return !!exists;
+        } catch (error) {
+            // If the call reverts, treat as non-existent
+            return false;
+        }
     }
 
     loadABI(contractName) {

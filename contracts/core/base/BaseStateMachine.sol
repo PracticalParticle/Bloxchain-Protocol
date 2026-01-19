@@ -139,14 +139,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param value The ETH value to send (0 for standard function calls)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param functionSelector The function selector for execution (0x00000000 for simple ETH transfers)
-     * @param params The encoded parameters for the function (empty for simple ETH transfers)
+     * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
      * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
+     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function _requestTransaction(
         address requester,
@@ -280,8 +280,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param value The ETH value to send
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
-     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers)
      * @param metaTxParams The meta-transaction parameters
      * @return The unsigned meta-transaction
      */

@@ -88,15 +88,15 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Requests a time-locked execution via StateAbstraction workflow
      * @param target The address of the target contract
      * @param value The ETH value to send (0 for standard function calls)
-     * @param functionSelector The function selector to execute (0x00000000 for simple ETH transfers)
-     * @param params The encoded parameters for the function (empty for simple ETH transfers)
+     * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
      * @param gasLimit The gas limit for execution
      * @param operationType The operation type hash
      * @return txId The transaction ID for the requested operation
      * @notice Creates a time-locked transaction that must be approved after the timelock period
      * @notice Requires EXECUTE_TIME_DELAY_REQUEST permission for the function selector
      * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
+     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function executeWithTimeLock(
         address target,
