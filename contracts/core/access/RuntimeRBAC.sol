@@ -40,8 +40,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         REGISTER_FUNCTION,
         UNREGISTER_FUNCTION,
         ADD_FUNCTION_TO_ROLE,
-        REMOVE_FUNCTION_FROM_ROLE,
-        LOAD_DEFINITIONS
+        REMOVE_FUNCTION_FROM_ROLE
     }
 
     /**
@@ -313,67 +312,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     functionSelector,
                     ""
                 );
-            } else if (action.actionType == RoleConfigActionType.LOAD_DEFINITIONS) {
-                (
-                    StateAbstraction.FunctionSchema[] memory functionSchemas,
-                    bytes32[] memory roleHashes,
-                    StateAbstraction.FunctionPermission[] memory functionPermissions
-                ) = abi.decode(
-                        action.data,
-                        (StateAbstraction.FunctionSchema[], bytes32[], StateAbstraction.FunctionPermission[])
-                    );
-
-                _loadDynamicDefinitions(functionSchemas, roleHashes, functionPermissions);
-
-                emit RoleConfigApplied(
-                    RoleConfigActionType.LOAD_DEFINITIONS,
-                    bytes32(0),
-                    bytes4(0),
-                    abi.encode(functionSchemas.length, roleHashes.length)
-                );
             } else {
                 revert SharedValidation.NotSupported();
             }
         }
-    }
-
-    /**
-     * @dev Loads function schemas and role permissions dynamically at runtime
-     * @param functionSchemas Array of function schema definitions to load
-     * @param roleHashes Array of role hashes to add permissions to
-     * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @notice Only non-protected function schemas can be loaded dynamically
-     */
-    function _loadDynamicDefinitions(
-        StateAbstraction.FunctionSchema[] memory functionSchemas,
-        bytes32[] memory roleHashes,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
-    ) internal {
-        // Validate array lengths match
-        SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
-        
-        // Validate that all function schemas are non-protected
-        // Note: FunctionSchema.supportedActionsBitmap must already be set (not an array)
-        // The bitmap is expected to be pre-converted from actions array if needed
-        for (uint256 i = 0; i < functionSchemas.length; i++) {
-            if (functionSchemas[i].isProtected) {
-                revert SharedValidation.CannotRemoveProtected(bytes32(functionSchemas[i].functionSelector));
-            }
-        }
-        
-        // Validate that all target roles exist and are non-protected
-        for (uint256 i = 0; i < roleHashes.length; i++) {
-            StateAbstraction.Role storage role = _getSecureState().roles[roleHashes[i]];
-            if (role.roleHash == bytes32(0)) {
-                revert SharedValidation.ResourceNotFound(roleHashes[i]);
-            }
-            if (role.isProtected) {
-                revert SharedValidation.CannotRemoveProtected(roleHashes[i]);
-            }
-        }
-        
-        // Call the base implementation
-        _loadDefinitions(functionSchemas, roleHashes, functionPermissions);
     }
 
     // ============ INTERNAL ROLE / FUNCTION HELPERS ============
