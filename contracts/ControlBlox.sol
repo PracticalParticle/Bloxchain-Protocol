@@ -45,13 +45,24 @@ contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
     }
 
     /**
-     * @dev Allows the contract to receive ETH
-     * @notice This enables direct ETH deposits from owner wallet to contract
-     * @notice The contract is not responsible for handling deposits - they are direct transfers
+     * @dev Explicit deposit function for ETH deposits
+     * @notice Users must call this function to deposit ETH to the contract
+     * @notice Direct ETH transfers to the contract will revert (no receive() function)
      */
-    receive() external payable {
-        // Accept ETH deposits - no additional logic needed
-        // Deposits are direct transfers from owner wallet, not handled by contract logic
+    event EthReceived(address indexed from, uint256 amount);
+    
+    function deposit() external payable {
+        emit EthReceived(msg.sender, msg.value);
+        // ETH is automatically added to contract balance
+    }
+    
+    /**
+     * @dev Fallback function to reject accidental calls
+     * @notice Prevents accidental ETH transfers and unknown function calls
+     * @notice Users must use deposit() function to send ETH
+     */
+    fallback() external payable {
+        revert("Use deposit() function to send ETH");
     }
 }
 
