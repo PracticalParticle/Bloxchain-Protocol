@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/GuardControllerDefinitions.sol";
@@ -22,26 +23,80 @@ import "./interface/IGuardController.sol";
  * - Meta-transaction support for delegated approvals and cancellations
  * - Payment management for native tokens and ERC20 tokens
  * - Role-based access control with action-level permissions
- * - No target authorization list - relies on target contract's access control
+ * - Target address whitelist per role per function selector (defense-in-depth security layer)
+ * 
+ * Security Features:
+ * - Target whitelist: Strict security - restricts which contract addresses can be called per role and function selector
+ * - Prevents exploitation of global function selector permissions by limiting valid target contracts
+ * - Strict enforcement: Target MUST be explicitly whitelisted for the role+function combination
+ * - If whitelist is empty (no entries), no targets are allowed - explicit deny for security
+ * - Target whitelist is ALWAYS checked - no backward compatibility fallback
  * 
  * Usage Flow:
  * 1. Deploy GuardController (or combine with RuntimeRBAC/SecureOwnable for role management)
  * 2. Function schemas should be registered via definitions or RuntimeRBAC if combined
  * 3. Create roles and assign function permissions with action bitmaps (via RuntimeRBAC if combined)
  * 4. Assign wallets to roles (via RuntimeRBAC if combined)
- * 5. Execute operations via time-lock workflows based on action permissions
- * 6. Target contract validates access (ownership/role-based)
+ * 5. Configure target whitelists per role per function selector (REQUIRED for execution)
+ * 6. Execute operations via time-lock workflows based on action permissions
+ * 7. Target whitelist is ALWAYS validated before execution - target must be in whitelist
+ * 8. Target contract validates access (ownership/role-based)
  * 
  * Workflows Available:
  * - Standard execution: function selector + params
  * - Time-locked approval: request + approve workflow
  * - Meta-transaction workflows: signed approvals/cancellations
  * 
+ * Whitelist Management:
+ * - addTargetToWhitelist: Add a target address to whitelist (OWNER_ROLE only)
+ * - removeTargetFromWhitelist: Remove a target address from whitelist (OWNER_ROLE only)
+ * - getAllowedTargets: Query whitelisted targets for a role and function selector
+ * 
  * @notice This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
+ * @notice Target whitelist is a GuardController-specific security feature, not part of StateAbstraction library
  * @custom:security-contact security@particlecrypto.com
  */
 abstract contract GuardController is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
+    // ============ TARGET WHITELIST STORAGE ============
+    
+    /**
+     * @dev Whitelist mapping: roleHash -> functionSelector -> allowed target addresses
+     * @notice Strict security: Target address MUST be in the whitelist for the role+function combination.
+     *         If whitelist is empty (length == 0), no targets are allowed - explicit deny.
+     *         Target must be explicitly added to whitelist to be allowed.
+     */
+    mapping(bytes32 => mapping(bytes4 => EnumerableSet.AddressSet)) 
+        private _roleFunctionTargetWhitelist;
+
+    // ============ EVENTS ============
+    
+    /**
+     * @dev Emitted when a target address is added to the whitelist
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address that was whitelisted
+     */
+    event TargetAddedToWhitelist(
+        bytes32 indexed roleHash,
+        bytes4 indexed functionSelector,
+        address indexed target
+    );
+    
+    /**
+     * @dev Emitted when a target address is removed from the whitelist
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address that was removed
+     */
+    event TargetRemovedFromWhitelist(
+        bytes32 indexed roleHash,
+        bytes4 indexed functionSelector,
+        address indexed target
+    );
 
     /**
      * @notice Initializer to initialize GuardController
@@ -112,6 +167,9 @@ abstract contract GuardController is BaseStateMachine {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
+        // SECURITY: Validate target whitelist
+        _validateTargetWhitelist(target, functionSelector, msg.sender);
+        
         // Request via BaseStateMachine helper (validates permissions in StateAbstraction)
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -141,6 +199,13 @@ abstract contract GuardController is BaseStateMachine {
             txRecord.params.executionSelector
         );
         
+        // SECURITY: Validate target whitelist
+        _validateTargetWhitelist(
+            txRecord.params.target,
+            txRecord.params.executionSelector,
+            msg.sender
+        );
+        
         // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _approveTransaction(txId);  
     }
@@ -159,6 +224,13 @@ abstract contract GuardController is BaseStateMachine {
         _validateNotInternalFunction(
             txRecord.params.target,
             txRecord.params.executionSelector
+        );
+        
+        // SECURITY: Validate target whitelist (for consistency, even though cancel doesn't execute)
+        _validateTargetWhitelist(
+            txRecord.params.target,
+            txRecord.params.executionSelector,
+            msg.sender
         );
         
         // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
@@ -180,6 +252,13 @@ abstract contract GuardController is BaseStateMachine {
             metaTx.txRecord.params.executionSelector
         );
         
+        // SECURITY: Validate target whitelist (validate against signer, not executor)
+        _validateTargetWhitelist(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector,
+            metaTx.params.signer
+        );
+        
         // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _approveTransactionWithMetaTx(metaTx);
     }
@@ -197,6 +276,13 @@ abstract contract GuardController is BaseStateMachine {
         _validateNotInternalFunction(
             metaTx.txRecord.params.target,
             metaTx.txRecord.params.executionSelector
+        );
+        
+        // SECURITY: Validate target whitelist (validate against signer, not executor)
+        _validateTargetWhitelist(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector,
+            metaTx.params.signer
         );
         
         // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
@@ -220,6 +306,13 @@ abstract contract GuardController is BaseStateMachine {
             metaTx.txRecord.params.executionSelector
         );
         
+        // SECURITY: Validate target whitelist (validate against signer, not executor)
+        _validateTargetWhitelist(
+            metaTx.txRecord.params.target,
+            metaTx.txRecord.params.executionSelector,
+            metaTx.params.signer
+        );
+        
         // Request and approve via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _requestAndApproveTransaction(metaTx);
     }
@@ -240,6 +333,7 @@ abstract contract GuardController is BaseStateMachine {
      * @notice Internal functions use validateInternalCallInternal and should only be called
      *         through the contract's own workflow, not via GuardController
      * @notice Blocks all calls to address(this) to prevent bypassing internal-only protection
+     * @notice Exception: NATIVE_TRANSFER_SELECTOR is allowed to target address(this) for native token deposits
      */
     function _validateNotInternalFunction(
         address target,
@@ -249,9 +343,160 @@ abstract contract GuardController is BaseStateMachine {
         // Internal functions use validateInternalCallInternal and should only be called
         // through the contract's own workflow, not via GuardController
         // Block all calls to address(this) to prevent bypassing internal-only protection
-        if (target == address(this)) {
+        // Exception: NATIVE_TRANSFER_SELECTOR is allowed for native token transfers to the contract
+        if (target == address(this) && functionSelector != StateAbstraction.NATIVE_TRANSFER_SELECTOR) {
             revert SharedValidation.InternalFunctionNotAccessible(functionSelector);
         }
+    }
+
+    /**
+     * @dev Validates that the target address is whitelisted for the caller's role and function selector
+     * @param target The target contract address to validate
+     * @param functionSelector The function selector being called
+     * @param caller The address making the call
+     * @notice Strict security: Target MUST be in the whitelist for at least one of caller's roles.
+     *         If whitelist is empty (length == 0), no targets are allowed - explicit deny.
+     *         Checks all roles the caller belongs to - target must be whitelisted in at least one.
+     */
+    function _validateTargetWhitelist(
+        address target,
+        bytes4 functionSelector,
+        address caller
+    ) internal view {
+        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        
+        // Get all supported roles
+        bytes32[] memory roles = state.getSupportedRolesList();
+        
+        // Track if we found any role with permission for this function
+        bool hasPermission = false;
+        bytes32 firstRoleWithPermission = bytes32(0);
+        
+        for (uint256 i = 0; i < roles.length; i++) {
+            bytes32 roleHash = roles[i];
+            
+            // Check if caller has this role
+            if (!state.hasRole(roleHash, caller)) {
+                continue;
+            }
+            
+            // Check if role has permission for this function selector
+            if (!state.roles[roleHash].functionSelectorsSet.contains(bytes32(functionSelector))) {
+                continue;
+            }
+            
+            // Found a role with permission - track it
+            hasPermission = true;
+            if (firstRoleWithPermission == bytes32(0)) {
+                firstRoleWithPermission = roleHash;
+            }
+            
+            // Check whitelist for this role+function combination
+            EnumerableSet.AddressSet storage whitelist = _roleFunctionTargetWhitelist[roleHash][functionSelector];
+            
+            // If target is in whitelist, validation passes
+            if (whitelist.contains(target)) {
+                return; // Target is whitelisted - allow
+            }
+        }
+        
+        // If caller has permission for this function through any role, but target is not whitelisted
+        if (hasPermission) {
+            revert SharedValidation.TargetNotWhitelisted(target, functionSelector, firstRoleWithPermission);
+        }
+        
+        // Caller doesn't have permission for this function through any role
+        // This case is already handled by StateAbstraction permission checks, but we revert here for safety
+        revert SharedValidation.TargetNotWhitelisted(target, functionSelector, bytes32(0));
+    }
+
+    // ============ TARGET WHITELIST MANAGEMENT ============
+
+    /**
+     * @dev Adds a target address to the whitelist for a role and function selector
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address to whitelist
+     * @notice Requires caller to have OWNER_ROLE permission
+     * @notice Validates that the role exists and has permission for the function selector
+     */
+    function addTargetToWhitelist(
+        bytes32 roleHash,
+        bytes4 functionSelector,
+        address target
+    ) external {
+        // Validate permissions - only owner can modify whitelists
+        if (!_getSecureState().hasRole(StateAbstraction.OWNER_ROLE, msg.sender)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+        
+        SharedValidation.validateNotZeroAddress(target);
+        StateAbstraction._validateRoleExists(_getSecureState(), roleHash);
+        
+        // Verify role has permission for this function selector
+        if (!_getSecureState().roles[roleHash].functionSelectorsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+        
+        EnumerableSet.AddressSet storage whitelist = _roleFunctionTargetWhitelist[roleHash][functionSelector];
+        
+        if (!whitelist.add(target)) {
+            revert SharedValidation.ItemAlreadyExists(target);
+        }
+        
+        emit TargetAddedToWhitelist(roleHash, functionSelector, target);
+    }
+
+    /**
+     * @dev Removes a target address from the whitelist
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address to remove
+     * @notice Requires caller to have OWNER_ROLE permission
+     */
+    function removeTargetFromWhitelist(
+        bytes32 roleHash,
+        bytes4 functionSelector,
+        address target
+    ) external {
+        // Validate permissions - only owner can modify whitelists
+        if (!_getSecureState().hasRole(StateAbstraction.OWNER_ROLE, msg.sender)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+        
+        EnumerableSet.AddressSet storage whitelist = _roleFunctionTargetWhitelist[roleHash][functionSelector];
+        
+        if (whitelist.remove(target)) {
+            emit TargetRemovedFromWhitelist(roleHash, functionSelector, target);
+        } else {
+            revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Gets all whitelisted targets for a role and function selector
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @return Array of whitelisted target addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
+     */
+    function getAllowedTargets(
+        bytes32 roleHash,
+        bytes4 functionSelector
+    ) external view returns (address[] memory) {
+        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        StateAbstraction._validateAnyRole(state); // Privacy: require any role to query
+        StateAbstraction._validateRoleExists(state, roleHash);
+        
+        EnumerableSet.AddressSet storage whitelist = _roleFunctionTargetWhitelist[roleHash][functionSelector];
+        uint256 length = whitelist.length();
+        address[] memory targets = new address[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            targets[i] = whitelist.at(i);
+        }
+        
+        return targets;
     }
 }
 
