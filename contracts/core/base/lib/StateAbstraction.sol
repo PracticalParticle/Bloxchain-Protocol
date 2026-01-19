@@ -1308,7 +1308,6 @@ library StateAbstraction {
         
         // Meta-transaction parameters validation
         SharedValidation.validateChainId(metaTx.params.chainId);
-        SharedValidation.validateHandlerContractMatch(metaTx.params.handlerContract, metaTx.txRecord.params.target);
         SharedValidation.validateMetaTxDeadline(metaTx.params.deadline);
         
         // Gas price validation (if applicable)

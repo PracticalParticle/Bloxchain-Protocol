@@ -66,7 +66,6 @@ library SharedValidation {
     error InvalidSignature(bytes signature);
     error InvalidNonce(uint256 providedNonce, uint256 expectedNonce);
     error ChainIdMismatch(uint256 providedChainId, uint256 expectedChainId);
-    error HandlerContractMismatch(address handlerContract, address target);
     error InvalidHandlerSelector(bytes4 selector);
     error InvalidSValue(bytes32 s);
     error InvalidVValue(uint8 v);
@@ -323,15 +322,6 @@ library SharedValidation {
      */
     function validateChainId(uint256 chainId) internal view {
         if (chainId != block.chainid) revert ChainIdMismatch(chainId, block.chainid);
-    }
-    
-    /**
-     * @dev Validates that handler contract matches target
-     * @param handlerContract The handler contract address
-     * @param target The target contract address
-     */
-    function validateHandlerContractMatch(address handlerContract, address target) internal pure {
-        if (handlerContract != target) revert HandlerContractMismatch(handlerContract, target);
     }
     
     /**
