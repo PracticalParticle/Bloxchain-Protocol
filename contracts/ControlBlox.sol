@@ -43,6 +43,16 @@ contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
     function supportsInterface(bytes4 interfaceId) public view virtual override(GuardController, RuntimeRBAC, SecureOwnable) returns (bool) {
         return GuardController.supportsInterface(interfaceId) || RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
     }
+
+    /**
+     * @dev Allows the contract to receive ETH
+     * @notice This enables direct ETH deposits from owner wallet to contract
+     * @notice The contract is not responsible for handling deposits - they are direct transfers
+     */
+    receive() external payable {
+        // Accept ETH deposits - no additional logic needed
+        // Deposits are direct transfers from owner wallet, not handled by contract logic
+    }
 }
 
 
