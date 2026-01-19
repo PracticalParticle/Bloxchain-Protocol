@@ -405,6 +405,9 @@ class BaseGuardControllerTest {
                         } else if (errorSelector === restrictedBroadcaster) {
                             const decoded = this.web3.eth.abi.decodeParameters(['address', 'address'], '0x' + errorData.slice(10));
                             errorMessage = `RestrictedBroadcaster: caller=${decoded[0]}, expected broadcaster=${decoded[1]}`;
+                        } else if (errorSelector === targetNotWhitelisted) {
+                            const decoded = this.web3.eth.abi.decodeParameters(['address', 'bytes4', 'bytes32'], '0x' + errorData.slice(10));
+                            errorMessage = `TargetNotWhitelisted: target=${decoded[0]}, functionSelector=${decoded[1]}, roleHash=${decoded[2]}`;
                         } else if (errorSelector === conflictingMetaTx) {
                             const decoded = this.web3.eth.abi.decodeParameter('bytes4', '0x' + errorData.slice(10));
                             errorMessage = `ConflictingMetaTxPermissions: ${decoded}`;
@@ -701,11 +704,21 @@ class BaseGuardControllerTest {
     async createEthTransferMetaTx(target, value, signerAddress) {
         try {
             // Create meta-transaction parameters
-            // handlerContract should be the contract itself (ControlBlox)
-            // handlerSelector should be requestAndApproveExecution
+            // CRITICAL: For native transfers, handlerContract validation requires handlerContract == target
+            // - handlerContract: Must be a contract with requestAndApproveExecution (ControlBlox)
+            // - target: Where ETH will be sent (recipient wallet)
+            // This creates a conflict: we can't have handlerContract (contract) == target (wallet)
+            //
+            // The validation in StateAbstraction.sol line 1311 requires:
+            //   handlerContract == target
+            // This prevents native transfers to external addresses via meta-tx
+            //
+            // WORKAROUND: Set both to the recipient address
+            // This will fail because recipient doesn't have requestAndApproveExecution
+            // But let's try it to see the exact error
             const metaParams = await this.callContractMethod(
                 this.contract.methods.createMetaTxParams(
-                    this.contractAddress, // handlerContract is the contract itself
+                    target, // handlerContract = target (required by validation, but recipient isn't a contract!)
                     this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, // handlerSelector for requestAndApproveExecution
                     this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                     3600, // 1 hour default
@@ -718,7 +731,7 @@ class BaseGuardControllerTest {
             const unsignedMetaTx = await this.callContractMethod(
                 this.contract.methods.generateUnsignedMetaTransactionForNew(
                     signerAddress,
-                    target,
+                    target, // target = recipient (where ETH will be sent)
                     value,
                     100000, // gasLimit for native token transfer
                     this.NATIVE_TRANSFER_OPERATION_TYPE,
@@ -744,15 +757,37 @@ class BaseGuardControllerTest {
 
     /**
      * Execute ETH transfer via requestAndApproveExecution
-     * @param {string} target - Target address (contract or wallet)
+     * @param {string} recipient - Recipient address (wallet that will receive ETH)
      * @param {string} value - ETH value in wei
      * @param {string} signerPrivateKey - Private key of the signer (owner)
      * @param {Object} broadcasterWallet - Wallet object for broadcaster
      * @returns {Promise<Object>} Transaction receipt
      */
-    async executeEthTransfer(target, value, signerPrivateKey, broadcasterWallet) {
+    async executeEthTransfer(recipient, value, signerPrivateKey, broadcasterWallet) {
         try {
             const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
+            
+            // For native transfers via meta-tx, there's a validation issue:
+            // - handlerContract must equal target (StateAbstraction validation)
+            // - handlerContract should be ControlBlox (has requestAndApproveExecution)
+            // - target should be recipient (where ETH is sent)
+            // This creates a conflict: handlerContract (contract) != target (recipient wallet)
+            //
+            // SOLUTION: Use target = contract, handlerContract = contract
+            // GuardController allows NATIVE_TRANSFER_SELECTOR to target address(this)
+            // The contract will receive ETH, then we need another mechanism to forward it
+            // But actually, NATIVE_TRANSFER_SELECTOR sends ETH to target, so if target=contract,
+            // ETH goes to contract (not recipient). This doesn't solve the problem.
+            //
+            // ACTUAL ISSUE: The handlerContract == target validation prevents native transfers
+            // to external addresses via meta-tx. This might be a design limitation.
+            //
+            // WORKAROUND: Set target = recipient, handlerContract = recipient
+            // This will fail when calling requestAndApproveExecution on recipient (not a contract)
+            // So this approach won't work.
+            //
+            // Let me check if there's a special case or if we need to use a different method
+            const target = recipient; // Target is where ETH will be sent
             
             // Create unsigned meta-transaction
             const unsignedMetaTx = await this.createEthTransferMetaTx(target, value, signerAddress);
@@ -765,19 +800,50 @@ class BaseGuardControllerTest {
             );
             
             // Execute via broadcaster using requestAndApproveExecution
-            // For native transfers, we need to send ETH with the transaction
-            // The value should match the value in the meta-transaction
-            const txValue = signedMetaTx.txRecord.params.value || '0';
-            const receipt = await this.sendTransactionWithValue(
+            // NOTE: Do NOT send ETH with requestAndApproveExecution - the value is in the meta-transaction record
+            // The contract will use the value from record.params.value when executing the transaction
+            const receipt = await this.sendTransaction(
                 this.contract.methods.requestAndApproveExecution(signedMetaTx),
-                broadcasterWallet,
-                txValue
+                broadcasterWallet
             );
             
             return receipt;
             
         } catch (error) {
             console.error('❌ Failed to execute ETH transfer:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Add target to whitelist for a role and function selector
+     * @param {string} roleHash - Role hash (hex string)
+     * @param {string} functionSelector - Function selector (hex string)
+     * @param {string} target - Target address to whitelist
+     * @param {Object} wallet - Wallet object to use for transaction (must be owner)
+     * @returns {Promise<Object>} Transaction receipt
+     */
+    async addTargetToWhitelist(roleHash, functionSelector, target, wallet) {
+        try {
+            console.log(`  📝 Adding target ${target} to whitelist for role ${roleHash} and function ${functionSelector}...`);
+            // Encode the function call manually since ABI might not be updated
+            const functionSignature = this.web3.utils.keccak256('addTargetToWhitelist(bytes32,bytes4,address)').slice(0, 10);
+            const encodedParams = this.web3.eth.abi.encodeParameters(
+                ['bytes32', 'bytes4', 'address'],
+                [roleHash, functionSelector, target]
+            );
+            const data = functionSignature + encodedParams.slice(2); // Remove '0x' from encodedParams
+            
+            const receipt = await this.web3.eth.sendTransaction({
+                from: wallet.address,
+                to: this.contractAddress,
+                data: data,
+                gas: 200000
+            });
+            console.log(`  ✅ Target added to whitelist successfully`);
+            return receipt;
+        } catch (error) {
+            console.error(`  ❌ Failed to add target to whitelist: ${error.message}`);
             throw error;
         }
     }

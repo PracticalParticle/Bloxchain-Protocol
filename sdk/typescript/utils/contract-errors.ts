@@ -211,11 +211,6 @@ export interface ChainIdMismatchError extends ContractError {
   params: { providedChainId: string; expectedChainId: string }
 }
 
-export interface HandlerContractMismatchError extends ContractError {
-  name: 'HandlerContractMismatch'
-  params: { handlerContract: string; target: string }
-}
-
 export interface InvalidHandlerSelectorError extends ContractError {
   name: 'InvalidHandlerSelector'
   params: { selector: string }
@@ -412,7 +407,6 @@ export type GuardianContractError =
   | InvalidSignatureError
   | InvalidNonceError
   | ChainIdMismatchError
-  | HandlerContractMismatchError
   | InvalidHandlerSelectorError
   | InvalidSValueError
   | InvalidVValueError

@@ -120,22 +120,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "handlerContract",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      }
-    ],
-    "name": "HandlerContractMismatch",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "index",
         "type": "uint256"

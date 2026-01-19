@@ -65,12 +65,22 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 broadcasterWallet
             );
             
-            this.assertTest(receipt.status === true || receipt.status === 1, 'Function registration transaction succeeded');
+            // Validate transaction succeeded
+            const expectedTxStatus = true;
+            const actualTxStatus = receipt.status === true || receipt.status === 1;
+            this.assertTest(
+                actualTxStatus === expectedTxStatus,
+                `Function registration transaction succeeded (expected: ${expectedTxStatus}, actual: ${actualTxStatus})`
+            );
             
             // Verify function was registered
             console.log('  🔍 Verifying function registration...');
             const functionExists = await this.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
-            this.assertTest(functionExists, 'Function schema exists');
+            const expectedFunctionExists = true;
+            this.assertTest(
+                functionExists === expectedFunctionExists,
+                `Function schema exists (expected: ${expectedFunctionExists}, actual: ${functionExists})`
+            );
             
             // Get function schema details
             const functionSchema = await this.callContractMethod(
@@ -79,9 +89,12 @@ class GuardControllerTests extends BaseGuardControllerTest {
             
             console.log(`  📋 Function schema result: ${JSON.stringify(functionSchema, null, 2)}`);
             
+            // Expected: Operation name should be NATIVE_TRANSFER
+            const expectedOperationName = 'NATIVE_TRANSFER';
+            const actualOperationName = functionSchema.operationName;
             this.assertTest(
-                functionSchema.operationName === 'NATIVE_TRANSFER',
-                `Operation name is NATIVE_TRANSFER (got: ${functionSchema.operationName})`
+                actualOperationName === expectedOperationName,
+                `Operation name matches (expected: ${expectedOperationName}, actual: ${actualOperationName})`
             );
             
             // getFunctionSchema returns supportedActions as an array, not a bitmap
@@ -100,21 +113,28 @@ class GuardControllerTests extends BaseGuardControllerTest {
             console.log(`  📋 SIGN_META_REQUEST_AND_APPROVE bit (3): ${(actualBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0 ? '✅' : '❌'}`);
             console.log(`  📋 EXECUTE_META_REQUEST_AND_APPROVE bit (6): ${(actualBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0 ? '✅' : '❌'}`);
             
+            // Expected: Bitmap should match expected value
+            this.assertTest(
+                actualBitmap === expectedBitmap,
+                `Supported actions bitmap matches (expected: ${expectedBitmap}, actual: ${actualBitmap})`
+            );
+            
             // Verify both actions are in the array
             const hasSign = supportedActionsArray.includes(this.TxAction.SIGN_META_REQUEST_AND_APPROVE) ||
                            supportedActionsArray.includes(this.TxAction.SIGN_META_REQUEST_AND_APPROVE.toString());
             const hasExecute = supportedActionsArray.includes(this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE) ||
                               supportedActionsArray.includes(this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE.toString());
             
-            // Note: The function schema should support both SIGN and EXECUTE actions
-            // This allows both OWNER (signer) and BROADCASTER (executor) to use this function
+            // Expected: Function should support both SIGN and EXECUTE actions
+            const expectedHasSign = true;
+            const expectedHasExecute = true;
             this.assertTest(
-                hasSign,
-                `Function supports SIGN_META_REQUEST_AND_APPROVE (actions: ${JSON.stringify(supportedActionsArray)})`
+                hasSign === expectedHasSign,
+                `Function supports SIGN_META_REQUEST_AND_APPROVE (expected: ${expectedHasSign}, actual: ${hasSign}, actions: ${JSON.stringify(supportedActionsArray)})`
             );
             this.assertTest(
-                hasExecute,
-                `Function supports EXECUTE_META_REQUEST_AND_APPROVE (actions: ${JSON.stringify(supportedActionsArray)})`
+                hasExecute === expectedHasExecute,
+                `Function supports EXECUTE_META_REQUEST_AND_APPROVE (expected: ${expectedHasExecute}, actual: ${hasExecute}, actions: ${JSON.stringify(supportedActionsArray)})`
             );
             
             console.log('  ✅ Function registered successfully');
@@ -147,8 +167,16 @@ class GuardControllerTests extends BaseGuardControllerTest {
             // Check if roles exist
             const ownerRoleExists = await this.roleExists(this.ownerRoleHash);
             const broadcasterRoleExists = await this.roleExists(broadcasterRoleHash);
-            this.assertTest(ownerRoleExists, 'OWNER role exists');
-            this.assertTest(broadcasterRoleExists, 'BROADCASTER role exists');
+            const expectedOwnerRoleExists = true;
+            const expectedBroadcasterRoleExists = true;
+            this.assertTest(
+                ownerRoleExists === expectedOwnerRoleExists,
+                `OWNER role exists (expected: ${expectedOwnerRoleExists}, actual: ${ownerRoleExists})`
+            );
+            this.assertTest(
+                broadcasterRoleExists === expectedBroadcasterRoleExists,
+                `BROADCASTER role exists (expected: ${expectedBroadcasterRoleExists}, actual: ${broadcasterRoleExists})`
+            );
             
             // Get owner and broadcaster wallets
             const ownerPrivateKey = this.getRoleWallet('owner');
@@ -193,7 +221,13 @@ class GuardControllerTests extends BaseGuardControllerTest {
                     ownerPrivateKey,
                     broadcasterWallet
                 );
-                this.assertTest(ownerReceipt.status === true || ownerReceipt.status === 1, 'Add OWNER permission transaction succeeded');
+                // Validate transaction succeeded
+                const expectedOwnerTxStatus = true;
+                const actualOwnerTxStatus = ownerReceipt.status === true || ownerReceipt.status === 1;
+                this.assertTest(
+                    actualOwnerTxStatus === expectedOwnerTxStatus,
+                    `Add OWNER permission transaction succeeded (expected: ${expectedOwnerTxStatus}, actual: ${actualOwnerTxStatus})`
+                );
                 console.log('  ✅ OWNER permission added successfully');
             } else {
                 console.log('  ✅ OWNER already has SIGN_META_REQUEST_AND_APPROVE permission');
@@ -209,7 +243,13 @@ class GuardControllerTests extends BaseGuardControllerTest {
                     ownerPrivateKey,
                     broadcasterWallet
                 );
-                this.assertTest(broadcasterReceipt.status === true || broadcasterReceipt.status === 1, 'Add BROADCASTER permission transaction succeeded');
+                // Validate transaction succeeded
+                const expectedBroadcasterTxStatus = true;
+                const actualBroadcasterTxStatus = broadcasterReceipt.status === true || broadcasterReceipt.status === 1;
+                this.assertTest(
+                    actualBroadcasterTxStatus === expectedBroadcasterTxStatus,
+                    `Add BROADCASTER permission transaction succeeded (expected: ${expectedBroadcasterTxStatus}, actual: ${actualBroadcasterTxStatus})`
+                );
                 console.log('  ✅ BROADCASTER permission added successfully');
             } else {
                 console.log('  ✅ BROADCASTER already has EXECUTE_META_REQUEST_AND_APPROVE permission');
@@ -234,20 +274,39 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 perm.functionSelector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
             );
             
-            this.assertTest(finalOwnerPermission !== undefined, 'NATIVE_TRANSFER function permission exists in OWNER role');
-            this.assertTest(finalBroadcasterPermission !== undefined, 'NATIVE_TRANSFER function permission exists in BROADCASTER role');
+            // Expected: Permissions should exist
+            const expectedOwnerPermissionExists = true;
+            const expectedBroadcasterPermissionExists = true;
+            const actualOwnerPermissionExists = finalOwnerPermission !== undefined;
+            const actualBroadcasterPermissionExists = finalBroadcasterPermission !== undefined;
+            
+            this.assertTest(
+                actualOwnerPermissionExists === expectedOwnerPermissionExists,
+                `NATIVE_TRANSFER function permission exists in OWNER role (expected: ${expectedOwnerPermissionExists}, actual: ${actualOwnerPermissionExists})`
+            );
+            this.assertTest(
+                actualBroadcasterPermissionExists === expectedBroadcasterPermissionExists,
+                `NATIVE_TRANSFER function permission exists in BROADCASTER role (expected: ${expectedBroadcasterPermissionExists}, actual: ${actualBroadcasterPermissionExists})`
+            );
             
             // Verify permission bitmaps
             const ownerBitmap = parseInt(finalOwnerPermission.grantedActionsBitmap);
             const broadcasterBitmap = parseInt(finalBroadcasterPermission.grantedActionsBitmap);
             
+            // Expected: OWNER should have SIGN_META_REQUEST_AND_APPROVE permission (bit 3)
+            const expectedOwnerHasSign = true;
+            const actualOwnerHasSign = (ownerBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
             this.assertTest(
-                (ownerBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0,
-                'OWNER role has SIGN_META_REQUEST_AND_APPROVE permission'
+                actualOwnerHasSign === expectedOwnerHasSign,
+                `OWNER role has SIGN_META_REQUEST_AND_APPROVE permission (expected: ${expectedOwnerHasSign}, actual: ${actualOwnerHasSign}, bitmap: ${ownerBitmap})`
             );
+            
+            // Expected: BROADCASTER should have EXECUTE_META_REQUEST_AND_APPROVE permission (bit 6)
+            const expectedBroadcasterHasExecute = true;
+            const actualBroadcasterHasExecute = (broadcasterBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
             this.assertTest(
-                (broadcasterBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0,
-                'BROADCASTER role has EXECUTE_META_REQUEST_AND_APPROVE permission'
+                actualBroadcasterHasExecute === expectedBroadcasterHasExecute,
+                `BROADCASTER role has EXECUTE_META_REQUEST_AND_APPROVE permission (expected: ${expectedBroadcasterHasExecute}, actual: ${actualBroadcasterHasExecute}, bitmap: ${broadcasterBitmap})`
             );
             
             console.log('  ✅ Function permissions added successfully');
@@ -267,8 +326,8 @@ class GuardControllerTests extends BaseGuardControllerTest {
         
         try {
             console.log('📋 Step 3: Deposit ETH from owner wallet to contract');
-            console.log('   Note: Deposits are direct ETH transfers from owner to contract');
-            console.log('   The contract is not responsible for handling deposits');
+            console.log('   Note: Deposits use the explicit deposit() function');
+            console.log('   Direct ETH transfers to the contract will revert (no receive() function)');
             
             // Get initial balances
             const initialContractBalance = await this.getContractBalance();
@@ -282,20 +341,40 @@ class GuardControllerTests extends BaseGuardControllerTest {
             const depositAmount = this.web3.utils.toWei('1', 'ether');
             console.log(`  💰 Deposit Amount: ${this.web3.utils.fromWei(depositAmount, 'ether')} ETH`);
             
-            // Send ETH directly from owner to contract (regular transaction, not via GuardController)
-            console.log('  📝 Sending ETH directly from owner wallet to contract...');
+            // Call deposit() function to deposit ETH
+            console.log('  📝 Calling deposit() function to deposit ETH...');
             
-            // For a simple ETH transfer, we send ETH directly without calling any contract function
-            // Use web3 to send a simple ETH transfer
-            // The contract must have a receive() function to accept ETH
-            const transferReceipt = await this.web3.eth.sendTransaction({
-                from: ownerWallet.address,
-                to: this.contractAddress,
-                value: depositAmount,
-                gas: 21000
-            });
+            // Use the explicit deposit() function instead of direct transfer
+            // Since the ABI might not be updated yet, we'll encode the function call manually
+            const depositFunctionSignature = this.web3.utils.keccak256('deposit()').slice(0, 10); // First 4 bytes
+            let transferReceipt;
+            try {
+                // Encode the function call and send with value
+                transferReceipt = await this.web3.eth.sendTransaction({
+                    from: ownerWallet.address,
+                    to: this.contractAddress,
+                    value: depositAmount,
+                    data: depositFunctionSignature,
+                    gas: 100000 // More gas for function call
+                });
+            } catch (error) {
+                // Transaction failed - this is a test failure
+                // Expected: Transaction should succeed
+                // Actual: Transaction failed
+                const expectedTxStatus = 'success';
+                const actualTxStatus = 'failed';
+                const errorMessage = `ETH deposit transaction failed (expected: ${expectedTxStatus}, actual: ${actualTxStatus}). Error: ${error.message}. The deposit() function call failed.`;
+                console.log(`  ❌ ${errorMessage}`);
+                throw new Error(errorMessage);
+            }
             
-            this.assertTest(transferReceipt.status === true || transferReceipt.status === 1, 'ETH deposit transaction succeeded');
+            // Validate transaction succeeded
+            const expectedTxStatus = true;
+            const actualTxStatus = transferReceipt.status === true || transferReceipt.status === 1;
+            this.assertTest(
+                actualTxStatus === expectedTxStatus,
+                `ETH deposit transaction succeeded (expected: ${expectedTxStatus}, actual: ${actualTxStatus})`
+            );
             
             // Verify balances after deposit
             const finalContractBalance = await this.getContractBalance();
@@ -311,16 +390,18 @@ class GuardControllerTests extends BaseGuardControllerTest {
             console.log(`  📊 Contract Balance Increase: ${this.web3.utils.fromWei(contractBalanceIncrease.toString(), 'ether')} ETH`);
             console.log(`  📊 Owner Balance Decrease: ${this.web3.utils.fromWei(ownerBalanceDecrease.toString(), 'ether')} ETH`);
             
-            // Verify contract balance increased by deposit amount (or close to it, accounting for gas)
+            // Expected: Contract balance should increase by exactly the deposit amount
+            const expectedContractBalanceIncrease = BigInt(depositAmount);
             this.assertTest(
-                contractBalanceIncrease >= BigInt(depositAmount),
-                `Contract balance increased by at least deposit amount (${this.web3.utils.fromWei(contractBalanceIncrease.toString(), 'ether')} ETH >= ${this.web3.utils.fromWei(depositAmount, 'ether')} ETH)`
+                contractBalanceIncrease === expectedContractBalanceIncrease,
+                `Contract balance increased by deposit amount (expected: ${this.web3.utils.fromWei(expectedContractBalanceIncrease.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(contractBalanceIncrease.toString(), 'ether')} ETH)`
             );
             
-            // Verify owner balance decreased (should be deposit amount + gas)
+            // Expected: Owner balance should decrease by deposit amount + gas (at least deposit amount)
+            const expectedMinOwnerBalanceDecrease = BigInt(depositAmount);
             this.assertTest(
-                ownerBalanceDecrease >= BigInt(depositAmount),
-                `Owner balance decreased by at least deposit amount (${this.web3.utils.fromWei(ownerBalanceDecrease.toString(), 'ether')} ETH >= ${this.web3.utils.fromWei(depositAmount, 'ether')} ETH)`
+                ownerBalanceDecrease >= expectedMinOwnerBalanceDecrease,
+                `Owner balance decreased by at least deposit amount (expected: >= ${this.web3.utils.fromWei(expectedMinOwnerBalanceDecrease.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(ownerBalanceDecrease.toString(), 'ether')} ETH)`
             );
             
             console.log('  ✅ ETH deposit successful');
@@ -351,11 +432,34 @@ class GuardControllerTests extends BaseGuardControllerTest {
             const withdrawAmount = this.web3.utils.toWei('0.5', 'ether');
             console.log(`  💰 Withdraw Amount: ${this.web3.utils.fromWei(withdrawAmount, 'ether')} ETH`);
             
-            // Verify contract has enough balance
+            // Expected: Contract must have sufficient balance for withdrawal
+            // This is a prerequisite - if deposit test passed, contract should have balance
+            const expectedMinContractBalance = BigInt(withdrawAmount);
+            const actualContractBalance = BigInt(initialContractBalance);
             this.assertTest(
-                BigInt(initialContractBalance) >= BigInt(withdrawAmount),
-                `Contract has sufficient balance for withdrawal (${this.web3.utils.fromWei(initialContractBalance, 'ether')} ETH >= ${this.web3.utils.fromWei(withdrawAmount, 'ether')} ETH)`
+                actualContractBalance >= expectedMinContractBalance,
+                `Contract has sufficient balance for withdrawal (expected: >= ${this.web3.utils.fromWei(expectedMinContractBalance.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(actualContractBalance.toString(), 'ether')} ETH). Deposit test must succeed first.`
             );
+            
+            // Before withdrawing, we need to whitelist the owner wallet address for NATIVE_TRANSFER_SELECTOR
+            // This is required by GuardController's target whitelist security feature
+            console.log('  📝 Whitelisting owner wallet for NATIVE_TRANSFER_SELECTOR...');
+            const ownerWalletForWhitelist = this.getRoleWalletObject('owner');
+            try {
+                await this.addTargetToWhitelist(
+                    this.ownerRoleHash,
+                    this.NATIVE_TRANSFER_SELECTOR,
+                    ownerWallet.address,
+                    ownerWalletForWhitelist
+                );
+            } catch (error) {
+                // If target is already whitelisted, that's fine - continue
+                if (error.message.includes('ItemAlreadyExists')) {
+                    console.log('  ℹ️  Target already whitelisted, continuing...');
+                } else {
+                    throw error;
+                }
+            }
             
             // Get owner and broadcaster wallets
             const ownerPrivateKey = this.getRoleWallet('owner');
@@ -369,7 +473,13 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 broadcasterWallet
             );
             
-            this.assertTest(receipt.status === true || receipt.status === 1, 'ETH withdrawal transaction succeeded');
+            // Validate transaction succeeded
+            const expectedTxStatus = true;
+            const actualTxStatus = receipt.status === true || receipt.status === 1;
+            this.assertTest(
+                actualTxStatus === expectedTxStatus,
+                `ETH withdrawal transaction succeeded (expected: ${expectedTxStatus}, actual: ${actualTxStatus})`
+            );
             
             // Verify balances after withdrawal
             const finalContractBalance = await this.getContractBalance();
@@ -385,16 +495,18 @@ class GuardControllerTests extends BaseGuardControllerTest {
             console.log(`  📊 Contract Balance Decrease: ${this.web3.utils.fromWei(contractBalanceDecrease.toString(), 'ether')} ETH`);
             console.log(`  📊 Owner Balance Increase: ${this.web3.utils.fromWei(ownerBalanceIncrease.toString(), 'ether')} ETH`);
             
-            // Verify contract balance decreased by withdraw amount
+            // Expected: Contract balance should decrease by exactly the withdraw amount
+            const expectedContractBalanceDecrease = BigInt(withdrawAmount);
             this.assertTest(
-                contractBalanceDecrease >= BigInt(withdrawAmount),
-                `Contract balance decreased by at least withdraw amount (${this.web3.utils.fromWei(contractBalanceDecrease.toString(), 'ether')} ETH >= ${this.web3.utils.fromWei(withdrawAmount, 'ether')} ETH)`
+                contractBalanceDecrease === expectedContractBalanceDecrease,
+                `Contract balance decreased by withdraw amount (expected: ${this.web3.utils.fromWei(expectedContractBalanceDecrease.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(contractBalanceDecrease.toString(), 'ether')} ETH)`
             );
             
-            // Verify owner balance increased by withdraw amount (or close to it, accounting for gas)
+            // Expected: Owner balance should increase by withdraw amount (minus gas, so allow small tolerance)
+            const expectedMinOwnerBalanceIncrease = BigInt(withdrawAmount) - BigInt(this.web3.utils.toWei('0.01', 'ether')); // Allow 0.01 ETH tolerance for gas
             this.assertTest(
-                ownerBalanceIncrease >= BigInt(withdrawAmount) - BigInt(this.web3.utils.toWei('0.01', 'ether')), // Allow small difference for gas
-                `Owner balance increased by approximately withdraw amount (${this.web3.utils.fromWei(ownerBalanceIncrease.toString(), 'ether')} ETH ≈ ${this.web3.utils.fromWei(withdrawAmount, 'ether')} ETH)`
+                ownerBalanceIncrease >= expectedMinOwnerBalanceIncrease,
+                `Owner balance increased by at least withdraw amount minus gas (expected: >= ${this.web3.utils.fromWei(expectedMinOwnerBalanceIncrease.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(ownerBalanceIncrease.toString(), 'ether')} ETH)`
             );
             
             console.log('  ✅ ETH withdrawal successful');
