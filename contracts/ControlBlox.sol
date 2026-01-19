@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./core/execution/GuardController.sol";
 import "./core/access/RuntimeRBAC.sol";
 import "./core/security/SecureOwnable.sol";
+import "./utils/SharedValidation.sol";
 
 /**
  * @title ControlBlox
@@ -62,7 +63,11 @@ contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
      * @notice Users must use deposit() function to send ETH
      */
     fallback() external payable {
-        revert("Use deposit() function to send ETH");
+        revert SharedValidation.NotSupported();
+    }
+
+    receive() external payable {
+        revert SharedValidation.NotSupported();
     }
 }
 
