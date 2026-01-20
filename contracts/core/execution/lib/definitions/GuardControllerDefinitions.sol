@@ -205,16 +205,16 @@ library GuardControllerDefinitions {
      * 
      * Role Permissions:
      * - OWNER_ROLE: Can sign/request time-delay and meta-transaction operations (8 permissions)
-     * - BROADCASTER_ROLE: Can execute meta-transaction operations (4 permissions)
+     * - BROADCASTER_ROLE: Can execute meta-transaction operations (5 permissions)
      * - RECOVERY_ROLE: Can execute time-delay operations for recovery scenarios (3 permissions)
      * 
-     * Total: 15 role permission entries matching StateAbstractionDefinitions pattern
+     * Total: 16 role permission entries matching StateAbstractionDefinitions pattern
      */
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
         StateAbstraction.FunctionPermission[] memory functionPermissions;
-        roleHashes = new bytes32[](15);
-        functionPermissions = new StateAbstraction.FunctionPermission[](15);
+        roleHashes = new bytes32[](16);
+        functionPermissions = new StateAbstraction.FunctionPermission[](16);
         
         // Owner role permissions (8 entries)
         StateAbstraction.TxAction[] memory ownerTimeLockRequestActions = new StateAbstraction.TxAction[](1);
@@ -291,7 +291,7 @@ library GuardControllerDefinitions {
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions)
         });
         
-        // Broadcaster role permissions (4 entries)
+        // Broadcaster role permissions (5 entries)
         StateAbstraction.TxAction[] memory broadcasterMetaTxRequestApproveActions = new StateAbstraction.TxAction[](1);
         broadcasterMetaTxRequestApproveActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
@@ -361,8 +361,8 @@ library GuardControllerDefinitions {
         });
         
         // Recovery: Cancel TimeLock Execution
-        roleHashes[15 - 1] = StateAbstraction.RECOVERY_ROLE;
-        functionPermissions[15 - 1] = StateAbstraction.FunctionPermission({
+        roleHashes[15] = StateAbstraction.RECOVERY_ROLE;
+        functionPermissions[15] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockCancelActions)
         });
