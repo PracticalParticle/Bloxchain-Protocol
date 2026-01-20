@@ -103,6 +103,15 @@ class BaseGuardControllerTest {
             'requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
+        // GuardController whitelist update constants
+        this.CONTROLLER_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_OPERATION');
+        this.UPDATE_TARGET_WHITELIST_META_SELECTOR = this.web3.utils.keccak256(
+            'updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+        ).slice(0, 10);
+        this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR = this.web3.utils.keccak256(
+            'executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)'
+        ).slice(0, 10);
+        
         // Test results
         this.testResults = {
             totalTests: 0,
@@ -389,6 +398,9 @@ class BaseGuardControllerTest {
                         const restrictedBroadcaster = this.web3.utils.keccak256('RestrictedBroadcaster(address,address)').slice(0, 10);
                         const conflictingMetaTx = this.web3.utils.keccak256('ConflictingMetaTxPermissions(bytes4)').slice(0, 10);
                         const notSupported = this.web3.utils.keccak256('NotSupported()').slice(0, 10);
+                        const targetNotWhitelisted = this.web3.utils.keccak256('TargetNotWhitelisted(address,bytes4,bytes32)').slice(0, 10);
+                        const itemAlreadyExists = this.web3.utils.keccak256('ItemAlreadyExists(address)').slice(0, 10);
+                        const itemNotFound = this.web3.utils.keccak256('ItemNotFound(address)').slice(0, 10);
                         
                         if (errorSelector === resourceNotFound) {
                             const decoded = this.web3.eth.abi.decodeParameter('bytes32', '0x' + errorData.slice(10));
@@ -408,6 +420,12 @@ class BaseGuardControllerTest {
                         } else if (errorSelector === targetNotWhitelisted) {
                             const decoded = this.web3.eth.abi.decodeParameters(['address', 'bytes4', 'bytes32'], '0x' + errorData.slice(10));
                             errorMessage = `TargetNotWhitelisted: target=${decoded[0]}, functionSelector=${decoded[1]}, roleHash=${decoded[2]}`;
+                        } else if (errorSelector === itemAlreadyExists) {
+                            const decoded = this.web3.eth.abi.decodeParameter('address', '0x' + errorData.slice(10));
+                            errorMessage = `ItemAlreadyExists: ${decoded}`;
+                        } else if (errorSelector === itemNotFound) {
+                            const decoded = this.web3.eth.abi.decodeParameter('address', '0x' + errorData.slice(10));
+                            errorMessage = `ItemNotFound: ${decoded}`;
                         } else if (errorSelector === conflictingMetaTx) {
                             const decoded = this.web3.eth.abi.decodeParameter('bytes4', '0x' + errorData.slice(10));
                             errorMessage = `ConflictingMetaTxPermissions: ${decoded}`;
@@ -816,30 +834,103 @@ class BaseGuardControllerTest {
     }
 
     /**
-     * Add target to whitelist for a role and function selector
+     * Create a meta-transaction for whitelist update
+     * @param {string} roleHash - Role hash (hex string)
+     * @param {string} functionSelector - Function selector (hex string)
+     * @param {string} target - Target address to add or remove
+     * @param {boolean} isAdd - True to add, false to remove
+     * @param {string} signerAddress - Address that will sign the meta-transaction
+     * @returns {Promise<Object>} Unsigned meta-transaction ready for signing
+     */
+    async createWhitelistUpdateMetaTx(roleHash, functionSelector, target, isAdd, signerAddress) {
+        try {
+            // Get execution params from contract
+            const executionParams = await this.callContractMethod(
+                this.contract.methods.updateTargetWhitelistExecutionParams(
+                    roleHash,
+                    functionSelector,
+                    target,
+                    isAdd
+                )
+            );
+            
+            // Create meta-transaction parameters
+            const metaParams = await this.callContractMethod(
+                this.contract.methods.createMetaTxParams(
+                    this.contractAddress, // handlerContract
+                    this.UPDATE_TARGET_WHITELIST_META_SELECTOR, // handlerSelector
+                    this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+                    3600, // 1 hour default
+                    0, // maxGasPrice
+                    signerAddress
+                )
+            );
+            
+            // Generate unsigned meta-transaction for new operation
+            const unsignedMetaTx = await this.callContractMethod(
+                this.contract.methods.generateUnsignedMetaTransactionForNew(
+                    signerAddress,
+                    this.contractAddress, // target (contract itself)
+                    0, // value
+                    200000, // gasLimit
+                    this.CONTROLLER_OPERATION_TYPE,
+                    this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+                    executionParams,
+                    metaParams
+                )
+            );
+            
+            return {
+                txRecord: unsignedMetaTx.txRecord,
+                params: unsignedMetaTx.params,
+                message: unsignedMetaTx.message,
+                signature: '0x',
+                data: unsignedMetaTx.data
+            };
+            
+        } catch (error) {
+            console.error('❌ Failed to create whitelist update meta-transaction:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Add target to whitelist for a role and function selector using meta-transaction
      * @param {string} roleHash - Role hash (hex string)
      * @param {string} functionSelector - Function selector (hex string)
      * @param {string} target - Target address to whitelist
-     * @param {Object} wallet - Wallet object to use for transaction (must be owner)
+     * @param {string} signerPrivateKey - Private key of the signer (owner)
+     * @param {Object} broadcasterWallet - Wallet object for broadcaster
      * @returns {Promise<Object>} Transaction receipt
      */
-    async addTargetToWhitelist(roleHash, functionSelector, target, wallet) {
+    async addTargetToWhitelist(roleHash, functionSelector, target, signerPrivateKey, broadcasterWallet) {
         try {
             console.log(`  📝 Adding target ${target} to whitelist for role ${roleHash} and function ${functionSelector}...`);
-            // Encode the function call manually since ABI might not be updated
-            const functionSignature = this.web3.utils.keccak256('addTargetToWhitelist(bytes32,bytes4,address)').slice(0, 10);
-            const encodedParams = this.web3.eth.abi.encodeParameters(
-                ['bytes32', 'bytes4', 'address'],
-                [roleHash, functionSelector, target]
-            );
-            const data = functionSignature + encodedParams.slice(2); // Remove '0x' from encodedParams
             
-            const receipt = await this.web3.eth.sendTransaction({
-                from: wallet.address,
-                to: this.contractAddress,
-                data: data,
-                gas: 200000
-            });
+            const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
+            
+            // Create unsigned meta-transaction
+            const unsignedMetaTx = await this.createWhitelistUpdateMetaTx(
+                roleHash,
+                functionSelector,
+                target,
+                true, // isAdd = true
+                signerAddress
+            );
+            
+            // Sign meta-transaction
+            const signedMetaTx = await this.eip712Signer.signMetaTransaction(
+                unsignedMetaTx,
+                signerPrivateKey,
+                this.contract
+            );
+            
+            // Execute meta-transaction via broadcaster
+            const receipt = await this.sendTransaction(
+                this.contract.methods.updateTargetWhitelistRequestAndApprove(signedMetaTx),
+                broadcasterWallet
+            );
+            
             console.log(`  ✅ Target added to whitelist successfully`);
             return receipt;
         } catch (error) {

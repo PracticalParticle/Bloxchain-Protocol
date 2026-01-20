@@ -444,26 +444,27 @@ class GuardControllerTests extends BaseGuardControllerTest {
             // Before withdrawing, we need to whitelist the owner wallet address for NATIVE_TRANSFER_SELECTOR
             // This is required by GuardController's target whitelist security feature
             console.log('  📝 Whitelisting owner wallet for NATIVE_TRANSFER_SELECTOR...');
-            const ownerWalletForWhitelist = this.getRoleWalletObject('owner');
+            
+            // Get owner and broadcaster wallets
+            const ownerPrivateKey = this.getRoleWallet('owner');
+            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
+            
             try {
                 await this.addTargetToWhitelist(
                     this.ownerRoleHash,
                     this.NATIVE_TRANSFER_SELECTOR,
                     ownerWallet.address,
-                    ownerWalletForWhitelist
+                    ownerPrivateKey,
+                    broadcasterWallet
                 );
             } catch (error) {
                 // If target is already whitelisted, that's fine - continue
-                if (error.message.includes('ItemAlreadyExists')) {
+                if (error.message.includes('ItemAlreadyExists') || error.message.includes('already whitelisted')) {
                     console.log('  ℹ️  Target already whitelisted, continuing...');
                 } else {
                     throw error;
                 }
             }
-            
-            // Get owner and broadcaster wallets
-            const ownerPrivateKey = this.getRoleWallet('owner');
-            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
             
             console.log('  📝 Executing ETH transfer via requestAndApproveExecution...');
             const receipt = await this.executeEthTransfer(

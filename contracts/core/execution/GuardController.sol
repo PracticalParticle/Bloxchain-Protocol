@@ -413,23 +413,18 @@ abstract contract GuardController is BaseStateMachine {
     // ============ TARGET WHITELIST MANAGEMENT ============
 
     /**
-     * @dev Adds a target address to the whitelist for a role and function selector
+     * @dev Internal helper to add a target address to the whitelist for a role and function selector
      * @param roleHash The role hash
      * @param functionSelector The function selector
      * @param target The target address to whitelist
-     * @notice Requires caller to have OWNER_ROLE permission
      * @notice Validates that the role exists and has permission for the function selector
+     * @notice Access control is enforced by StateAbstraction workflows on the caller of the execution function
      */
-    function addTargetToWhitelist(
+    function _addTargetToWhitelist(
         bytes32 roleHash,
         bytes4 functionSelector,
         address target
-    ) external {
-        // Validate permissions - only owner can modify whitelists
-        if (!_getSecureState().hasRole(StateAbstraction.OWNER_ROLE, msg.sender)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        
+    ) internal {
         SharedValidation.validateNotZeroAddress(target);
         StateAbstraction._validateRoleExists(_getSecureState(), roleHash);
         
@@ -446,30 +441,89 @@ abstract contract GuardController is BaseStateMachine {
         
         emit TargetAddedToWhitelist(roleHash, functionSelector, target);
     }
-
+    
     /**
-     * @dev Removes a target address from the whitelist
+     * @dev Internal helper to remove a target address from the whitelist
      * @param roleHash The role hash
      * @param functionSelector The function selector
      * @param target The target address to remove
-     * @notice Requires caller to have OWNER_ROLE permission
+     * @notice Access control is enforced by StateAbstraction workflows on the caller of the execution function
      */
-    function removeTargetFromWhitelist(
+    function _removeTargetFromWhitelist(
         bytes32 roleHash,
         bytes4 functionSelector,
         address target
-    ) external {
-        // Validate permissions - only owner can modify whitelists
-        if (!_getSecureState().hasRole(StateAbstraction.OWNER_ROLE, msg.sender)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        
+    ) internal {
         EnumerableSet.AddressSet storage whitelist = _roleFunctionTargetWhitelist[roleHash][functionSelector];
         
         if (whitelist.remove(target)) {
             emit TargetRemovedFromWhitelist(roleHash, functionSelector, target);
         } else {
             revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Creates execution params for updating the target whitelist for a role and function selector
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address to add or remove
+     * @param isAdd True to add the target, false to remove
+     * @return The execution params to be used in a meta-transaction
+     * @notice Validation focuses on basic input checks; full validation occurs during execution
+     */
+    function updateTargetWhitelistExecutionParams(
+        bytes32 roleHash,
+        bytes4 functionSelector,
+        address target,
+        bool isAdd
+    ) public view returns (bytes memory) {
+        SharedValidation.validateNotZeroAddress(target);
+        StateAbstraction._validateRoleExists(_getSecureState(), roleHash);
+
+        // If adding, validate that the role has permission for this function selector
+        if (isAdd && !_getSecureState().roles[roleHash].functionSelectorsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        return abi.encode(roleHash, functionSelector, target, isAdd);
+    }
+
+    /**
+     * @dev Requests and approves a whitelist update using a meta-transaction
+     * @param metaTx The meta-transaction describing the whitelist update
+     * @return The transaction record
+     * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
+     */
+    function updateTargetWhitelistRequestAndApprove(
+        StateAbstraction.MetaTransaction memory metaTx
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
+        return _requestAndApproveTransaction(metaTx);
+    }
+
+    /**
+     * @dev External execution entrypoint for whitelist updates.
+     *      Can only be called by the contract itself during protected StateAbstraction workflows.
+     * @param roleHash The role hash
+     * @param functionSelector The function selector
+     * @param target The target address to add or remove
+     * @param isAdd True to add the target, false to remove
+     */
+    function executeUpdateTargetWhitelist(
+        bytes32 roleHash,
+        bytes4 functionSelector,
+        address target,
+        bool isAdd
+    ) external {
+        SharedValidation.validateInternalCall(address(this));
+
+        if (isAdd) {
+            _addTargetToWhitelist(roleHash, functionSelector, target);
+        } else {
+            _removeTargetFromWhitelist(roleHash, functionSelector, target);
         }
     }
 
