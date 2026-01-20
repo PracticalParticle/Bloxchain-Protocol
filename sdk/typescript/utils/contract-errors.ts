@@ -529,22 +529,22 @@ export const ERROR_SIGNATURES: Record<string, {
   },
 
   // Resource and item management errors
-  '0x8da5cb5f': { // ItemAlreadyExists(address) - placeholder signature
+  '0x9da5cb5f': { // ItemAlreadyExists(address) - unique placeholder signature
     name: 'ItemAlreadyExists',
     params: ['item'],
     userMessage: (params) => `ItemAlreadyExists: Item ${params.item} already exists`
   },
-  '0x8da5cb60': { // ItemNotFound(address) - placeholder signature
+  '0x9da5cb60': { // ItemNotFound(address) - unique placeholder signature
     name: 'ItemNotFound',
     params: ['item'],
     userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
   },
-  '0x8da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - placeholder signature
+  '0x9da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - unique placeholder signature
     name: 'TargetNotWhitelisted',
     params: ['target', 'functionSelector', 'roleHash'],
     userMessage: (params) => `TargetNotWhitelisted: Target ${params.target} is not whitelisted for function selector ${params.functionSelector} and role ${params.roleHash}`
   },
-  '0x8da5cb62': { // ResourceNotFound(bytes32) - placeholder signature
+  '0x9da5cb62': { // ResourceNotFound(bytes32) - unique placeholder signature
     name: 'ResourceNotFound',
     params: ['resource'],
     userMessage: (params) => `ResourceNotFound: Resource ${params.resource} not found`

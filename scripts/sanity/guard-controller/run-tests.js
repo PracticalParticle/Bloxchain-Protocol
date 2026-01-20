@@ -64,10 +64,11 @@ class GuardControllerTestRunner {
         console.log(`\n🚀 Running ${suiteName} test suite...`);
         console.log('='.repeat(60));
         
+        let timeoutId;
         try {
             // Add timeout protection (10 minutes per test suite)
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => {
+                timeoutId = setTimeout(() => {
                     reject(new Error(`Test suite '${suiteName}' timed out after 10 minutes`));
                 }, 10 * 60 * 1000);
             });
@@ -93,6 +94,11 @@ class GuardControllerTestRunner {
             console.log(`💥 ${suiteName} test suite ERROR: ${error.message}`);
             this.results.failedSuites++;
             return false;
+        } finally {
+            // Clear timeout to prevent dangling timers
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 

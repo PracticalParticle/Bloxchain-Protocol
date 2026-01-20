@@ -9,8 +9,7 @@ import {
   MetaTransaction, 
   TxRecord, 
   MetaTxParams, 
-  TxParams,
-  PaymentDetails
+  TxParams
 } from '../../interfaces/lib.index';
 import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../../../abi/BaseStateMachine.abi.json';

@@ -127,14 +127,9 @@ export const ComponentDetection = {
 
   /**
    * Check if contract supports ISecureOwnable interface
-   * Note: Since ISecureOwnable is currently empty, this will always return false
-   * Use hasSecureOwnableFeatures() instead to check for SecureOwnable functionality
    */
   async isSecureOwnable(contract: { supportsInterface: (interfaceId: Hex) => Promise<boolean> }): Promise<boolean> {
-    // Since ISecureOwnable is empty, we can't use interface detection
-    // Instead, we check for SecureOwnable-specific functions
-    // This is a workaround until ISecureOwnable has actual functions
-    return false; // Empty interface always returns false
+    return supportsInterface(contract, INTERFACE_IDS.ISecureOwnable);
   },
 
   /**
