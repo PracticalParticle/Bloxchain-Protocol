@@ -131,6 +131,29 @@ export interface OnlyCallableByContractError extends ContractError {
 }
 
 /**
+ * Resource and item management errors
+ */
+export interface ItemAlreadyExistsError extends ContractError {
+  name: 'ItemAlreadyExists'
+  params: { item: string }
+}
+
+export interface ItemNotFoundError extends ContractError {
+  name: 'ItemNotFound'
+  params: { item: string }
+}
+
+export interface TargetNotWhitelistedError extends ContractError {
+  name: 'TargetNotWhitelisted'
+  params: { target: string; functionSelector: string; roleHash: string }
+}
+
+export interface ResourceNotFoundError extends ContractError {
+  name: 'ResourceNotFound'
+  params: { resource: string }
+}
+
+/**
  * Transaction and operation errors
  */
 export interface OperationNotSupportedError extends ContractError {
@@ -392,6 +415,10 @@ export type GuardianContractError =
   | RestrictedBroadcasterError
   | SignerNotAuthorizedError
   | OnlyCallableByContractError
+  | ItemAlreadyExistsError
+  | ItemNotFoundError
+  | TargetNotWhitelistedError
+  | ResourceNotFoundError
   | OperationNotSupportedError
   | OperationTypeExistsError
   | InvalidOperationTypeError
@@ -499,6 +526,28 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'SignerNotAuthorized',
     params: ['signer'],
     userMessage: (params) => `SignerNotAuthorized: Signer ${params.signer} is not authorized`
+  },
+
+  // Resource and item management errors
+  '0x8da5cb5f': { // ItemAlreadyExists(address) - placeholder signature
+    name: 'ItemAlreadyExists',
+    params: ['item'],
+    userMessage: (params) => `ItemAlreadyExists: Item ${params.item} already exists`
+  },
+  '0x8da5cb60': { // ItemNotFound(address) - placeholder signature
+    name: 'ItemNotFound',
+    params: ['item'],
+    userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
+  },
+  '0x8da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - placeholder signature
+    name: 'TargetNotWhitelisted',
+    params: ['target', 'functionSelector', 'roleHash'],
+    userMessage: (params) => `TargetNotWhitelisted: Target ${params.target} is not whitelisted for function selector ${params.functionSelector} and role ${params.roleHash}`
+  },
+  '0x8da5cb62': { // ResourceNotFound(bytes32) - placeholder signature
+    name: 'ResourceNotFound',
+    params: ['resource'],
+    userMessage: (params) => `ResourceNotFound: Resource ${params.resource} not found`
   },
 
   // Operation errors
@@ -748,6 +797,14 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return 'TransactionNotFound: Transaction not found'
     case 'InsufficientBalance':
       return 'InsufficientBalance: Insufficient balance for this operation'
+    case 'ItemAlreadyExists':
+      return `ItemAlreadyExists: Item ${error.params.item} already exists`
+    case 'ItemNotFound':
+      return `ItemNotFound: Item ${error.params.item} not found`
+    case 'TargetNotWhitelisted':
+      return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
+    case 'ResourceNotFound':
+      return `ResourceNotFound: Resource ${error.params.resource} not found`
     case 'PatternMatch':
       // For pattern matches, return a more descriptive message
       if (error.params.pattern === 'OWNER_ROLE') {
