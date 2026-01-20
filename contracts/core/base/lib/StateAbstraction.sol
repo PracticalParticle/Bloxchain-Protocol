@@ -1103,10 +1103,23 @@ library StateAbstraction {
             }
         }
 
+        // Store operation type before deletion (needed for cleanup check)
+        bytes32 operationType = self.functions[functionSelector].operationType;
+
+        // Clear the function schema data
+        // Remove the function schema from the supported functions set (O(1) operation)
+        // MUST remove BEFORE checking if operation type is still in use, otherwise
+        // _getFunctionsByOperationType will still find this function selector
+        delete self.functions[functionSelector];
+        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
         // Check if the operation type is still in use by other functions.
         // Use _getFunctionsByOperationType to avoid _validateAnyRole when called from
         // contract-internal paths (e.g. _unregisterFunction -> removeFunctionSchema).
-        bytes32 operationType = self.functions[functionSelector].operationType;
+        // Now that the function has been removed, this will correctly detect if the
+        // operation type is no longer in use.
         bytes4[] memory functionsUsingOperationType = _getFunctionsByOperationType(self, operationType);
         if (functionsUsingOperationType.length == 0) {
             // Remove the operation type from supported operation types set if no longer in use
@@ -1114,13 +1127,6 @@ library StateAbstraction {
                 // This should never happen, but defensive check for safety
                 revert SharedValidation.OperationFailed();
             } 
-        }
-
-        // Clear the function schema data
-        // Remove the function schema from the supported functions set (O(1) operation)
-        delete self.functions[functionSelector];
-        if (!self.supportedFunctionsSet.remove(bytes32(functionSelector))) {
-            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
     }
 
