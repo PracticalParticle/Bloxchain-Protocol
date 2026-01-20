@@ -14,6 +14,7 @@
     "test:sanity:secure-ownable": "node scripts/sanity/secure-ownable/run-tests.js --all",
     "test:sanity:simple-vault": "node scripts/sanity/simple-vault/run-tests.js --all",
     "test:sanity:runtime-rbac": "node scripts/sanity/runtime-rbac/run-tests.js --all",
+    "test:sanity:guard-controller": "node scripts/sanity/guard-controller/run-tests.js --all",
     "test:e2e": "npm run deploy:truffle && npm run test:sanity:secure-ownable",
     "test:sanity-sdk:secure-ownable": "ts-node --transpile-only --project scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/secure-ownable/run-tests.ts",
     "test:sanity-sdk:workflow": "ts-node --transpile-only --project scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/workflow/run-tests.ts",
