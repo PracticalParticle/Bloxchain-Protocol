@@ -74,9 +74,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      */
     function mintWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
         public 
-        onlyBroadcaster 
+        nonReentrant
         returns (StateAbstraction.TxRecord memory) 
     {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
     }
 
@@ -87,9 +88,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      */
     function burnWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
         public 
-        onlyBroadcaster 
+        nonReentrant
         returns (StateAbstraction.TxRecord memory) 
     {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
     }
 

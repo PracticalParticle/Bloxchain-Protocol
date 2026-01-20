@@ -88,7 +88,8 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of ETH to withdraw
      */
-    function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function withdrawEthRequest(address to, uint256 amount) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getEthBalance()) revert SharedValidation.NotSupported();
 
@@ -110,7 +111,8 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of tokens to withdraw
      */
-    function withdrawTokenRequest(address token, address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function withdrawTokenRequest(address token, address to, uint256 amount) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(token);
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getTokenBalance(token)) revert SharedValidation.NotSupported();
@@ -131,7 +133,8 @@ contract SimpleVault is SecureOwnable {
      * @notice Approve a withdrawal after the time delay has passed
      * @param txId The ID of the withdrawal transaction to approve
      */
-    function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalAfterDelay(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         StateAbstraction.TxRecord memory updated = _approveTransaction(txId);
         return updated;
     }
@@ -140,7 +143,8 @@ contract SimpleVault is SecureOwnable {
      * @notice Approve withdrawal with meta transaction
      * @param metaTx Meta transaction data
      */
-    function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _approveTransactionWithMetaTx(metaTx);
     }
 
@@ -148,7 +152,8 @@ contract SimpleVault is SecureOwnable {
      * @notice Cancel a pending withdrawal request
      * @param txId The ID of the withdrawal transaction to cancel
      */
-    function cancelWithdrawal(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function cancelWithdrawal(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         StateAbstraction.TxRecord memory updated = _cancelTransaction(txId);
         return updated;
     }

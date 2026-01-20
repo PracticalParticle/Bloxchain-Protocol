@@ -7,187 +7,102 @@ import "../../base/lib/StateAbstraction.sol";
  * @title IRuntimeRBAC
  * @dev Interface for Runtime Role-Based Access Control system
  * 
- * This interface defines the standard functions for managing runtime roles
- * in a secure multi-phase operation environment. It provides:
+ * This interface defines the functions for managing runtime roles through batch operations.
+ * All role management operations are performed via the batch interface for atomic execution.
  * 
- * - Runtime role creation and management
- * - Role-based permission assignment
- * - Wallet assignment to roles
- * - Role hierarchy and inheritance
+ * Key Features:
+ * - Batch-based role configuration (atomic operations)
+ * - Runtime function schema registration
  * - Integration with StateAbstraction for secure operations
+ * - Query functions for role and permission inspection
  * 
- * The interface supports both protected and non-protected roles,
- * allowing for flexible access control management.
+ * Note: This contract inherits from BaseStateMachine which provides additional query functions
+ * such as getRole(), hasRole(), getActiveRolePermissions(), getSupportedRoles(), etc.
  */
 interface IRuntimeRBAC {
-    // Events
-    event RoleCreated(bytes32 indexed roleHash, string roleName, uint256 maxWallets, bool isProtected);
-    event RoleUpdated(bytes32 indexed roleHash, string newRoleName, uint256 newMaxWallets);
-    event WalletAddedToRole(bytes32 indexed roleHash, address indexed wallet);
-    event WalletRemovedFromRole(bytes32 indexed roleHash, address indexed wallet);
-    event RoleDeleted(bytes32 indexed roleHash);
-    event FunctionPermissionAdded(bytes32 indexed roleHash, bytes4 indexed functionSelector, StateAbstraction.TxAction action);
-    event FunctionPermissionRemoved(bytes32 indexed roleHash, bytes4 indexed functionSelector);
-
-    // Role Management Functions
     /**
-     * @dev Creates a new runtime role (always non-protected)
-     * @param roleName The name of the role to create
-     * @param maxWallets Maximum number of wallets allowed for this role
-     * @return The hash of the created role
+     * @dev Action types for batched RBAC configuration
      */
-    function createRole(
-        string memory roleName,
-        uint256 maxWallets
-    ) external returns (bytes32);
+    enum RoleConfigActionType {
+        CREATE_ROLE,
+        REMOVE_ROLE,
+        ADD_WALLET,
+        REVOKE_WALLET,
+        REGISTER_FUNCTION,
+        UNREGISTER_FUNCTION,
+        ADD_FUNCTION_TO_ROLE,
+        REMOVE_FUNCTION_FROM_ROLE,
+        LOAD_DEFINITIONS
+    }
 
     /**
-     * @dev Updates an existing role's properties
-     * @param roleHash The hash of the role to update
-     * @param newRoleName The new name for the role
-     * @param newMaxWallets The new maximum number of wallets
+     * @dev Encodes a single RBAC configuration action in a batch
      */
-    function updateRole(
-        bytes32 roleHash,
-        string memory newRoleName,
-        uint256 newMaxWallets
-    ) external;
+    struct RoleConfigAction {
+        RoleConfigActionType actionType;
+        bytes data;
+    }
 
     /**
-     * @dev Deletes a non-protected role
-     * @param roleHash The hash of the role to delete
+     * @dev Unified event for all RBAC configuration changes applied via batches
+     * @param actionType The type of configuration action
+     * @param roleHash Affected role hash (if applicable, otherwise 0)
+     * @param functionSelector Affected function selector (if applicable, otherwise 0)
+     * @param data Optional action-specific payload
      */
-    function deleteRole(bytes32 roleHash) external;
+    event RoleConfigApplied(
+        RoleConfigActionType indexed actionType,
+        bytes32 indexed roleHash,
+        bytes4 indexed functionSelector,
+        bytes data
+    );
 
-    // Wallet Management Functions
-    /**
-     * @dev Adds a wallet to a role
-     * @param roleHash The hash of the role
-     * @param wallet The wallet address to add
-     */
-    function addWalletToRole(bytes32 roleHash, address wallet) external;
-
-    /**
-     * @dev Removes a wallet from a role
-     * @param roleHash The hash of the role
-     * @param wallet The wallet address to remove
-     */
-    function revokeWallet(bytes32 roleHash, address wallet) external;
+    // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Replaces a wallet in a role with a new wallet
-     * @param roleHash The hash of the role
-     * @param newWallet The new wallet address
-     * @param oldWallet The old wallet address to replace
+     * @dev Creates execution params for a RBAC configuration batch
+     * @param actions Encoded role configuration actions
+     * @return The execution params for StateAbstraction
      */
-    function replaceWalletInRole(
-        bytes32 roleHash,
-        address newWallet,
-        address oldWallet
-    ) external;
-
-    // Permission Management Functions
-    /**
-     * @dev Adds a function permission to a role
-     * @param roleHash The hash of the role
-     * @param functionSelector The function selector to grant permission for
-     * @param action The action type to grant
-     */
-    function addFunctionPermissionToRole(
-        bytes32 roleHash,
-        bytes4 functionSelector,
-        StateAbstraction.TxAction action
-    ) external;
+    function roleConfigBatchExecutionParams(
+        RoleConfigAction[] memory actions
+    ) external pure returns (bytes memory);
 
     /**
-     * @dev Removes a function permission from a role
-     * @param roleHash The hash of the role
-     * @param functionSelector The function selector to remove permission for
+     * @dev Requests and approves a RBAC configuration batch using a meta-transaction
+     * @param metaTx The meta-transaction
+     * @return The transaction record
      */
-    function removeFunctionPermissionFromRole(
-        bytes32 roleHash,
-        bytes4 functionSelector
-    ) external;
+    function roleConfigBatchRequestAndApprove(
+        StateAbstraction.MetaTransaction memory metaTx
+    ) external returns (StateAbstraction.TxRecord memory);
 
-    // Query Functions
-    /**
-     * @dev Gets all runtime roles (non-protected roles)
-     * @return Array of role hashes
-     */
-    function getRuntimeRoles() external view returns (bytes32[] memory);
+    // ============ QUERY FUNCTIONS ============
 
     /**
-     * @dev Gets all roles (including protected roles)
-     * @return Array of role hashes
+     * @dev Gets function schema information
+     * @param functionSelector The function selector to get information for
+     * @return functionSignature The function signature or name
+     * @return functionSelectorReturn The function selector
+     * @return operationType The operation type
+     * @return operationName The operation name
+     * @return supportedActions The supported actions
+     * @return isProtected Whether the function schema is protected
      */
-    function getAllRoles() external view returns (bytes32[] memory);
-
-    /**
-     * @dev Gets role information
-     * @param roleHash The hash of the role
-     * @return roleName The name of the role
-     * @return maxWallets The maximum number of wallets allowed
-     * @return isProtected Whether the role is protected
-     * @return authorizedWallets Array of authorized wallet addresses
-     */
-    function getRoleInfo(bytes32 roleHash) external view returns (
-        string memory roleName,
-        uint256 maxWallets,
-        bool isProtected,
-        address[] memory authorizedWallets
+    function getFunctionSchema(bytes4 functionSelector) external view returns (
+        string memory functionSignature,
+        bytes4 functionSelectorReturn,
+        bytes32 operationType,
+        string memory operationName,
+        StateAbstraction.TxAction[] memory supportedActions,
+        bool isProtected
     );
 
     /**
-     * @dev Checks if a wallet has a specific role
-     * @param roleHash The hash of the role
-     * @param wallet The wallet address to check
-     * @return True if the wallet has the role, false otherwise
-     */
-    function hasRole(bytes32 roleHash, address wallet) external view returns (bool);
-
-    /**
-     * @dev Gets all wallets in a role
-     * @param roleHash The hash of the role
-     * @return Array of wallet addresses
+     * @dev Gets all authorized wallets for a role
+     * @param roleHash The role hash to get wallets for
+     * @return Array of authorized wallet addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
      */
     function getWalletsInRole(bytes32 roleHash) external view returns (address[] memory);
-
-    /**
-     * @dev Gets all function permissions for a role
-     * @param roleHash The hash of the role
-     * @return functionSelectors Array of function selectors
-     * @return actions Array of granted actions
-     */
-    function getRolePermissions(bytes32 roleHash) external view returns (
-        bytes4[] memory functionSelectors,
-        StateAbstraction.TxAction[] memory actions
-    );
-
-    /**
-     * @dev Checks if a role exists
-     * @param roleHash The hash of the role
-     * @return True if the role exists, false otherwise
-     */
-    function roleExists(bytes32 roleHash) external view returns (bool);
-
-    /**
-     * @dev Checks if a role is protected
-     * @param roleHash The hash of the role
-     * @return True if the role is protected, false otherwise
-     */
-    function isRoleProtected(bytes32 roleHash) external view returns (bool);
-
-    /**
-     * @dev Gets the number of wallets in a role
-     * @param roleHash The hash of the role
-     * @return The number of wallets currently assigned to the role
-     */
-    function getRoleWalletCount(bytes32 roleHash) external view returns (uint256);
-
-    /**
-     * @dev Checks if a role has reached its maximum wallet limit
-     * @param roleHash The hash of the role
-     * @return True if the role is at capacity, false otherwise
-     */
-    function isRoleAtCapacity(bytes32 roleHash) external view returns (bool);
 }

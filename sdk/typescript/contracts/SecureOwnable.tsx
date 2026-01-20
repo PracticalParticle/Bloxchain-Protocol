@@ -5,6 +5,7 @@ import { ISecureOwnable } from '../interfaces/core.security.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { TxAction } from '../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
+import { INTERFACE_IDS } from '../utils/interface-ids';
 
 /**
  * @title SecureOwnable
@@ -112,6 +113,16 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
     return this.executeWriteContract('updateTimeLockRequestAndApprove', [metaTx], options);
   }
 
+  // ============ INTERFACE SUPPORT ============
+
+  /**
+   * @dev Check if this contract supports ISecureOwnable interface
+   * @return Promise<boolean> indicating if ISecureOwnable is supported
+   */
+  async supportsSecureOwnableInterface(): Promise<boolean> {
+    return this.supportsInterface(INTERFACE_IDS.ISecureOwnable);
+  }
+
   // Note: The following methods are available through BaseStateMachine inheritance:
   // - owner()
   // - getBroadcaster()
@@ -125,7 +136,7 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   // - getSignerNonce()
   // - getActiveRolePermissions()
   // - initialized()
-  // - supportsInterface()
+  // - supportsInterface(interfaceId)
   // - functionSchemaExists()
 }
 

@@ -141,7 +141,7 @@ const functionSchemas = await definitions.getFunctionSchemas();
 
 console.log('Function schemas:');
 functionSchemas.forEach(schema => {
-  console.log(`- ${schema.functionName}: ${schema.functionSelector}`);
+  console.log(`- ${schema.functionSignature}: ${schema.functionSelector}`);
   console.log(`  Parameters: ${schema.parameters.join(', ')}`);
   console.log(`  Returns: ${schema.returnTypes.join(', ')}`);
 });
@@ -229,7 +229,7 @@ Returns all function schema definitions from the contract.
 **Example:**
 ```typescript
 const schemas = await definitions.getFunctionSchemas();
-// Returns: [{ functionName: 'transferOwnership', functionSelector: '0xabcd...', ... }, ...]
+// Returns: [{ functionSignature: 'transferOwnership', functionSelector: '0xabcd...', ... }, ...]
 ```
 
 #### **getRolePermissions()**
@@ -336,7 +336,7 @@ Gets function schema by its selector.
 **Example:**
 ```typescript
 const schema = await definitions.getFunctionSchemaBySelector('0xabcd...');
-// Returns: { functionName: 'transferOwnership', ... } or undefined
+// Returns: { functionSignature: 'transferOwnership', ... } or undefined
 ```
 
 #### **hasRolePermission()**
@@ -701,7 +701,7 @@ async function auditPermissions() {
   if (functionsWithoutPermissions.length > 0) {
     console.log('\n⚠️  Functions without permissions:');
     functionsWithoutPermissions.forEach(func => {
-      console.log(`- ${func.functionName} (${func.functionSelector})`);
+      console.log(`- ${func.functionSignature} (${func.functionSelector})`);
     });
   }
   

@@ -7,6 +7,7 @@ import "../base/lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
+import "./interface/IRuntimeRBAC.sol";
 
 /**
  * @title RuntimeRBAC
@@ -38,7 +39,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         REVOKE_WALLET,
         REGISTER_FUNCTION,
         UNREGISTER_FUNCTION,
-        LOAD_DEFINITIONS
+        ADD_FUNCTION_TO_ROLE,
+        REMOVE_FUNCTION_FROM_ROLE
     }
 
     /**
@@ -93,6 +95,16 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         );
     }
 
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Adds IRuntimeRBAC interface ID for component detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IRuntimeRBAC).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 
     /**
@@ -114,7 +126,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      */
     function roleConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
-    ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
         return _requestAndApproveTransaction(metaTx);
     }
 
@@ -128,19 +141,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     // Essential Query Functions Only
-    /**
-     * @dev Checks if a role exists
-     * @param roleHash The hash of the role
-     * @return True if the role exists, false otherwise
-     */
-    function roleExists(bytes32 roleHash) external view returns (bool) {
-        return _getSecureState().getRole(roleHash).roleHash != bytes32(0);
-    }
 
     /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
-     * @return functionName The name of the function
+     * @return functionSignature The function signature or name
      * @return functionSelectorReturn The function selector
      * @return operationType The operation type
      * @return operationName The operation name
@@ -148,7 +153,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @return isProtected Whether the function schema is protected
      */
     function getFunctionSchema(bytes4 functionSelector) external view returns (
-        string memory functionName,
+        string memory functionSignature,
         bytes4 functionSelectorReturn,
         bytes32 operationType,
         string memory operationName,
@@ -161,10 +166,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
         
         // Convert bitmap to array
-        supportedActions = _convertBitmapToActions(schema.supportedActionsBitmap);
+        supportedActions = StateAbstraction.convertBitmapToActions(schema.supportedActionsBitmap);
         
         return (
-            schema.functionName,
+            schema.functionSignature,
             schema.functionSelector,
             schema.operationType,
             schema.operationName,
@@ -173,48 +178,31 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         );
     }
 
-    // ============ HELPER FUNCTIONS ============
-
     /**
-     * @dev Loads function schemas and role permissions dynamically at runtime
-     * @param functionSchemas Array of function schema definitions to load
-     * @param roleHashes Array of role hashes to add permissions to
-     * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @notice Only non-protected function schemas can be loaded dynamically
+     * @dev Gets all authorized wallets for a role
+     * @param roleHash The role hash to get wallets for
+     * @return Array of authorized wallet addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
      */
-    function _loadDynamicDefinitions(
-        StateAbstraction.FunctionSchema[] memory functionSchemas,
-        bytes32[] memory roleHashes,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
-    ) internal {
-        // Validate array lengths match
-        SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
+    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
+        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        StateAbstraction._validateAnyRole(state);
+        StateAbstraction._validateRoleExists(state, roleHash);
         
-        // Validate that all function schemas are non-protected
-        // Convert supportedActions arrays to bitmaps
-        for (uint256 i = 0; i < functionSchemas.length; i++) {
-            if (functionSchemas[i].isProtected) {
-                revert SharedValidation.CannotRemoveProtected(bytes32(functionSchemas[i].functionSelector));
-            }
-            // Convert supportedActions array to bitmap
-            // Note: functionSchemas[i].supportedActions is passed as array but we need bitmap
-            // This will be handled in _loadDefinitions via createFunctionSchema
+        // Get role info to determine wallet count
+        StateAbstraction.Role storage role = state.getRole(roleHash);
+        uint256 walletCount = role.walletCount;
+        
+        // Build array by iterating through wallets using _getAuthorizedWalletAt
+        address[] memory wallets = new address[](walletCount);
+        for (uint256 i = 0; i < walletCount; i++) {
+            wallets[i] = _getAuthorizedWalletAt(roleHash, i);
         }
         
-        // Validate that all target roles exist and are non-protected
-        for (uint256 i = 0; i < roleHashes.length; i++) {
-            StateAbstraction.Role storage role = _getSecureState().getRole(roleHashes[i]);
-            if (role.roleHash == bytes32(0)) {
-                revert SharedValidation.ResourceNotFound(roleHashes[i]);
-            }
-            if (role.isProtected) {
-                revert SharedValidation.CannotRemoveProtected(roleHashes[i]);
-            }
-        }
-        
-        // Call the base implementation
-        _loadDefinitions(functionSchemas, roleHashes, functionPermissions);
+        return wallets;
     }
+
+    // ============ HELPER FUNCTIONS ============
 
     /**
      * @dev Internal helper to execute a RBAC configuration batch
@@ -225,6 +213,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             RoleConfigAction calldata action = actions[i];
 
             if (action.actionType == RoleConfigActionType.CREATE_ROLE) {
+                // Decode CREATE_ROLE action data
+                // Format: (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
+                // FunctionPermission is struct(bytes4 functionSelector, uint16 grantedActionsBitmap)
+                // When encoding from JavaScript, it's encoded as tuple(bytes4,uint16)[]
+                // Solidity can decode tuple[] directly into struct[] if the layout matches
                 (
                     string memory roleName,
                     uint256 maxWallets,
@@ -295,23 +288,29 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     functionSelector,
                     ""
                 );
-            } else if (action.actionType == RoleConfigActionType.LOAD_DEFINITIONS) {
+            } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
                 (
-                    StateAbstraction.FunctionSchema[] memory functionSchemas,
-                    bytes32[] memory roleHashes,
-                    StateAbstraction.FunctionPermission[] memory functionPermissions
-                ) = abi.decode(
-                        action.data,
-                        (StateAbstraction.FunctionSchema[], bytes32[], StateAbstraction.FunctionPermission[])
-                    );
+                    bytes32 roleHash,
+                    StateAbstraction.FunctionPermission memory functionPermission
+                ) = abi.decode(action.data, (bytes32, StateAbstraction.FunctionPermission));
 
-                _loadDynamicDefinitions(functionSchemas, roleHashes, functionPermissions);
+                _addFunctionToRole(roleHash, functionPermission);
 
                 emit RoleConfigApplied(
-                    RoleConfigActionType.LOAD_DEFINITIONS,
-                    bytes32(0),
-                    bytes4(0),
-                    abi.encode(functionSchemas.length, roleHashes.length)
+                    RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+                    roleHash,
+                    functionPermission.functionSelector,
+                    ""
+                );
+            } else if (action.actionType == RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE) {
+                (bytes32 roleHash, bytes4 functionSelector) = abi.decode(action.data, (bytes32, bytes4));
+                _removeFunctionFromRole(roleHash, functionSelector);
+
+                emit RoleConfigApplied(
+                    RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+                    roleHash,
+                    functionSelector,
+                    ""
                 );
             } else {
                 revert SharedValidation.NotSupported();
@@ -335,7 +334,20 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, false);
 
         // Add all function permissions to the role
+        // NOTE: Function schemas must be registered BEFORE adding permissions to roles
+        // This is the same pattern used in _loadDefinitions: schemas first, then permissions
+        // The function selectors in functionPermissions must exist in supportedFunctionsSet
+        // (they should be registered during initialize() via RuntimeRBACDefinitions)
+        // 
+        // CRITICAL: The order matters - _loadDefinitions loads schemas FIRST, then permissions
+        // In _createNewRole, we assume schemas are already registered (from initialize)
+        // If schemas aren't registered, addFunctionToRole will revert with ResourceNotFound
         for (uint256 i = 0; i < functionPermissions.length; i++) {
+            // Add function permission to role
+            // addFunctionToRole will check:
+            // 1. Role exists in supportedRolesSet (✅ just created)
+            // 2. Function selector exists in supportedFunctionsSet (must be registered during initialize)
+            // 3. Actions are supported by function schema (via _validateMetaTxPermissions)
             StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermissions[i]);
         }
     }
@@ -358,7 +370,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @dev Validates that a role is not protected
      */
     function _ensureRoleNotProtected(bytes32 roleHash) internal view {
-        if (_getSecureState().getRole(roleHash).isProtected) {
+        StateAbstraction.Role storage role = _getSecureState().roles[roleHash];
+        if (role.roleHash == bytes32(0)) {
+            revert SharedValidation.ResourceNotFound(roleHash);
+        }
+        if (role.isProtected) {
             revert SharedValidation.CannotRemoveProtected(roleHash);
         }
     }
@@ -395,59 +411,47 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        // Validate function exists
-        if (!functionSchemaExists(functionSelector)) {
+        // Load schema and validate it exists
+        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        if (schema.functionSelector != functionSelector) {
             revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
 
         // Ensure not protected
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.isProtected) {
             revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
 
-        // If safeRemoval is requested, ensure no role currently references this function
-        if (safeRemoval) {
-            bytes32[] memory roles = _getSecureState().getSupportedRolesList();
-            for (uint256 i = 0; i < roles.length; i++) {
-                StateAbstraction.FunctionPermission[] memory perms =
-                    _getSecureState().getRoleFunctionPermissions(roles[i]);
-                for (uint256 j = 0; j < perms.length; j++) {
-                    if (perms[j].functionSelector == functionSelector) {
-                        revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
-                    }
-                }
-            }
-        }
-
-        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector);
+        // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
+        // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
+        // during meta-tx execution msg.sender is the contract, causing NoPermission)
+        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
     }
 
     /**
-     * @dev Converts a bitmap to an array of TxActions
-     * @param bitmap The bitmap to convert
-     * @return Array of TxActions represented by the bitmap
+     * @dev Adds a function permission to an existing role
+     * @param roleHash The role hash to add the function permission to
+     * @param functionPermission The function permission to add
+     * @notice StateAbstraction.addFunctionToRole validates that the role exists and the function is registered
      */
-    function _convertBitmapToActions(uint16 bitmap) internal pure returns (StateAbstraction.TxAction[] memory) {
-        // Count how many actions are set
-        uint256 count = 0;
-        for (uint8 i = 0; i < 16; i++) {
-            if ((bitmap & (1 << i)) != 0) {
-                count++;
-            }
-        }
-        
-        // Create array and populate it
-        StateAbstraction.TxAction[] memory actions = new StateAbstraction.TxAction[](count);
-        uint256 index = 0;
-        for (uint8 i = 0; i < 16; i++) {
-            if ((bitmap & (1 << i)) != 0) {
-                actions[index] = StateAbstraction.TxAction(i);
-                index++;
-            }
-        }
-        
-        return actions;
+    function _addFunctionToRole(
+        bytes32 roleHash,
+        StateAbstraction.FunctionPermission memory functionPermission
+    ) internal {
+        StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
+    }
+
+    /**
+     * @dev Removes a function permission from an existing role
+     * @param roleHash The role hash to remove the function permission from
+     * @param functionSelector The function selector to remove from the role
+     * @notice StateAbstraction.removeFunctionFromRole validates that the role exists and prevents removing protected functions
+     */
+    function _removeFunctionFromRole(
+        bytes32 roleHash,
+        bytes4 functionSelector
+    ) internal {
+        StateAbstraction.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
     }
 
 }

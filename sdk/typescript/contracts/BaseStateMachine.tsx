@@ -119,16 +119,16 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     args: any[] = []
   ): Promise<T> {
     try {
-      const result = await this.client.readContract({
-        address: this.contractAddress,
-        abi: this.abi,
-        functionName,
-        args,
-        // Include account for permission checks if wallet client is available
-        account: this.walletClient?.account
-      });
+    const result = await this.client.readContract({
+      address: this.contractAddress,
+      abi: this.abi,
+      functionName,
+      args,
+      // Include account for permission checks if wallet client is available
+      account: this.walletClient?.account
+    });
 
-      return result as T;
+    return result as T;
     } catch (error: any) {
       // Try to decode the error if it's a contract revert
       if (error.data || error.cause?.data) {
@@ -307,6 +307,16 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   async supportsInterface(interfaceId: Hex): Promise<boolean> {
     return this.executeReadContract<boolean>('supportsInterface', [interfaceId]);
+  }
+
+  /**
+   * @dev Check if this contract supports IBaseStateMachine interface
+   * @return Promise<boolean> indicating if IBaseStateMachine is supported
+   */
+  async supportsBaseStateMachineInterface(): Promise<boolean> {
+    // Import dynamically to avoid circular dependencies
+    const { INTERFACE_IDS } = await import('../utils/interface-ids');
+    return this.supportsInterface(INTERFACE_IDS.IBaseStateMachine);
   }
 }
 

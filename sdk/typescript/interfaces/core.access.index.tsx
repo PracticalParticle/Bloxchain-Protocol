@@ -24,16 +24,20 @@ export interface IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
-  // Query Functions (from contract)
-  roleExists(roleHash: Hex): Promise<boolean>;
-
   // Note: getFunctionSchema remains available from the contract and is exposed via the wrapper
   getFunctionSchema(functionSelector: Hex): Promise<{
-    functionName: string;
+    functionSignature: string;
     functionSelectorReturn: Hex;
     operationType: Hex;
     operationName: string;
     supportedActions: TxAction[];
     isProtected: boolean;
   }>;
+
+  /**
+   * @dev Gets all authorized wallets for a role
+   * @param roleHash The role hash to get wallets for
+   * @return Array of authorized wallet addresses
+   */
+  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
 }

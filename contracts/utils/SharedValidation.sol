@@ -66,7 +66,6 @@ library SharedValidation {
     error InvalidSignature(bytes signature);
     error InvalidNonce(uint256 providedNonce, uint256 expectedNonce);
     error ChainIdMismatch(uint256 providedChainId, uint256 expectedChainId);
-    error HandlerContractMismatch(address handlerContract, address target);
     error InvalidHandlerSelector(bytes4 selector);
     error InvalidSValue(bytes32 s);
     error InvalidVValue(uint8 v);
@@ -88,6 +87,9 @@ library SharedValidation {
     error MaxWalletsZero(uint256 provided);
     error ConflictingMetaTxPermissions(bytes4 functionSelector);
     error InternalFunctionNotAccessible(bytes4 functionSelector);
+    error TargetNotWhitelisted(address target, bytes4 functionSelector, bytes32 roleHash);
+    error FunctionSelectorMismatch(bytes4 providedSelector, bytes4 derivedSelector);
+    error OperationTypeMismatch(bytes32 providedType, bytes32 derivedType);
     error InvalidRange(uint256 from, uint256 to);
     error OperationFailed();
     
@@ -260,6 +262,15 @@ library SharedValidation {
     }
     
     /**
+     * @dev Validates that the signer of a meta-transaction is the owner
+     * @param signer The signer address from the meta-transaction
+     * @param owner The current owner address
+     */
+    function validateOwnerIsSigner(address signer, address owner) internal pure {
+        if (signer != owner) revert NoPermission(signer);
+    }
+    
+    /**
      * @dev Validates that the function is being called internally by the contract itself
      * @param contractAddress The address of the contract
      */
@@ -311,15 +322,6 @@ library SharedValidation {
      */
     function validateChainId(uint256 chainId) internal view {
         if (chainId != block.chainid) revert ChainIdMismatch(chainId, block.chainid);
-    }
-    
-    /**
-     * @dev Validates that handler contract matches target
-     * @param handlerContract The handler contract address
-     * @param target The target contract address
-     */
-    function validateHandlerContractMatch(address handlerContract, address target) internal pure {
-        if (handlerContract != target) revert HandlerContractMismatch(handlerContract, target);
     }
     
     /**

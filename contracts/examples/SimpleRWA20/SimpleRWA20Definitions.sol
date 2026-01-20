@@ -41,7 +41,7 @@ library SimpleRWA20Definitions {
         
         // Meta-transaction functions
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "mintWithMetaTx",
+            functionSignature: "mintWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: MINT_TOKENS_META_SELECTOR,
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
@@ -50,7 +50,7 @@ library SimpleRWA20Definitions {
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
-            functionName: "burnWithMetaTx",
+            functionSignature: "burnWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: BURN_TOKENS_META_SELECTOR,
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",

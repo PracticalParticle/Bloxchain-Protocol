@@ -28,16 +28,19 @@ module.exports = async function(deployer, network, accounts) {
     const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
     const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
     const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
+    const GuardControllerDefinitions = artifacts.require("GuardControllerDefinitions");
     
     const sa = await StateAbstraction.deployed();
     const sad = await StateAbstractionDefinitions.deployed();
     const sod = await SecureOwnableDefinitions.deployed();
     const drd = await RuntimeRBACDefinitions.deployed();
+    const gcd = await GuardControllerDefinitions.deployed();
     
     console.log("✅ Using StateAbstraction at:", sa.address);
     console.log("✅ Using StateAbstractionDefinitions at:", sad.address);
     console.log("✅ Using SecureOwnableDefinitions at:", sod.address);
     console.log("✅ Using RuntimeRBACDefinitions at:", drd.address);
+    console.log("✅ Using GuardControllerDefinitions at:", gcd.address);
     
     // Step 2: Deploy SecureBlox (if enabled)
     let secureBlox = null;
@@ -225,11 +228,12 @@ module.exports = async function(deployer, network, accounts) {
     if (deployControlBlox) {
         console.log("\n📦 Step 5: Deploying ControlBlox...");
         
-        // Link all required libraries to ControlBlox (same as RoleBlox since both extend RuntimeRBAC)
+        // Link all required libraries to ControlBlox (includes GuardControllerDefinitions)
         await deployer.link(StateAbstraction, ControlBlox);
         await deployer.link(StateAbstractionDefinitions, ControlBlox);
         await deployer.link(SecureOwnableDefinitions, ControlBlox);
         await deployer.link(RuntimeRBACDefinitions, ControlBlox);
+        await deployer.link(GuardControllerDefinitions, ControlBlox);
         
         // Deploy ControlBlox
         await deployer.deploy(ControlBlox);

@@ -68,24 +68,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool success
     );
 
-    // ============ ACCESS CONTROL MODIFIERS ============
-
-    /**
-     * @dev Modifier to restrict access to the owner only
-     */
-    modifier onlyOwner() {
-        SharedValidation.validateOwner(owner());
-        _;
-    }
-
-    /**
-     * @dev Modifier to restrict access to broadcaster only
-     */
-    modifier onlyBroadcaster() {
-        SharedValidation.validateBroadcaster(getBroadcaster());
-        _;
-    }
-
     /**
      * @notice Initializes the base state machine core
      * @param initialOwner The initial owner address
@@ -141,6 +123,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev See {IERC165-supportsInterface}.
      * @notice Base implementation for ERC165 interface detection
      * @notice Registers IBaseStateMachine interface ID for proper interface detection
+     * @notice Component contracts (SecureOwnable, RuntimeRBAC, GuardController) should override
+     *         to add their respective interface IDs for component detection
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IBaseStateMachine).interfaceId || super.supportsInterface(interfaceId);
@@ -155,14 +139,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param value The ETH value to send (0 for standard function calls)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param functionSelector The function selector for execution (0x00000000 for simple ETH transfers)
-     * @param params The encoded parameters for the function (empty for simple ETH transfers)
+     * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
      * @return The created transaction record
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
      * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple ETH transfers: value>0, functionSelector=0x00000000, params=""
+     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function _requestTransaction(
         address requester,
@@ -296,8 +280,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param value The ETH value to send
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
-     * @param executionSelector The function selector to execute (0x00000000 for simple ETH transfers)
-     * @param executionParams The encoded parameters for the function (empty for simple ETH transfers)
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers)
      * @param metaTxParams The meta-transaction parameters
      * @return The unsigned meta-transaction
      */
@@ -539,7 +523,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             StateAbstraction.createFunctionSchema(
                 _getSecureState(),
-                functionSchemas[i].functionName,
+                functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationType,
                 functionSchemas[i].operationName,

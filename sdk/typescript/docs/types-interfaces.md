@@ -83,7 +83,7 @@ interface FunctionPermission {
 
 // Function schema structure
 interface FunctionSchema {
-  functionName: string;
+  functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
@@ -276,7 +276,7 @@ const ownershipTransfer: OperationTypeDefinition = {
 
 ```typescript
 interface FunctionSchemaDefinition {
-  functionName: string
+  functionSignature: string
   functionSelector: string
   operationType: OperationType
   operationName: string
@@ -289,7 +289,7 @@ interface FunctionSchemaDefinition {
 **Example:**
 ```typescript
 const transferOwnershipSchema: FunctionSchemaDefinition = {
-  functionName: 'transferOwnershipRequest',
+  functionSignature: 'transferOwnershipRequest',
   functionSelector: '0x12345678',
   operationType: 'OWNERSHIP_TRANSFER',
   operationName: 'OWNERSHIP_TRANSFER',

@@ -47,23 +47,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     event RecoveryAddressUpdated(address oldRecovery, address newRecovery);
     event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod);
 
-    // ============ RECOVERY ACCESS CONTROL MODIFIERS ============
-
-    /**
-     * @dev Modifier to restrict access to owner or recovery
-     */
-    modifier onlyOwnerOrRecovery() {
-        SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
-        _;
-    }
-    
-    /**
-     * @dev Modifier to restrict access to recovery only
-     */
-    modifier onlyRecovery() {
-        SharedValidation.validateRecovery(getRecovery());
-        _;
-    }
 
     /**
      * @notice Initializer to initialize SecureOwnable state
@@ -94,12 +77,23 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
     }
 
+    // ============ INTERFACE SUPPORT ============
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     * @notice Adds ISecureOwnable interface ID for component detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(ISecureOwnable).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     // Ownership Management
     /**
      * @dev Requests a transfer of ownership
      * @return The transaction record
      */
-    function transferOwnershipRequest() public onlyRecovery returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipRequest() public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateRecovery(getRecovery());
         if (_hasOpenOwnershipRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
@@ -122,7 +116,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function transferOwnershipDelayedApproval(uint256 txId) public onlyOwnerOrRecovery returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipDelayedApproval(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
+        
         StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
@@ -133,7 +129,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
@@ -144,7 +143,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function transferOwnershipCancellation(uint256 txId) public onlyRecovery returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipCancellation(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateRecovery(getRecovery());
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(txId);
@@ -156,7 +156,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(updatedRecord.txId);
@@ -169,7 +172,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newBroadcaster The new broadcaster address
      * @return The execution options
      */
-    function updateBroadcasterRequest(address newBroadcaster) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterRequest(address newBroadcaster) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         SharedValidation.validateAddressUpdate(newBroadcaster, getBroadcaster());
         
@@ -193,7 +197,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function updateBroadcasterDelayedApproval(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterDelayedApproval(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
@@ -204,7 +209,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
@@ -215,7 +223,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function updateBroadcasterCancellation(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterCancellation(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateOwner(owner());
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(txId);
@@ -227,7 +236,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(updatedRecord.txId);
@@ -254,7 +266,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateRecoveryRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
-    ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         return _requestAndApproveTransaction(metaTx);
     }
 
@@ -278,7 +293,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateTimeLockRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
-    ) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    ) public returns (StateAbstraction.TxRecord memory) {
+        SharedValidation.validateBroadcaster(getBroadcaster());
+        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
+        
         return _requestAndApproveTransaction(metaTx);
     }
 

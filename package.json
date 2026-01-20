@@ -13,10 +13,12 @@
     "deploy:hardhat": "hardhat run scripts/deploy.js",
     "test:sanity:secure-ownable": "node scripts/sanity/secure-ownable/run-tests.js --all",
     "test:sanity:simple-vault": "node scripts/sanity/simple-vault/run-tests.js --all",
+    "test:sanity:runtime-rbac": "node scripts/sanity/runtime-rbac/run-tests.js --all",
     "test:e2e": "npm run deploy:truffle && npm run test:sanity:secure-ownable",
     "test:sanity-sdk:secure-ownable": "ts-node --transpile-only --project scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/secure-ownable/run-tests.ts",
     "test:sanity-sdk:workflow": "ts-node --transpile-only --project scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/workflow/run-tests.ts",
-    "test:sanity-sdk:all": "npm run test:sanity-sdk:secure-ownable -- --all && npm run test:sanity-sdk:workflow -- --all",
+    "test:sanity-sdk:guard-controller": "ts-node --transpile-only --project scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/guard-controller/run-tests.ts",
+    "test:sanity-sdk:all": "npm run test:sanity-sdk:secure-ownable -- --all && npm run test:sanity-sdk:workflow -- --all && npm run test:sanity-sdk:guard-controller -- --all",
     "docgen": "hardhat docgen",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
   },

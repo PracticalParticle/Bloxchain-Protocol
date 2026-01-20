@@ -6,6 +6,7 @@ import { TxAction } from '../types/lib.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { Uint16Bitmap } from '../utils/bitmap';
+import { INTERFACE_IDS } from '../utils/interface-ids';
 
 /**
  * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
@@ -19,7 +20,7 @@ interface StateAbstractionFunctionPermission {
  * FunctionSchema structure matching Solidity StateAbstraction.FunctionSchema for loadDefinitions
  */
 interface StateAbstractionFunctionSchema {
-  functionName: string;
+  functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
@@ -73,7 +74,7 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
    * @return Function schema information
    */
   async getFunctionSchema(functionSelector: Hex): Promise<{
-    functionName: string;
+    functionSignature: string;
     functionSelectorReturn: Hex;
     operationType: Hex;
     operationName: string;
@@ -81,7 +82,7 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     isProtected: boolean;
   }> {
     return this.executeReadContract<{
-      functionName: string;
+      functionSignature: string;
       functionSelectorReturn: Hex;
       operationType: Hex;
       operationName: string;
@@ -90,55 +91,24 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     }>('getFunctionSchema', [functionSelector]);
   }
 
-  // ============ QUERY FUNCTIONS ============
-
   /**
-   * @dev Checks if a role exists
-   * @param roleHash The hash of the role
-   * @return True if the role exists, false otherwise
+   * @dev Gets all authorized wallets for a role
+   * @param roleHash The role hash to get wallets for
+   * @return Array of authorized wallet addresses
+   * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
-  async roleExists(roleHash: Hex): Promise<boolean> {
-    return this.executeReadContract<boolean>('roleExists', [roleHash]);
+  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getWalletsInRole', [roleHash]);
   }
 
-  // ============ HELPER FUNCTIONS (Computed from base class) ============
-  // These functions don't exist in Solidity but are provided as convenience methods
-  // that compute values from existing base class methods
+  // ============ INTERFACE SUPPORT ============
 
   /**
-   * @dev Gets role information by combining base class methods
-   * @param roleHash The hash of the role
-   * @return Role information including basic info, wallets, and permissions
+   * @dev Check if this contract supports IRuntimeRBAC interface
+   * @return Promise<boolean> indicating if IRuntimeRBAC is supported
    */
-  async getRoleInfo(roleHash: Hex): Promise<{
-    roleName: string;
-    roleHashReturn: Hex;
-    maxWallets: bigint;
-    walletCount: bigint;
-    isProtected: boolean;
-    authorizedWallets: Address[];
-    functionPermissions: any[];
-  }> {
-    // Get basic role info from BaseStateMachine
-    const roleInfo = await this.getRole(roleHash);
-    
-    // Get authorized wallets - Note: getWalletsInRole doesn't exist in Solidity
-    // This would require iterating through StateAbstraction, which is not directly accessible
-    // Return empty array as placeholder - users should use StateAbstraction helpers directly
-    const authorizedWallets: Address[] = [];
-    
-    // Get function permissions for the role
-    const functionPermissions = await this.getActiveRolePermissions(roleHash);
-    
-    return {
-      roleName: roleInfo.roleName,
-      roleHashReturn: roleInfo.roleHashReturn,
-      maxWallets: roleInfo.maxWallets,
-      walletCount: roleInfo.walletCount,
-      isProtected: roleInfo.isProtected,
-      authorizedWallets,
-      functionPermissions
-    };
+  async supportsRuntimeRBACInterface(): Promise<boolean> {
+    return this.supportsInterface(INTERFACE_IDS.IRuntimeRBAC);
   }
 
 }

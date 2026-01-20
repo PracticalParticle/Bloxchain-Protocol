@@ -88,6 +88,22 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "providedSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "derivedSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "FunctionSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "currentGasPrice",
         "type": "uint256"
@@ -99,22 +115,6 @@
       }
     ],
     "name": "GasPriceExceedsMax",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "handlerContract",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      }
-    ],
-    "name": "HandlerContractMismatch",
     "type": "error"
   },
   {
@@ -185,17 +185,6 @@
       }
     ],
     "name": "InvalidNonce",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "item",
-        "type": "address"
-      }
-    ],
-    "name": "InvalidOperation",
     "type": "error"
   },
   {
@@ -320,6 +309,22 @@
   {
     "inputs": [],
     "name": "OperationFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "providedType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "derivedType",
+        "type": "bytes32"
+      }
+    ],
+    "name": "OperationTypeMismatch",
     "type": "error"
   },
   {
@@ -502,6 +507,34 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [],
+    "name": "NATIVE_TRANSFER_OPERATION",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [],
+    "name": "NATIVE_TRANSFER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
       }
     ],
     "stateMutability": "view",

@@ -101,7 +101,7 @@ library SecureOwnableDefinitions {
         
         // Meta-transaction functions
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "transferOwnershipApprovalWithMetaTx",
+            functionSignature: "transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -110,7 +110,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
-            functionName: "transferOwnershipCancellationWithMetaTx",
+            functionSignature: "transferOwnershipCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -119,7 +119,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
-            functionName: "updateBroadcasterApprovalWithMetaTx",
+            functionSignature: "updateBroadcasterApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -128,7 +128,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
-            functionName: "updateBroadcasterCancellationWithMetaTx",
+            functionSignature: "updateBroadcasterCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -137,7 +137,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
-            functionName: "updateRecoveryRequestAndApprove",
+            functionSignature: "updateRecoveryRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
@@ -146,7 +146,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
-            functionName: "updateTimeLockRequestAndApprove",
+            functionSignature: "updateTimeLockRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
@@ -156,7 +156,7 @@ library SecureOwnableDefinitions {
         
         // Time-delayed functions
         schemas[6] = StateAbstraction.FunctionSchema({
-            functionName: "transferOwnershipRequest",
+            functionSignature: "transferOwnershipRequest()",
             functionSelector: TRANSFER_OWNERSHIP_REQUEST_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -165,7 +165,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[7] = StateAbstraction.FunctionSchema({
-            functionName: "transferOwnershipDelayedApproval",
+            functionSignature: "transferOwnershipDelayedApproval(uint256)",
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -174,7 +174,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[8] = StateAbstraction.FunctionSchema({
-            functionName: "transferOwnershipCancellation",
+            functionSignature: "transferOwnershipCancellation(uint256)",
             functionSelector: TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -183,7 +183,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[9] = StateAbstraction.FunctionSchema({
-            functionName: "updateBroadcasterRequest",
+            functionSignature: "updateBroadcasterRequest(address)",
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -192,7 +192,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[10] = StateAbstraction.FunctionSchema({
-            functionName: "updateBroadcasterDelayedApproval",
+            functionSignature: "updateBroadcasterDelayedApproval(uint256)",
             functionSelector: UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -201,7 +201,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[11] = StateAbstraction.FunctionSchema({
-            functionName: "updateBroadcasterCancellation",
+            functionSignature: "updateBroadcasterCancellation(uint256)",
             functionSelector: UPDATE_BROADCASTER_CANCELLATION_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -211,7 +211,7 @@ library SecureOwnableDefinitions {
         
         // Execution selector schemas (required for meta-transaction dual-permission model)
         schemas[12] = StateAbstraction.FunctionSchema({
-            functionName: "executeTransferOwnership",
+            functionSignature: "executeTransferOwnership(address)",
             functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
@@ -220,7 +220,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[13] = StateAbstraction.FunctionSchema({
-            functionName: "executeBroadcasterUpdate",
+            functionSignature: "executeBroadcasterUpdate(address)",
             functionSelector: UPDATE_BROADCASTER_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
@@ -229,7 +229,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[14] = StateAbstraction.FunctionSchema({
-            functionName: "executeRecoveryUpdate",
+            functionSignature: "executeRecoveryUpdate(address)",
             functionSelector: UPDATE_RECOVERY_SELECTOR,
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
@@ -238,7 +238,7 @@ library SecureOwnableDefinitions {
         });
         
         schemas[15] = StateAbstraction.FunctionSchema({
-            functionName: "executeTimeLockUpdate",
+            functionSignature: "executeTimeLockUpdate(uint256)",
             functionSelector: UPDATE_TIMELOCK_SELECTOR,
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",

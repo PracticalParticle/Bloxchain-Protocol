@@ -59,7 +59,7 @@ library SimpleVaultDefinitions {
         
         // Time-delay functions
         schemas[0] = StateAbstraction.FunctionSchema({
-            functionName: "withdrawEthRequest",
+            functionSignature: "withdrawEthRequest(address,uint256)",
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
@@ -68,7 +68,7 @@ library SimpleVaultDefinitions {
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
-            functionName: "withdrawTokenRequest",
+            functionSignature: "withdrawTokenRequest(address,address,uint256)",
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
@@ -77,7 +77,7 @@ library SimpleVaultDefinitions {
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
-            functionName: "approveWithdrawalAfterDelay",
+            functionSignature: "approveWithdrawalAfterDelay(uint256)",
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
@@ -86,7 +86,7 @@ library SimpleVaultDefinitions {
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
-            functionName: "cancelWithdrawal",
+            functionSignature: "cancelWithdrawal(uint256)",
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
@@ -96,7 +96,7 @@ library SimpleVaultDefinitions {
         
         // Meta-transaction functions
         schemas[4] = StateAbstraction.FunctionSchema({
-            functionName: "approveWithdrawalWithMetaTx",
+            functionSignature: "approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
