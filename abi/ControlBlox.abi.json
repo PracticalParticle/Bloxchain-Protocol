@@ -207,22 +207,6 @@
       },
       {
         "internalType": "address",
-        "name": "broadcaster",
-        "type": "address"
-      }
-    ],
-    "name": "RestrictedBroadcaster",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "owner",
         "type": "address"
       }
@@ -488,12 +472,6 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -511,12 +489,6 @@
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
       {
         "indexed": true,
         "internalType": "bytes4",
@@ -1620,11 +1592,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -2334,11 +2301,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -2358,12 +2320,12 @@
   },
   {
     "inputs": [],
-    "name": "getBroadcaster",
+    "name": "getBroadcasters",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "address[]",
         "name": "",
-        "type": "address"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -5593,11 +5555,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -5621,7 +5578,7 @@
         "type": "bytes"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
     "type": "function",
     "constant": true
   },

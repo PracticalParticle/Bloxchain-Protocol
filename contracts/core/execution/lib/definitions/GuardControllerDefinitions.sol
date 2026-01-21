@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../../base/lib/StateAbstraction.sol";
+import "../../../../kernel/StateAbstraction.sol";
 import "../../../../interfaces/IDefinition.sol";
 
 /**
@@ -59,9 +59,9 @@ library GuardControllerDefinitions {
         )
     );
 
-    // GuardController: executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)
+    // GuardController: executeUpdateTargetWhitelist(bytes4,address,bool)
     bytes4 public constant UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR =
-        bytes4(keccak256("executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)"));
+        bytes4(keccak256("executeUpdateTargetWhitelist(bytes4,address,bool)"));
     
     /**
      * @dev Returns predefined function schemas for GuardController execution functions
@@ -188,7 +188,7 @@ library GuardControllerDefinitions {
         whitelistExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
 
         schemas[7] = StateAbstraction.FunctionSchema({
-            functionSignature: "executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)",
+            functionSignature: "executeUpdateTargetWhitelist(bytes4,address,bool)",
             functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",

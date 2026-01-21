@@ -130,7 +130,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
@@ -157,7 +157,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
@@ -175,7 +175,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateBroadcasterRequest(address newBroadcaster) public returns (StateAbstraction.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
-        SharedValidation.validateAddressUpdate(newBroadcaster, getBroadcaster());
+        address[] memory broadcasters = getBroadcasters();
+        address currentBroadcaster = broadcasters.length > 0 ? broadcasters[0] : address(0);
+        SharedValidation.validateAddressUpdate(newBroadcaster, currentBroadcaster);
         
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -188,7 +190,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
 
         _hasOpenBroadcasterRequest = true;
-        emit BroadcasterUpdateRequest(getBroadcaster(), newBroadcaster);
+        emit BroadcasterUpdateRequest(currentBroadcaster, newBroadcaster);
         return txRecord;
     }
 
@@ -210,7 +212,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
@@ -237,7 +239,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The updated transaction record
      */
     function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
@@ -267,7 +269,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateRecoveryRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         return _requestAndApproveTransaction(metaTx);
@@ -294,7 +296,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function updateTimeLockRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         return _requestAndApproveTransaction(metaTx);
@@ -316,7 +318,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function executeBroadcasterUpdate(address newBroadcaster) external {
         SharedValidation.validateInternalCall(address(this));
-        _updateBroadcaster(newBroadcaster);
+        _updateBroadcaster(newBroadcaster, 0);
     }
 
     /**
@@ -350,13 +352,50 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Updates the broadcaster address
-     * @param newBroadcaster The new broadcaster address
+     * @dev Updates the broadcaster role at a specific index (location)
+     * @param newBroadcaster The new broadcaster address (zero address to revoke)
+     * @param location The index in the broadcaster role's authorized wallets set
+     *
+     * Logic:
+     * - If a broadcaster exists at `location` and `newBroadcaster` is non-zero,
+     *   update that slot from old to new (role remains full).
+     * - If no broadcaster exists at `location` and `newBroadcaster` is non-zero,
+     *   assign `newBroadcaster` to the broadcaster role (respecting maxWallets).
+     * - If `newBroadcaster` is the zero address and a broadcaster exists at `location`,
+     *   revoke that broadcaster from the role.
      */
-    function _updateBroadcaster(address newBroadcaster) internal virtual {
-        address oldBroadcaster = getBroadcaster();
-        _updateAssignedWallet(StateAbstraction.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
-        emit BroadcasterUpdated(oldBroadcaster, newBroadcaster);
+    function _updateBroadcaster(address newBroadcaster, uint256 location) internal virtual {
+        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        StateAbstraction.Role storage role = state.roles[StateAbstraction.BROADCASTER_ROLE];
+
+        address oldBroadcaster;
+        uint256 length = role.walletCount;
+
+        if (location < length) {
+            oldBroadcaster = StateAbstraction.getAuthorizedWalletAt(state, StateAbstraction.BROADCASTER_ROLE, location);
+        } else {
+            oldBroadcaster = address(0);
+        }
+
+        // Case 1: Revoke existing broadcaster at location
+        if (newBroadcaster == address(0)) {
+            if (oldBroadcaster != address(0)) {
+                StateAbstraction.revokeWallet(state, StateAbstraction.BROADCASTER_ROLE, oldBroadcaster);
+                emit BroadcasterUpdated(oldBroadcaster, address(0));
+            }
+            return;
+        }
+
+        // Case 2: Update existing broadcaster at location
+        if (oldBroadcaster != address(0)) {
+            _updateAssignedWallet(StateAbstraction.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
+            emit BroadcasterUpdated(oldBroadcaster, newBroadcaster);
+            return;
+        }
+
+        // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
+        StateAbstraction.assignWallet(state, StateAbstraction.BROADCASTER_ROLE, newBroadcaster);
+        emit BroadcasterUpdated(address(0), newBroadcaster);
     }
 
     /**

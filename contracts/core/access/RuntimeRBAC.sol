@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 // Contract imports
 import "../base/BaseStateMachine.sol";
-import "../base/lib/StateAbstraction.sol";
+import "../../kernel/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
@@ -127,7 +127,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     function roleConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         return _requestAndApproveTransaction(metaTx);
     }
 

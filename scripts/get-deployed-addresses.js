@@ -79,13 +79,35 @@ function displayAddresses(addresses) {
     // Group contracts by type
     const definitionLibraries = {};
     const guardianContracts = {};
+    const exampleContracts = {};
+    const tokenContracts = {};
+    const integrationContracts = {};
     const otherContracts = {};
     
     for (const [contractName, address] of Object.entries(contracts)) {
       if (contractName.includes('Definitions') || contractName.includes('BaseDefinitionLoader')) {
         definitionLibraries[contractName] = address;
-      } else if (contractName.includes('Guardian')) {
+      } else if (
+        contractName.includes('Guardian') ||
+        contractName.endsWith('Blox')
+      ) {
         guardianContracts[contractName] = address;
+      } else if (
+        contractName.includes('SimpleVault') ||
+        contractName.includes('SimpleRWA20') ||
+        contractName.includes('Example')
+      ) {
+        exampleContracts[contractName] = address;
+      } else if (
+        contractName.includes('BasicERC20') ||
+        contractName.includes('ERC20')
+      ) {
+        tokenContracts[contractName] = address;
+      } else if (
+        contractName.includes('Safe') ||
+        contractName.includes('Integration')
+      ) {
+        integrationContracts[contractName] = address;
       } else {
         otherContracts[contractName] = address;
       }
@@ -99,11 +121,38 @@ function displayAddresses(addresses) {
       }
       console.log('');
     }
-    
-    // Display Guardian contracts
+
+    // Display Guardian / Blox contracts
     if (Object.keys(guardianContracts).length > 0) {
-      console.log('🛡️ Guardian Contracts:');
+      console.log('🛡️ Guardian / Blox Contracts:');
       for (const [name, address] of Object.entries(guardianContracts)) {
+        console.log(`   ${name}: ${address}`);
+      }
+      console.log('');
+    }
+    
+    // Display example stateful contracts
+    if (Object.keys(exampleContracts).length > 0) {
+      console.log('🧪 Example Contracts:');
+      for (const [name, address] of Object.entries(exampleContracts)) {
+        console.log(`   ${name}: ${address}`);
+      }
+      console.log('');
+    }
+
+    // Display token contracts (ERC20 etc.)
+    if (Object.keys(tokenContracts).length > 0) {
+      console.log('💰 Token Contracts:');
+      for (const [name, address] of Object.entries(tokenContracts)) {
+        console.log(`   ${name}: ${address}`);
+      }
+      console.log('');
+    }
+
+    // Display integration contracts
+    if (Object.keys(integrationContracts).length > 0) {
+      console.log('🔗 Integration Contracts:');
+      for (const [name, address] of Object.entries(integrationContracts)) {
         console.log(`   ${name}: ${address}`);
       }
       console.log('');

@@ -182,8 +182,8 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ TARGET WHITELIST MANAGEMENT ============
 
   /**
-   * @dev Creates execution params for updating the target whitelist for a role and function selector
-   * @param roleHash The role hash
+   * @dev Creates execution params for updating the target whitelist for a role and function selector.
+   * @param roleHash The role hash (currently ignored by the underlying contract; kept for backwards compatibility)
    * @param functionSelector The function selector
    * @param target The target address to add or remove
    * @param isAdd True to add the target, false to remove
@@ -191,13 +191,13 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
    * @notice Validation focuses on basic input checks; full validation occurs during execution
    */
   async updateTargetWhitelistExecutionParams(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     roleHash: Hex,
     functionSelector: Hex,
     target: Address,
     isAdd: boolean
   ): Promise<Hex> {
     const result = await this.executeReadContract<any>('updateTargetWhitelistExecutionParams', [
-      roleHash,
       functionSelector,
       target,
       isAdd
@@ -242,18 +242,18 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   }
 
   /**
-   * @dev Gets all whitelisted targets for a role and function selector
-   * @param roleHash The role hash
+   * @dev Gets all whitelisted targets for a role and function selector.
+   * @param roleHash The role hash (currently ignored by the underlying contract; kept for backwards compatibility)
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
   async getAllowedTargets(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     roleHash: Hex,
     functionSelector: Hex
   ): Promise<Address[]> {
     const result = await this.executeReadContract<Address[]>('getAllowedTargets', [
-      roleHash,
       functionSelector
     ]);
     

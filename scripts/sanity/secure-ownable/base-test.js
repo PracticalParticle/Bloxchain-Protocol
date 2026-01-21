@@ -226,7 +226,11 @@ class BaseSecureOwnableTest {
         try {
             // Get actual role addresses from contract
             this.roles.owner = await this.callContractMethod(this.contract.methods.owner());
-            this.roles.broadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+            const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            if (!broadcasters || broadcasters.length === 0) {
+                throw new Error('No broadcasters configured on contract');
+            }
+            this.roles.broadcaster = broadcasters[0];
             this.roles.recovery = await this.callContractMethod(this.contract.methods.getRecovery());
             
             console.log('📋 DISCOVERED ROLE ASSIGNMENTS:');
@@ -270,6 +274,17 @@ class BaseSecureOwnableTest {
             throw new Error(`No wallet found for role: ${roleName}`);
         }
         return wallet;
+    }
+
+    /**
+     * @dev Helper to get the primary broadcaster (first broadcaster in the role)
+     */
+    async getPrimaryBroadcaster() {
+        const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+        if (!broadcasters || broadcasters.length === 0) {
+            throw new Error('No broadcasters configured on contract');
+        }
+        return broadcasters[0];
     }
 
     async sendTransaction(method, wallet) {

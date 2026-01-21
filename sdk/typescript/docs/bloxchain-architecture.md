@@ -179,7 +179,8 @@ const secureOwnable = new SecureOwnable(client, walletClient, contractAddress, c
 
 // Access ownership information
 const owner = await secureOwnable.owner()
-const broadcaster = await secureOwnable.getBroadcaster()
+const broadcasters = await secureOwnable.getBroadcasters()
+const primaryBroadcaster = broadcasters.length > 0 ? broadcasters[0] : null
 const recovery = await secureOwnable.getRecovery()
 ```
 

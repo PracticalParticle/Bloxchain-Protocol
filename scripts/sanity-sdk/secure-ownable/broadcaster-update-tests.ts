@@ -215,9 +215,10 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully'); // COMPLETED = 5
 
       // Verify broadcaster changed
-      const updatedBroadcaster = await this.secureOwnable.getBroadcaster();
+      const updatedBroadcasters = await this.secureOwnable.getBroadcasters();
+      const updatedBroadcaster = updatedBroadcasters.length > 0 ? updatedBroadcasters[0] : null;
       this.assertTest(
-        updatedBroadcaster.toLowerCase() === newBroadcaster.toLowerCase(),
+        updatedBroadcaster !== null && updatedBroadcaster.toLowerCase() === newBroadcaster.toLowerCase(),
         'Broadcaster updated successfully'
       );
 
@@ -284,9 +285,10 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully'); // COMPLETED = 5
 
       // Verify broadcaster changed
-      const updatedBroadcaster = await this.secureOwnable.getBroadcaster();
+      const updatedBroadcasters = await this.secureOwnable.getBroadcasters();
+      const updatedBroadcaster = updatedBroadcasters.length > 0 ? updatedBroadcasters[0] : null;
       this.assertTest(
-        updatedBroadcaster.toLowerCase() === newBroadcaster.toLowerCase(),
+        updatedBroadcaster !== null && updatedBroadcaster.toLowerCase() === newBroadcaster.toLowerCase(),
         'Broadcaster updated successfully'
       );
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../core/base/lib/StateAbstraction.sol";
+import "../kernel/StateAbstraction.sol";
 
 /**
  * @dev Interface for definition contracts that provide operation types, function schemas, and role permissions

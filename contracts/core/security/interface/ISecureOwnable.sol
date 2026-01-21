@@ -2,13 +2,13 @@
 pragma solidity ^0.8.25;
 
 // Contracts imports
-import "../../base/lib/StateAbstraction.sol";
+import "../../../kernel/StateAbstraction.sol";
 
 /**
  * @title ISecureOwnable
  * @dev Interface for SecureOwnable functionality
  * @notice This interface defines SecureOwnable-specific operations
- * @notice Note: owner(), getBroadcaster(), and getRecovery() are available through BaseStateMachine
+ * @notice Note: owner(), getBroadcasters(), and getRecovery() are available through BaseStateMachine
  */
 interface ISecureOwnable {
     // ============ OWNERSHIP MANAGEMENT ============

@@ -82,7 +82,11 @@ export abstract class BaseSecureOwnableTest extends BaseSDKTest {
 
     try {
       this.roles.owner = await this.secureOwnable.owner();
-      this.roles.broadcaster = await this.secureOwnable.getBroadcaster();
+      const broadcasters = await this.secureOwnable.getBroadcasters();
+      if (!broadcasters || broadcasters.length === 0) {
+        throw new Error('No broadcasters configured on contract');
+      }
+      this.roles.broadcaster = broadcasters[0]; // Use primary broadcaster
       this.roles.recovery = await this.secureOwnable.getRecovery();
 
       console.log('📋 DISCOVERED ROLE ASSIGNMENTS:');
