@@ -3,7 +3,7 @@
  * Demonstrates the new TEST_MODE functionality in BaseSecureOwnableTest
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class TestModeDemo extends BaseSecureOwnableTest {
     constructor() {

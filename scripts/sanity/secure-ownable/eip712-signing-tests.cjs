@@ -3,7 +3,7 @@
  * Tests EIP-712 meta-transaction signing functionality
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class EIP712SigningTests extends BaseSecureOwnableTest {
     constructor() {

@@ -157,8 +157,8 @@ npx truffle migrate --network development
 # Run dynamic contract analysis
 npm run analyze:contract
 
-# Run specific analysis
-node scripts/analyze-contract-simple.js
+# Run specific analysis (if script exists)
+# Note: analyze-contract-simple.js may need to be created or converted to .cjs
 ```
 
 ### Testing

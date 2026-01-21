@@ -3,11 +3,11 @@
  * Main file to run all or selective tests of the SecureOwnable contract
  */
 
-const TimelockPeriodTests = require('./timelock-period-tests');
-const RecoveryUpdateTests = require('./recovery-update-tests');
-const BroadcasterUpdateTests = require('./broadcaster-update-tests');
-const OwnershipTransferTests = require('./ownership-transfer-tests');
-const EIP712SigningTests = require('./eip712-signing-tests');
+const TimelockPeriodTests = require('./timelock-period-tests.cjs');
+const RecoveryUpdateTests = require('./recovery-update-tests.cjs');
+const BroadcasterUpdateTests = require('./broadcaster-update-tests.cjs');
+const OwnershipTransferTests = require('./ownership-transfer-tests.cjs');
+const EIP712SigningTests = require('./eip712-signing-tests.cjs');
 
 class SecureOwnableTestRunner {
     constructor() {

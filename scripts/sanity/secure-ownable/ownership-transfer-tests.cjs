@@ -4,7 +4,7 @@
  * Tests all 4 options: owner meta-cancel, recovery timelock-cancel, owner meta-approve, recovery timelock-approve
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class OwnershipTransferTests extends BaseSecureOwnableTest {
     constructor() {

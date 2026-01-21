@@ -3,7 +3,7 @@
  * Tests minting and burning functionality with meta-transaction support
  */
 
-const BaseSimpleRWA20Test = require('./base-test');
+const BaseSimpleRWA20Test = require('./base-test.cjs');
 
 class SimpleRWA20TokenTests extends BaseSimpleRWA20Test {
     constructor() {

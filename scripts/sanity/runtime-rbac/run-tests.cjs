@@ -1,14 +1,14 @@
 /**
- * GuardController Test Runner
- * Main file to run GuardController functionality tests
+ * RuntimeRBAC Test Runner
+ * Main file to run RuntimeRBAC functionality tests
  */
 
-const GuardControllerTests = require('./guard-controller-tests');
+const RuntimeRBACTests = require('./rbac-tests.cjs');
 
-class GuardControllerTestRunner {
+class RuntimeRBACTestRunner {
     constructor() {
         this.testSuites = {
-            'guard-controller': GuardControllerTests
+            'rbac': RuntimeRBACTests
         };
         
         this.results = {
@@ -21,18 +21,18 @@ class GuardControllerTestRunner {
     }
 
     printUsage() {
-        console.log('🔧 GuardController Test Runner');
+        console.log('🔧 RuntimeRBAC Test Runner');
         console.log('='.repeat(50));
         console.log('Usage: node run-tests.js [options]');
         console.log();
         console.log('Options:');
         console.log('  --all                    Run all test suites');
-        console.log('  --guard-controller       Run GuardController functionality tests only');
+        console.log('  --rbac                   Run RBAC functionality tests only');
         console.log('  --help                   Show this help message');
         console.log();
         console.log('Examples:');
         console.log('  node run-tests.js --all');
-        console.log('  node run-tests.js --guard-controller');
+        console.log('  node run-tests.js --rbac');
         console.log();
     }
 
@@ -47,9 +47,9 @@ class GuardControllerTestRunner {
         const selectedSuites = [];
         
         if (args.includes('--all')) {
-            selectedSuites.push('guard-controller');
+            selectedSuites.push('rbac');
         } else {
-            if (args.includes('--guard-controller')) selectedSuites.push('guard-controller');
+            if (args.includes('--rbac')) selectedSuites.push('rbac');
         }
         
         if (selectedSuites.length === 0) {
@@ -106,7 +106,7 @@ class GuardControllerTestRunner {
         this.results.startTime = Date.now();
         this.results.totalSuites = selectedSuites.length;
         
-        console.log('🔧 GuardController Test Runner Starting...');
+        console.log('🔧 RuntimeRBAC Test Runner Starting...');
         console.log('='.repeat(60));
         console.log(`📋 Selected test suites: ${selectedSuites.join(', ')}`);
         console.log(`📊 Total suites to run: ${this.results.totalSuites}`);
@@ -142,7 +142,7 @@ class GuardControllerTestRunner {
         const successRate = ((this.results.passedSuites / this.results.totalSuites) * 100).toFixed(2);
         
         console.log('\n' + '='.repeat(80));
-        console.log('📊 GUARDCONTROLLER TEST RUNNER FINAL RESULTS');
+        console.log('📊 RUNTIME RBAC TEST RUNNER FINAL RESULTS');
         console.log('='.repeat(80));
         console.log(`📋 Total Test Suites: ${this.results.totalSuites}`);
         console.log(`✅ Passed Suites: ${this.results.passedSuites}`);
@@ -162,7 +162,7 @@ class GuardControllerTestRunner {
         
         if (this.results.failedSuites === 0) {
             console.log('🎉 ALL TEST SUITES PASSED SUCCESSFULLY!');
-            console.log('🚀 GuardController contract is working perfectly!');
+            console.log('🚀 RuntimeRBAC contract is working perfectly!');
         } else {
             console.log('⚠️  SOME TEST SUITES FAILED');
             console.log('🔍 Please review the output above for details');
@@ -190,8 +190,8 @@ class GuardControllerTestRunner {
 
 // Run the test runner if this file is executed directly
 if (require.main === module) {
-    const runner = new GuardControllerTestRunner();
+    const runner = new RuntimeRBACTestRunner();
     runner.run();
 }
 
-module.exports = GuardControllerTestRunner;
+module.exports = RuntimeRBACTestRunner;

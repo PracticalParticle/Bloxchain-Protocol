@@ -5,7 +5,7 @@
  * meta-transactions, handling the minting and burning workflows.
  */
 
-const EIP712Signer = require('../utils/eip712-signing');
+const EIP712Signer = require('../utils/eip712-signing.cjs');
 
 class SimpleRWA20EIP712Signer extends EIP712Signer {
     constructor(web3Instance, contractAddress) {

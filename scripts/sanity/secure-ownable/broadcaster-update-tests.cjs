@@ -4,7 +4,7 @@
  * Tests all 4 options: meta-cancel, timelock-cancel, meta-approve, timelock-approve
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     constructor() {

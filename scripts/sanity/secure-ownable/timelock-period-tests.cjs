@@ -4,7 +4,7 @@
  * This is the foundation test that sets up the timelock for all other tests
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class TimelockPeriodTests extends BaseSecureOwnableTest {
     constructor() {

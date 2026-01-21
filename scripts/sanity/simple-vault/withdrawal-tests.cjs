@@ -3,7 +3,7 @@
  * Tests ETH and token withdrawal functionality with time-lock and meta-transaction support
  */
 
-const BaseSimpleVaultTest = require('./base-test');
+const BaseSimpleVaultTest = require('./base-test.cjs');
 
 class SimpleVaultWithdrawalTests extends BaseSimpleVaultTest {
     constructor() {

@@ -4,7 +4,7 @@
  * Tests complete RBAC lifecycle: role creation, wallet assignment, function registration, permission management, and cleanup
  */
 
-const BaseRuntimeRBACTest = require('./base-test');
+const BaseRuntimeRBACTest = require('./base-test.cjs');
 
 class RuntimeRBACTests extends BaseRuntimeRBACTest {
     constructor() {

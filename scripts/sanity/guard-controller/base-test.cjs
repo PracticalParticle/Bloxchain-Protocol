@@ -6,7 +6,7 @@
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
-const EIP712Signer = require('../utils/eip712-signing');
+const EIP712Signer = require('../utils/eip712-signing.cjs');
 
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });

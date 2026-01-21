@@ -1,14 +1,14 @@
 /**
- * SimpleVault Test Runner
- * Main file to run all or selective tests of the SimpleVault contract
+ * SimpleRWA20 Test Runner
+ * Main file to run all or selective tests of the SimpleRWA20 contract
  */
 
-const SimpleVaultWithdrawalTests = require('./withdrawal-tests');
+const SimpleRWA20TokenTests = require('./token-tests.cjs');
 
-class SimpleVaultTestRunner {
+class SimpleRWA20TestRunner {
     constructor() {
         this.testSuites = {
-            'withdrawal': SimpleVaultWithdrawalTests,  // Test withdrawal functionality
+            'token': SimpleRWA20TokenTests,  // Test token operations (mint/burn/transfer)
         };
         
         this.results = {
@@ -21,22 +21,22 @@ class SimpleVaultTestRunner {
     }
 
     printUsage() {
-        console.log('🔧 SimpleVault Test Runner');
+        console.log('🔧 SimpleRWA20 Test Runner');
         console.log('='.repeat(50));
         console.log('Usage: node run-tests.js [options]');
         console.log();
         console.log('Options:');
         console.log('  --all                    Run all test suites');
-        console.log('  --withdrawal             Run withdrawal tests only');
+        console.log('  --token                  Run token operation tests only');
         console.log('  --help                   Show this help message');
         console.log();
         console.log('Examples:');
         console.log('  node run-tests.js --all');
-        console.log('  node run-tests.js --withdrawal');
+        console.log('  node run-tests.js --token');
         console.log();
         console.log('Environment Variables:');
         console.log('  TEST_MODE=auto|manual    Test mode (default: manual)');
-        console.log('  SIMPLE_VAULT_ADDRESS     Contract address (manual mode)');
+        console.log('  SIMPLE_RWA20_ADDRESS    Contract address (manual mode)');
         console.log('  OWNER_PRIVATE_KEY        Owner private key (manual mode)');
         console.log('  BROADCASTER_PRIVATE_KEY  Broadcaster private key (manual mode)');
         console.log('  RECOVERY_PRIVATE_KEY     Recovery private key (manual mode)');
@@ -61,7 +61,7 @@ class SimpleVaultTestRunner {
     }
 
     async runAllTests() {
-        console.log('🚀 Running ALL SimpleVault test suites...');
+        console.log('🚀 Running ALL SimpleRWA20 test suites...');
         console.log('═'.repeat(60));
         
         this.results.startTime = Date.now();
@@ -145,11 +145,11 @@ class SimpleVaultTestRunner {
 
 // Run the test runner if this file is executed directly
 if (require.main === module) {
-    const runner = new SimpleVaultTestRunner();
+    const runner = new SimpleRWA20TestRunner();
     runner.run().catch(error => {
         console.error('❌ Test runner failed:', error);
         process.exit(1);
     });
 }
 
-module.exports = SimpleVaultTestRunner;
+module.exports = SimpleRWA20TestRunner;

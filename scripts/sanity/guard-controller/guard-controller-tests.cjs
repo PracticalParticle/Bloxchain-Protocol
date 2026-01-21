@@ -4,7 +4,7 @@
  * Tests complete workflow: function registration, permission setup, ETH deposit, and ETH withdrawal
  */
 
-const BaseGuardControllerTest = require('./base-test');
+const BaseGuardControllerTest = require('./base-test.cjs');
 
 class GuardControllerTests extends BaseGuardControllerTest {
     constructor() {

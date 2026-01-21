@@ -4,7 +4,7 @@
  * This ensures recovery is different from owner for subsequent ownership transfer tests
  */
 
-const BaseSecureOwnableTest = require('./base-test');
+const BaseSecureOwnableTest = require('./base-test.cjs');
 
 class RecoveryUpdateTests extends BaseSecureOwnableTest {
     constructor() {
