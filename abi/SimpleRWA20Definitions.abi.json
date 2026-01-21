@@ -144,6 +144,11 @@
                 "internalType": "uint16",
                 "name": "grantedActionsBitmap",
                 "type": "uint16"
+              },
+              {
+                "internalType": "bool",
+                "name": "isHandlerSelector",
+                "type": "bool"
               }
             ],
             "internalType": "struct StateAbstraction.FunctionPermission[]",
