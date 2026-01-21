@@ -76,9 +76,8 @@ type RoleType =
 // Function permission structure
 interface FunctionPermission {
   functionSelector: Hex;
-  allowedRoles: Hex[];
-  requiresSignature: boolean;
-  isOffChain: boolean;
+  grantedActionsBitmap: Uint16Bitmap; // uint16 - bitmap for TxAction enum
+  isHandlerSelector: boolean; // true for handler selector permissions (controls who can access), false for execution selector permissions (defines what action is performed)
 }
 
 // Function schema structure

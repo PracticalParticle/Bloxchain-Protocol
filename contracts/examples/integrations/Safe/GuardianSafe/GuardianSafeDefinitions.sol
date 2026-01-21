@@ -162,63 +162,72 @@ library GuardianSafeDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_TX_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve Transaction After Delay
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_DELAYED_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Cancel Transaction
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve Transaction Meta (signer)
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Cancel Transaction Meta (signer)
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions),
+            isHandlerSelector: true
         });
         
         // Owner: Request And Approve Transaction Meta (signer)
         roleHashes[5] = StateAbstraction.OWNER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Approve Transaction Meta (executor)
         roleHashes[6] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Cancel Transaction Meta (executor)
         roleHashes[7] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Request And Approve Transaction Meta (executor)
         roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         return IDefinition.RolePermission({

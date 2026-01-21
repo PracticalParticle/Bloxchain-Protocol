@@ -128,6 +128,7 @@ library StateAbstraction {
     struct FunctionPermission {
         bytes4 functionSelector;
         uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
+        bool isHandlerSelector; // true for handler selector permissions (controls who can access), false for execution selector permissions (defines what action is performed)
     }
 
     struct FunctionSchema {
