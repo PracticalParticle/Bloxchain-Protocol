@@ -65,13 +65,13 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
 
     function _approveTransaction(
         uint256 txId
-    ) internal virtual override(BaseStateMachine, HookManager) nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
         return HookManager._approveTransaction(txId);
     }
 
     function _approveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
         return HookManager._approveTransactionWithMetaTx(metaTx);
     }
 
@@ -89,7 +89,7 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
 
     function _requestAndApproveTransaction(
         StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
         return HookManager._requestAndApproveTransaction(metaTx);
     }
 

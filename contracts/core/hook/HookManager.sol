@@ -53,7 +53,7 @@ abstract contract HookManager is BaseStateMachine {
      * @param functionSelector The function selector
      * @param hook The hook contract address
      *
-     * @notice Only wallets with OWNER_ROLE may manage hooks
+     * @notice Only the owner address may manage hooks
      * @notice Zero address is not allowed here; use clearHook to remove
      */
     function setHook(bytes4 functionSelector, address hook) external {
@@ -69,7 +69,7 @@ abstract contract HookManager is BaseStateMachine {
      * @param functionSelector The function selector
      * @param hook The hook contract address to remove
      *
-     * @notice Only wallets with OWNER_ROLE may manage hooks
+     * @notice Only the owner address may manage hooks
      */
     function clearHook(bytes4 functionSelector, address hook) external {
         SharedValidation.validateOwner(owner());
@@ -207,6 +207,7 @@ abstract contract HookManager is BaseStateMachine {
 
     /**
      * @dev Override to add onRequest hook execution
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _requestTransaction(
         address requester,
@@ -216,7 +217,7 @@ abstract contract HookManager is BaseStateMachine {
         bytes32 operationType,
         bytes4 functionSelector,
         bytes memory params
-    ) internal virtual override returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Core behavior first (Checks/Effects)
         StateAbstraction.TxRecord memory txRecord = super._requestTransaction(
             requester,
@@ -268,10 +269,11 @@ abstract contract HookManager is BaseStateMachine {
 
     /**
      * @dev Override to add onCancel hook execution
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _cancelTransaction(
         uint256 txId
-    ) internal virtual override returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Core behavior first
         StateAbstraction.TxRecord memory txRecord = super._cancelTransaction(txId);
 
@@ -284,10 +286,11 @@ abstract contract HookManager is BaseStateMachine {
 
     /**
      * @dev Override to add onMetaCancel hook execution
+     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _cancelTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
         // Core behavior first
         StateAbstraction.TxRecord memory txRecord = super._cancelTransactionWithMetaTx(metaTx);
 

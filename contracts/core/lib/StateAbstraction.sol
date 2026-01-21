@@ -160,16 +160,18 @@ library StateAbstraction {
         mapping(bytes4 => FunctionSchema) functions;
         EnumerableSet.Bytes32Set supportedFunctionsSet; // Using Bytes32Set for bytes4 selectors
         EnumerableSet.Bytes32Set supportedOperationTypesSet;
-        // Per-function target whitelist (always enforced; address(this) is always allowed)
-        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
-        // Per-function target hooks (generic pipeline for hook setup)
-        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
         
         // ============ META-TRANSACTION SUPPORT ============
         mapping(address => uint256) signerNonces;
         
         // ============ EVENT FORWARDING ============
         address eventForwarder;
+        
+        // ============ FUNCTION TARGET MANAGEMENT ============
+        // Per-function target whitelist (always enforced; address(this) is always allowed)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+        // Per-function target hooks (generic pipeline for hook setup)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
     }
 
     bytes32 constant OWNER_ROLE = keccak256(bytes("OWNER_ROLE"));
