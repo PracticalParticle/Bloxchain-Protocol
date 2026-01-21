@@ -7,8 +7,8 @@ import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/Mes
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Local imports
-import "../../../utils/SharedValidation.sol";
-import "../../../interfaces/IEventForwarder.sol";
+import "../utils/SharedValidation.sol";
+import "../interfaces/IEventForwarder.sol";
 
 /**
  * @title StateAbstraction

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 // Contracts imports
-import "../../base/lib/StateAbstraction.sol";
+import "../../../kernel/StateAbstraction.sol";
 
 /**
  * @title ISecureOwnable

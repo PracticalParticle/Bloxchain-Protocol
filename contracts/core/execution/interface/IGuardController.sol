@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../base/lib/StateAbstraction.sol";
+import "../../../kernel/StateAbstraction.sol";
 
 /**
  * @title IGuardController
