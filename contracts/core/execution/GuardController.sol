@@ -257,13 +257,27 @@ abstract contract GuardController is BaseStateMachine {
     // ============ INTERNAL VALIDATION HELPERS ============
 
     /**
+     * @dev Checks if a function selector is a known system macro selector
+     * @param functionSelector The function selector to check
+     * @return true if the selector is a known system macro selector, false otherwise
+     * @notice System macro selectors are special selectors that represent system-level operations
+     *         and are allowed to bypass certain security restrictions
+     * @notice Currently known macro selectors:
+     *         - NATIVE_TRANSFER_SELECTOR: For native token transfers
+     */
+    function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
+        return functionSelector == StateAbstraction.NATIVE_TRANSFER_SELECTOR;
+    }
+
+    /**
      * @dev Validates that GuardController is not attempting to access internal execution functions
      * @param target The target contract address
      * @param functionSelector The function selector to validate
      * @notice Internal functions use validateInternalCallInternal and should only be called
      *         through the contract's own workflow, not via GuardController
      * @notice Blocks all calls to address(this) to prevent bypassing internal-only protection
-     * @notice Exception: NATIVE_TRANSFER_SELECTOR is allowed to target address(this) for native token deposits
+     * @notice Exception: System macro selectors (e.g., NATIVE_TRANSFER_SELECTOR) are allowed
+     *         to target address(this) for system-level operations like native token deposits
      */
     function _validateNotInternalFunction(
         address target,
@@ -272,9 +286,16 @@ abstract contract GuardController is BaseStateMachine {
         // SECURITY: Prevent GuardController from accessing internal execution functions
         // Internal functions use validateInternalCallInternal and should only be called
         // through the contract's own workflow, not via GuardController
-        // Block all calls to address(this) to prevent bypassing internal-only protection
-        // Exception: NATIVE_TRANSFER_SELECTOR is allowed for native token transfers to the contract
-        if (target == address(this) && functionSelector != StateAbstraction.NATIVE_TRANSFER_SELECTOR) {
+        
+        // If target is this contract, we need to validate the function selector
+        if (target == address(this)) {
+            // Allow system macro selectors (e.g., NATIVE_TRANSFER_SELECTOR for native token deposits)
+            // These are special system-level operations that are safe to execute on address(this)
+            if (_isSystemMacroSelector(functionSelector)) {
+                return; // Allow system macro selectors
+            }
+            
+            // Block all other calls to address(this) to prevent bypassing internal-only protection
             revert SharedValidation.InternalFunctionNotAccessible(functionSelector);
         }
     }
