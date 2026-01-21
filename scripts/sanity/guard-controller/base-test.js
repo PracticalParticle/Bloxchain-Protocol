@@ -108,8 +108,9 @@ class BaseGuardControllerTest {
         this.UPDATE_TARGET_WHITELIST_META_SELECTOR = this.web3.utils.keccak256(
             'updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
+        // executeUpdateTargetWhitelist(bytes4 functionSelector, address target, bool isAdd)
         this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR = this.web3.utils.keccak256(
-            'executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)'
+            'executeUpdateTargetWhitelist(bytes4,address,bool)'
         ).slice(0, 10);
         
         // Test results
@@ -834,8 +835,10 @@ class BaseGuardControllerTest {
     }
 
     /**
-     * Create a meta-transaction for whitelist update
-     * @param {string} roleHash - Role hash (hex string)
+     * Create a meta-transaction for whitelist update.
+     * Note: Whitelist is now scoped per function selector only; roleHash is ignored but kept
+     * in the signature for backwards compatibility with existing tests.
+     * @param {string} roleHash - Legacy role hash (unused)
      * @param {string} functionSelector - Function selector (hex string)
      * @param {string} target - Target address to add or remove
      * @param {boolean} isAdd - True to add, false to remove
@@ -844,10 +847,9 @@ class BaseGuardControllerTest {
      */
     async createWhitelistUpdateMetaTx(roleHash, functionSelector, target, isAdd, signerAddress) {
         try {
-            // Get execution params from contract
+            // Get execution params from contract (per-function-selector whitelist)
             const executionParams = await this.callContractMethod(
                 this.contract.methods.updateTargetWhitelistExecutionParams(
-                    roleHash,
                     functionSelector,
                     target,
                     isAdd

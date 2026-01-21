@@ -48,3 +48,6 @@ ENV/
 *.tmp
 *.temp
 
+### Local Deployment Addresses ###
+deployed-addresses.json
+

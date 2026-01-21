@@ -35,7 +35,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     new TextEncoder().encode('updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
   protected readonly UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR: Hex = keccak256(
-    new TextEncoder().encode('executeUpdateTargetWhitelist(bytes32,bytes4,address,bool)')
+    new TextEncoder().encode('executeUpdateTargetWhitelist(bytes4,address,bool)')
   ).slice(0, 10) as Hex;
   protected readonly NATIVE_TRANSFER_SELECTOR: Hex = '0x58e2cfdb' as Hex; // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
 
@@ -213,7 +213,6 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    * Create and sign a meta-transaction for whitelist update
    */
   protected async createSignedMetaTxForWhitelistUpdate(
-    roleHash: Hex,
     functionSelector: Hex,
     target: Address,
     isAdd: boolean,
@@ -231,7 +230,6 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     // Get execution params
     console.log(`    📋 Getting execution params for whitelist update...`);
     const executionParams = await this.guardController.updateTargetWhitelistExecutionParams(
-      roleHash,
       functionSelector,
       target,
       isAdd

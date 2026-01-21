@@ -7,7 +7,6 @@ import { Address, Hex } from 'viem';
 import { BaseGuardControllerTest } from './base-test';
 
 export class WhitelistTests extends BaseGuardControllerTest {
-  private ownerRoleHash: Hex | null = null;
   private testTarget: Address | null = null;
 
   constructor() {
@@ -18,16 +17,11 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('\n🔄 TESTING COMPLETE WHITELIST MANAGEMENT WORKFLOW');
     console.log('==================================================');
     console.log('📋 This workflow tests the complete whitelist management cycle using SDK:');
-    console.log('   1. Get owner role hash');
-    console.log('   2. Add target to whitelist via meta-transaction (owner signs, broadcaster executes)');
-    console.log('   3. Verify target is whitelisted');
-    console.log('   4. Query all whitelisted targets');
-    console.log('   5. Remove target from whitelist via meta-transaction');
-    console.log('   6. Verify target is removed');
-
-    // Get owner role hash
-    this.ownerRoleHash = this.getRoleHash('OWNER_ROLE');
-    console.log(`\n📋 Owner Role Hash: ${this.ownerRoleHash}`);
+    console.log('   1. Add target to whitelist via meta-transaction (owner signs, broadcaster executes)');
+    console.log('   2. Verify target is whitelisted');
+    console.log('   3. Query all whitelisted targets');
+    console.log('   4. Remove target from whitelist via meta-transaction');
+    console.log('   5. Verify target is removed');
 
     // Use a test target address (one of the wallets that's not owner/broadcaster/recovery)
     const availableWallets = Object.keys(this.wallets).filter(
@@ -58,12 +52,11 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('─'.repeat(60));
 
     try {
-      if (!this.guardController || !this.ownerRoleHash || !this.testTarget) {
-        throw new Error('GuardController, ownerRoleHash, or testTarget not initialized');
+      if (!this.guardController || !this.testTarget) {
+        throw new Error('GuardController or testTarget not initialized');
       }
 
       console.log('📋 Step 1: Add target to whitelist using meta-transaction workflow');
-      console.log(`   Role Hash: ${this.ownerRoleHash}`);
       console.log(`   Function Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
       console.log(`   Target: ${this.testTarget}`);
       console.log(`   Operation: ADD`);
@@ -79,7 +72,6 @@ export class WhitelistTests extends BaseGuardControllerTest {
       // Create signed meta-transaction
       console.log('  📝 Creating signed meta-transaction...');
       const signedMetaTx = await this.createSignedMetaTxForWhitelistUpdate(
-        this.ownerRoleHash,
         this.NATIVE_TRANSFER_SELECTOR,
         this.testTarget,
         true, // isAdd = true
@@ -120,15 +112,14 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('─'.repeat(60));
 
     try {
-      if (!this.guardController || !this.ownerRoleHash || !this.testTarget) {
-        throw new Error('GuardController, ownerRoleHash, or testTarget not initialized');
+      if (!this.guardController || !this.testTarget) {
+        throw new Error('GuardController or testTarget not initialized');
       }
 
       console.log('📋 Step 2: Verify target is in whitelist');
 
       // Query allowed targets
       const allowedTargets = await this.guardController.getAllowedTargets(
-        this.ownerRoleHash,
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -162,14 +153,13 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('─'.repeat(60));
 
     try {
-      if (!this.guardController || !this.ownerRoleHash) {
-        throw new Error('GuardController or ownerRoleHash not initialized');
+      if (!this.guardController) {
+        throw new Error('GuardController not initialized');
       }
 
       console.log('📋 Step 3: Query all allowed targets for role and function selector');
 
       const allowedTargets = await this.guardController.getAllowedTargets(
-        this.ownerRoleHash,
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -197,12 +187,11 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('─'.repeat(60));
 
     try {
-      if (!this.guardController || !this.ownerRoleHash || !this.testTarget) {
-        throw new Error('GuardController, ownerRoleHash, or testTarget not initialized');
+      if (!this.guardController || !this.testTarget) {
+        throw new Error('GuardController or testTarget not initialized');
       }
 
       console.log('📋 Step 4: Remove target from whitelist using meta-transaction workflow');
-      console.log(`   Role Hash: ${this.ownerRoleHash}`);
       console.log(`   Function Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
       console.log(`   Target: ${this.testTarget}`);
       console.log(`   Operation: REMOVE`);
@@ -218,7 +207,6 @@ export class WhitelistTests extends BaseGuardControllerTest {
       // Create signed meta-transaction
       console.log('  📝 Creating signed meta-transaction...');
       const signedMetaTx = await this.createSignedMetaTxForWhitelistUpdate(
-        this.ownerRoleHash,
         this.NATIVE_TRANSFER_SELECTOR,
         this.testTarget,
         false, // isAdd = false (remove)
@@ -259,15 +247,14 @@ export class WhitelistTests extends BaseGuardControllerTest {
     console.log('─'.repeat(60));
 
     try {
-      if (!this.guardController || !this.ownerRoleHash || !this.testTarget) {
-        throw new Error('GuardController, ownerRoleHash, or testTarget not initialized');
+      if (!this.guardController || !this.testTarget) {
+        throw new Error('GuardController or testTarget not initialized');
       }
 
       console.log('📋 Step 5: Verify target is no longer in whitelist');
 
       // Query allowed targets
       const allowedTargets = await this.guardController.getAllowedTargets(
-        this.ownerRoleHash,
         this.NATIVE_TRANSFER_SELECTOR
       );
 

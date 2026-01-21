@@ -58,7 +58,7 @@ export interface IGuardController extends IBaseStateMachine {
   // Target Whitelist Management
   /**
    * @dev Creates execution params for updating the target whitelist for a role and function selector
-   * @param roleHash The role hash
+   * @param roleHash The role hash (currently ignored by GuardController and kept for backwards compatibility)
    * @param functionSelector The function selector
    * @param target The target address to add or remove
    * @param isAdd True to add the target, false to remove
@@ -85,7 +85,7 @@ export interface IGuardController extends IBaseStateMachine {
 
   /**
    * @dev Gets all whitelisted targets for a role and function selector
-   * @param roleHash The role hash
+   * @param roleHash The role hash (currently ignored by GuardController and kept for backwards compatibility)
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection

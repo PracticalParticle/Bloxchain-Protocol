@@ -120,17 +120,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceNotFound",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "caller",
         "type": "address"
@@ -183,12 +172,6 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -206,12 +189,6 @@
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
       {
         "indexed": true,
         "internalType": "bytes4",
@@ -2685,11 +2662,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -2999,11 +2971,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
@@ -3026,11 +2993,6 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
       {
         "internalType": "bytes4",
         "name": "functionSelector",
