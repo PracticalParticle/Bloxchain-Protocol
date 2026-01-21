@@ -324,7 +324,9 @@ class BaseGuardControllerTest {
         try {
             // Get actual role addresses from contract
             this.roles.owner = await this.callContractMethod(this.contract.methods.owner());
-            this.roles.broadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+            const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            // getBroadcasters() returns an array, get the first broadcaster
+            this.roles.broadcaster = broadcasters.length > 0 ? broadcasters[0] : null;
             this.roles.recovery = await this.callContractMethod(this.contract.methods.getRecovery());
             
             console.log('📋 DISCOVERED ROLE ASSIGNMENTS:');
@@ -338,7 +340,7 @@ class BaseGuardControllerTest {
                     this.roleWallets.owner = wallet;
                     console.log(`  🔑 Owner role served by: ${walletName} (${wallet.address})`);
                 }
-                if (wallet.address.toLowerCase() === this.roles.broadcaster.toLowerCase()) {
+                if (this.roles.broadcaster && wallet.address.toLowerCase() === this.roles.broadcaster.toLowerCase()) {
                     this.roleWallets.broadcaster = wallet;
                     console.log(`  🔑 Broadcaster role served by: ${walletName} (${wallet.address})`);
                 }

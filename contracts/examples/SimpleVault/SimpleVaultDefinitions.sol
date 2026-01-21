@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../kernel/StateAbstraction.sol";
+import "../../core/lib/StateAbstraction.sol";
 import "../../interfaces/IDefinition.sol";
 
 /**
@@ -139,42 +139,48 @@ library SimpleVaultDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            isHandlerSelector: true
         });
         
         // Owner: Withdraw Token Request
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve Withdrawal Delayed
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Cancel Withdrawal
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve Withdrawal Meta (signer)
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
+            isHandlerSelector: true
         });
 
         // Broadcaster: Approve Withdrawal Meta (executor)
         roleHashes[5] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
+            isHandlerSelector: true
         });
         
         return IDefinition.RolePermission({

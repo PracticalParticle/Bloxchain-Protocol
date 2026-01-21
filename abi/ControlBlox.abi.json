@@ -72,28 +72,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "item",
-        "type": "address"
-      }
-    ],
-    "name": "ItemAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "item",
-        "type": "address"
-      }
-    ],
-    "name": "ItemNotFound",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "provided",
         "type": "uint256"
@@ -249,27 +227,6 @@
       }
     ],
     "name": "RestrictedRecovery",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "TargetNotWhitelisted",
     "type": "error"
   },
   {
@@ -2287,6 +2244,11 @@
             "internalType": "uint16",
             "name": "grantedActionsBitmap",
             "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isHandlerSelector",
+            "type": "bool"
           }
         ],
         "internalType": "struct StateAbstraction.FunctionPermission[]",

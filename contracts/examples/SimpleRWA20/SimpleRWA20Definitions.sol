@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../kernel/StateAbstraction.sol";
+import "../../core/lib/StateAbstraction.sol";
 import "../../interfaces/IDefinition.sol";
 
 /**
@@ -83,28 +83,32 @@ library SimpleRWA20Definitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: MINT_TOKENS_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Burn Tokens Meta (signing)
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: BURN_TOKENS_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Mint Tokens Meta (execution)
         roleHashes[2] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: MINT_TOKENS_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Burn Tokens Meta (execution)
         roleHashes[3] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: BURN_TOKENS_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            isHandlerSelector: true
         });
         
         return IDefinition.RolePermission({

@@ -120,6 +120,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       // Query allowed targets
       const allowedTargets = await this.guardController.getAllowedTargets(
+        '0x' as Hex, // roleHash (ignored by contract, kept for backwards compatibility)
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -160,6 +161,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       console.log('📋 Step 3: Query all allowed targets for role and function selector');
 
       const allowedTargets = await this.guardController.getAllowedTargets(
+        '0x' as Hex, // roleHash (ignored by contract, kept for backwards compatibility)
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -255,6 +257,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       // Query allowed targets
       const allowedTargets = await this.guardController.getAllowedTargets(
+        '0x' as Hex, // roleHash (ignored by contract, kept for backwards compatibility)
         this.NATIVE_TRANSFER_SELECTOR
       );
 

@@ -87,7 +87,7 @@ library SharedValidation {
     error MaxWalletsZero(uint256 provided);
     error ConflictingMetaTxPermissions(bytes4 functionSelector);
     error InternalFunctionNotAccessible(bytes4 functionSelector);
-    error TargetNotWhitelisted(address target, bytes4 functionSelector, bytes32 roleHash);
+    error TargetNotWhitelisted(address target, bytes4 functionSelector);
     error FunctionSelectorMismatch(bytes4 providedSelector, bytes4 derivedSelector);
     error OperationTypeMismatch(bytes32 providedType, bytes32 derivedType);
     error InvalidRange(uint256 from, uint256 to);

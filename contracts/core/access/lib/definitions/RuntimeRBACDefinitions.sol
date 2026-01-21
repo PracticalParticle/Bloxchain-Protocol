@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../../../kernel/StateAbstraction.sol";
+import "../../../lib/StateAbstraction.sol";
 import "../../../../interfaces/IDefinition.sol";
 
 /**
@@ -100,7 +100,8 @@ library RuntimeRBACDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerHandlerActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerHandlerActions),
+            isHandlerSelector: true
         });
         
         // Owner: sign meta batch (execution function permission)
@@ -111,7 +112,8 @@ library RuntimeRBACDefinitions {
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            isHandlerSelector: false
         });
         
         // Broadcaster: execute meta batch (handler function permission)
@@ -121,7 +123,8 @@ library RuntimeRBACDefinitions {
         roleHashes[2] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterHandlerActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterHandlerActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: execute meta batch (execution function permission)
@@ -132,7 +135,8 @@ library RuntimeRBACDefinitions {
         roleHashes[3] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
+            isHandlerSelector: false
         });
         
         return IDefinition.RolePermission({

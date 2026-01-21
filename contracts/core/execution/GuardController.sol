@@ -58,18 +58,6 @@ import "./interface/IGuardController.sol";
  */
 abstract contract GuardController is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
-
-    // ============ TARGET WHITELIST STORAGE ============
-    
-    /**
-     * @dev Whitelist mapping: functionSelector -> allowed target addresses
-     * @notice Strict security: Target address MUST be in the whitelist for the function selector.
-     *         If whitelist is empty (length == 0), no targets are allowed - explicit deny.
-     *         Target must be explicitly added to whitelist to be allowed.
-     */
-    mapping(bytes4 => EnumerableSet.AddressSet) private _functionTargetWhitelist;
 
     // ============ EVENTS ============
     
@@ -162,10 +150,7 @@ abstract contract GuardController is BaseStateMachine {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
-        // SECURITY: Validate target whitelist
-        _validateTargetWhitelist(target, functionSelector, msg.sender);
-        
-        // Request via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Request via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
         StateAbstraction.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             target,
@@ -189,19 +174,9 @@ abstract contract GuardController is BaseStateMachine {
     ) public returns (StateAbstraction.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
         StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
-        _validateNotInternalFunction(
-            txRecord.params.target,
-            txRecord.params.executionSelector
-        );
+        _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
-        // SECURITY: Validate target whitelist
-        _validateTargetWhitelist(
-            txRecord.params.target,
-            txRecord.params.executionSelector,
-            msg.sender
-        );
-        
-        // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
         return _approveTransaction(txId);  
     }
     
@@ -216,17 +191,7 @@ abstract contract GuardController is BaseStateMachine {
     ) public returns (StateAbstraction.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
         StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
-        _validateNotInternalFunction(
-            txRecord.params.target,
-            txRecord.params.executionSelector
-        );
-        
-        // SECURITY: Validate target whitelist (for consistency, even though cancel doesn't execute)
-        _validateTargetWhitelist(
-            txRecord.params.target,
-            txRecord.params.executionSelector,
-            msg.sender
-        );
+        _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
         // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
         return _cancelTransaction(txId);
@@ -242,19 +207,9 @@ abstract contract GuardController is BaseStateMachine {
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
-        _validateNotInternalFunction(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector
-        );
+        _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // SECURITY: Validate target whitelist (validate against signer, not executor)
-        _validateTargetWhitelist(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector,
-            metaTx.params.signer
-        );
-        
-        // Approve via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
         return _approveTransactionWithMetaTx(metaTx);
     }
     
@@ -268,19 +223,9 @@ abstract contract GuardController is BaseStateMachine {
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
-        _validateNotInternalFunction(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector
-        );
+        _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // SECURITY: Validate target whitelist (validate against signer, not executor)
-        _validateTargetWhitelist(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector,
-            metaTx.params.signer
-        );
-        
-        // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Cancel via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
         return _cancelTransactionWithMetaTx(metaTx);
     }
     
@@ -296,19 +241,9 @@ abstract contract GuardController is BaseStateMachine {
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
-        _validateNotInternalFunction(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector
-        );
+        _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // SECURITY: Validate target whitelist (validate against signer, not executor)
-        _validateTargetWhitelist(
-            metaTx.txRecord.params.target,
-            metaTx.txRecord.params.executionSelector,
-            metaTx.params.signer
-        );
-        
-        // Request and approve via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Request and approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
         return _requestAndApproveTransaction(metaTx);
     }
     
@@ -322,13 +257,27 @@ abstract contract GuardController is BaseStateMachine {
     // ============ INTERNAL VALIDATION HELPERS ============
 
     /**
+     * @dev Checks if a function selector is a known system macro selector
+     * @param functionSelector The function selector to check
+     * @return true if the selector is a known system macro selector, false otherwise
+     * @notice System macro selectors are special selectors that represent system-level operations
+     *         and are allowed to bypass certain security restrictions
+     * @notice Currently known macro selectors:
+     *         - NATIVE_TRANSFER_SELECTOR: For native token transfers
+     */
+    function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
+        return functionSelector == StateAbstraction.NATIVE_TRANSFER_SELECTOR;
+    }
+
+    /**
      * @dev Validates that GuardController is not attempting to access internal execution functions
      * @param target The target contract address
      * @param functionSelector The function selector to validate
      * @notice Internal functions use validateInternalCallInternal and should only be called
      *         through the contract's own workflow, not via GuardController
      * @notice Blocks all calls to address(this) to prevent bypassing internal-only protection
-     * @notice Exception: NATIVE_TRANSFER_SELECTOR is allowed to target address(this) for native token deposits
+     * @notice Exception: System macro selectors (e.g., NATIVE_TRANSFER_SELECTOR) are allowed
+     *         to target address(this) for system-level operations like native token deposits
      */
     function _validateNotInternalFunction(
         address target,
@@ -337,39 +286,18 @@ abstract contract GuardController is BaseStateMachine {
         // SECURITY: Prevent GuardController from accessing internal execution functions
         // Internal functions use validateInternalCallInternal and should only be called
         // through the contract's own workflow, not via GuardController
-        // Block all calls to address(this) to prevent bypassing internal-only protection
-        // Exception: NATIVE_TRANSFER_SELECTOR is allowed for native token transfers to the contract
-        if (target == address(this) && functionSelector != StateAbstraction.NATIVE_TRANSFER_SELECTOR) {
+        
+        // If target is this contract, we need to validate the function selector
+        if (target == address(this)) {
+            // Allow system macro selectors (e.g., NATIVE_TRANSFER_SELECTOR for native token deposits)
+            // These are special system-level operations that are safe to execute on address(this)
+            if (_isSystemMacroSelector(functionSelector)) {
+                return; // Allow system macro selectors
+            }
+            
+            // Block all other calls to address(this) to prevent bypassing internal-only protection
             revert SharedValidation.InternalFunctionNotAccessible(functionSelector);
         }
-    }
-
-    /**
-     * @dev Validates that the target address is whitelisted for the function selector
-     * @param target The target contract address to validate
-     * @param functionSelector The function selector being called
-     * @param caller The address making the call
-     * @notice Strict security: Target MUST be in the whitelist for the function selector.
-     *         If whitelist is empty (length == 0), no targets are allowed - explicit deny.
-     */
-    function _validateTargetWhitelist(
-        address target,
-        bytes4 functionSelector,
-        address caller
-    ) internal view {
-        // Silence unused variable warning; RBAC is enforced separately by StateAbstraction
-        caller;
-
-        EnumerableSet.AddressSet storage whitelist = _functionTargetWhitelist[functionSelector];
-
-        // If target is in whitelist, validation passes
-        if (whitelist.contains(target)) {
-            return; // Target is whitelisted - allow
-        }
-
-        // Target is not whitelisted for this function selector
-        // Note: Role-based permission checks are handled by StateAbstraction; we pass bytes32(0) for role
-        revert SharedValidation.TargetNotWhitelisted(target, functionSelector, bytes32(0));
     }
 
     // ============ TARGET WHITELIST MANAGEMENT ============
@@ -384,13 +312,8 @@ abstract contract GuardController is BaseStateMachine {
         bytes4 functionSelector,
         address target
     ) internal {
-        SharedValidation.validateNotZeroAddress(target);
-        EnumerableSet.AddressSet storage whitelist = _functionTargetWhitelist[functionSelector];
-        
-        if (!whitelist.add(target)) {
-            revert SharedValidation.ItemAlreadyExists(target);
-        }
-
+        // Use StateAbstraction storage and helper to manage per-function whitelists.
+        _getSecureState().addTargetToFunctionWhitelist(functionSelector, target);
         emit TargetAddedToWhitelist(functionSelector, target);
     }
     
@@ -404,13 +327,8 @@ abstract contract GuardController is BaseStateMachine {
         bytes4 functionSelector,
         address target
     ) internal {
-        EnumerableSet.AddressSet storage whitelist = _functionTargetWhitelist[functionSelector];
-        
-        if (whitelist.remove(target)) {
-            emit TargetRemovedFromWhitelist(functionSelector, target);
-        } else {
-            revert SharedValidation.ItemNotFound(target);
-        }
+        _getSecureState().removeTargetFromFunctionWhitelist(functionSelector, target);
+        emit TargetRemovedFromWhitelist(functionSelector, target);
     }
 
     /**
@@ -475,18 +393,9 @@ abstract contract GuardController is BaseStateMachine {
     function getAllowedTargets(
         bytes4 functionSelector
     ) external view returns (address[] memory) {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
-        StateAbstraction._validateAnyRole(state); // Privacy: require any role to query
-        
-        EnumerableSet.AddressSet storage whitelist = _functionTargetWhitelist[functionSelector];
-        uint256 length = whitelist.length();
-        address[] memory targets = new address[](length);
-        
-        for (uint256 i = 0; i < length; i++) {
-            targets[i] = whitelist.at(i);
-        }
-        
-        return targets;
+        // Delegate to StateAbstraction, which enforces _validateAnyRole internally
+        // for privacy protection when reading whitelist configuration.
+        return _getSecureState().getFunctionWhitelistTargets(functionSelector);
     }
 }
 

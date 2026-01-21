@@ -104,7 +104,8 @@ export class Definitions implements IDefinition {
         roleHashes: result.roleHashes.map((hash: any) => hash as Hex),
         functionPermissions: result.functionPermissions.map((perm: any) => ({
           functionSelector: perm.functionSelector as Hex,
-          grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap) // uint16
+          grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap), // uint16
+          isHandlerSelector: perm.isHandlerSelector as boolean
         }))
       };
     } catch (error) {

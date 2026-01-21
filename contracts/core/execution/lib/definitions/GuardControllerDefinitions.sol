@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity ^0.8.25;
 
-import "../../../../kernel/StateAbstraction.sol";
+import "../../../lib/StateAbstraction.sol";
 import "../../../../interfaces/IDefinition.sol";
 
 /**
@@ -239,56 +239,64 @@ library GuardControllerDefinitions {
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockRequestActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockRequestActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve TimeLock Execution
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Cancel TimeLock Execution
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockCancelActions),
+            isHandlerSelector: true
         });
         
         // Owner: Request And Approve Execution (Meta-Tx)
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Approve TimeLock Execution With MetaTx
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxApproveActions),
+            isHandlerSelector: true
         });
         
         // Owner: Cancel TimeLock Execution With MetaTx
         roleHashes[5] = StateAbstraction.OWNER_ROLE;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxCancelActions),
+            isHandlerSelector: true
         });
 
         // Owner: Update Target Whitelist (Meta-Tx handler)
         roleHashes[6] = StateAbstraction.OWNER_ROLE;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            isHandlerSelector: true
         });
 
         // Owner: Update Target Whitelist (Execution selector)
         roleHashes[7] = StateAbstraction.OWNER_ROLE;
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            isHandlerSelector: false
         });
         
         // Broadcaster role permissions (5 entries)
@@ -305,35 +313,40 @@ library GuardControllerDefinitions {
         roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Approve TimeLock Execution With MetaTx
         roleHashes[9] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[9] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxApproveActions),
+            isHandlerSelector: true
         });
         
         // Broadcaster: Cancel TimeLock Execution With MetaTx
         roleHashes[10] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[10] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxCancelActions),
+            isHandlerSelector: true
         });
 
         // Broadcaster: Update Target Whitelist (Meta-Tx handler)
         roleHashes[11] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[11] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            isHandlerSelector: true
         });
 
         // Broadcaster: Update Target Whitelist (Execution selector)
         roleHashes[12] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[12] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            isHandlerSelector: false
         });
         
         // Recovery role permissions (3 entries)
@@ -350,21 +363,24 @@ library GuardControllerDefinitions {
         roleHashes[13] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[13] = StateAbstraction.FunctionPermission({
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockRequestActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockRequestActions),
+            isHandlerSelector: true
         });
         
         // Recovery: Approve TimeLock Execution
         roleHashes[14] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[14] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockApproveActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockApproveActions),
+            isHandlerSelector: true
         });
         
         // Recovery: Cancel TimeLock Execution
         roleHashes[15] = StateAbstraction.RECOVERY_ROLE;
         functionPermissions[15] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockCancelActions)
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockCancelActions),
+            isHandlerSelector: true
         });
         
         return IDefinition.RolePermission({

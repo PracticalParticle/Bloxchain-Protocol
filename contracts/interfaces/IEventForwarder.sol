@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 // Import TxRecord struct from StateAbstraction
-import "../kernel/StateAbstraction.sol";
+import "../core/lib/StateAbstraction.sol";
 
 /**
  * @title IEventForwarder

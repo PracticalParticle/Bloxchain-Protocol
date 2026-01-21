@@ -15,6 +15,7 @@ import { Uint16Bitmap } from '../utils/bitmap';
 export interface FunctionPermission {
   functionSelector: Hex;
   grantedActionsBitmap: Uint16Bitmap; // uint16 - bitmap for TxAction enum
+  isHandlerSelector: boolean; // true for handler selector permissions (controls who can access), false for execution selector permissions (defines what action is performed)
 }
 
 /**

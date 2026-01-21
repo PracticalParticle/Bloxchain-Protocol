@@ -7,8 +7,8 @@ import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/Mes
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Local imports
-import "../utils/SharedValidation.sol";
-import "../interfaces/IEventForwarder.sol";
+import "../../utils/SharedValidation.sol";
+import "../../interfaces/IEventForwarder.sol";
 
 /**
  * @title StateAbstraction
@@ -128,6 +128,7 @@ library StateAbstraction {
     struct FunctionPermission {
         bytes4 functionSelector;
         uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
+        bool isHandlerSelector; // true for handler selector permissions (controls who can access), false for execution selector permissions (defines what action is performed)
     }
 
     struct FunctionSchema {
@@ -165,6 +166,12 @@ library StateAbstraction {
         
         // ============ EVENT FORWARDING ============
         address eventForwarder;
+        
+        // ============ FUNCTION TARGET MANAGEMENT ============
+        // Per-function target whitelist (always enforced; address(this) is always allowed)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+        // Per-function target hooks (generic pipeline for hook setup)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
     }
 
     bytes32 constant OWNER_ROLE = keccak256(bytes("OWNER_ROLE"));
@@ -318,6 +325,8 @@ library StateAbstraction {
         bytes memory executionParams
     ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, executionSelector, target);
 
         TxRecord memory txRequestRecord = createNewTxRecord(
             self,
@@ -1154,6 +1163,160 @@ library StateAbstraction {
     }
 
     /**
+     * @dev Adds a target address to the whitelist for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose whitelist will be updated.
+     * @param target The target address to add to the whitelist.
+     */
+    function addTargetToFunctionWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        SharedValidation.validateNotZeroAddress(target);
+
+        // Function selector must be registered in the schema set
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        if (!set.add(target)) {
+            revert SharedValidation.ItemAlreadyExists(target);
+        }
+    }
+
+    /**
+     * @dev Removes a target address from the whitelist for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose whitelist will be updated.
+     * @param target The target address to remove from the whitelist.
+     */
+    function removeTargetFromFunctionWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        if (!set.remove(target)) {
+            revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Validates that the target address is whitelisted for the given function selector.
+     *      Internal contract calls (address(this)) are always allowed.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector being executed.
+     * @param target The target contract address.
+     * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
+     *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
+     */
+    function _validateFunctionTargetWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) internal view {
+        // Fast path: selector not registered, skip validation
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            return;
+        }
+
+        // SECURITY: Internal contract calls are always allowed
+        // This enables internal execution functions to work without whitelist configuration
+        if (target == address(this)) {
+            return;
+        }
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+
+        // If target is in whitelist, validation passes
+        if (set.contains(target)) {
+            return;
+        }
+
+        // Target is not whitelisted for this function selector.
+        revert SharedValidation.TargetNotWhitelisted(target, functionSelector);
+    }
+
+    /**
+     * @dev Returns all whitelisted target addresses for a function selector.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to query.
+     * @return Array of whitelisted target addresses.
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     */
+    function getFunctionWhitelistTargets(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public view returns (address[] memory) {
+        _validateAnyRole(self);
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        return _convertAddressSetToArray(set);
+    }
+
+    // ============ FUNCTION TARGET HOOKS MANAGEMENT ============
+
+    /**
+     * @dev Adds a target address to the hooks for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose hooks will be updated.
+     * @param target The target address to add to the hooks.
+     */
+    function addTargetToFunctionHooks(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        SharedValidation.validateNotZeroAddress(target);
+
+        // Function selector must be registered in the schema set
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        if (!set.add(target)) {
+            revert SharedValidation.ItemAlreadyExists(target);
+        }
+    }
+
+    /**
+     * @dev Removes a target address from the hooks for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose hooks will be updated.
+     * @param target The target address to remove from the hooks.
+     */
+    function removeTargetFromFunctionHooks(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        if (!set.remove(target)) {
+            revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Returns all hook target addresses for a function selector.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to query.
+     * @return Array of hook target addresses.
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     */
+    function getFunctionHookTargets(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public view returns (address[] memory) {
+        _validateAnyRole(self);
+
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        return _convertAddressSetToArray(set);
+    }
+
+    /**
      * @dev Returns all function schemas that use a specific operation type.
      * @param self The SecureOperationState to check.
      * @param operationType The operation type to search for.
@@ -1842,6 +2005,21 @@ library StateAbstraction {
                 }
             }
         }
+    }
+
+    /**
+     * @dev Generic helper to convert AddressSet to array
+     * @param set The EnumerableSet.AddressSet to convert
+     * @return Array of address values
+     */
+    function _convertAddressSetToArray(EnumerableSet.AddressSet storage set) 
+        internal view returns (address[] memory) {
+        uint256 length = set.length();
+        address[] memory result = new address[](length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = set.at(i);
+        }
+        return result;
     }
 
     /**

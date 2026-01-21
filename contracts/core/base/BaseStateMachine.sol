@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Contracts imports
-import "../../kernel/StateAbstraction.sol";
+import "../lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./interface/IBaseStateMachine.sol";
 
