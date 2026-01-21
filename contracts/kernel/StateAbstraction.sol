@@ -161,6 +161,8 @@ library StateAbstraction {
         EnumerableSet.Bytes32Set supportedOperationTypesSet;
         // Per-function target whitelist (always enforced; address(this) is always allowed)
         mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+        // Per-function target hooks (generic pipeline for hook setup)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
         
         // ============ META-TRANSACTION SUPPORT ============
         mapping(address => uint256) signerNonces;
@@ -1248,14 +1250,67 @@ library StateAbstraction {
         _validateAnyRole(self);
 
         EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
-        uint256 length = set.length();
-        address[] memory targets = new address[](length);
+        return _convertAddressSetToArray(set);
+    }
 
-        for (uint256 i = 0; i < length; i++) {
-            targets[i] = set.at(i);
+    // ============ FUNCTION TARGET HOOKS MANAGEMENT ============
+
+    /**
+     * @dev Adds a target address to the hooks for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose hooks will be updated.
+     * @param target The target address to add to the hooks.
+     */
+    function addTargetToFunctionHooks(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        SharedValidation.validateNotZeroAddress(target);
+
+        // Function selector must be registered in the schema set
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
 
-        return targets;
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        if (!set.add(target)) {
+            revert SharedValidation.ItemAlreadyExists(target);
+        }
+    }
+
+    /**
+     * @dev Removes a target address from the hooks for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose hooks will be updated.
+     * @param target The target address to remove from the hooks.
+     */
+    function removeTargetFromFunctionHooks(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        if (!set.remove(target)) {
+            revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Returns all hook target addresses for a function selector.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to query.
+     * @return Array of hook target addresses.
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     */
+    function getFunctionHookTargets(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public view returns (address[] memory) {
+        _validateAnyRole(self);
+
+        EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        return _convertAddressSetToArray(set);
     }
 
     /**
@@ -1947,6 +2002,21 @@ library StateAbstraction {
                 }
             }
         }
+    }
+
+    /**
+     * @dev Generic helper to convert AddressSet to array
+     * @param set The EnumerableSet.AddressSet to convert
+     * @return Array of address values
+     */
+    function _convertAddressSetToArray(EnumerableSet.AddressSet storage set) 
+        internal view returns (address[] memory) {
+        uint256 length = set.length();
+        address[] memory result = new address[](length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = set.at(i);
+        }
+        return result;
     }
 
     /**
