@@ -159,6 +159,8 @@ library StateAbstraction {
         mapping(bytes4 => FunctionSchema) functions;
         EnumerableSet.Bytes32Set supportedFunctionsSet; // Using Bytes32Set for bytes4 selectors
         EnumerableSet.Bytes32Set supportedOperationTypesSet;
+        // Per-function target whitelist (always enforced; address(this) is always allowed)
+        mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
         
         // ============ META-TRANSACTION SUPPORT ============
         mapping(address => uint256) signerNonces;
@@ -318,6 +320,8 @@ library StateAbstraction {
         bytes memory executionParams
     ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, executionSelector, target);
 
         TxRecord memory txRequestRecord = createNewTxRecord(
             self,
@@ -1151,6 +1155,107 @@ library StateAbstraction {
         
         FunctionSchema memory functionSchema = self.functions[functionSelector];
         return hasActionInBitmap(functionSchema.supportedActionsBitmap, action);
+    }
+
+    /**
+     * @dev Adds a target address to the whitelist for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose whitelist will be updated.
+     * @param target The target address to add to the whitelist.
+     */
+    function addTargetToFunctionWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        SharedValidation.validateNotZeroAddress(target);
+
+        // Function selector must be registered in the schema set
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        if (!set.add(target)) {
+            revert SharedValidation.ItemAlreadyExists(target);
+        }
+    }
+
+    /**
+     * @dev Removes a target address from the whitelist for a function selector.
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector whose whitelist will be updated.
+     * @param target The target address to remove from the whitelist.
+     */
+    function removeTargetFromFunctionWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) public {
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        if (!set.remove(target)) {
+            revert SharedValidation.ItemNotFound(target);
+        }
+    }
+
+    /**
+     * @dev Validates that the target address is whitelisted for the given function selector.
+     *      Internal contract calls (address(this)) are always allowed.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector being executed.
+     * @param target The target contract address.
+     * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
+     *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
+     */
+    function _validateFunctionTargetWhitelist(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        address target
+    ) internal view {
+        // Fast path: selector not registered, skip validation
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            return;
+        }
+
+        // SECURITY: Internal contract calls are always allowed
+        // This enables internal execution functions to work without whitelist configuration
+        if (target == address(this)) {
+            return;
+        }
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+
+        // If target is in whitelist, validation passes
+        if (set.contains(target)) {
+            return;
+        }
+
+        // Target is not whitelisted for this function selector.
+        revert SharedValidation.TargetNotWhitelisted(target, functionSelector);
+    }
+
+    /**
+     * @dev Returns all whitelisted target addresses for a function selector.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to query.
+     * @return Array of whitelisted target addresses.
+     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     */
+    function getFunctionWhitelistTargets(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public view returns (address[] memory) {
+        _validateAnyRole(self);
+
+        EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
+        uint256 length = set.length();
+        address[] memory targets = new address[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            targets[i] = set.at(i);
+        }
+
+        return targets;
     }
 
     /**

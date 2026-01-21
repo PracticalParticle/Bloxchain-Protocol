@@ -182,8 +182,7 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ TARGET WHITELIST MANAGEMENT ============
 
   /**
-   * @dev Creates execution params for updating the target whitelist for a role and function selector.
-   * @param roleHash The role hash (currently ignored by the underlying contract; kept for backwards compatibility)
+   * @dev Creates execution params for updating the target whitelist for a function selector.
    * @param functionSelector The function selector
    * @param target The target address to add or remove
    * @param isAdd True to add the target, false to remove
@@ -191,8 +190,6 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
    * @notice Validation focuses on basic input checks; full validation occurs during execution
    */
   async updateTargetWhitelistExecutionParams(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    roleHash: Hex,
     functionSelector: Hex,
     target: Address,
     isAdd: boolean
