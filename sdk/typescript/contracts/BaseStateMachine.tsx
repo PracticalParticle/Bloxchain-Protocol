@@ -288,11 +288,11 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
   }
 
   /**
-   * @dev Returns the broadcaster address
-   * @return The broadcaster address
+   * @dev Returns all broadcaster addresses
+   * @return Array of broadcaster addresses
    */
-  async getBroadcaster(): Promise<Address> {
-    return this.executeReadContract<Address>('getBroadcaster');
+  async getBroadcasters(): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getBroadcasters');
   }
 
   /**

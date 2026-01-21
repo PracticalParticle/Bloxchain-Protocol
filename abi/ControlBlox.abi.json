@@ -207,22 +207,6 @@
       },
       {
         "internalType": "address",
-        "name": "broadcaster",
-        "type": "address"
-      }
-    ],
-    "name": "RestrictedBroadcaster",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "owner",
         "type": "address"
       }
@@ -2336,12 +2320,12 @@
   },
   {
     "inputs": [],
-    "name": "getBroadcaster",
+    "name": "getBroadcasters",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "address[]",
         "name": "",
-        "type": "address"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -5594,7 +5578,7 @@
         "type": "bytes"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
     "type": "function",
     "constant": true
   },

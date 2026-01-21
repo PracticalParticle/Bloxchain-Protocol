@@ -101,7 +101,7 @@ export interface IBaseStateMachine {
 
   // System role query functions
   owner(): Promise<Address>;
-  getBroadcaster(): Promise<Address>;
+  getBroadcasters(): Promise<Address[]>;
   getRecovery(): Promise<Address>;
 
   // Interface support

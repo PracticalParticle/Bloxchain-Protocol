@@ -425,7 +425,7 @@ abstract contract GuardController is BaseStateMachine {
         bytes4 functionSelector,
         address target,
         bool isAdd
-    ) public view returns (bytes memory) {
+    ) public pure returns (bytes memory) {
         SharedValidation.validateNotZeroAddress(target);
         return abi.encode(functionSelector, target, isAdd);
     }
@@ -439,7 +439,7 @@ abstract contract GuardController is BaseStateMachine {
     function updateTargetWhitelistRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         return _requestAndApproveTransaction(metaTx);

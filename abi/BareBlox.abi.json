@@ -779,12 +779,12 @@
   },
   {
     "inputs": [],
-    "name": "getBroadcaster",
+    "name": "getBroadcasters",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "address[]",
         "name": "",
-        "type": "address"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",

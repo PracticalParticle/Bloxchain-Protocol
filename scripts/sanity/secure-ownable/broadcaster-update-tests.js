@@ -273,9 +273,10 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
             this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
-            // Verify broadcaster address changed
-            const newBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
-            console.log(`  📡 New broadcaster address: ${newBroadcaster}`);
+            // Verify broadcaster address changed (check primary broadcaster)
+            const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            const newBroadcaster = broadcasters[0];
+            console.log(`  📡 New broadcaster address (primary): ${newBroadcaster}`);
 
             console.log('  🎉 Meta-transaction approval test completed');
 
@@ -304,8 +305,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         await this.checkPendingTransactions();
 
         try {
-            // Get current broadcaster before the test
-            const currentBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+            // Get current primary broadcaster before the test
+            const broadcastersBefore = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            const currentBroadcaster = broadcastersBefore[0];
             
             // Create a new broadcaster update request (use wallet5 since broadcaster is now wallet2)
             const txRecord = await this.createBroadcasterRequestForTimeDelayApproval();
@@ -333,9 +335,10 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('owner'));
             this.assertTest(tx.status === '5', 'Transaction completed successfully');
 
-            // Verify broadcaster address changed to target
-            const finalBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
-            console.log(`  📡 Final broadcaster address: ${finalBroadcaster}`);
+            // Verify primary broadcaster address changed to target
+            const broadcastersAfter = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            const finalBroadcaster = broadcastersAfter[0];
+            console.log(`  📡 Final primary broadcaster address: ${finalBroadcaster}`);
             console.log(`  🛡️ Current recovery address: ${await this.callContractMethod(this.contract.methods.getRecovery())}`);
             
             // Verify that the broadcaster was successfully updated to a different address
@@ -353,8 +356,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     }
 
     async createBroadcasterRequestAndDeriveTxId() {
-        // Get current broadcaster address
-        const currentBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+        // Get current primary broadcaster address
+        const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+        const currentBroadcaster = broadcasters[0];
         
         // Find first unused wallet for broadcaster update
         const newBroadcaster = this.findUnusedWalletForBroadcaster(currentBroadcaster);
@@ -433,8 +437,9 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     }
 
     async createBroadcasterRequestForTimeDelayApproval() {
-        // Get current broadcaster address
-        const currentBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+        // Get current primary broadcaster address
+        const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+        const currentBroadcaster = broadcasters[0];
         
         // For time delay approval, we want to change to any unused address
         // Use the dynamic wallet selection to find an unused wallet

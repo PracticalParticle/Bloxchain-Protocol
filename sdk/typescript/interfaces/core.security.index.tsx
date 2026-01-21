@@ -112,7 +112,7 @@ export interface ISecureOwnable {
   getTransaction(txId: bigint): Promise<TxRecord>;
   getPendingTransactions(): Promise<bigint[]>;
   getTimeLockPeriodSec(): Promise<bigint>;
-  // Note: owner(), getBroadcaster(), and getRecovery() are available through BaseStateMachine inheritance
+  // Note: owner(), getBroadcasters(), and getRecovery() are available through BaseStateMachine inheritance
 
   // Operation Type Support
   getSupportedOperationTypes(): Promise<Hex[]>;

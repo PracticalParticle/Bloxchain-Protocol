@@ -64,17 +64,16 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   // Recovery Management
+  /**
+   * @dev Wrapper matching ISecureOwnable interface; delegates to updateRecoveryExecutionParams
+   */
+  async updateRecoveryExecutionOptions(newRecoveryAddress: Address): Promise<Hex> {
+    return this.updateRecoveryExecutionParams(newRecoveryAddress);
+  }
+
   async updateRecoveryExecutionParams(newRecoveryAddress: Address): Promise<Hex> {
-    const result = await this.executeReadContract<Hex>('updateRecoveryExecutionParams', [newRecoveryAddress]);
-    // Ensure result is a Hex string (viem should return this, but ensure it's properly formatted)
-    if (typeof result === 'string' && result.startsWith('0x')) {
-      return result as Hex;
-    }
-    // If result is Uint8Array or other format, convert to Hex
-    if (result instanceof Uint8Array) {
-      return `0x${Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('')}` as Hex;
-    }
-    throw new Error(`Unexpected return type from updateRecoveryExecutionParams: ${typeof result}`);
+    // Contract ABI encodes bytes as Hex string; read directly as Hex
+    return this.executeReadContract<Hex>('updateRecoveryExecutionParams', [newRecoveryAddress]);
   }
 
   async updateRecoveryRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
@@ -82,31 +81,16 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   // TimeLock Management
+  /**
+   * @dev Wrapper matching ISecureOwnable interface; delegates to updateTimeLockExecutionParams
+   */
+  async updateTimeLockExecutionOptions(newTimeLockPeriodSec: bigint): Promise<Hex> {
+    return this.updateTimeLockExecutionParams(newTimeLockPeriodSec);
+  }
+
   async updateTimeLockExecutionParams(newTimeLockPeriodSec: bigint): Promise<Hex> {
-    const result = await this.executeReadContract<any>('updateTimeLockExecutionParams', [newTimeLockPeriodSec]);
-    
-    // viem returns bytes as Hex string, but ensure it's properly formatted
-    if (result === null || result === undefined) {
-      throw new Error('updateTimeLockExecutionParams returned null or undefined');
-    }
-    
-    // Convert to Hex if needed
-    if (typeof result === 'string' && result.startsWith('0x')) {
-      return result as Hex;
-    }
-    
-    // If result is Uint8Array, convert to Hex
-    if (result instanceof Uint8Array) {
-      const { toHex } = await import('viem');
-      return toHex(result) as Hex;
-    }
-    
-    // If result is already a Hex type from viem
-    if (typeof result === 'string') {
-      return `0x${result.replace(/^0x/, '')}` as Hex;
-    }
-    
-    throw new Error(`Unexpected return type from updateTimeLockExecutionParams: ${typeof result}, value: ${result}`);
+    // Contract ABI encodes bytes as Hex string; read directly as Hex
+    return this.executeReadContract<Hex>('updateTimeLockExecutionParams', [newTimeLockPeriodSec]);
   }
 
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
@@ -125,7 +109,7 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
 
   // Note: The following methods are available through BaseStateMachine inheritance:
   // - owner()
-  // - getBroadcaster()
+  // - getBroadcasters()
   // - getRecovery()
   // - getTimeLockPeriodSec()
   // - getSupportedOperationTypes()

@@ -102,11 +102,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Returns the broadcaster address
-     * @return The broadcaster address
+     * @dev Returns all broadcaster addresses for the BROADCASTER_ROLE
+     * @return Array of broadcaster addresses
      */
-    function getBroadcaster() public view returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, 0);
+    function getBroadcasters() public view returns (address[] memory) {
+        return _getAuthorizedWallets(StateAbstraction.BROADCASTER_ROLE);
     }
 
     /**
@@ -494,6 +494,23 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
+     * @dev Centralized function to get all authorized wallets for a role
+     * @param roleHash The role hash
+     * @return Array of authorized wallet addresses
+     */
+    function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[] memory) {
+        StateAbstraction.Role storage role = _secureState.roles[roleHash];
+        uint256 walletCount = role.walletCount;
+
+        address[] memory wallets = new address[](walletCount);
+        for (uint256 i = 0; i < walletCount; i++) {
+            wallets[i] = _getAuthorizedWalletAt(roleHash, i);
+        }
+
+        return wallets;
+    }
+
+    /**
      * @dev Centralized function to update assigned wallet for a role
      * @param roleHash The role hash
      * @param newWallet The new wallet address
@@ -566,6 +583,16 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         StateAbstraction.TxAction action
     ) internal view returns (bool) {
         return _secureState.hasActionPermission(caller, functionSelector, action);
+    }
+
+    /**
+     * @dev Internal helper to validate that a caller has the BROADCASTER_ROLE
+     * @param caller The address to validate
+     */
+    function _validateBroadcaster(address caller) internal view {
+        if (!hasRole(StateAbstraction.BROADCASTER_ROLE, caller)) {
+            revert SharedValidation.NoPermission(caller);
+        }
     }
 
 }

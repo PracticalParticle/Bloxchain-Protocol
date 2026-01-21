@@ -144,7 +144,7 @@ contract SimpleVault is SecureOwnable {
      * @param metaTx Meta transaction data
      */
     function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         return _approveTransactionWithMetaTx(metaTx);
     }
 

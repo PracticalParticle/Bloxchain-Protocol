@@ -204,7 +204,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         external 
         returns (StateAbstraction.TxRecord memory) 
     {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         return _approveTransactionWithMetaTx(metaTx);
     }
 
@@ -227,7 +227,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         external 
         returns (StateAbstraction.TxRecord memory) 
     {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         emit TransactionCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -241,7 +241,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     function requestAndApproveTransactionWithMetaTx(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
-        SharedValidation.validateBroadcaster(getBroadcaster());
+        _validateBroadcaster(msg.sender);
         return _requestAndApproveTransaction(metaTx);
     }
 

@@ -216,8 +216,10 @@ library StateAbstraction {
         self.txCounter = 0;
 
         // Create base roles first
+        // OWNER and RECOVERY remain single-wallet roles (maxWallets = 1)
+        // BROADCASTER is now a multi-wallet role with support for up to 3 wallets
         createRole(self, "OWNER_ROLE", 1, true);
-        createRole(self, "BROADCASTER_ROLE", 1, true);
+        createRole(self, "BROADCASTER_ROLE", 3, true);
         createRole(self, "RECOVERY_ROLE", 1, true);
         
         // Add authorized wallets to roles
