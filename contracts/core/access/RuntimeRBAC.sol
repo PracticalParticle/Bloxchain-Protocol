@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 // Contract imports
 import "../base/BaseStateMachine.sol";
-import "../../kernel/StateAbstraction.sol";
+import "../lib/StateAbstraction.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";

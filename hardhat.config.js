@@ -4,7 +4,16 @@ require("solidity-docgen");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.25",
+  solidity: {
+    version: "0.8.25",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      },
+      viaIR: true
+    }
+  },
   networks: {
     hardhat: {
       // Configuration for the built-in Hardhat Network
