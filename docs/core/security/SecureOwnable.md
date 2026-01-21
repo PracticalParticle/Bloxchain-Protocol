@@ -46,6 +46,19 @@ function initialize(address initialOwner, address broadcaster, address recovery,
 
 ---
 
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) public view returns (bool)
+```
+
+See {IERC165-supportsInterface}.
+
+
+
+
+---
+
 ### transferOwnershipRequest
 
 ```solidity
@@ -214,19 +227,19 @@ Cancels a pending broadcaster update transaction using a meta-transaction
 
 ---
 
-### updateRecoveryExecutionOptions
+### updateRecoveryExecutionParams
 
 ```solidity
-function updateRecoveryExecutionOptions(address newRecoveryAddress) public view returns (bytes)
+function updateRecoveryExecutionParams(address newRecoveryAddress) public view returns (bytes)
 ```
 
-Creates execution options for updating the recovery address
+Creates execution params for updating the recovery address
 
 **Parameters:**
 - `` (): The new recovery address
 
 **Returns:**
-- The execution options
+- The execution params
 
 
 ---
@@ -248,19 +261,19 @@ Requests and approves a recovery address update using a meta-transaction
 
 ---
 
-### updateTimeLockExecutionOptions
+### updateTimeLockExecutionParams
 
 ```solidity
-function updateTimeLockExecutionOptions(uint256 newTimeLockPeriodSec) public view returns (bytes)
+function updateTimeLockExecutionParams(uint256 newTimeLockPeriodSec) public view returns (bytes)
 ```
 
-Creates execution options for updating the time lock period
+Creates execution params for updating the time lock period
 
 **Parameters:**
 - `` (): The new time lock period in seconds
 
 **Returns:**
-- The execution options
+- The execution params
 
 
 ---
@@ -342,51 +355,6 @@ External function that can only be called by the contract itself to execute time
 
 ---
 
-### owner
-
-```solidity
-function owner() public view returns (address)
-```
-
-Returns the owner of the contract
-
-
-**Returns:**
-- The owner of the contract
-
-
----
-
-### getBroadcaster
-
-```solidity
-function getBroadcaster() public view returns (address)
-```
-
-Returns the broadcaster address
-
-
-**Returns:**
-- The broadcaster address
-
-
----
-
-### getRecovery
-
-```solidity
-function getRecovery() public view returns (address)
-```
-
-Returns the recovery address
-
-
-**Returns:**
-- The recovery address
-
-
----
-
 ### _transferOwnership
 
 ```solidity
@@ -405,13 +373,22 @@ Transfers ownership of the contract
 ### _updateBroadcaster
 
 ```solidity
-function _updateBroadcaster(address newBroadcaster) internal nonpayable
+function _updateBroadcaster(address newBroadcaster, uint256 location) internal nonpayable
 ```
 
-Updates the broadcaster address
+Updates the broadcaster role at a specific index (location)
 
 **Parameters:**
-- `` (): The new broadcaster address
+- `` (): The new broadcaster address (zero address to revoke)
+- `` (): The index in the broadcaster role&#x27;s authorized wallets set
+
+Logic:
+- If a broadcaster exists at &#x60;location&#x60; and &#x60;newBroadcaster&#x60; is non-zero,
+  update that slot from old to new (role remains full).
+- If no broadcaster exists at &#x60;location&#x60; and &#x60;newBroadcaster&#x60; is non-zero,
+  assign &#x60;newBroadcaster&#x60; to the broadcaster role (respecting maxWallets).
+- If &#x60;newBroadcaster&#x60; is the zero address and a broadcaster exists at &#x60;location&#x60;,
+  revoke that broadcaster from the role.
 
 
 
@@ -442,19 +419,6 @@ Updates the time lock period
 
 **Parameters:**
 - `` (): The new time lock period in seconds
-
-
-
----
-
-### supportsInterface
-
-```solidity
-function supportsInterface(bytes4 interfaceId) public view returns (bool)
-```
-
-See {IERC165-supportsInterface}.
-
 
 
 

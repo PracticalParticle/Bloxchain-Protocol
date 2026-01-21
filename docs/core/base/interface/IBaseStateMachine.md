@@ -34,7 +34,7 @@ Creates meta-transaction parameters with specified values
 ### generateUnsignedMetaTransactionForNew
 
 ```solidity
-function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, enum StateAbstraction.ExecutionType executionType, bytes executionOptions, struct StateAbstraction.MetaTxParams metaTxParams) external view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct StateAbstraction.MetaTxParams metaTxParams) external view returns (struct StateAbstraction.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for a new operation
@@ -45,8 +45,8 @@ Generates an unsigned meta-transaction for a new operation
 - `` (): The ETH value to send
 - `` (): The gas limit for execution
 - `` (): The type of operation
-- `` (): The type of execution (STANDARD or RAW)
-- `` (): The encoded execution options
+- `` (): The function selector to execute (0x00000000 for simple ETH transfers)
+- `` (): The encoded parameters for the function (empty for simple ETH transfers)
 - `` (): The meta-transaction parameters
 
 **Returns:**

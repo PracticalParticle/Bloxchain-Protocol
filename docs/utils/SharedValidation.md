@@ -93,21 +93,6 @@ Validates that a target address is not zero
 
 ---
 
-### validateRequesterAddress
-
-```solidity
-function validateRequesterAddress(address requester) internal pure
-```
-
-Validates that a requester address is not zero
-
-**Parameters:**
-- `` (): The requester address to validate
-
-
-
----
-
 ### validateHandlerContract
 
 ```solidity
@@ -118,21 +103,6 @@ Validates that a handler contract address is not zero
 
 **Parameters:**
 - `` (): The handler contract address to validate
-
-
-
----
-
-### validateSignerAddress
-
-```solidity
-function validateSignerAddress(address signer) internal pure
-```
-
-Validates that a signer address is not zero
-
-**Parameters:**
-- `` (): The signer address to validate
 
 
 
@@ -260,21 +230,6 @@ Validates that a recovered signer is not the zero address
 
 ---
 
-### validateSignature
-
-```solidity
-function validateSignature(bytes signature) internal pure
-```
-
-Validates that a signature is not empty
-
-**Parameters:**
-- `` (): The signature to validate
-
-
-
----
-
 ### validateOwner
 
 ```solidity
@@ -336,6 +291,22 @@ Validates that the caller is the broadcaster
 
 ---
 
+### validateOwnerIsSigner
+
+```solidity
+function validateOwnerIsSigner(address signer, address owner) internal pure
+```
+
+Validates that the signer of a meta-transaction is the owner
+
+**Parameters:**
+- `` (): The signer address from the meta-transaction
+- `` (): The current owner address
+
+
+
+---
+
 ### validateInternalCall
 
 ```solidity
@@ -346,77 +317,6 @@ Validates that the function is being called internally by the contract itself
 
 **Parameters:**
 - `` (): The address of the contract
-
-
-
----
-
-### validatePermission
-
-```solidity
-function validatePermission(address caller) internal pure
-```
-
-Validates that the caller has permission
-
-**Parameters:**
-- `` (): The caller address
-
-
-
----
-
-### validatePermissionExecute
-
-```solidity
-function validatePermissionExecute(address caller) internal pure
-```
-
-Validates that the caller has permission to execute a specific function
-
-**Parameters:**
-- `` (): The caller address
-
-
-
----
-
-### validateSignerAuthorized
-
-```solidity
-function validateSignerAuthorized(address signer) internal pure
-```
-
-Validates that a signer is authorized
-
-**Parameters:**
-- `` (): The signer address to validate
-
-
-
----
-
-### validateOperationSupported
-
-```solidity
-function validateOperationSupported() internal pure
-```
-
-Validates that an operation type is supported
-
-
-
-
----
-
-### validateOperationTypeNew
-
-```solidity
-function validateOperationTypeNew() internal pure
-```
-
-Validates that an operation type doesn't already exist
-
 
 
 
@@ -453,21 +353,6 @@ Validates that an operation type matches the expected type
 
 ---
 
-### validateNoOpenRequest
-
-```solidity
-function validateNoOpenRequest(uint256 txId) internal pure
-```
-
-Validates that a request is not already pending
-
-**Parameters:**
-- `` (): The transaction ID to validate
-
-
-
----
-
 ### validateTransactionExists
 
 ```solidity
@@ -499,19 +384,6 @@ Validates that a transaction ID matches the expected value
 
 ---
 
-### validateNotInitialized
-
-```solidity
-function validateNotInitialized() internal pure
-```
-
-Validates that a contract is not already initialized
-
-
-
-
----
-
 ### validateChainId
 
 ```solidity
@@ -522,22 +394,6 @@ Validates chain ID matches the current chain
 
 **Parameters:**
 - `` (): The chain ID to validate
-
-
-
----
-
-### validateHandlerContractMatch
-
-```solidity
-function validateHandlerContractMatch(address handlerContract, address target) internal pure
-```
-
-Validates that handler contract matches target
-
-**Parameters:**
-- `` (): The handler contract address
-- `` (): The target contract address
 
 
 
@@ -605,93 +461,6 @@ Validates that the current transaction's gas price is within limits
 
 ---
 
-### validateRoleExists
-
-```solidity
-function validateRoleExists() internal pure
-```
-
-Validates that a role exists
-
-
-
-
----
-
-### validateRoleNew
-
-```solidity
-function validateRoleNew() internal pure
-```
-
-Validates that a role doesn't already exist
-
-
-
-
----
-
-### validateFunctionNew
-
-```solidity
-function validateFunctionNew(bytes4 functionSelector) internal pure
-```
-
-Validates that a function doesn't already exist
-
-**Parameters:**
-- `` (): The function selector to check
-
-
-
----
-
-### validateFunctionExists
-
-```solidity
-function validateFunctionExists(bytes4 functionSelector) internal pure
-```
-
-Validates that a function exists (has non-zero selector)
-
-**Parameters:**
-- `` (): The function selector to check
-
-
-
----
-
-### validateFunctionSchemaExists
-
-```solidity
-function validateFunctionSchemaExists(bytes4 actualSelector, bytes4 expectedSelector) internal pure
-```
-
-Validates that a function schema exists in a mapping
-
-**Parameters:**
-- `` (): The actual function selector from the mapping
-- `` (): The expected function selector to validate against
-
-
-
----
-
-### validateWalletNotInRole
-
-```solidity
-function validateWalletNotInRole(address wallet) internal pure
-```
-
-Validates that a wallet is not already in a role
-
-**Parameters:**
-- `` (): The wallet address to validate
-
-
-
----
-
 ### validateWalletLimit
 
 ```solidity
@@ -703,75 +472,6 @@ Validates that a role hasn't reached its wallet limit
 **Parameters:**
 - `` (): The current number of wallets in the role
 - `` (): The maximum number of wallets allowed
-
-
-
----
-
-### validatePermissionNew
-
-```solidity
-function validatePermissionNew(bytes4 functionSelector) internal pure
-```
-
-Validates that a function permission doesn't already exist
-
-**Parameters:**
-- `` (): The function selector
-
-
-
----
-
-### validateActionSupported
-
-```solidity
-function validateActionSupported() internal pure
-```
-
-Validates that an action is supported by a function
-
-
-
-
----
-
-### validateRoleNameNotEmpty
-
-```solidity
-function validateRoleNameNotEmpty(string roleName) internal pure
-```
-
-Validates that a role name is not empty
-
-**Parameters:**
-- `` (): The role name to validate
-
-
-
----
-
-### validateRoleNotProtected
-
-```solidity
-function validateRoleNotProtected() internal pure
-```
-
-Validates that a role is not protected
-
-
-
-
----
-
-### validateRoleEditingEnabled
-
-```solidity
-function validateRoleEditingEnabled() internal pure
-```
-
-Validates that role editing is enabled
-
 
 
 
@@ -792,168 +492,16 @@ Validates that max wallets is greater than zero
 
 ---
 
-### validateCanRemoveWallet
+### validateRoleNameNotEmpty
 
 ```solidity
-function validateCanRemoveWallet(address wallet) internal pure
+function validateRoleNameNotEmpty(string roleName) internal pure
 ```
 
-Validates that a wallet can be removed from a role
+Validates that a role name is not empty
 
 **Parameters:**
-- `` (): The wallet address
-
-
-
----
-
-### validateWalletInRole
-
-```solidity
-function validateWalletInRole(address wallet) internal pure
-```
-
-Validates that a wallet exists in a role
-
-**Parameters:**
-- `` (): The wallet address
-
-
-
----
-
-### validateCanRemoveProtectedRole
-
-```solidity
-function validateCanRemoveProtectedRole() internal pure
-```
-
-Validates that a protected role cannot be removed
-
-
-
-
----
-
-### validateCanRemoveProtectedFunctionSchema
-
-```solidity
-function validateCanRemoveProtectedFunctionSchema(bytes4 functionSelector) internal pure
-```
-
-Validates that a protected function schema cannot be removed
-
-**Parameters:**
-- `` (): The function selector of the protected schema
-
-
-
----
-
-### validateGreaterThanZero
-
-```solidity
-function validateGreaterThanZero(uint256 value) internal pure
-```
-
-Validates that a value is greater than zero
-
-**Parameters:**
-- `` (): The value to validate
-
-
-
----
-
-### validateEqual
-
-```solidity
-function validateEqual(uint256 actual, uint256 expected) internal pure
-```
-
-Validates that two values are equal
-
-**Parameters:**
-- `` (): The actual value
-- `` (): The expected value
-
-
-
----
-
-### validateEqual
-
-```solidity
-function validateEqual(bytes4 actual, bytes4 expected) internal pure
-```
-
-Validates that two bytes4 values are equal
-
-**Parameters:**
-- `` (): The actual value
-- `` (): The expected value
-
-
-
----
-
-### validateEqual
-
-```solidity
-function validateEqual(bytes32 actual, bytes32 expected) internal pure
-```
-
-Validates that two bytes32 values are equal
-
-**Parameters:**
-- `` (): The actual value
-- `` (): The expected value
-
-
-
----
-
-### validateEqual
-
-```solidity
-function validateEqual(address actual, address expected) internal pure
-```
-
-Validates that two address values are equal
-
-**Parameters:**
-- `` (): The actual value
-- `` (): The expected value
-
-
-
----
-
-### validateTrue
-
-```solidity
-function validateTrue(bool condition) internal pure
-```
-
-Validates that a boolean condition is true
-
-**Parameters:**
-- `` (): The condition to validate
-
-
-
----
-
-### validateFalse
-
-```solidity
-function validateFalse(bool condition) internal pure
-```
-
-Validates that a boolean condition is false
-
-**Parameters:**
-- `` (): The condition to validate
+- `` (): The role name to validate
 
 
 
@@ -970,23 +518,6 @@ Validates that the first value is less than the second value
 **Parameters:**
 - `` (): The first value (should be less than &#x27;to&#x27;)
 - `` (): The second value (should be greater than &#x27;from&#x27;)
-
-
-
----
-
-### validateRange
-
-```solidity
-function validateRange(uint256 value, uint256 min, uint256 max) internal pure
-```
-
-Validates that a value is within a valid range
-
-**Parameters:**
-- `` (): The value to validate
-- `` (): The minimum allowed value
-- `` (): The maximum allowed value
 
 
 
@@ -1019,53 +550,6 @@ Validates that an index is within bounds of an array
 **Parameters:**
 - `` (): The index to validate
 - `` (): The length of the array
-
-
-
----
-
-### validateOperationTypeInternal
-
-```solidity
-function validateOperationTypeInternal(bytes32 operationType, bytes32 expectedType) internal pure
-```
-
-Internal function to validate operation type
-
-**Parameters:**
-- `` (): The operation type to validate
-- `` (): The expected operation type
-
-
-
----
-
-### validateHandlerSelectorMatchInternal
-
-```solidity
-function validateHandlerSelectorMatchInternal(bytes4 handlerSelector, bytes4 expectedSelector) internal pure
-```
-
-Internal function to validate handler selector match
-
-**Parameters:**
-- `` (): The handler selector to validate
-- `` (): The expected handler selector
-
-
-
----
-
-### validateInternalCallInternal
-
-```solidity
-function validateInternalCallInternal(address expectedCaller) internal view
-```
-
-Internal function to validate internal call
-
-**Parameters:**
-- `` (): The expected caller address
 
 
 
