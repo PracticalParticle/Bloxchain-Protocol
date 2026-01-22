@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./core/base/BaseStateMachine.sol";
+import "../../core/base/BaseStateMachine.sol";
 
 /**
  * @title BareBlox

@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./core/access/RuntimeRBAC.sol";
-import "./core/security/SecureOwnable.sol";
-import "./core/base/BaseStateMachine.sol";
+import "../../core/access/RuntimeRBAC.sol";
+import "../../core/security/SecureOwnable.sol";
+import "../../core/base/BaseStateMachine.sol";
 
 /**
  * @title RoleBlox
