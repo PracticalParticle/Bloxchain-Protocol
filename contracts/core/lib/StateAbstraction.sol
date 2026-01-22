@@ -1975,11 +1975,17 @@ library StateAbstraction {
      * @param schema The function schema to validate against
      * @param handlerForSelector The handlerForSelector from the permission to validate
      * @notice Reverts with HandlerForSelectorMismatch if the handlerForSelector is not found in the schema's array
+     * @notice Special case: Execution function permissions use bytes4(0) with empty handlerForSelectors array
      */
     function _validateHandlerForSelector(
         FunctionSchema storage schema,
         bytes4 handlerForSelector
     ) internal view {
+        // Special case: execution function permissions use bytes4(0) with empty handlerForSelectors array
+        if (handlerForSelector == bytes4(0) && schema.handlerForSelectors.length == 0) {
+            return; // Valid execution function permission
+        }
+        
         bool found = false;
         for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
             if (schema.handlerForSelectors[i] == handlerForSelector) {
