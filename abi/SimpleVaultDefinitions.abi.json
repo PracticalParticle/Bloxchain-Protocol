@@ -224,9 +224,9 @@
                 "type": "uint16"
               },
               {
-                "internalType": "bool",
-                "name": "isHandlerSelector",
-                "type": "bool"
+                "internalType": "bytes4",
+                "name": "handlerForSelector",
+                "type": "bytes4"
               }
             ],
             "internalType": "struct StateAbstraction.FunctionPermission[]",
