@@ -9,6 +9,8 @@ node_modules/
 build/
 artifacts/
 cache/
+cache_forge/
+out/
 experimental/
 
 ### VS Code ###

@@ -49,61 +49,80 @@ function _initializeBaseStateMachine(address initialOwner, address broadcaster, 
 
 ---
 
-### _requestStandardTransaction
+### owner
 
 ```solidity
-function _requestStandardTransaction(address requester, address target, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function owner() public view returns (address)
 ```
 
-Centralized function to request a standard transaction with common validation
+Returns the owner of the contract
 
-**Parameters:**
-- `` (): The address requesting the transaction
-- `` (): The type of operation
-- `` (): The function selector for execution options
-- `` (): The encoded parameters for the function
 
 **Returns:**
-- The created transaction record
+- The owner of the contract
 
 
 ---
 
-### _requestRawTransaction
+### getBroadcasters
 
 ```solidity
-function _requestRawTransaction(address requester, address target, uint256 gasLimit, bytes32 operationType, bytes rawTxData) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function getBroadcasters() public view returns (address[])
 ```
 
-Centralized function to request a raw transaction with RAW execution type
+Returns all broadcaster addresses for the BROADCASTER_ROLE
 
-**Parameters:**
-- `` (): The address requesting the transaction
-- `` (): The target contract address
-- `` (): The gas limit for execution
-- `` (): The type of operation
-- `` (): The raw transaction data
 
 **Returns:**
-- The created transaction record
+- Array of broadcaster addresses
 
 
 ---
 
-### _requestSimpleTransaction
+### getRecovery
 
 ```solidity
-function _requestSimpleTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function getRecovery() public view returns (address)
 ```
 
-Centralized function to request a simple transaction with NONE execution type
+Returns the recovery address
+
+
+**Returns:**
+- The recovery address
+
+
+---
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) public view returns (bool)
+```
+
+See {IERC165-supportsInterface}.
+
+
+
+
+---
+
+### _requestTransaction
+
+```solidity
+function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct StateAbstraction.TxRecord)
+```
+
+Centralized function to request a transaction with common validation
 
 **Parameters:**
 - `` (): The address requesting the transaction
 - `` (): The target contract address
-- `` (): The ETH value to send
+- `` (): The ETH value to send (0 for standard function calls)
 - `` (): The gas limit for execution
 - `` (): The type of operation
+- `` (): The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+- `` (): The encoded parameters for the function (empty for simple native token transfers)
 
 **Returns:**
 - The created transaction record
@@ -114,14 +133,13 @@ Centralized function to request a simple transaction with NONE execution type
 ### _approveTransaction
 
 ```solidity
-function _approveTransaction(uint256 txId, bytes32 expectedOperationType) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
 ```
 
 Centralized function to approve a pending transaction after release time
 
 **Parameters:**
 - `` (): The transaction ID
-- `` (): The expected operation type for validation
 
 **Returns:**
 - The updated transaction record
@@ -132,16 +150,13 @@ Centralized function to approve a pending transaction after release time
 ### _approveTransactionWithMetaTx
 
 ```solidity
-function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector, enum StateAbstraction.TxAction requiredAction) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
 ```
 
 Centralized function to approve a transaction using meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction
-- `` (): The expected operation type for validation
-- `` (): The required handler selector for validation
-- `` (): The required action for permission checking
 
 **Returns:**
 - The updated transaction record
@@ -152,14 +167,13 @@ Centralized function to approve a transaction using meta-transaction
 ### _cancelTransaction
 
 ```solidity
-function _cancelTransaction(uint256 txId, bytes32 expectedOperationType) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
 ```
 
 Centralized function to cancel a pending transaction
 
 **Parameters:**
 - `` (): The transaction ID
-- `` (): The expected operation type for validation
 
 **Returns:**
 - The updated transaction record
@@ -170,16 +184,13 @@ Centralized function to cancel a pending transaction
 ### _cancelTransactionWithMetaTx
 
 ```solidity
-function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector, enum StateAbstraction.TxAction requiredAction) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
 ```
 
 Centralized function to cancel a transaction using meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction
-- `` (): The expected operation type for validation
-- `` (): The required handler selector for validation
-- `` (): The required action for permission checking
 
 **Returns:**
 - The updated transaction record
@@ -190,15 +201,13 @@ Centralized function to cancel a transaction using meta-transaction
 ### _requestAndApproveTransaction
 
 ```solidity
-function _requestAndApproveTransaction(struct StateAbstraction.MetaTransaction metaTx, bytes4 requiredSelector, enum StateAbstraction.TxAction requiredAction) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestAndApproveTransaction(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
 ```
 
 Centralized function to request and approve a transaction using meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction
-- `` (): The required handler selector for validation
-- `` (): The required action for permission checking
 
 **Returns:**
 - The transaction record
@@ -231,7 +240,7 @@ Creates meta-transaction parameters with specified values
 ### generateUnsignedMetaTransactionForNew
 
 ```solidity
-function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, enum StateAbstraction.ExecutionType executionType, bytes executionOptions, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for a new operation
@@ -242,8 +251,8 @@ Generates an unsigned meta-transaction for a new operation
 - `` (): The ETH value to send
 - `` (): The gas limit for execution
 - `` (): The type of operation
-- `` (): The type of execution (STANDARD or RAW)
-- `` (): The encoded execution options
+- `` (): The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+- `` (): The encoded parameters for the function (empty for simple native token transfers)
 - `` (): The meta-transaction parameters
 
 **Returns:**
@@ -355,6 +364,23 @@ Returns if a wallet is authorized for a role
 
 **Returns:**
 - True if the wallet is authorized for the role, false otherwise
+
+
+---
+
+### functionSchemaExists
+
+```solidity
+function functionSchemaExists(bytes4 functionSelector) public view returns (bool)
+```
+
+Checks if a function schema exists
+
+**Parameters:**
+- `` (): The function selector to check
+
+**Returns:**
+- True if the function schema exists, false otherwise
 
 
 ---
@@ -504,6 +530,23 @@ Centralized function to get authorized wallet at specific index
 
 ---
 
+### _getAuthorizedWallets
+
+```solidity
+function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[])
+```
+
+Centralized function to get all authorized wallets for a role
+
+**Parameters:**
+- `` (): The role hash
+
+**Returns:**
+- Array of authorized wallet addresses
+
+
+---
+
 ### _updateAssignedWallet
 
 ```solidity
@@ -517,56 +560,6 @@ Centralized function to update assigned wallet for a role
 - `` (): The new wallet address
 - `` (): The old wallet address
 
-
-
----
-
-### _updateTimeLockPeriod
-
-```solidity
-function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal nonpayable
-```
-
-Centralized function to update time lock period
-
-**Parameters:**
-- `` (): The new time lock period in seconds
-
-
-
----
-
-### _createStandardExecutionOptions
-
-```solidity
-function _createStandardExecutionOptions(bytes4 functionSelector, bytes params) internal pure returns (bytes)
-```
-
-Centralized function to create standard execution options
-
-**Parameters:**
-- `` (): The function selector
-- `` (): The encoded parameters
-
-**Returns:**
-- The execution options
-
-
----
-
-### _createRawExecutionOptions
-
-```solidity
-function _createRawExecutionOptions(bytes rawTxData) internal pure returns (bytes)
-```
-
-Centralized function to create raw execution options
-
-**Parameters:**
-- `` (): The raw transaction data
-
-**Returns:**
-- The execution options
 
 
 ---
@@ -619,6 +612,21 @@ Internal function to check if an address has action permission
 
 **Returns:**
 - True if the caller has permission, false otherwise
+
+
+---
+
+### _validateBroadcaster
+
+```solidity
+function _validateBroadcaster(address caller) internal view
+```
+
+Internal helper to validate that a caller has the BROADCASTER_ROLE
+
+**Parameters:**
+- `` (): The address to validate
+
 
 
 ---
