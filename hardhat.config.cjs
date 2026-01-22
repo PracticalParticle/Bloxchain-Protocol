@@ -1,8 +1,8 @@
-import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
-import "solidity-docgen";
+const hardhatToolboxMochaEthers = require("@nomicfoundation/hardhat-toolbox-mocha-ethers");
+require("solidity-docgen");
 
 /** @type import('hardhat/config').HardhatUserConfig */
-export default {
+module.exports = {
   plugins: [hardhatToolboxMochaEthers],
   solidity: {
     version: "0.8.25",
