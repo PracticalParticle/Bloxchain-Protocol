@@ -120,6 +120,22 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "schemaHandlerForSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "permissionHandlerForSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "HandlerForSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "index",
         "type": "uint256"
@@ -309,22 +325,6 @@
   {
     "inputs": [],
     "name": "OperationFailed",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "providedType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "derivedType",
-        "type": "bytes32"
-      }
-    ],
-    "name": "OperationTypeMismatch",
     "type": "error"
   },
   {

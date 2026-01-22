@@ -34,6 +34,11 @@
             "internalType": "bool",
             "name": "isProtected",
             "type": "bool"
+          },
+          {
+            "internalType": "bytes4[]",
+            "name": "handlerForSelectors",
+            "type": "bytes4[]"
           }
         ],
         "internalType": "struct StateAbstraction.FunctionSchema[]",
