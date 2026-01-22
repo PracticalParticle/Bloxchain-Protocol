@@ -1861,6 +1861,9 @@ library StateAbstraction {
         bool success,
         bytes memory result
     ) private {
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        
         // Update storage with new status and result
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;
@@ -1888,6 +1891,9 @@ library StateAbstraction {
         SecureOperationState storage self,
         uint256 txId
     ) private {
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
