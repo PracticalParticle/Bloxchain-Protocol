@@ -81,7 +81,8 @@ export class Definitions implements IDefinition {
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,
         supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
-        isProtected: item.isProtected as boolean
+        isProtected: item.isProtected as boolean,
+        handlerForSelector: item.handlerForSelector as Hex
       }));
     } catch (error) {
       throw new Error(`Failed to get function schemas: ${error instanceof Error ? error.message : 'Unknown error'}`);

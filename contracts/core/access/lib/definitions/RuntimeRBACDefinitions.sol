@@ -57,7 +57,8 @@ library RuntimeRBACDefinitions {
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
         });
         
         // Execution function schema (required for dual-permission model)
@@ -73,7 +74,8 @@ library RuntimeRBACDefinitions {
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: bytes4(0)
         });
         
         return schemas;

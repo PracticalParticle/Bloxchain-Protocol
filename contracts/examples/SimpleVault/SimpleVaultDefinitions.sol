@@ -64,7 +64,8 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: WITHDRAW_ETH_SELECTOR
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -73,7 +74,8 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: WITHDRAW_TOKEN_SELECTOR
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -82,7 +84,8 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: bytes4(0)
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -91,7 +94,8 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: bytes4(0)
         });
         
         // Meta-transaction functions
@@ -101,7 +105,8 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: bytes4(0)
         });
         
         return schemas;

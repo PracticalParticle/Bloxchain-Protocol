@@ -46,7 +46,8 @@ library SimpleRWA20Definitions {
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: MINT_TOKENS_SELECTOR
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -55,7 +56,8 @@ library SimpleRWA20Definitions {
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: BURN_TOKENS_SELECTOR
         });
         
         return schemas;

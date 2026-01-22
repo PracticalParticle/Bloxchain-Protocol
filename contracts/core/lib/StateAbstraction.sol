@@ -138,6 +138,7 @@ library StateAbstraction {
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
         bool isProtected;
+        bytes4 handlerForSelector; // bytes4(0) for execution selector permissions (defines what action is performed), non-zero for handler selector permissions (indicates which execution selector this handler is connected to)
     }
 
     // ============ DEFINITION STRUCTS ============
@@ -896,6 +897,15 @@ library StateAbstraction {
             revert SharedValidation.ResourceNotFound(functionSelectorHash);
         }
         
+        // Validate that handlerForSelector in permission matches the schema
+        FunctionSchema storage schema = self.functions[functionPermission.functionSelector];
+        if (schema.handlerForSelector != functionPermission.handlerForSelector) {
+            revert SharedValidation.HandlerForSelectorMismatch(
+                schema.handlerForSelector,
+                functionPermission.handlerForSelector
+            );
+        }
+        
         // Validate that all grantedActions are supported by the function
         _validateMetaTxPermissions(self, functionPermission);
         
@@ -1030,6 +1040,7 @@ library StateAbstraction {
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param isProtected Whether the function schema is protected from removal.
+     * @param handlerForSelector bytes4(0) for execution selector permissions (defines what action is performed), non-zero for handler selector permissions (indicates which execution selector this handler is connected to).
      */
     function createFunctionSchema(
         SecureOperationState storage self,
@@ -1038,7 +1049,8 @@ library StateAbstraction {
         bytes32 operationType,
         string memory operationName,
         uint16 supportedActionsBitmap,
-        bool isProtected
+        bool isProtected,
+        bytes4 handlerForSelector
     ) public {
         // Validate that functionSignature matches functionSelector
         // Note: NATIVE_TRANSFER_SELECTOR uses a reserved signature that represents native token transfers
@@ -1054,6 +1066,12 @@ library StateAbstraction {
             revert SharedValidation.OperationTypeMismatch(operationType, derivedOperationType);
         }
 
+        // Validate handlerForSelector: if non-zero, the referenced execution selector must exist
+        // Note: For execution selectors (handlerForSelector == 0), no validation needed
+        // For handler selectors (handlerForSelector != 0), we validate the execution selector exists
+        // However, we allow creating handler schemas before execution schemas exist (for definition loading order flexibility)
+        // The validation will happen when adding permissions via addFunctionToRole
+        
         // register the operation type if it's not already in the set
         SharedValidation.validateOperationTypeNotZero(operationType);
         if (self.supportedOperationTypesSet.add(operationType)) {
@@ -1072,6 +1090,7 @@ library StateAbstraction {
         schema.operationName = operationName;
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.isProtected = isProtected;
+        schema.handlerForSelector = handlerForSelector;
         
         // Add to supportedFunctionsSet
         if (!self.supportedFunctionsSet.add(bytes32(functionSelector))) {

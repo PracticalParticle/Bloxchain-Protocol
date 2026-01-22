@@ -68,7 +68,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -77,7 +78,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -86,7 +88,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Meta-transaction functions
@@ -96,7 +99,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
@@ -105,7 +109,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
@@ -114,7 +119,8 @@ library GuardianSafeDefinitions {
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         return schemas;
