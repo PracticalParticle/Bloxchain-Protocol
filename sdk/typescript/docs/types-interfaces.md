@@ -50,8 +50,13 @@ type OperationType =
 type TxAction = 
   | 'EXECUTE_TIME_DELAY_REQUEST'
   | 'EXECUTE_TIME_DELAY_APPROVE'
+  | 'EXECUTE_TIME_DELAY_CANCEL'
+  | 'SIGN_META_REQUEST_AND_APPROVE'
+  | 'SIGN_META_APPROVE'
+  | 'SIGN_META_CANCEL'
   | 'EXECUTE_META_REQUEST_AND_APPROVE'
   | 'EXECUTE_META_APPROVE'
+  | 'EXECUTE_META_CANCEL'
 
 // Transaction statuses
 type TxStatus = 
@@ -803,8 +808,13 @@ function isTxAction(value: unknown): value is TxAction {
   return typeof value === 'string' && [
     'EXECUTE_TIME_DELAY_REQUEST',
     'EXECUTE_TIME_DELAY_APPROVE',
+    'EXECUTE_TIME_DELAY_CANCEL',
+    'SIGN_META_REQUEST_AND_APPROVE',
+    'SIGN_META_APPROVE',
+    'SIGN_META_CANCEL',
     'EXECUTE_META_REQUEST_AND_APPROVE',
-    'EXECUTE_META_APPROVE'
+    'EXECUTE_META_APPROVE',
+    'EXECUTE_META_CANCEL'
   ].includes(value)
 }
 

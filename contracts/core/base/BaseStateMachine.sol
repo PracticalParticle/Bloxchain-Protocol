@@ -243,6 +243,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
     }
 
+    /**
+     * @dev Centralized function to update payment details for a pending transaction
+     * @param txId The transaction ID to update payment for
+     * @param paymentDetails The new payment details
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _updatePaymentForTransaction(
+        uint256 txId,
+        StateAbstraction.PaymentDetails memory paymentDetails
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        StateAbstraction.updatePaymentForTransaction(_getSecureState(), txId, paymentDetails);
+        return _secureState.getTxRecord(txId);
+    }
+
     // ============ META-TRANSACTION UTILITIES ============
 
     /**

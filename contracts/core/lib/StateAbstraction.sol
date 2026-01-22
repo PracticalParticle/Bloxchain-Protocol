@@ -64,8 +64,7 @@ library StateAbstraction {
         SIGN_META_CANCEL,
         EXECUTE_META_REQUEST_AND_APPROVE,
         EXECUTE_META_APPROVE,
-        EXECUTE_META_CANCEL,
-        EXECUTE_UPDATE_PAYMENT
+        EXECUTE_META_CANCEL
     }
 
     struct TxParams {
@@ -127,7 +126,7 @@ library StateAbstraction {
 
     struct FunctionPermission {
         bytes4 functionSelector;
-        uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
+        uint16 grantedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
         bytes4 handlerForSelector; // bytes4(0) mean this is an execution selector
     }
 
@@ -136,7 +135,7 @@ library StateAbstraction {
         bytes4 functionSelector;
         bytes32 operationType;
         string operationName;
-        uint16 supportedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
+        uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
         bool isProtected;
         bytes4[] handlerForSelectors; 
     }
@@ -700,9 +699,6 @@ library StateAbstraction {
         uint256 txId,
         PaymentDetails memory paymentDetails
     ) public {
-        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_UPDATE_PAYMENT)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
         _validateTxStatus(self, txId, TxStatus.PENDING);
            
         self.txRecords[txId].payment = paymentDetails;
@@ -2044,7 +2040,7 @@ library StateAbstraction {
         
         // Validate that each action in the bitmap is supported by the function
         // This still requires iteration, but we can optimize it
-        for (uint i = 0; i < 10; i++) { // TxAction enum has 10 values (0-9)
+        for (uint i = 0; i < 9; i++) { // TxAction enum has 9 values (0-8)
             if (hasActionInBitmap(bitmap, TxAction(i))) {
                 if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
                     revert SharedValidation.NotSupported();

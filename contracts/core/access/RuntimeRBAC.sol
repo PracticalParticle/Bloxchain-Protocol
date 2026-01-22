@@ -243,7 +243,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 );
             } else if (action.actionType == RoleConfigActionType.ADD_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
-                _addWalletToRole(roleHash, wallet);
+                _assignWallet(roleHash, wallet);
 
                 emit RoleConfigApplied(
                     RoleConfigActionType.ADD_WALLET,
@@ -350,12 +350,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             _addFunctionToRole(roleHash, functionPermissions[i]);
         }
     }
-
-
-    function _addWalletToRole(bytes32 roleHash, address wallet) internal {
-        _assignWallet(roleHash, wallet);
-    }
-
 
 
     function _registerFunction(

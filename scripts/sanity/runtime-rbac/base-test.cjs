@@ -95,8 +95,7 @@ class BaseRuntimeRBACTest {
             SIGN_META_CANCEL: 5,
             EXECUTE_META_REQUEST_AND_APPROVE: 6,
             EXECUTE_META_APPROVE: 7,
-            EXECUTE_META_CANCEL: 8,
-            EXECUTE_UPDATE_PAYMENT: 9
+            EXECUTE_META_CANCEL: 8
         };
         
         // Test results
