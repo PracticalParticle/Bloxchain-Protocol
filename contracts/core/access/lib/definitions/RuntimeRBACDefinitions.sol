@@ -51,6 +51,9 @@ library RuntimeRBACDefinitions {
         metaRequestApproveActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         metaRequestApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory handlerForSelectors = new bytes4[](1);
+        handlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+        
         schemas[0] = StateAbstraction.FunctionSchema({
             functionSignature: "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
@@ -58,7 +61,7 @@ library RuntimeRBACDefinitions {
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
             isProtected: true,
-            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
+            handlerForSelectors: handlerForSelectors
         });
         
         // Execution function schema (required for dual-permission model)
@@ -68,6 +71,8 @@ library RuntimeRBACDefinitions {
         executionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         executionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        
         schemas[1] = StateAbstraction.FunctionSchema({
             functionSignature: "executeRoleConfigBatch((uint8,bytes)[])",
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
@@ -75,7 +80,7 @@ library RuntimeRBACDefinitions {
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
             isProtected: true,
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         return schemas;

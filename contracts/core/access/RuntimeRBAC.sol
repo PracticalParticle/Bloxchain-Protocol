@@ -399,7 +399,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         uint16 supportedActionsBitmap = StateAbstraction.createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
-        // Dynamically registered functions are execution selectors (handlerForSelector = bytes4(0))
+        // Dynamically registered functions are execution selectors (handlerForSelectors = empty array)
+        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
         StateAbstraction.createFunctionSchema(
             _getSecureState(),
             functionSignature,
@@ -408,7 +409,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             operationName,
             supportedActionsBitmap,
             false, // isProtected = false for dynamically registered functions
-            bytes4(0) // handlerForSelector = bytes4(0) for execution selectors
+            emptyHandlerForSelectors // handlerForSelectors = empty array for execution selectors
         );
     }
 

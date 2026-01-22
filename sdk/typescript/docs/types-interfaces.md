@@ -88,7 +88,7 @@ interface FunctionSchema {
   operationName: string;
   supportedActions: TxAction[];
   isProtected: boolean;
-  handlerForSelector: Hex; // bytes4(0) for execution selector permissions (defines what action is performed), non-zero for handler selector permissions (indicates which execution selector this handler is connected to)
+  handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
 }
 
 // Role permission structure containing role hashes and their function permissions

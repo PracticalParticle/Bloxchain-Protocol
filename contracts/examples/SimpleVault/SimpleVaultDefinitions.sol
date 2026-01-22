@@ -57,6 +57,13 @@ library SimpleVaultDefinitions {
         metaTxApproveActions[0] = StateAbstraction.TxAction.SIGN_META_APPROVE;
         metaTxApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
         
+        // Prepare handlerForSelectors arrays
+        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        bytes4[] memory withdrawEthHandlerForSelectors = new bytes4[](1);
+        withdrawEthHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
+        bytes4[] memory withdrawTokenHandlerForSelectors = new bytes4[](1);
+        withdrawTokenHandlerForSelectors[0] = WITHDRAW_TOKEN_SELECTOR;
+        
         // Time-delay functions
         schemas[0] = StateAbstraction.FunctionSchema({
             functionSignature: "withdrawEthRequest(address,uint256)",
@@ -65,7 +72,7 @@ library SimpleVaultDefinitions {
             operationName: "WITHDRAW_ETH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
-            handlerForSelector: WITHDRAW_ETH_SELECTOR
+            handlerForSelectors: withdrawEthHandlerForSelectors
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -75,7 +82,7 @@ library SimpleVaultDefinitions {
             operationName: "WITHDRAW_TOKEN",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
-            handlerForSelector: WITHDRAW_TOKEN_SELECTOR
+            handlerForSelectors: withdrawTokenHandlerForSelectors
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -85,7 +92,7 @@ library SimpleVaultDefinitions {
             operationName: "GENERIC_APPROVAL",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true,
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -95,7 +102,7 @@ library SimpleVaultDefinitions {
             operationName: "GENERIC_CANCELLATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true,
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         // Meta-transaction functions
@@ -106,7 +113,7 @@ library SimpleVaultDefinitions {
             operationName: "GENERIC_META_APPROVAL",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
             isProtected: true,
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         return schemas;
