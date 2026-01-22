@@ -49,8 +49,11 @@ struct SecureOperationState {
     EnumerableSet.Bytes32Set supportedFunctionsSet;
     
     // ============ OPERATION TYPES ============
-    mapping(bytes32 => ReadableOperationType) supportedOperationTypes;
     EnumerableSet.Bytes32Set supportedOperationTypesSet;
+    
+    // ============ FUNCTION TARGET MANAGEMENT ============
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
     
     // ============ META-TRANSACTION SUPPORT ============
     mapping(address => uint256) signerNonces;
@@ -70,16 +73,18 @@ struct SecureOperationState {
 - **Completion Phase**: Transaction results are recorded and events emitted
 
 #### 2. **Role-Based Access Control**
-- **Role Definition**: Define custom roles with specific permissions
-- **Permission Management**: Grant/revoke permissions for functions and operations
+- **Role Definition**: Define custom roles with specific permissions and wallet limits
+- **Permission Management**: Grant/revoke permissions for functions and operations via batch configuration
 - **Dynamic Role Assignment**: Roles can be modified during contract lifecycle
-- **Hierarchical Permissions**: Support for role hierarchies and inheritance
+- **Function-Level Permissions**: Action-level permissions (request, approve, cancel, meta-sign, meta-execute)
+- **Handler Selectors**: Support for handler functions with execution selector permissions
 
-#### 3. **Operation Type Management**
-- **Standardized Operations**: Pre-defined operation types (OWNERSHIP_TRANSFER, BROADCASTER_UPDATE, etc.)
-- **Custom Operations**: Support for custom operation types
-- **Operation Validation**: Ensure operations follow defined schemas
-- **Workflow Generation**: Automatically generate valid operation workflows
+#### 3. **Function Schema Management**
+- **Function Registration**: Runtime function schema registration with action-level permissions
+- **Function Schemas**: Define function signatures, operation types, and supported actions
+- **Handler Functions**: Support for handler functions that manage execution selector permissions
+- **Function Target Whitelisting**: Per-function selector target address restrictions for security
+- **Function Hooks**: External hook contract attachment per function selector
 
 #### 4. **Time-Lock Security**
 - **Configurable Time Locks**: Set different time-lock periods for different operations
@@ -100,22 +105,32 @@ struct SecureOperationState {
 **Purpose**: Standardize operation types, function schemas, and role permissions
 
 - **`SecureOwnableDefinitions.sol`**: Standard definitions for ownership operations
-- **`DynamicRBACDefinitions.sol`**: Standard definitions for RBAC operations
-- **`StateAbstractionDefinitions.sol`**: Standard definitions for multi-phase operations
+- **`RuntimeRBACDefinitions.sol`**: Standard definitions for RBAC operations
+- **`GuardControllerDefinitions.sol`**: Standard definitions for execution workflows
 
-### Layer 3: Contract Implementations
-**Purpose**: Provide ready-to-use contract implementations
+### Layer 3: Base Contracts
+**Purpose**: Provide foundational contract implementations
 
-- **`SecureOwnable.sol`**: Basic ownership with Guardian security
-- **`DynamicRBAC.sol`**: Role-based access control with Guardian security
-- **`Guardian.sol`**: State abstraction with Guardian security
-- **`GuardianWithRoles.sol`**: State abstraction with RBAC
+- **`BaseStateMachine.sol`**: Core state machine functionality with meta-transaction support
+- **`SecureOwnable.sol`**: Multi-role security with Owner, Broadcaster, and Recovery roles
+- **`RuntimeRBAC.sol`**: Runtime role-based access control with batch configuration
+- **`GuardController.sol`**: Execution workflows and time-locked transaction management
+- **`HookManager.sol`**: External hook contract attachment for state machine actions
 
-### Layer 4: Application Contracts
-**Purpose**: DApp-specific implementations using Guardian security
+### Layer 4: Template Contracts
+**Purpose**: Provide ready-to-use template implementations
 
-- **`SimpleVault.sol`**: Example vault implementation
-- **`SimpleRWA20.sol`**: Example RWA token implementation
+- **`BareBlox.sol`**: Minimal implementation using only BaseStateMachine
+- **`SecureBlox.sol`**: Basic implementation using SecureOwnable
+- **`RoleBlox.sol`**: Implementation combining SecureOwnable and RuntimeRBAC
+- **`ControlBlox.sol`**: Complete implementation with GuardController, RuntimeRBAC, and SecureOwnable
+- **`MachineBlox.sol`**: Full-featured implementation with GuardController, RuntimeRBAC, SecureOwnable, and HookManager
+
+### Layer 5: Application Contracts
+**Purpose**: DApp-specific implementations using Bloxchain security
+
+- **`SimpleVault.sol`**: Example vault implementation using SecureOwnable
+- **`SimpleRWA20.sol`**: Example RWA token implementation using SecureOwnable
 
 ## State Machine Flow
 
@@ -169,31 +184,35 @@ Approved Transaction → State Machine Execution → Function Call → State Upd
 
 ## Integration with TypeScript SDK
 
-The TypeScript SDK provides comprehensive interfaces to interact with Guardian contracts:
+The TypeScript SDK provides comprehensive interfaces to interact with Bloxchain contracts:
 
 ### **SecureOwnable Integration**
 ```typescript
-import { SecureOwnable } from '@guardian/sdk'
+import { SecureOwnable } from '@bloxchain/sdk'
 
 const secureOwnable = new SecureOwnable(client, walletClient, contractAddress, chain)
 
 // Access ownership information
 const owner = await secureOwnable.owner()
-const broadcasters = await secureOwnable.getBroadcasters()
-const primaryBroadcaster = broadcasters.length > 0 ? broadcasters[0] : null
+const broadcasters = await secureOwnable.getBroadcasters() // Returns array (up to 3 wallets)
 const recovery = await secureOwnable.getRecovery()
 ```
 
-### **DynamicRBAC Integration**
+### **RuntimeRBAC Integration**
 ```typescript
-import { DynamicRBAC } from '@guardian/sdk'
+import { RuntimeRBAC } from '@bloxchain/sdk'
 
-const dynamicRBAC = new DynamicRBAC(client, walletClient, contractAddress, chain)
+const runtimeRBAC = new RuntimeRBAC(client, walletClient, contractAddress, chain)
 
 // Access role information
-const roles = await dynamicRBAC.getAllRoles()
-const roleInfo = await dynamicRBAC.getRoleInfo(roleHash)
-const hasRole = await dynamicRBAC.hasRole(roleHash, walletAddress)
+const roles = await runtimeRBAC.getSupportedRoles()
+const roleInfo = await runtimeRBAC.getRole(roleHash)
+const hasRole = await runtimeRBAC.hasRole(roleHash, walletAddress)
+const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+
+// Access function schema information
+const schema = await runtimeRBAC.getFunctionSchema(functionSelector)
+const functions = await runtimeRBAC.getSupportedFunctions()
 ```
 
 ## State Machine Security Features

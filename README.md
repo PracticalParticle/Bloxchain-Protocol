@@ -35,26 +35,39 @@ Bloxchain Protocol is a **revolutionary blockchain security architecture** that 
 graph TB
     A[StateAbstraction Library] --> B[BaseStateMachine]
     B --> C[SecureOwnable]
-    C --> D[DynamicRBAC]
-    C --> E[Guardian]
-    B --> F[GuardianBare]
-    D --> G[GuardianWithRoles]
+    B --> D[RuntimeRBAC]
+    B --> E[GuardController]
+    B --> F[HookManager]
     
-    H[TypeScript SDK] --> I[SecureOwnable Client]
-    H --> J[DynamicRBAC Client]
-    H --> K[Definitions Client]
+    C --> G[SecureBlox]
+    D --> H[RoleBlox]
+    C --> H
+    E --> I[ControlBlox]
+    D --> I
+    C --> I
+    E --> J[MachineBlox]
+    D --> J
+    C --> J
+    F --> J
+    B --> K[BareBlox]
     
-    L[Examples] --> M[SimpleVault]
-    L --> N[SimpleRWA20]
+    L[TypeScript SDK] --> M[SecureOwnable Client]
+    L --> N[RuntimeRBAC Client]
+    L --> O[Definitions Client]
+    
+    P[Examples] --> Q[SimpleVault]
+    P --> R[SimpleRWA20]
 ```
 
-### 🔧 Guardian Implementations
+### 🔧 Template Contracts
 
 | Contract | Features | Use Case |
 |----------|----------|----------|
-| **Guardian** | Basic SecureOwnable functionality | Simple ownership management |
-| **GuardianBare** | Minimal BaseStateMachine only | Core state machine operations |
-| **GuardianWithRoles** | Full DynamicRBAC capabilities | Enterprise role management |
+| **BareBlox** | Minimal BaseStateMachine only | Core state machine operations |
+| **SecureBlox** | Basic SecureOwnable functionality | Simple ownership management |
+| **RoleBlox** | SecureOwnable + RuntimeRBAC | Role-based access control |
+| **ControlBlox** | GuardController + RuntimeRBAC + SecureOwnable | Complete execution workflows |
+| **MachineBlox** | GuardController + RuntimeRBAC + SecureOwnable + HookManager | Full-featured with hooks |
 
 ### 🛡️ Security Model
 
@@ -65,9 +78,9 @@ graph TB
 - **Temporal Security**: Time-locks provide intervention windows
 
 **Core System Roles**:
-- **Owner Role**: Administrative control, can approve operations after timelock, or by signing a Meta-transaction
-- **Broadcaster Role**: Meta-transaction execution, gas sponsorship
-- **Recovery Role**: Emergency operations, limited scope
+- **Owner Role**: Administrative control, can approve operations after timelock, or by signing a Meta-transaction (single wallet)
+- **Broadcaster Role**: Meta-transaction execution, gas sponsorship (up to 3 wallets)
+- **Recovery Role**: Emergency operations, limited scope (single wallet)
 
 ## 🚀 Quick Start
 
@@ -126,7 +139,7 @@ npm install viem
 # Import BloxChain SDK
 import { 
   SecureOwnable, 
-  DynamicRBAC,
+  RuntimeRBAC,
   Definitions,
   type Address,
   type PublicClient,
@@ -193,35 +206,31 @@ await secureOwnable.transferOwnershipApprovalWithMetaTx(
 ### Dynamic Role-Based Access Control
 
 ```typescript
-// Initialize DynamicRBAC client
-const dynamicRBAC = new DynamicRBAC(
+// Initialize RuntimeRBAC client
+const runtimeRBAC = new RuntimeRBAC(
   publicClient,
   walletClient,
   contractAddress,
   chain
 );
 
-// Create custom role
-await dynamicRBAC.createRole(
-  "TreasuryManager",
-  5, // max wallets
-  { from: ownerAddress }
+// Create custom role via batch configuration
+const actions = [{
+  actionType: 'CREATE_ROLE',
+  data: abi.encode(
+    ['string', 'uint256', 'tuple[]'],
+    ['TreasuryManager', 5, functionPermissions]
+  )
+}];
+
+await runtimeRBAC.roleConfigBatchRequestAndApprove(
+  metaTx,
+  { from: broadcasterAddress }
 );
 
-// Add wallet to role
-await dynamicRBAC.addWalletToRole(
-  roleHash,
-  treasuryWallet,
-  { from: ownerAddress }
-);
-
-// Grant function permissions
-await dynamicRBAC.grantFunctionPermission(
-  roleHash,
-  functionSelector,
-  [TxAction.EXECUTE_TIME_DELAY_REQUEST],
-  { from: ownerAddress }
-);
+// Query role information
+const role = await runtimeRBAC.getRole(roleHash);
+const wallets = await runtimeRBAC.getWalletsInRole(roleHash);
 ```
 
 ## 🏭 Real-World Examples
@@ -324,7 +333,7 @@ npm run format
 - **[Getting Started](./sdk/typescript/docs/getting-started.md)** - Quick setup guide
 - **[API Reference](./sdk/typescript/docs/api-reference.md)** - Complete API docs
 - **[SecureOwnable Guide](./sdk/typescript/docs/secure-ownable.md)** - Ownership management
-- **[DynamicRBAC Guide](./sdk/typescript/docs/dynamic-rbac.md)** - Role-based access control
+- **[RuntimeRBAC Guide](./sdk/typescript/docs/dynamic-rbac.md)** - Role-based access control
 
 ### 🔍 Advanced Topics
 - **[Best Practices](./sdk/typescript/docs/best-practices.md)** - Development guidelines
@@ -394,7 +403,9 @@ Validation Phase: Contract → Verifies signatures and executes
 - **StateAbstraction Library v1.0.0**: Core state machine with mandatory multi-signature workflows
 - **BaseStateMachine**: Foundation for all security contracts with meta-transaction support
 - **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
-- **DynamicRBAC**: Runtime role configuration with function-level permissions
+- **RuntimeRBAC**: Runtime role configuration with function-level permissions
+- **GuardController**: Execution workflows and time-locked transaction management
+- **HookManager**: External hook contract attachment for state machine actions
 
 **Contract Hierarchy**:
 ```solidity
@@ -421,8 +432,16 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     // Multi-role security with time-locked operations
 }
 
-abstract contract DynamicRBAC is SecureOwnable {
-    // Dynamic role-based access control
+abstract contract RuntimeRBAC is BaseStateMachine {
+    // Runtime role-based access control with batch configuration
+}
+
+abstract contract GuardController is BaseStateMachine {
+    // Execution workflows and time-locked transaction management
+}
+
+abstract contract HookManager is BaseStateMachine {
+    // External hook contract attachment for state machine actions
 }
 ```
 
@@ -451,9 +470,14 @@ abstract contract DynamicRBAC is SecureOwnable {
 ### ✅ Available Features
 **Core Components**:
 - ✅ **StateAbstraction Library v1.0.0**: Centralized state management with multi-phase workflows
-- ✅ **Guardian Contracts**: Basic, Bare, and WithRoles implementations
+- ✅ **BaseStateMachine**: Foundation contract with core state machine functionality
+- ✅ **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
+- ✅ **RuntimeRBAC**: Dynamic role-based access control with runtime configuration
+- ✅ **GuardController**: Execution workflows and time-locked transaction management
+- ✅ **HookManager**: External hook contract attachment for state machine actions
+- ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, ControlBlox, MachineBlox
 - ✅ **TypeScript SDK**: Full client library with comprehensive documentation
-- ✅ **Example Contracts**: SimpleVault and SimpleRWA20 and GuardianSafe with real-world use cases
+- ✅ **Example Contracts**: SimpleVault and SimpleRWA20 with real-world use cases
 - ✅ **Comprehensive Tests**: Full suite ensuring functionality and security
 - ✅ **Sepolia Testnet Support**: Live deployment and testing on Ethereum Sepolia testnet
 
@@ -462,6 +486,9 @@ abstract contract DynamicRBAC is SecureOwnable {
 - ✅ **Role Separation**: Meta-transactions enforce signer ≠ executor separation
 - ✅ **Time-Lock Operations**: Configurable delays with intervention windows
 - ✅ **Dynamic RBAC**: Runtime role configuration without contract upgrades
+- ✅ **Function Target Whitelisting**: Per-function selector target address restrictions
+- ✅ **Function Schemas**: Runtime function registration with action-level permissions
+- ✅ **Handler Selectors**: Support for handler functions with execution selector permissions
 - ✅ **Audit Trails**: Complete transaction history with cryptographic proofs
 
 ## 🔮 Roadmap

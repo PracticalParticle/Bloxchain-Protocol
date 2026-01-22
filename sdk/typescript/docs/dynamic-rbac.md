@@ -1,20 +1,20 @@
-# DynamicRBAC Contract Integration
+# RuntimeRBAC Contract Integration
 
-The `DynamicRBAC` class provides type-safe access to Guardian DynamicRBAC contracts with dynamic role-based access control and flexible permission management.
+The `RuntimeRBAC` class provides type-safe access to Bloxchain RuntimeRBAC contracts with dynamic role-based access control and flexible permission management.
 
 ## 🎯 **Overview**
 
-DynamicRBAC extends SecureOwnable with advanced role management:
-- **Dynamic role creation** and management
+RuntimeRBAC extends BaseStateMachine with advanced role management:
+- **Dynamic role creation** and management via batch configuration
 - **Flexible permission system** with function-level access control
-- **Role hierarchy** and inheritance
+- **Function schema registration** for runtime function management
 - **Meta-transaction support** for role operations
 - **Event-driven role updates** for external monitoring
 
 ## 🚀 **Quick Start**
 
 ```typescript
-import { DynamicRBAC } from '@guardian/sdk/typescript'
+import { RuntimeRBAC } from '@bloxchain/sdk/typescript'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -30,8 +30,8 @@ const walletClient = createWalletClient({
   transport: http()
 })
 
-// Create DynamicRBAC instance
-const dynamicRBAC = new DynamicRBAC(
+// Create RuntimeRBAC instance
+const runtimeRBAC = new RuntimeRBAC(
   publicClient,
   walletClient,
   '0x...', // contract address
@@ -43,235 +43,277 @@ const dynamicRBAC = new DynamicRBAC(
 
 ### **1. Role Management**
 
-#### **Check Role Editing Status**
-```typescript
-const roleEditingEnabled = await dynamicRBAC.roleEditingEnabled()
-console.log('Role editing enabled:', roleEditingEnabled)
-```
-
-#### **Toggle Role Editing**
-```typescript
-// Enable/disable role editing (meta-transaction)
-const txHash = await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(
-  true, // enable role editing
-  { from: account.address }
-)
-
-console.log('Role editing toggled:', txHash)
-```
-
 #### **Get Role Information**
 ```typescript
-const role = await dynamicRBAC.getRole('0x...') // role hash
+const role = await runtimeRBAC.getRole('0x...') // role hash
 console.log('Role info:', {
-  name: role.name,
-  hash: role.hash,
+  name: role.roleName,
+  hash: role.roleHash,
   maxWallets: role.maxWallets,
+  walletCount: role.walletCount,
   isProtected: role.isProtected
 })
 ```
 
 #### **Check Account Role**
 ```typescript
-const hasRole = await dynamicRBAC.hasRole(
-  '0x...', // account address
-  '0x...'  // role hash
+const hasRole = await runtimeRBAC.hasRole(
+  '0x...', // role hash
+  '0x...'  // account address
 )
 console.log('Account has role:', hasRole)
 ```
 
-#### **Get Role Count**
+#### **Get Wallets in Role**
 ```typescript
-const roleCount = await dynamicRBAC.getRoleCount()
-console.log('Total roles:', roleCount)
+const wallets = await runtimeRBAC.getWalletsInRole('0x...') // role hash
+console.log('Wallets in role:', wallets)
 ```
 
-### **2. Permission Management**
-
-#### **Check Function Permissions**
+#### **Get Supported Roles**
 ```typescript
-// Check if role has permission for specific function
-const hasPermission = await dynamicRBAC.hasFunctionPermission(
+const roles = await runtimeRBAC.getSupportedRoles()
+console.log('Supported roles:', roles)
+```
+
+### **2. Function Schema Management**
+
+#### **Get Function Schema**
+```typescript
+const schema = await runtimeRBAC.getFunctionSchema('0xa9059cbb') // function selector
+console.log('Function schema:', {
+  signature: schema.functionSignature,
+  selector: schema.functionSelector,
+  operationType: schema.operationType,
+  operationName: schema.operationName,
+  supportedActions: schema.supportedActions,
+  isProtected: schema.isProtected
+})
+```
+
+#### **Check Function Schema Exists**
+```typescript
+const exists = await runtimeRBAC.functionSchemaExists('0xa9059cbb')
+console.log('Function schema exists:', exists)
+```
+
+#### **Get Supported Functions**
+```typescript
+const functions = await runtimeRBAC.getSupportedFunctions()
+console.log('Supported functions:', functions)
+```
+
+### **3. Permission Management**
+
+#### **Get Active Role Permissions**
+```typescript
+const permissions = await runtimeRBAC.getActiveRolePermissions('0x...') // role hash
+permissions.forEach(permission => {
+  console.log('Permission:', {
+    functionSelector: permission.functionSelector,
+    grantedActionsBitmap: permission.grantedActionsBitmap,
+    handlerForSelector: permission.handlerForSelector
+  })
+})
+```
+
+#### **Check Action Permission**
+```typescript
+const hasPermission = await runtimeRBAC.hasActionPermission(
   '0x...', // account address
-  '0x...'  // function selector
+  '0xa9059cbb', // function selector
+  TxAction.EXECUTE_TIME_DELAY_REQUEST
 )
-console.log('Has function permission:', hasPermission)
+console.log('Has action permission:', hasPermission)
 ```
 
-#### **Get Role Permissions**
+#### **Check Action Supported by Function**
 ```typescript
-const permissions = await dynamicRBAC.getRolePermissions('0x...') // role hash
-console.log('Role permissions:', permissions)
+const isSupported = await runtimeRBAC.isActionSupportedByFunction(
+  '0xa9059cbb', // function selector
+  TxAction.EXECUTE_TIME_DELAY_REQUEST
+)
+console.log('Action supported:', isSupported)
 ```
 
-### **3. Advanced Role Operations**
+## 🔄 **Batch Configuration Workflow**
 
-#### **Create Role**
+RuntimeRBAC uses batch configuration for all role and function management operations. This allows multiple changes to be applied atomically via meta-transactions.
+
+### **Role Configuration Actions**
+
+The batch system supports the following action types:
+
 ```typescript
-// Create a new role (if role editing is enabled)
-const txHash = await dynamicRBAC.createRole(
-  'ADMIN_ROLE', // role name
-  10, // max wallets
-  { from: account.address }
+enum RoleConfigActionType {
+  CREATE_ROLE,
+  REMOVE_ROLE,
+  ADD_WALLET,
+  REVOKE_WALLET,
+  REGISTER_FUNCTION,
+  UNREGISTER_FUNCTION,
+  ADD_FUNCTION_TO_ROLE,
+  REMOVE_FUNCTION_FROM_ROLE
+}
+```
+
+### **Create Role via Batch**
+
+```typescript
+import { encodeAbiParameters } from 'viem'
+
+// Define function permissions for the role
+const functionPermissions = [
+  {
+    functionSelector: '0xa9059cbb', // transfer(address,uint256)
+    grantedActionsBitmap: 0b000000111, // EXECUTE_TIME_DELAY_REQUEST, APPROVE, CANCEL
+    handlerForSelector: '0x00000000' // bytes4(0) for execution selector
+  }
+]
+
+// Create batch action
+const createRoleAction = {
+  actionType: 'CREATE_ROLE',
+  data: encodeAbiParameters(
+    ['string', 'uint256', 'tuple[]'],
+    [
+      'TreasuryManager',
+      5, // maxWallets
+      functionPermissions
+    ]
+  )
+}
+
+// Create meta-transaction for batch
+const metaTxParams = await runtimeRBAC.createMetaTxParams(
+  contractAddress,
+  '0x...', // roleConfigBatchRequestAndApprove selector
+  TxAction.SIGN_META_REQUEST_AND_APPROVE,
+  24n * 60n * 60n, // 24 hour deadline
+  BigInt('50000000000'), // max gas price
+  ownerAddress
+)
+
+const metaTx = await runtimeRBAC.generateUnsignedMetaTransactionForNew(
+  ownerAddress,
+  contractAddress,
+  0n, // value
+  0n, // gas limit
+  keccak256('ROLE_CONFIG_BATCH'), // operation type
+  '0x...', // executeRoleConfigBatch selector
+  encodeAbiParameters(
+    ['tuple[]'],
+    [[createRoleAction]]
+  ),
+  metaTxParams
+)
+
+// Sign the meta-transaction
+const signature = await walletClient.signMessage({
+  message: { raw: metaTx.message },
+  account: ownerAddress
+})
+
+// Execute via broadcaster
+const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
+  { ...metaTx, signature },
+  { from: broadcasterAddress }
 )
 ```
 
-#### **Grant Role**
+### **Add Wallet to Role via Batch**
+
 ```typescript
-// Grant role to account
-const txHash = await dynamicRBAC.grantRole(
-  '0x...', // role hash
-  '0x...', // account address
-  { from: account.address }
-)
+const addWalletAction = {
+  actionType: 'ADD_WALLET',
+  data: encodeAbiParameters(
+    ['bytes32', 'address'],
+    [roleHash, walletAddress]
+  )
+}
+
+// Create and execute batch (similar to create role example)
 ```
 
-#### **Revoke Role**
+### **Register Function via Batch**
+
 ```typescript
-// Revoke role from account
-const txHash = await dynamicRBAC.revokeRole(
-  '0x...', // role hash
-  '0x...', // account address
-  { from: account.address }
-)
+const registerFunctionAction = {
+  actionType: 'REGISTER_FUNCTION',
+  data: encodeAbiParameters(
+    ['string', 'string', 'uint8[]'],
+    [
+      'transfer(address,uint256)', // function signature
+      'TOKEN_TRANSFER', // operation name
+      [
+        TxAction.EXECUTE_TIME_DELAY_REQUEST,
+        TxAction.EXECUTE_TIME_DELAY_APPROVE,
+        TxAction.EXECUTE_TIME_DELAY_CANCEL
+      ]
+    ]
+  )
+}
+
+// Create and execute batch (similar to create role example)
 ```
 
-## 🔄 **Workflow Patterns**
-
-### **Role Creation Workflow**
+### **Add Function Permission to Role via Batch**
 
 ```typescript
-// Step 1: Enable role editing
-await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(true)
+const addFunctionToRoleAction = {
+  actionType: 'ADD_FUNCTION_TO_ROLE',
+  data: encodeAbiParameters(
+    ['bytes32', 'tuple'],
+    [
+      roleHash,
+      {
+        functionSelector: '0xa9059cbb',
+        grantedActionsBitmap: 0b000000111,
+        handlerForSelector: '0x00000000'
+      }
+    ]
+  )
+}
 
-// Step 2: Create role
-const createTx = await dynamicRBAC.createRole('MODERATOR_ROLE', 5)
-
-// Step 3: Grant role to accounts
-const grantTx = await dynamicRBAC.grantRole(roleHash, moderatorAddress)
-```
-
-### **Permission Management Workflow**
-
-```typescript
-// Step 1: Check current permissions
-const currentPermissions = await dynamicRBAC.getRolePermissions(roleHash)
-
-// Step 2: Update permissions (if supported)
-const updateTx = await dynamicRBAC.updateRolePermissions(
-  roleHash,
-  newPermissions
-)
-
-// Step 3: Verify permissions
-const updatedPermissions = await dynamicRBAC.getRolePermissions(roleHash)
-```
-
-### **Role Hierarchy Workflow**
-
-```typescript
-// Step 1: Create parent role
-const parentRoleTx = await dynamicRBAC.createRole('ADMIN_ROLE', 3)
-
-// Step 2: Create child role
-const childRoleTx = await dynamicRBAC.createRole('MODERATOR_ROLE', 10)
-
-// Step 3: Set hierarchy (if supported)
-const hierarchyTx = await dynamicRBAC.setRoleHierarchy(
-  childRoleHash,
-  parentRoleHash
-)
+// Create and execute batch (similar to create role example)
 ```
 
 ## 📡 **Event Monitoring**
 
-### **Listen for Role Events**
+### **Listen for Role Configuration Events**
 
 ```typescript
-// Role created
-const unwatchRoleCreated = publicClient.watchContractEvent({
+// Role configuration applied
+const unwatchRoleConfig = publicClient.watchContractEvent({
   address: contractAddress,
-  abi: dynamicRBAC.abi,
-  eventName: 'RoleCreated',
+  abi: runtimeRBAC.abi,
+  eventName: 'RoleConfigApplied',
   onLogs: (logs) => {
     logs.forEach(log => {
-      console.log('Role created:', {
+      console.log('Role config applied:', {
+        actionType: log.args.actionType,
         roleHash: log.args.roleHash,
-        roleName: log.args.roleName,
-        maxWallets: log.args.maxWallets
-      })
-    })
-  }
-})
-
-// Role granted
-const unwatchRoleGranted = publicClient.watchContractEvent({
-  address: contractAddress,
-  abi: dynamicRBAC.abi,
-  eventName: 'RoleGranted',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Role granted:', {
-        roleHash: log.args.roleHash,
-        account: log.args.account,
-        granter: log.args.granter
-      })
-    })
-  }
-})
-
-// Role revoked
-const unwatchRoleRevoked = publicClient.watchContractEvent({
-  address: contractAddress,
-  abi: dynamicRBAC.abi,
-  eventName: 'RoleRevoked',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Role revoked:', {
-        roleHash: log.args.roleHash,
-        account: log.args.account,
-        revoker: log.args.revoker
+        functionSelector: log.args.functionSelector,
+        data: log.args.data
       })
     })
   }
 })
 
 // Stop watching
-unwatchRoleCreated()
-unwatchRoleGranted()
-unwatchRoleRevoked()
-```
-
-### **Listen for Permission Events**
-
-```typescript
-// Permission updated
-const unwatchPermissionUpdated = publicClient.watchContractEvent({
-  address: contractAddress,
-  abi: dynamicRBAC.abi,
-  eventName: 'PermissionUpdated',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Permission updated:', {
-        roleHash: log.args.roleHash,
-        functionSelector: log.args.functionSelector,
-        grantedActions: log.args.grantedActions
-      })
-    })
-  }
-})
+unwatchRoleConfig()
 ```
 
 ## 🛡️ **Security Features**
 
 ### **1. Role Protection**
 
-Some roles are protected and cannot be modified:
+Protected roles (OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE) cannot be removed:
 
 ```typescript
-const role = await dynamicRBAC.getRole(roleHash)
+const role = await runtimeRBAC.getRole(roleHash)
 if (role.isProtected) {
-  console.log('This role is protected and cannot be modified')
+  console.log('This role is protected and cannot be removed')
 }
 ```
 
@@ -280,113 +322,108 @@ if (role.isProtected) {
 Roles have maximum wallet limits:
 
 ```typescript
-const role = await dynamicRBAC.getRole(roleHash)
-const currentWallets = await dynamicRBAC.getRoleWalletCount(roleHash)
+const role = await runtimeRBAC.getRole(roleHash)
+const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
 
-if (currentWallets >= role.maxWallets) {
+if (wallets.length >= role.maxWallets) {
   throw new Error('Role has reached maximum wallet limit')
 }
 ```
 
 ### **3. Function-Level Permissions**
 
-Fine-grained permission control:
+Fine-grained permission control with action-level permissions:
 
 ```typescript
-// Check specific function permission
-const canTransfer = await dynamicRBAC.hasFunctionPermission(
+// Check specific action permission
+const canRequest = await runtimeRBAC.hasActionPermission(
   account,
-  '0xa9059cbb' // transfer function selector
+  '0xa9059cbb', // transfer function selector
+  TxAction.EXECUTE_TIME_DELAY_REQUEST
 )
 
-if (!canTransfer) {
-  throw new Error('Account does not have transfer permission')
+if (!canRequest) {
+  throw new Error('Account does not have request permission')
+}
+```
+
+### **4. Function Schema Protection**
+
+Protected function schemas cannot be unregistered:
+
+```typescript
+const schema = await runtimeRBAC.getFunctionSchema(functionSelector)
+if (schema.isProtected) {
+  console.log('This function schema is protected and cannot be unregistered')
 }
 ```
 
 ## 🔧 **Advanced Usage**
 
-### **Role-Based Access Control**
-
-```typescript
-class RoleBasedContract {
-  constructor(private dynamicRBAC: DynamicRBAC) {}
-
-  async executeWithRoleCheck(
-    account: Address,
-    functionSelector: string,
-    operation: () => Promise<Hash>
-  ): Promise<Hash> {
-    // Check role permission
-    const hasPermission = await this.dynamicRBAC.hasFunctionPermission(
-      account,
-      functionSelector
-    )
-
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions')
-    }
-
-    // Execute operation
-    return await operation()
-  }
-}
-```
-
 ### **Batch Role Operations**
 
 ```typescript
-// Grant multiple roles to multiple accounts
-const roleGrants = [
-  { roleHash: '0x...', account: '0x...' },
-  { roleHash: '0x...', account: '0x...' },
-  { roleHash: '0x...', account: '0x...' }
+// Create multiple roles in a single batch
+const actions = [
+  {
+    actionType: 'CREATE_ROLE',
+    data: encodeAbiParameters(
+      ['string', 'uint256', 'tuple[]'],
+      ['ADMIN_ROLE', 3, adminPermissions]
+    )
+  },
+  {
+    actionType: 'CREATE_ROLE',
+    data: encodeAbiParameters(
+      ['string', 'uint256', 'tuple[]'],
+      ['MODERATOR_ROLE', 10, moderatorPermissions]
+    )
+  },
+  {
+    actionType: 'ADD_WALLET',
+    data: encodeAbiParameters(
+      ['bytes32', 'address'],
+      [adminRoleHash, adminAddress]
+    )
+  }
 ]
 
-const results = await Promise.allSettled(
-  roleGrants.map(grant => 
-    dynamicRBAC.grantRole(grant.roleHash, grant.account)
+// Execute batch via meta-transaction
+```
+
+### **Function Registration Workflow**
+
+```typescript
+// Step 1: Register function schema
+const registerAction = {
+  actionType: 'REGISTER_FUNCTION',
+  data: encodeAbiParameters(
+    ['string', 'string', 'uint8[]'],
+    [
+      'withdraw(address,uint256)',
+      'WITHDRAW_OPERATION',
+      [TxAction.EXECUTE_TIME_DELAY_REQUEST, TxAction.EXECUTE_TIME_DELAY_APPROVE]
+    ]
   )
-)
+}
 
-results.forEach((result, index) => {
-  if (result.status === 'fulfilled') {
-    console.log(`Role grant ${index} successful:`, result.value)
-  } else {
-    console.error(`Role grant ${index} failed:`, result.reason)
-  }
-})
-```
+// Step 2: Add function permission to role
+const addPermissionAction = {
+  actionType: 'ADD_FUNCTION_TO_ROLE',
+  data: encodeAbiParameters(
+    ['bytes32', 'tuple'],
+    [
+      roleHash,
+      {
+        functionSelector: '0x...', // withdraw selector
+        grantedActionsBitmap: 0b000000011,
+        handlerForSelector: '0x00000000'
+      }
+    ]
+  )
+}
 
-### **Role Hierarchy Management**
-
-```typescript
-// Check role hierarchy
-const isChildOf = await dynamicRBAC.isChildRole(childRoleHash, parentRoleHash)
-
-// Get all child roles
-const childRoles = await dynamicRBAC.getChildRoles(parentRoleHash)
-
-// Get all parent roles
-const parentRoles = await dynamicRBAC.getParentRoles(childRoleHash)
-```
-
-## 📊 **Workflow Analysis**
-
-
-### **Role Permission Analysis**
-
-```typescript
-// Analyze role permissions
-const rolePermissions = analysis.rolePermissions
-
-rolePermissions.forEach(permission => {
-  console.log('Role Permission:', {
-    roleHash: permission.roleHash,
-    functionSelector: permission.functionSelector,
-    grantedActions: permission.grantedActions
-  })
-})
+// Step 3: Execute batch
 ```
 
 ## 🧪 **Testing**
@@ -396,20 +433,21 @@ rolePermissions.forEach(permission => {
 ```typescript
 import { describe, it, expect } from 'vitest'
 
-describe('DynamicRBAC', () => {
-  it('should return correct role editing status', async () => {
-    const enabled = await dynamicRBAC.roleEditingEnabled()
-    expect(typeof enabled).toBe('boolean')
+describe('RuntimeRBAC', () => {
+  it('should return correct role information', async () => {
+    const role = await runtimeRBAC.getRole(roleHash)
+    expect(role.roleHash).toBe(roleHash)
+    expect(role.maxWallets).toBeGreaterThan(0)
   })
 
   it('should check role membership', async () => {
-    const hasRole = await dynamicRBAC.hasRole(account, roleHash)
+    const hasRole = await runtimeRBAC.hasRole(roleHash, account)
     expect(typeof hasRole).toBe('boolean')
   })
 
-  it('should toggle role editing', async () => {
-    const txHash = await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(true)
-    expect(txHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+  it('should get wallets in role', async () => {
+    const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+    expect(Array.isArray(wallets)).toBe(true)
   })
 })
 ```
@@ -417,46 +455,55 @@ describe('DynamicRBAC', () => {
 ### **Integration Testing**
 
 ```typescript
-describe('DynamicRBAC Integration', () => {
+describe('RuntimeRBAC Integration', () => {
   it('should complete role creation workflow', async () => {
-    // Enable role editing
-    await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(true)
-    
-    // Create role
-    const createTx = await dynamicRBAC.createRole('TEST_ROLE', 5)
-    
-    // Grant role
-    const grantTx = await dynamicRBAC.grantRole(roleHash, testAccount)
-    
-    // Verify role
-    const hasRole = await dynamicRBAC.hasRole(testAccount, roleHash)
-    expect(hasRole).toBe(true)
+    // Create role via batch
+    const createAction = {
+      actionType: 'CREATE_ROLE',
+      data: encodeAbiParameters(
+        ['string', 'uint256', 'tuple[]'],
+        ['TEST_ROLE', 5, []]
+      )
+    }
+
+    // Execute batch via meta-transaction
+    const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
+      metaTx,
+      { from: broadcasterAddress }
+    )
+
+    // Verify role exists
+    const role = await runtimeRBAC.getRole(roleHash)
+    expect(role.roleName).toBe('TEST_ROLE')
   })
 })
 ```
 
 ## 🚨 **Common Issues**
 
-### **Issue: "Role editing is disabled"**
-**Solution**: Enable role editing before creating or modifying roles.
+### **Issue: "Role is protected"**
+**Solution**: Protected roles (OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE) cannot be removed. Use a different role or create a new one.
 
 ### **Issue: "Role has reached maximum wallet limit"**
-**Solution**: Increase the role's wallet limit or revoke roles from other accounts.
+**Solution**: Increase the role's wallet limit or revoke roles from other accounts before adding new ones.
 
-### **Issue: "Role is protected"**
-**Solution**: Protected roles cannot be modified. Use a different role or create a new one.
+### **Issue: "Function schema not found"**
+**Solution**: Register the function schema before adding it to a role. Use REGISTER_FUNCTION action in a batch.
 
 ### **Issue: "Insufficient permissions"**
-**Solution**: Ensure the account has the required role and function permissions.
+**Solution**: Ensure the account has the required role and function permissions. Check with `hasActionPermission`.
 
 ### **Issue: "Invalid role hash"**
 **Solution**: Use the correct role hash. Generate it using `keccak256(abi.encodePacked(roleName))`.
+
+### **Issue: "Handler selector mismatch"**
+**Solution**: Ensure `handlerForSelector` in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
 
 ## 📚 **Related Documentation**
 
 - [API Reference](./api-reference.md) - Complete API documentation
 - [SecureOwnable Guide](./secure-ownable.md) - Base contract functionality
+- [State Machine Engine](./state-machine-engine.md) - State machine architecture
 - [Best Practices](./best-practices.md) - Development guidelines
 
 ---
-

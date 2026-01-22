@@ -1,6 +1,6 @@
 # SecureOwnable Contract Integration
 
-The `SecureOwnable` class provides type-safe access to Guardian SecureOwnable contracts with built-in security features and multi-phase operations.
+The `SecureOwnable` class provides type-safe access to Bloxchain SecureOwnable contracts with built-in security features and multi-phase operations.
 
 ## 🎯 **Overview**
 
@@ -14,7 +14,7 @@ SecureOwnable is a secure ownership management contract that implements:
 ## 🚀 **Quick Start**
 
 ```typescript
-import { SecureOwnable } from '@guardian/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk/typescript'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -398,4 +398,4 @@ describe('SecureOwnable Integration', () => {
 
 ---
 
-**Ready to explore DynamicRBAC?** Check out the [DynamicRBAC Guide](./dynamic-rbac.md) for role-based access control.
+**Ready to explore RuntimeRBAC?** Check out the [RuntimeRBAC Guide](./dynamic-rbac.md) for role-based access control.
