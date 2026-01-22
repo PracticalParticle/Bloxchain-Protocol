@@ -27,6 +27,15 @@
  * security warnings in the official repository. They are only needed if you
  * want to use Truffle for compilation, testing, or deployment.
  *
+ * Additionally, if you're writing Truffle tests, you may also need:
+ *
+ *   npm install --save-dev @openzeppelin/test-helpers@^0.5.16
+ *
+ * Note: @openzeppelin/test-helpers is deprecated and pulls in Truffle dependencies.
+ * It's been replaced in the main package.json with Hardhat alternatives:
+ * @nomicfoundation/hardhat-chai-matchers and @nomicfoundation/hardhat-network-helpers
+ * for better security and modern tooling support.
+ *
  */
 
 // Load environment variables from .env file
