@@ -1,26 +1,26 @@
 Mozilla Public License Version 2.0
 ==================================
 
-APPLICATIONS EXCLUSION
-======================
+EXAMPLES EXCLUSION
+==================
 
 The following directories are EXCLUDED from this Mozilla Public License 2.0:
 
-- applications/ (and all subdirectories)
-- Any files within applications/ are licensed separately
-- Each application has its own license
-- See individual LICENSE files in applications/ subdirectories
+- contracts/examples/ (and all subdirectories)
+- Any files within contracts/examples/ are licensed separately
+- Each example has its own license
+- See individual LICENSE files in contracts/examples/ subdirectories
 
 This exclusion means:
-- Applications are NOT covered by MPL-2.0
-- Applications are NOT part of the "Covered Software"
-- Applications are NOT subject to MPL-2.0 terms
-- Each application maintains its own licensing terms
-- Bloxchain Protocol is NOT responsible for application licensing
-- Applications are NOT officially supported by Bloxchain Protocol
+- Examples are NOT covered by MPL-2.0
+- Examples are NOT part of the "Covered Software"
+- Examples are NOT subject to MPL-2.0 terms
+- Each example maintains its own licensing terms
+- Bloxchain Protocol is NOT responsible for example licensing
+- Examples are NOT officially supported by Bloxchain Protocol
 
-END OF APPLICATIONS EXCLUSION
-=============================
+END OF EXAMPLES EXCLUSION
+=========================
 
 1. Definitions
 --------------
