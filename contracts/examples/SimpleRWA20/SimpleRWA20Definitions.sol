@@ -84,7 +84,7 @@ library SimpleRWA20Definitions {
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: MINT_TOKENS_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: MINT_TOKENS_SELECTOR
         });
         
         // Owner: Burn Tokens Meta (signing)
@@ -92,7 +92,7 @@ library SimpleRWA20Definitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: BURN_TOKENS_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: BURN_TOKENS_SELECTOR
         });
         
         // Broadcaster: Mint Tokens Meta (execution)
@@ -100,7 +100,7 @@ library SimpleRWA20Definitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: MINT_TOKENS_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: MINT_TOKENS_SELECTOR
         });
         
         // Broadcaster: Burn Tokens Meta (execution)
@@ -108,7 +108,7 @@ library SimpleRWA20Definitions {
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: BURN_TOKENS_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: BURN_TOKENS_SELECTOR
         });
         
         return IDefinition.RolePermission({

@@ -163,7 +163,7 @@ library GuardianSafeDefinitions {
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_TX_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Owner: Approve Transaction After Delay
@@ -171,7 +171,7 @@ library GuardianSafeDefinitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_DELAYED_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Owner: Cancel Transaction
@@ -179,7 +179,7 @@ library GuardianSafeDefinitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Owner: Approve Transaction Meta (signer)
@@ -187,7 +187,7 @@ library GuardianSafeDefinitions {
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Owner: Cancel Transaction Meta (signer)
@@ -195,7 +195,7 @@ library GuardianSafeDefinitions {
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Owner: Request And Approve Transaction Meta (signer)
@@ -203,7 +203,7 @@ library GuardianSafeDefinitions {
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Broadcaster: Approve Transaction Meta (executor)
@@ -211,7 +211,7 @@ library GuardianSafeDefinitions {
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Broadcaster: Cancel Transaction Meta (executor)
@@ -219,7 +219,7 @@ library GuardianSafeDefinitions {
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         // Broadcaster: Request And Approve Transaction Meta (executor)
@@ -227,7 +227,7 @@ library GuardianSafeDefinitions {
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: EXEC_SAFE_TX_SELECTOR
         });
         
         return IDefinition.RolePermission({

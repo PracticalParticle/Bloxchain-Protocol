@@ -140,7 +140,7 @@ library SimpleVaultDefinitions {
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            isHandlerSelector: true
+            handlerForSelector: WITHDRAW_ETH_SELECTOR
         });
         
         // Owner: Withdraw Token Request
@@ -148,7 +148,7 @@ library SimpleVaultDefinitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            isHandlerSelector: true
+            handlerForSelector: WITHDRAW_TOKEN_SELECTOR
         });
         
         // Owner: Approve Withdrawal Delayed
@@ -156,7 +156,7 @@ library SimpleVaultDefinitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: bytes4(0)
         });
         
         // Owner: Cancel Withdrawal
@@ -164,7 +164,7 @@ library SimpleVaultDefinitions {
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: bytes4(0)
         });
         
         // Owner: Approve Withdrawal Meta (signer)
@@ -172,7 +172,7 @@ library SimpleVaultDefinitions {
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: bytes4(0)
         });
 
         // Broadcaster: Approve Withdrawal Meta (executor)
@@ -180,7 +180,7 @@ library SimpleVaultDefinitions {
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: bytes4(0)
         });
         
         return IDefinition.RolePermission({

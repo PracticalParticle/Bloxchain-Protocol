@@ -101,7 +101,7 @@ library RuntimeRBACDefinitions {
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerHandlerActions),
-            isHandlerSelector: true
+            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
         });
         
         // Owner: sign meta batch (execution function permission)
@@ -113,7 +113,7 @@ library RuntimeRBACDefinitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         
         // Broadcaster: execute meta batch (handler function permission)
@@ -124,7 +124,7 @@ library RuntimeRBACDefinitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterHandlerActions),
-            isHandlerSelector: true
+            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
         });
         
         // Broadcaster: execute meta batch (execution function permission)
@@ -136,7 +136,7 @@ library RuntimeRBACDefinitions {
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         
         return IDefinition.RolePermission({
