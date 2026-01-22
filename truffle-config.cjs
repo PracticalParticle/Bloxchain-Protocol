@@ -16,6 +16,17 @@
  * public/private key pairs. If you're publishing your code to GitHub make sure you load this
  * phrase from a file you've .gitignored so it doesn't accidentally become public.
  *
+ * ============================================================================
+ * TRUFFLE DEPENDENCIES (Optional - for local development only)
+ * ============================================================================
+ * To use Truffle with this project, install the following dependencies:
+ *
+ *   npm install --save-dev truffle@^5.11.5 truffle-assertions@^0.9.2 truffle-contract-size@^2.0.1
+ *
+ * Note: These dependencies are not included in the main package.json to avoid
+ * security warnings in the official repository. They are only needed if you
+ * want to use Truffle for compilation, testing, or deployment.
+ *
  */
 
 // Load environment variables from .env file
