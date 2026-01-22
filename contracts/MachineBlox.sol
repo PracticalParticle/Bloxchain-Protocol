@@ -94,6 +94,14 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
     }
 
     /**
+     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
+     * @param newTimeLockPeriodSec The new time lock period in seconds
+     */
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
+        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
+    }
+
+    /**
      * @dev Explicit deposit function for ETH deposits
      * @notice Users must call this function to deposit ETH to the contract
      * @notice Direct ETH transfers to the contract will revert (no receive() function)

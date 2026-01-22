@@ -166,7 +166,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
         
         // Convert bitmap to array
-        supportedActions = StateAbstraction.convertBitmapToActions(schema.supportedActionsBitmap);
+        supportedActions = _convertBitmapToActions(schema.supportedActionsBitmap);
         
         return (
             schema.functionSignature,
@@ -185,12 +185,11 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
      */
     function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
-        StateAbstraction._validateAnyRole(state);
-        StateAbstraction._validateRoleExists(state, roleHash);
+        _validateAnyRole();
+        _validateRoleExists(roleHash);
         
         // Get role info to determine wallet count
-        StateAbstraction.Role storage role = state.getRole(roleHash);
+        StateAbstraction.Role storage role = _getSecureState().getRole(roleHash);
         uint256 walletCount = role.walletCount;
         
         // Build array by iterating through wallets using _getAuthorizedWalletAt
@@ -331,7 +330,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         roleHash = keccak256(bytes(roleName));
 
         // Create the role in the secure state with isProtected = false
-        StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, false);
+        _createRole(roleName, maxWallets, false);
 
         // Add all function permissions to the role
         // NOTE: Function schemas must be registered BEFORE adding permissions to roles
@@ -348,36 +347,16 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             // 1. Role exists in supportedRolesSet (✅ just created)
             // 2. Function selector exists in supportedFunctionsSet (must be registered during initialize)
             // 3. Actions are supported by function schema (via _validateMetaTxPermissions)
-            StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermissions[i]);
+            _addFunctionToRole(roleHash, functionPermissions[i]);
         }
     }
 
-    function _removeRole(bytes32 roleHash) internal {
-        _ensureRoleNotProtected(roleHash);
-
-        StateAbstraction.removeRole(_getSecureState(), roleHash);
-    }
 
     function _addWalletToRole(bytes32 roleHash, address wallet) internal {
-        StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
+        _assignWallet(roleHash, wallet);
     }
 
-    function _revokeWallet(bytes32 roleHash, address wallet) internal {
-        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
-    }
 
-    /**
-     * @dev Validates that a role is not protected
-     */
-    function _ensureRoleNotProtected(bytes32 roleHash) internal view {
-        StateAbstraction.Role storage role = _getSecureState().roles[roleHash];
-        if (role.roleHash == bytes32(0)) {
-            revert SharedValidation.ResourceNotFound(roleHash);
-        }
-        if (role.isProtected) {
-            revert SharedValidation.CannotRemoveProtected(roleHash);
-        }
-    }
 
     function _registerFunction(
         string memory functionSignature,
@@ -393,13 +372,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         }
 
         // Convert actions array to bitmap
-        uint16 supportedActionsBitmap = StateAbstraction.createBitmapFromActions(supportedActions);
+        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
         // Dynamically registered functions are execution selectors (handlerForSelectors = empty array)
         bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
-        StateAbstraction.createFunctionSchema(
-            _getSecureState(),
+        _createFunctionSchema(
             functionSignature,
             functionSelector,
             operationName,
@@ -424,33 +402,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
         // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
         // during meta-tx execution msg.sender is the contract, causing NoPermission)
-        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
-    }
-
-    /**
-     * @dev Adds a function permission to an existing role
-     * @param roleHash The role hash to add the function permission to
-     * @param functionPermission The function permission to add
-     * @notice StateAbstraction.addFunctionToRole validates that the role exists and the function is registered
-     */
-    function _addFunctionToRole(
-        bytes32 roleHash,
-        StateAbstraction.FunctionPermission memory functionPermission
-    ) internal {
-        StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
-    }
-
-    /**
-     * @dev Removes a function permission from an existing role
-     * @param roleHash The role hash to remove the function permission from
-     * @param functionSelector The function selector to remove from the role
-     * @notice StateAbstraction.removeFunctionFromRole validates that the role exists and prevents removing protected functions
-     */
-    function _removeFunctionFromRole(
-        bytes32 roleHash,
-        bytes4 functionSelector
-    ) internal {
-        StateAbstraction.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
+        _removeFunctionSchema(functionSelector, safeRemoval);
     }
 
 }

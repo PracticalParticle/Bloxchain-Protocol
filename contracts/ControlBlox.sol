@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./core/execution/GuardController.sol";
 import "./core/access/RuntimeRBAC.sol";
 import "./core/security/SecureOwnable.sol";
+import "./core/base/BaseStateMachine.sol";
 import "./utils/SharedValidation.sol";
 
 /**
@@ -43,6 +44,14 @@ contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(GuardController, RuntimeRBAC, SecureOwnable) returns (bool) {
         return GuardController.supportsInterface(interfaceId) || RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
+     * @param newTimeLockPeriodSec The new time lock period in seconds
+     */
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
+        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
     }
 
     /**
