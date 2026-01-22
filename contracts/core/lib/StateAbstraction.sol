@@ -1031,7 +1031,6 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param functionSignature Function signature (e.g., "transfer(address,uint256)") or function name.
      * @param functionSelector Hash identifier for the function.
-     * @param operationType The operation type this function belongs to.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param isProtected Whether the function schema is protected from removal.
@@ -1041,7 +1040,6 @@ library StateAbstraction {
         SecureOperationState storage self,
         string memory functionSignature,
         bytes4 functionSelector,
-        bytes32 operationType,
         string memory operationName,
         uint16 supportedActionsBitmap,
         bool isProtected,
@@ -1055,11 +1053,8 @@ library StateAbstraction {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
         }
 
-        // Validate that the operation type match the operation name
+        // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
-        if (operationType != derivedOperationType) {
-            revert SharedValidation.OperationTypeMismatch(operationType, derivedOperationType);
-        }
 
         // Validate handlerForSelectors: if non-empty, validate that referenced execution selectors exist
         // Note: For execution selectors (empty array), no validation needed
@@ -1068,8 +1063,8 @@ library StateAbstraction {
         // The validation will happen when adding permissions via addFunctionToRole
         
         // register the operation type if it's not already in the set
-        SharedValidation.validateOperationTypeNotZero(operationType);
-        if (self.supportedOperationTypesSet.add(operationType)) {
+        SharedValidation.validateOperationTypeNotZero(derivedOperationType);
+        if (self.supportedOperationTypesSet.add(derivedOperationType)) {
             // do nothing
         }
         
@@ -1081,7 +1076,7 @@ library StateAbstraction {
         FunctionSchema storage schema = self.functions[functionSelector];
         schema.functionSignature = functionSignature;
         schema.functionSelector = functionSelector;
-        schema.operationType = operationType;
+        schema.operationType = derivedOperationType;
         schema.operationName = operationName;
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.isProtected = isProtected;

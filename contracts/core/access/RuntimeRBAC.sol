@@ -392,9 +392,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
         }
 
-        // Derive operation type from name
-        bytes32 operationType = keccak256(bytes(operationName));
-
         // Convert actions array to bitmap
         uint16 supportedActionsBitmap = StateAbstraction.createBitmapFromActions(supportedActions);
 
@@ -405,7 +402,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             _getSecureState(),
             functionSignature,
             functionSelector,
-            operationType,
             operationName,
             supportedActionsBitmap,
             false, // isProtected = false for dynamically registered functions
