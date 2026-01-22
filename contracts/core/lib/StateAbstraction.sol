@@ -128,7 +128,7 @@ library StateAbstraction {
     struct FunctionPermission {
         bytes4 functionSelector;
         uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
-        bool isHandlerSelector; // true for handler selector permissions (controls who can access), false for execution selector permissions (defines what action is performed)
+        bytes4 handlerForSelector; // bytes4(0) mean this is an execution selector
     }
 
     struct FunctionSchema {
@@ -138,6 +138,7 @@ library StateAbstraction {
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
         bool isProtected;
+        bytes4[] handlerForSelectors; 
     }
 
     // ============ DEFINITION STRUCTS ============
@@ -896,6 +897,10 @@ library StateAbstraction {
             revert SharedValidation.ResourceNotFound(functionSelectorHash);
         }
         
+        // Validate that handlerForSelector in permission is in the schema's handlerForSelectors array
+        FunctionSchema storage schema = self.functions[functionPermission.functionSelector];
+        _validateHandlerForSelector(schema, functionPermission.handlerForSelector);
+        
         // Validate that all grantedActions are supported by the function
         _validateMetaTxPermissions(self, functionPermission);
         
@@ -1026,19 +1031,19 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param functionSignature Function signature (e.g., "transfer(address,uint256)") or function name.
      * @param functionSelector Hash identifier for the function.
-     * @param operationType The operation type this function belongs to.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param isProtected Whether the function schema is protected from removal.
+     * @param handlerForSelectors Empty array for execution selector permissions
      */
     function createFunctionSchema(
         SecureOperationState storage self,
         string memory functionSignature,
         bytes4 functionSelector,
-        bytes32 operationType,
         string memory operationName,
         uint16 supportedActionsBitmap,
-        bool isProtected
+        bool isProtected,
+        bytes4[] memory handlerForSelectors
     ) public {
         // Validate that functionSignature matches functionSelector
         // Note: NATIVE_TRANSFER_SELECTOR uses a reserved signature that represents native token transfers
@@ -1048,15 +1053,18 @@ library StateAbstraction {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
         }
 
-        // Validate that the operation type match the operation name
+        // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
-        if (operationType != derivedOperationType) {
-            revert SharedValidation.OperationTypeMismatch(operationType, derivedOperationType);
-        }
 
+        // Validate handlerForSelectors: if non-empty, validate that referenced execution selectors exist
+        // Note: For execution selectors (empty array), no validation needed
+        // For handler selectors (non-empty array), we validate the execution selectors exist
+        // However, we allow creating handler schemas before execution schemas exist (for definition loading order flexibility)
+        // The validation will happen when adding permissions via addFunctionToRole
+        
         // register the operation type if it's not already in the set
-        SharedValidation.validateOperationTypeNotZero(operationType);
-        if (self.supportedOperationTypesSet.add(operationType)) {
+        SharedValidation.validateOperationTypeNotZero(derivedOperationType);
+        if (self.supportedOperationTypesSet.add(derivedOperationType)) {
             // do nothing
         }
         
@@ -1068,10 +1076,11 @@ library StateAbstraction {
         FunctionSchema storage schema = self.functions[functionSelector];
         schema.functionSignature = functionSignature;
         schema.functionSelector = functionSelector;
-        schema.operationType = operationType;
+        schema.operationType = derivedOperationType;
         schema.operationName = operationName;
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.isProtected = isProtected;
+        schema.handlerForSelectors = handlerForSelectors;
         
         // Add to supportedFunctionsSet
         if (!self.supportedFunctionsSet.add(bytes32(functionSelector))) {
@@ -1958,6 +1967,37 @@ library StateAbstraction {
         // Validate permission for the handler/calling function selector (e.g. msg.sig)
         if (!hasActionPermission(self, wallet, handlerSelector, action)) {
             revert SharedValidation.NoPermission(wallet);
+        }
+    }
+
+    /**
+     * @dev Validates that a handlerForSelector is present in the schema's handlerForSelectors array
+     * @param schema The function schema to validate against
+     * @param handlerForSelector The handlerForSelector from the permission to validate
+     * @notice Reverts with HandlerForSelectorMismatch if the handlerForSelector is not found in the schema's array
+     * @notice Special case: Execution function permissions use bytes4(0) with empty handlerForSelectors array
+     */
+    function _validateHandlerForSelector(
+        FunctionSchema storage schema,
+        bytes4 handlerForSelector
+    ) internal view {
+        // Special case: execution function permissions use bytes4(0) with empty handlerForSelectors array
+        if (handlerForSelector == bytes4(0) && schema.handlerForSelectors.length == 0) {
+            return; // Valid execution function permission
+        }
+        
+        bool found = false;
+        for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
+            if (schema.handlerForSelectors[i] == handlerForSelector) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            revert SharedValidation.HandlerForSelectorMismatch(
+                bytes4(0), // Cannot return array, use 0 as placeholder
+                handlerForSelector
+            );
         }
     }
 

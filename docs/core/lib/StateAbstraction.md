@@ -430,7 +430,7 @@ Checks if a specific role has permission for a function and action.
 ### createFunctionSchema
 
 ```solidity
-function createFunctionSchema(struct StateAbstraction.SecureOperationState self, string functionSignature, bytes4 functionSelector, bytes32 operationType, string operationName, uint16 supportedActionsBitmap, bool isProtected) public nonpayable
+function createFunctionSchema(struct StateAbstraction.SecureOperationState self, string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool isProtected, bytes4[] handlerForSelectors) public nonpayable
 ```
 
 Creates a function access control with specified permissions.
@@ -439,10 +439,10 @@ Creates a function access control with specified permissions.
 - `` (): The SecureOperationState to check.
 - `` (): Function signature (e.g., &quot;transfer(address,uint256)&quot;) or function name.
 - `` (): Hash identifier for the function.
-- `` (): The operation type this function belongs to.
-- `` (): The name of the operation type.
+- `` (): The name of the operation type (operation type is derived from this).
 - `` (): Bitmap of permissions required to execute this function.
 - `` (): Whether the function schema is protected from removal.
+- `` (): Empty array for execution selector permissions.
 
 
 

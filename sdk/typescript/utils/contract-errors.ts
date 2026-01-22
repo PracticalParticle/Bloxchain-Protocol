@@ -347,6 +347,11 @@ export interface InvalidRangeError extends ContractError {
   params: { from: string; to: string }
 }
 
+export interface HandlerForSelectorMismatchError extends ContractError {
+  name: 'HandlerForSelectorMismatch'
+  params: { schemaHandlerForSelector: string; permissionHandlerForSelector: string }
+}
+
 /**
  * Payment and balance errors
  */
@@ -456,6 +461,7 @@ export type GuardianContractError =
   | ActionNotSupportedError
   | ConflictingMetaTxPermissionsError
   | InvalidRangeError
+  | HandlerForSelectorMismatchError
   | InsufficientBalanceError
   | PaymentFailedError
   | ArrayLengthMismatchError
@@ -618,6 +624,13 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'InsufficientBalance',
     params: ['currentBalance', 'requiredAmount'],
     userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
+  },
+
+  // Function validation errors
+  '0x8c5be1ee': { // HandlerForSelectorMismatch(bytes4,bytes4) - placeholder signature
+    name: 'HandlerForSelectorMismatch',
+    params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
+    userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema handler: ${params.schemaHandlerForSelector}, permission handler: ${params.permissionHandlerForSelector}`
   },
 
   // Array errors
@@ -805,6 +818,8 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
     case 'ResourceNotFound':
       return `ResourceNotFound: Resource ${error.params.resource} not found`
+    case 'HandlerForSelectorMismatch':
+      return `HandlerForSelectorMismatch: Handler selector mismatch - schema handler: ${error.params.schemaHandlerForSelector}, permission handler: ${error.params.permissionHandlerForSelector}`
     case 'PatternMatch':
       // For pattern matches, return a more descriptive message
       if (error.params.pattern === 'OWNER_ROLE') {

@@ -40,7 +40,6 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
     "@types/jest": "^29.5.5",
     "chai": "^5.1.2",

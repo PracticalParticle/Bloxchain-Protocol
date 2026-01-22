@@ -542,10 +542,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
                 _getSecureState(),
                 functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
-                functionSchemas[i].operationType,
                 functionSchemas[i].operationName,
                 functionSchemas[i].supportedActionsBitmap,
-                functionSchemas[i].isProtected
+                functionSchemas[i].isProtected,
+                functionSchemas[i].handlerForSelectors
             );
         }
         

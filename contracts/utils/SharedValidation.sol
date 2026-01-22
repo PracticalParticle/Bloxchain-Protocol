@@ -89,7 +89,7 @@ library SharedValidation {
     error InternalFunctionNotAccessible(bytes4 functionSelector);
     error TargetNotWhitelisted(address target, bytes4 functionSelector);
     error FunctionSelectorMismatch(bytes4 providedSelector, bytes4 derivedSelector);
-    error OperationTypeMismatch(bytes32 providedType, bytes32 derivedType);
+    error HandlerForSelectorMismatch(bytes4 schemaHandlerForSelector, bytes4 permissionHandlerForSelector);
     error InvalidRange(uint256 from, uint256 to);
     error OperationFailed();
     

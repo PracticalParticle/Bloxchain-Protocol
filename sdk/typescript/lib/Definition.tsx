@@ -81,7 +81,8 @@ export class Definitions implements IDefinition {
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,
         supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
-        isProtected: item.isProtected as boolean
+        isProtected: item.isProtected as boolean,
+        handlerForSelectors: item.handlerForSelectors.map((selector: any) => selector as Hex) as Hex[]
       }));
     } catch (error) {
       throw new Error(`Failed to get function schemas: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -105,7 +106,7 @@ export class Definitions implements IDefinition {
         functionPermissions: result.functionPermissions.map((perm: any) => ({
           functionSelector: perm.functionSelector as Hex,
           grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap), // uint16
-          isHandlerSelector: perm.isHandlerSelector as boolean
+          handlerForSelector: perm.handlerForSelector as Hex
         }))
       };
     } catch (error) {

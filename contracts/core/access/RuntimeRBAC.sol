@@ -392,21 +392,20 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
         }
 
-        // Derive operation type from name
-        bytes32 operationType = keccak256(bytes(operationName));
-
         // Convert actions array to bitmap
         uint16 supportedActionsBitmap = StateAbstraction.createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
+        // Dynamically registered functions are execution selectors (handlerForSelectors = empty array)
+        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
         StateAbstraction.createFunctionSchema(
             _getSecureState(),
             functionSignature,
             functionSelector,
-            operationType,
             operationName,
             supportedActionsBitmap,
-            false // isProtected = false for dynamically registered functions
+            false, // isProtected = false for dynamically registered functions
+            emptyHandlerForSelectors // handlerForSelectors = empty array for execution selectors
         );
     }
 

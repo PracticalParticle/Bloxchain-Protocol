@@ -99,6 +99,17 @@ library SecureOwnableDefinitions {
         executionMetaRequestApproveActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         executionMetaRequestApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        // Prepare handlerForSelectors arrays
+        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        bytes4[] memory transferOwnershipHandlerForSelectors = new bytes4[](1);
+        transferOwnershipHandlerForSelectors[0] = TRANSFER_OWNERSHIP_SELECTOR;
+        bytes4[] memory broadcasterHandlerForSelectors = new bytes4[](1);
+        broadcasterHandlerForSelectors[0] = UPDATE_BROADCASTER_SELECTOR;
+        bytes4[] memory recoveryHandlerForSelectors = new bytes4[](1);
+        recoveryHandlerForSelectors[0] = UPDATE_RECOVERY_SELECTOR;
+        bytes4[] memory timelockHandlerForSelectors = new bytes4[](1);
+        timelockHandlerForSelectors[0] = UPDATE_TIMELOCK_SELECTOR;
+        
         // Meta-transaction functions
         schemas[0] = StateAbstraction.FunctionSchema({
             functionSignature: "transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
@@ -106,7 +117,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[1] = StateAbstraction.FunctionSchema({
@@ -115,7 +127,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -124,7 +137,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[3] = StateAbstraction.FunctionSchema({
@@ -133,7 +147,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[4] = StateAbstraction.FunctionSchema({
@@ -142,7 +157,8 @@ library SecureOwnableDefinitions {
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: recoveryHandlerForSelectors
         });
         
         schemas[5] = StateAbstraction.FunctionSchema({
@@ -151,7 +167,8 @@ library SecureOwnableDefinitions {
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: timelockHandlerForSelectors
         });
         
         // Time-delayed functions
@@ -161,7 +178,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[7] = StateAbstraction.FunctionSchema({
@@ -170,7 +188,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[8] = StateAbstraction.FunctionSchema({
@@ -179,7 +198,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[9] = StateAbstraction.FunctionSchema({
@@ -188,7 +208,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[10] = StateAbstraction.FunctionSchema({
@@ -197,7 +218,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[11] = StateAbstraction.FunctionSchema({
@@ -206,7 +228,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         // Execution selector schemas (required for meta-transaction dual-permission model)
@@ -216,7 +239,8 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionApproveCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         schemas[13] = StateAbstraction.FunctionSchema({
@@ -225,7 +249,8 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionApproveCancelActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         schemas[14] = StateAbstraction.FunctionSchema({
@@ -234,7 +259,8 @@ library SecureOwnableDefinitions {
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionMetaRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         schemas[15] = StateAbstraction.FunctionSchema({
@@ -243,7 +269,8 @@ library SecureOwnableDefinitions {
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionMetaRequestApproveActions),
-            isProtected: true
+            isProtected: true,
+            handlerForSelectors: emptyHandlerForSelectors
         });
         
         return schemas;
@@ -320,7 +347,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -329,7 +356,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -338,7 +365,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
         
@@ -347,7 +374,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
         
@@ -356,7 +383,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_RECOVERY_SELECTOR
         });
         index++;
         
@@ -365,7 +392,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_TIMELOCK_SELECTOR
         });
         index++;
         
@@ -377,7 +404,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionApproveCancelActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -386,7 +413,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionApproveCancelActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -395,7 +422,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionRequestApproveActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -404,7 +431,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionRequestApproveActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -465,7 +492,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -474,7 +501,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
         
@@ -483,7 +510,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
         
@@ -492,7 +519,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCELLATION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
         
@@ -505,7 +532,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -514,7 +541,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -523,7 +550,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
               
@@ -532,7 +559,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_BROADCASTER_SELECTOR
         });
         index++;
          
@@ -541,7 +568,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_RECOVERY_SELECTOR
         });
         index++;
 
@@ -550,7 +577,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: UPDATE_TIMELOCK_SELECTOR
         });
         index++;
         
@@ -568,7 +595,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTransferOwnershipAllActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -589,7 +616,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_BROADCASTER_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerBroadcasterExecutionAllActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -598,7 +625,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_RECOVERY_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionRequestApproveActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -607,7 +634,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TIMELOCK_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionRequestApproveActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
@@ -646,7 +673,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_REQUEST_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayRequestActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -655,7 +682,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayApproveActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -664,7 +691,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeDelayCancelActions),
-            isHandlerSelector: true
+            handlerForSelector: TRANSFER_OWNERSHIP_SELECTOR
         });
         index++;
         
@@ -685,7 +712,7 @@ library SecureOwnableDefinitions {
         functionPermissions[index] = StateAbstraction.FunctionPermission({
             functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryExecutionAllActions),
-            isHandlerSelector: false
+            handlerForSelector: bytes4(0)
         });
         index++;
         
