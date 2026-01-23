@@ -14,7 +14,7 @@ import { INTERFACE_IDS } from '../utils/interface-ids';
 interface StateAbstractionFunctionPermission {
   functionSelector: Hex;
   grantedActionsBitmap: Uint16Bitmap; // uint16
-  handlerForSelector: Hex; // bytes4(0) for execution selector permissions (defines what action is performed), non-zero for handler selector permissions (indicates which execution selector this handler is connected to)
+  handlerForSelectors: Hex[]; // Array of execution selectors this function can access
 }
 
 /**

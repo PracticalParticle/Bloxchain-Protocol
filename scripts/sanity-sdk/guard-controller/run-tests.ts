@@ -188,7 +188,10 @@ class GuardControllerSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-const runner = new GuardControllerSDKTestRunner();
-runner.run();
+// Check if this module is being run directly (not imported)
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+  const runner = new GuardControllerSDKTestRunner();
+  runner.run();
+}
 
 export { GuardControllerSDKTestRunner };
