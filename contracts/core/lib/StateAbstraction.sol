@@ -64,8 +64,7 @@ library StateAbstraction {
         SIGN_META_CANCEL,
         EXECUTE_META_REQUEST_AND_APPROVE,
         EXECUTE_META_APPROVE,
-        EXECUTE_META_CANCEL,
-        EXECUTE_UPDATE_PAYMENT
+        EXECUTE_META_CANCEL
     }
 
     struct TxParams {
@@ -127,8 +126,8 @@ library StateAbstraction {
 
     struct FunctionPermission {
         bytes4 functionSelector;
-        uint16 grantedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
-        bytes4 handlerForSelector; // bytes4(0) mean this is an execution selector
+        uint16 grantedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
+        bytes4[] handlerForSelectors; // Array of execution selectors this function can access. If it contains functionSelector, this is an execution selector; otherwise, these are handler selectors pointing to execution selectors
     }
 
     struct FunctionSchema {
@@ -136,7 +135,7 @@ library StateAbstraction {
         bytes4 functionSelector;
         bytes32 operationType;
         string operationName;
-        uint16 supportedActionsBitmap; // Bitmap for TxAction enum (10 bits max)
+        uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
         bool isProtected;
         bytes4[] handlerForSelectors; 
     }
@@ -700,9 +699,6 @@ library StateAbstraction {
         uint256 txId,
         PaymentDetails memory paymentDetails
     ) public {
-        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_UPDATE_PAYMENT)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
         _validateTxStatus(self, txId, TxStatus.PENDING);
            
         self.txRecords[txId].payment = paymentDetails;
@@ -891,15 +887,9 @@ library StateAbstraction {
 
         // Check if role exists (checks both roles mapping and supportedRolesSet)
         _validateRoleExists(self, roleHash);
-        
-        // Check if function exists in supportedFunctionsSet
-        if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
-            revert SharedValidation.ResourceNotFound(functionSelectorHash);
-        }
-        
-        // Validate that handlerForSelector in permission is in the schema's handlerForSelectors array
-        FunctionSchema storage schema = self.functions[functionPermission.functionSelector];
-        _validateHandlerForSelector(schema, functionPermission.handlerForSelector);
+
+        // Validate that all handlerForSelectors in permission are in the schema's handlerForSelectors array
+        _validateHandlerForSelectors(self, functionPermission.functionSelector, functionPermission.handlerForSelectors);
         
         // Validate that all grantedActions are supported by the function
         _validateMetaTxPermissions(self, functionPermission);
@@ -1034,7 +1024,7 @@ library StateAbstraction {
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param isProtected Whether the function schema is protected from removal.
-     * @param handlerForSelectors Empty array for execution selector permissions
+     * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
      */
     function createFunctionSchema(
         SecureOperationState storage self,
@@ -1056,11 +1046,20 @@ library StateAbstraction {
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
 
-        // Validate handlerForSelectors: if non-empty, validate that referenced execution selectors exist
-        // Note: For execution selectors (empty array), no validation needed
-        // For handler selectors (non-empty array), we validate the execution selectors exist
-        // However, we allow creating handler schemas before execution schemas exist (for definition loading order flexibility)
-        // The validation will happen when adding permissions via addFunctionToRole
+        // Validate handlerForSelectors: non-empty and all selectors are non-zero
+        // NOTE:
+        // - Empty arrays are NOT allowed anymore. Execution selectors must have
+        //   at least one entry pointing to themselves (self-reference), and
+        //   handler selectors must point to valid execution selectors.
+        // - bytes4(0) is never allowed in this array.
+        if (handlerForSelectors.length == 0) {
+            revert SharedValidation.OperationFailed();
+        }
+        for (uint256 i = 0; i < handlerForSelectors.length; i++) {
+            if (handlerForSelectors[i] == bytes4(0)) {
+                revert SharedValidation.ResourceNotFound(bytes32(0)); // Zero selector is invalid
+            }
+        }
         
         // register the operation type if it's not already in the set
         SharedValidation.validateOperationTypeNotZero(derivedOperationType);
@@ -1861,6 +1860,9 @@ library StateAbstraction {
         bool success,
         bytes memory result
     ) private {
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        
         // Update storage with new status and result
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;
@@ -1888,6 +1890,9 @@ library StateAbstraction {
         SecureOperationState storage self,
         uint256 txId
     ) private {
+        // enforce that the requested target is whitelisted for this selector.
+        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
@@ -1971,33 +1976,49 @@ library StateAbstraction {
     }
 
     /**
-     * @dev Validates that a handlerForSelector is present in the schema's handlerForSelectors array
-     * @param schema The function schema to validate against
-     * @param handlerForSelector The handlerForSelector from the permission to validate
-     * @notice Reverts with HandlerForSelectorMismatch if the handlerForSelector is not found in the schema's array
-     * @notice Special case: Execution function permissions use bytes4(0) with empty handlerForSelectors array
+     * @dev Validates that all handlerForSelectors are present in the schema's handlerForSelectors array
+     * @param self The SecureOperationState to validate against
+     * @param functionSelector The function selector for which the permission is defined
+     * @param handlerForSelectors The handlerForSelectors array from the permission to validate
+     * @notice Reverts with HandlerForSelectorMismatch if any handlerForSelector is not found in the schema's array
+     * @notice Special case: Execution function permissions should include functionSelector in handlerForSelectors (self-reference)
      */
-    function _validateHandlerForSelector(
-        FunctionSchema storage schema,
-        bytes4 handlerForSelector
+    function _validateHandlerForSelectors(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        bytes4[] memory handlerForSelectors
     ) internal view {
-        // Special case: execution function permissions use bytes4(0) with empty handlerForSelectors array
-        if (handlerForSelector == bytes4(0) && schema.handlerForSelectors.length == 0) {
-            return; // Valid execution function permission
+        bytes32 functionSelectorHash = bytes32(functionSelector);
+
+        // Ensure the function schema exists
+        if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
+            revert SharedValidation.ResourceNotFound(functionSelectorHash);
         }
-        
-        bool found = false;
-        for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
-            if (schema.handlerForSelectors[i] == handlerForSelector) {
-                found = true;
-                break;
+
+        FunctionSchema storage schema = self.functions[functionSelector];
+
+        // Validate each handlerForSelector in the array
+        for (uint256 j = 0; j < handlerForSelectors.length; j++) {
+            bytes4 handlerForSelector = handlerForSelectors[j];
+            
+            // Special case: execution function permissions use handlerForSelector == functionSelector (self-reference)
+            if (handlerForSelector == functionSelector) {
+                continue; // Valid execution function permission
             }
-        }
-        if (!found) {
-            revert SharedValidation.HandlerForSelectorMismatch(
-                bytes4(0), // Cannot return array, use 0 as placeholder
-                handlerForSelector
-            );
+
+            bool found = false;
+            for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
+                if (schema.handlerForSelectors[i] == handlerForSelector) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                revert SharedValidation.HandlerForSelectorMismatch(
+                    bytes4(0), // Cannot return array, use 0 as placeholder
+                    handlerForSelector
+                );
+            }
         }
     }
 
@@ -2038,7 +2059,7 @@ library StateAbstraction {
         
         // Validate that each action in the bitmap is supported by the function
         // This still requires iteration, but we can optimize it
-        for (uint i = 0; i < 10; i++) { // TxAction enum has 10 values (0-9)
+        for (uint i = 0; i < 9; i++) { // TxAction enum has 9 values (0-8)
             if (hasActionInBitmap(bitmap, TxAction(i))) {
                 if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
                     revert SharedValidation.NotSupported();

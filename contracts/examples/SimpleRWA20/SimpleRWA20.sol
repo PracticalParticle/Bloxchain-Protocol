@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
 // OpenZeppelin imports
@@ -179,15 +179,12 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         bytes4 expectedSelector,
         bytes32 expectedOperationType
     ) internal returns (StateAbstraction.TxRecord memory) {
-        if (!StateAbstraction.hasActionPermission(_getSecureState(), msg.sender, expectedSelector, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+        if (!_hasActionPermission(msg.sender, expectedSelector, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         SharedValidation.validateHandlerSelectorMatch(metaTx.params.handlerSelector, expectedSelector);
         
-        StateAbstraction.TxRecord memory txRecord = StateAbstraction.requestAndApprove(
-            _getSecureState(),
-            metaTx
-        );
+        StateAbstraction.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
         
         SharedValidation.validateOperationType(txRecord.params.operationType, expectedOperationType);
         // Operation is automatically handled by StateAbstraction

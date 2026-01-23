@@ -106,7 +106,7 @@ export class Definitions implements IDefinition {
         functionPermissions: result.functionPermissions.map((perm: any) => ({
           functionSelector: perm.functionSelector as Hex,
           grantedActionsBitmap: fromContractValue(perm.grantedActionsBitmap), // uint16
-          handlerForSelector: perm.handlerForSelector as Hex
+          handlerForSelectors: perm.handlerForSelectors.map((selector: any) => selector as Hex) as Hex[]
         }))
       };
     } catch (error) {

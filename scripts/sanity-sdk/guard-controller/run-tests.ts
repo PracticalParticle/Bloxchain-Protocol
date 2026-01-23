@@ -3,7 +3,7 @@
  * Main file to run all or selective tests of the GuardController SDK
  */
 
-import { WhitelistTests } from './whitelist-tests';
+import { WhitelistTests } from './whitelist-tests.ts';
 
 type TestClass = typeof WhitelistTests;
 
@@ -188,7 +188,8 @@ class GuardControllerSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-if (require.main === module) {
+// Check if this module is being run directly (not imported)
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const runner = new GuardControllerSDKTestRunner();
   runner.run();
 }

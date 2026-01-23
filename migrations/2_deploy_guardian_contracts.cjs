@@ -4,6 +4,7 @@ const SecureBlox = artifacts.require("SecureBlox");
 const RoleBlox = artifacts.require("RoleBlox");
 const BareBlox = artifacts.require("BareBlox");
 const ControlBlox = artifacts.require("ControlBlox");
+const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 2: Deploying Guardian Contracts on ${network}`);
@@ -25,19 +26,44 @@ module.exports = async function(deployer, network, accounts) {
     console.log("\n📦 Step 1: Linking Foundation Libraries...");
     
     const StateAbstraction = artifacts.require("StateAbstraction");
-    const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
     const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
     const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
     const GuardControllerDefinitions = artifacts.require("GuardControllerDefinitions");
     
-    const sa = await StateAbstraction.deployed();
-    const sad = await StateAbstractionDefinitions.deployed();
-    const sod = await SecureOwnableDefinitions.deployed();
-    const drd = await RuntimeRBACDefinitions.deployed();
-    const gcd = await GuardControllerDefinitions.deployed();
+    // NOTE:
+    // Truffle sometimes fails to persist `networks` entries for library-like deployments
+    // on certain dev chains. To keep deployments resilient, we "deploy if needed" here.
+    let sa, sod, drd, gcd;
+    try {
+        sa = await StateAbstraction.deployed();
+    } catch (e) {
+        console.log("⚠️  StateAbstraction not found in artifacts; deploying now...");
+        await deployer.deploy(StateAbstraction);
+        sa = await StateAbstraction.deployed();
+    }
+    try {
+        sod = await SecureOwnableDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  SecureOwnableDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(SecureOwnableDefinitions);
+        sod = await SecureOwnableDefinitions.deployed();
+    }
+    try {
+        drd = await RuntimeRBACDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  RuntimeRBACDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(RuntimeRBACDefinitions);
+        drd = await RuntimeRBACDefinitions.deployed();
+    }
+    try {
+        gcd = await GuardControllerDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  GuardControllerDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(GuardControllerDefinitions);
+        gcd = await GuardControllerDefinitions.deployed();
+    }
     
     console.log("✅ Using StateAbstraction at:", sa.address);
-    console.log("✅ Using StateAbstractionDefinitions at:", sad.address);
     console.log("✅ Using SecureOwnableDefinitions at:", sod.address);
     console.log("✅ Using RuntimeRBACDefinitions at:", drd.address);
     console.log("✅ Using GuardControllerDefinitions at:", gcd.address);
@@ -49,7 +75,6 @@ module.exports = async function(deployer, network, accounts) {
         
         // Link all required libraries to SecureBlox
         await deployer.link(StateAbstraction, SecureBlox);
-        await deployer.link(StateAbstractionDefinitions, SecureBlox);
         await deployer.link(SecureOwnableDefinitions, SecureBlox);
         
         // Deploy SecureBlox
@@ -92,6 +117,11 @@ module.exports = async function(deployer, network, accounts) {
             );
             console.log("✅ SecureBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
+            
+            // Get web3 from deployed contract instance (available for error handling)
+            const web3 = secureBlox.constructor.web3 || global.web3;
+            // Save network info to artifact (fixes issue when network_id is "*")
+            await saveArtifactNetwork(SecureBlox, secureBlox.address, web3, network);
         } catch (error) {
             console.log("❌ SecureBlox initialization failed:");
             console.log("   Error message:", error.message);
@@ -124,7 +154,6 @@ module.exports = async function(deployer, network, accounts) {
         
         // Link all required libraries to RoleBlox
         await deployer.link(StateAbstraction, RoleBlox);
-        await deployer.link(StateAbstractionDefinitions, RoleBlox);
         await deployer.link(SecureOwnableDefinitions, RoleBlox);
         await deployer.link(RuntimeRBACDefinitions, RoleBlox);
         
@@ -132,6 +161,10 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.deploy(RoleBlox);
         roleBlox = await RoleBlox.deployed();
         console.log("✅ RoleBlox deployed at:", roleBlox.address);
+        // Get web3 from deployed contract instance (available for error handling)
+        const web3 = roleBlox.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(RoleBlox, roleBlox.address, web3, network);
         
         // Initialize RoleBlox
         console.log("🔧 Initializing RoleBlox...");
@@ -178,12 +211,15 @@ module.exports = async function(deployer, network, accounts) {
         
         // Link required libraries
         await deployer.link(StateAbstraction, BareBlox);
-        await deployer.link(StateAbstractionDefinitions, BareBlox);
         
         // Deploy BareBlox
         await deployer.deploy(BareBlox);
         bareBlox = await BareBlox.deployed();
         console.log("✅ BareBlox deployed at:", bareBlox.address);
+        // Get web3 from deployed contract instance
+        const web3 = bareBlox.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(BareBlox, bareBlox.address, web3, network);
         
         // Initialize BareBlox
         console.log("🔧 Initializing BareBlox...");
@@ -230,7 +266,6 @@ module.exports = async function(deployer, network, accounts) {
         
         // Link all required libraries to ControlBlox (includes GuardControllerDefinitions)
         await deployer.link(StateAbstraction, ControlBlox);
-        await deployer.link(StateAbstractionDefinitions, ControlBlox);
         await deployer.link(SecureOwnableDefinitions, ControlBlox);
         await deployer.link(RuntimeRBACDefinitions, ControlBlox);
         await deployer.link(GuardControllerDefinitions, ControlBlox);
@@ -239,6 +274,10 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.deploy(ControlBlox);
         controlBlox = await ControlBlox.deployed();
         console.log("✅ ControlBlox deployed at:", controlBlox.address);
+        // Get web3 from deployed contract instance (available for error handling)
+        const web3 = controlBlox.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(ControlBlox, controlBlox.address, web3, network);
         
         // Initialize ControlBlox
         console.log("🔧 Initializing ControlBlox...");
@@ -285,10 +324,51 @@ module.exports = async function(deployer, network, accounts) {
     if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
     if (controlBlox) console.log(`   ControlBlox: ${controlBlox.address}`);
     
+    // Save deployed addresses to file for auto mode fallback
+    const fs = require('fs');
+    const path = require('path');
+    const addressesFile = path.join(__dirname, '..', 'deployed-addresses.json');
+    
+    let addresses = {};
+    if (fs.existsSync(addressesFile)) {
+        addresses = JSON.parse(fs.readFileSync(addressesFile, 'utf8'));
+    }
+    
+    if (!addresses[network]) {
+        addresses[network] = {};
+    }
+    
+    if (secureBlox) {
+        addresses[network].SecureBlox = {
+            address: secureBlox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (roleBlox) {
+        addresses[network].RoleBlox = {
+            address: roleBlox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (bareBlox) {
+        addresses[network].BareBlox = {
+            address: bareBlox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (controlBlox) {
+        addresses[network].ControlBlox = {
+            address: controlBlox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    
+    fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2));
+    console.log(`\n💾 Saved addresses to ${addressesFile}`);
+    
     console.log("\n🎯 Complete Deployment Summary:");
     console.log("📚 Foundation Libraries:");
     console.log(`   StateAbstraction: ${sa.address}`);
-    console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");

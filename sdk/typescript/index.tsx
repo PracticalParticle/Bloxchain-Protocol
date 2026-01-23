@@ -7,7 +7,6 @@ export { default as SecureOwnable } from './contracts/SecureOwnable';
 export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
 export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
-export { Workflow, createWorkflowWithDefaults } from './utils/workflow';
 
 // Interfaces
 export * from './interfaces/base.index';
@@ -37,9 +36,6 @@ export * from './utils/erc20/erc20Token';
 export { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransaction';
 export * from './utils/contract-errors';
 export * from './utils/viem-error-handler';
-
-// Workflow Utilities
-export * from './utils/workflow';
 
 // Re-export commonly used types from viem
 export type { Address, Hex, PublicClient, WalletClient, Chain } from 'viem';

@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./core/execution/GuardController.sol";
-import "./core/access/RuntimeRBAC.sol";
-import "./core/security/SecureOwnable.sol";
-import "./core/hook/HookManager.sol";
-import "./core/base/BaseStateMachine.sol";
-import "./utils/SharedValidation.sol";
+import "../../core/execution/GuardController.sol";
+import "../../core/access/RuntimeRBAC.sol";
+import "../../core/security/SecureOwnable.sol";
+import "../../core/hook/HookManager.sol";
+import "../../core/base/BaseStateMachine.sol";
+import "../../utils/SharedValidation.sol";
 
 /**
  * @title MachineBlox
@@ -91,6 +91,14 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
         StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
         return HookManager._requestAndApproveTransaction(metaTx);
+    }
+
+    /**
+     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
+     * @param newTimeLockPeriodSec The new time lock period in seconds
+     */
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
+        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
     }
 
     /**

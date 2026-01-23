@@ -25,8 +25,8 @@ import "./interface/IBaseStateMachine.sol";
  *
  * The contract is designed to be inherited by security-specific contracts that implement
  * their own operation types and business logic while leveraging the core state machine.
- * Implementing contracts can call StateAbstraction library functions directly for
- * transaction management operations.
+ * All access to StateAbstraction library functions is centralized through BaseStateMachine
+ * wrapper functions to ensure consistency and maintainability.
  *
  * Key Features:
  * - State initialization with role and permission setup
@@ -241,6 +241,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         StateAbstraction.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
         return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
+    }
+
+    /**
+     * @dev Centralized function to update payment details for a pending transaction
+     * @param txId The transaction ID to update payment for
+     * @param paymentDetails The new payment details
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _updatePaymentForTransaction(
+        uint256 txId,
+        StateAbstraction.PaymentDetails memory paymentDetails
+    ) internal virtual returns (StateAbstraction.TxRecord memory) {
+        StateAbstraction.updatePaymentForTransaction(_getSecureState(), txId, paymentDetails);
+        return _secureState.getTxRecord(txId);
     }
 
     // ============ META-TRANSACTION UTILITIES ============
@@ -521,6 +535,195 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
+    /**
+     * @dev Centralized function to create a new role
+     * @param roleName The name of the role
+     * @param maxWallets The maximum number of wallets allowed for this role
+     * @param isProtected Whether the role is protected from removal
+     * @return roleHash The hash of the created role
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _createRole(
+        string memory roleName,
+        uint256 maxWallets,
+        bool isProtected
+    ) internal virtual returns (bytes32) {
+        bytes32 roleHash = keccak256(bytes(roleName));
+        StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, isProtected);
+        return roleHash;
+    }
+
+    /**
+     * @dev Centralized function to remove a role
+     * @param roleHash The hash of the role to remove
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _removeRole(bytes32 roleHash) internal virtual {
+        StateAbstraction.removeRole(_getSecureState(), roleHash);
+    }
+
+    /**
+     * @dev Centralized function to assign a wallet to a role
+     * @param roleHash The role hash
+     * @param wallet The wallet address to assign
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _assignWallet(bytes32 roleHash, address wallet) internal virtual {
+        StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    /**
+     * @dev Centralized function to revoke a wallet from a role
+     * @param roleHash The role hash
+     * @param wallet The wallet address to revoke
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _revokeWallet(bytes32 roleHash, address wallet) internal virtual {
+        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    /**
+     * @dev Centralized function to update the time lock period
+     * @param newTimeLockPeriodSec The new time lock period in seconds
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
+        StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
+    }
+
+    // ============ FUNCTION SCHEMA MANAGEMENT ============
+
+    /**
+     * @dev Centralized function to create a function schema
+     * @param functionSignature The function signature
+     * @param functionSelector The function selector
+     * @param operationName The operation name
+     * @param supportedActionsBitmap The bitmap of supported actions
+     * @param isProtected Whether the function schema is protected
+     * @param handlerForSelectors Array of handler selectors
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _createFunctionSchema(
+        string memory functionSignature,
+        bytes4 functionSelector,
+        string memory operationName,
+        uint16 supportedActionsBitmap,
+        bool isProtected,
+        bytes4[] memory handlerForSelectors
+    ) internal virtual {
+        StateAbstraction.createFunctionSchema(
+            _getSecureState(),
+            functionSignature,
+            functionSelector,
+            operationName,
+            supportedActionsBitmap,
+            isProtected,
+            handlerForSelectors
+        );
+    }
+
+    /**
+     * @dev Centralized function to remove a function schema
+     * @param functionSelector The function selector to remove
+     * @param safeRemoval Whether to perform safe removal (check for role references)
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _removeFunctionSchema(bytes4 functionSelector, bool safeRemoval) internal virtual {
+        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
+    }
+
+    /**
+     * @dev Centralized function to add a function permission to a role
+     * @param roleHash The role hash
+     * @param functionPermission The function permission to add
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _addFunctionToRole(
+        bytes32 roleHash,
+        StateAbstraction.FunctionPermission memory functionPermission
+    ) internal virtual {
+        StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
+    }
+
+    /**
+     * @dev Centralized function to remove a function permission from a role
+     * @param roleHash The role hash
+     * @param functionSelector The function selector to remove
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _removeFunctionFromRole(bytes32 roleHash, bytes4 functionSelector) internal virtual {
+        StateAbstraction.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
+    }
+
+    // ============ PERMISSION VALIDATION ============
+
+    /**
+     * @dev Centralized function to validate that the caller has any role
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _validateAnyRole() internal view {
+        StateAbstraction._validateAnyRole(_getSecureState());
+    }
+
+    /**
+     * @dev Centralized function to validate that a role exists
+     * @param roleHash The role hash to validate
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _validateRoleExists(bytes32 roleHash) internal view {
+        StateAbstraction._validateRoleExists(_getSecureState(), roleHash);
+    }
+
+    // ============ UTILITY FUNCTIONS ============
+
+    /**
+     * @dev Centralized function to convert a bitmap to an array of actions
+     * @param bitmap The bitmap to convert
+     * @return Array of TxAction values
+     */
+    function _convertBitmapToActions(uint16 bitmap) internal pure returns (StateAbstraction.TxAction[] memory) {
+        return StateAbstraction.convertBitmapToActions(bitmap);
+    }
+
+    /**
+     * @dev Centralized function to create a bitmap from an array of actions
+     * @param actions Array of TxAction values
+     * @return The bitmap representation
+     */
+    function _createBitmapFromActions(StateAbstraction.TxAction[] memory actions) internal pure returns (uint16) {
+        return StateAbstraction.createBitmapFromActions(actions);
+    }
+
+    // ============ TARGET WHITELIST MANAGEMENT ============
+
+    /**
+     * @dev Centralized function to add a target address to the whitelist for a function selector
+     * @param functionSelector The function selector
+     * @param target The target address to whitelist
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _addTargetToFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().addTargetToFunctionWhitelist(functionSelector, target);
+    }
+
+    /**
+     * @dev Centralized function to remove a target address from the whitelist for a function selector
+     * @param functionSelector The function selector
+     * @param target The target address to remove
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _removeTargetFromFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().removeTargetFromFunctionWhitelist(functionSelector, target);
+    }
+
+    /**
+     * @dev Centralized function to get all whitelisted targets for a function selector
+     * @param functionSelector The function selector
+     * @return Array of whitelisted target addresses
+     */
+    function _getFunctionWhitelistTargets(bytes4 functionSelector) internal view returns (address[] memory) {
+        return _getSecureState().getFunctionWhitelistTargets(functionSelector);
+    }
 
     // ============ DEFINITION LOADING ============
 

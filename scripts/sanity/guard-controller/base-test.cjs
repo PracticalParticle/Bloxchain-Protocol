@@ -91,8 +91,7 @@ class BaseGuardControllerTest {
             SIGN_META_CANCEL: 5,
             EXECUTE_META_REQUEST_AND_APPROVE: 6,
             EXECUTE_META_APPROVE: 7,
-            EXECUTE_META_CANCEL: 8,
-            EXECUTE_UPDATE_PAYMENT: 9
+            EXECUTE_META_CANCEL: 8
         };
         
         // GuardController constants
@@ -550,10 +549,14 @@ class BaseGuardControllerTest {
                 break;
             case this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
                 // (bytes32 roleHash, FunctionPermission functionPermission)
-                // FunctionPermission is tuple(bytes4,uint16)
+                // FunctionPermission is tuple(bytes4,uint16,bytes4[])
                 encodedData = this.web3.eth.abi.encodeParameters(
-                    ['bytes32', 'tuple(bytes4,uint16)'],
-                    [data.roleHash, [data.functionPermission.functionSelector, data.functionPermission.grantedActionsBitmap]]
+                    ['bytes32', 'tuple(bytes4,uint16,bytes4[])'],
+                    [data.roleHash, [
+                        data.functionPermission.functionSelector, 
+                        data.functionPermission.grantedActionsBitmap,
+                        data.functionPermission.handlerForSelectors || [data.functionPermission.functionSelector]
+                    ]]
                 );
                 break;
             default:
@@ -572,11 +575,22 @@ class BaseGuardControllerTest {
      * @param {number[]} actions - Array of TxAction enum values
      * @returns {Object} FunctionPermission struct
      */
-    createFunctionPermission(functionSelector, actions) {
+    createFunctionPermission(functionSelector, actions, handlerForSelectors = null) {
         const bitmap = this.createBitmapFromActions(actions);
+        // If handlerForSelectors is not provided, use [functionSelector] (self-reference indicates execution selector)
+        let finalHandlerForSelectors;
+        if (handlerForSelectors === null) {
+            finalHandlerForSelectors = [functionSelector];
+        } else if (Array.isArray(handlerForSelectors)) {
+            finalHandlerForSelectors = handlerForSelectors;
+        } else {
+            // Single string provided, wrap in array
+            finalHandlerForSelectors = [handlerForSelectors];
+        }
         return {
             functionSelector: functionSelector,
-            grantedActionsBitmap: bitmap
+            grantedActionsBitmap: bitmap,
+            handlerForSelectors: finalHandlerForSelectors
         };
     }
 

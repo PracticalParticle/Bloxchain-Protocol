@@ -365,14 +365,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      *   revoke that broadcaster from the role.
      */
     function _updateBroadcaster(address newBroadcaster, uint256 location) internal virtual {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
-        StateAbstraction.Role storage role = state.roles[StateAbstraction.BROADCASTER_ROLE];
+        StateAbstraction.Role storage role = _getSecureState().roles[StateAbstraction.BROADCASTER_ROLE];
 
         address oldBroadcaster;
         uint256 length = role.walletCount;
 
         if (location < length) {
-            oldBroadcaster = StateAbstraction.getAuthorizedWalletAt(state, StateAbstraction.BROADCASTER_ROLE, location);
+            oldBroadcaster = _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, location);
         } else {
             oldBroadcaster = address(0);
         }
@@ -380,7 +379,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         // Case 1: Revoke existing broadcaster at location
         if (newBroadcaster == address(0)) {
             if (oldBroadcaster != address(0)) {
-                StateAbstraction.revokeWallet(state, StateAbstraction.BROADCASTER_ROLE, oldBroadcaster);
+                _revokeWallet(StateAbstraction.BROADCASTER_ROLE, oldBroadcaster);
                 emit BroadcasterUpdated(oldBroadcaster, address(0));
             }
             return;
@@ -394,7 +393,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         }
 
         // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
-        StateAbstraction.assignWallet(state, StateAbstraction.BROADCASTER_ROLE, newBroadcaster);
+        _assignWallet(StateAbstraction.BROADCASTER_ROLE, newBroadcaster);
         emit BroadcasterUpdated(address(0), newBroadcaster);
     }
 
@@ -412,9 +411,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Updates the time lock period
      * @param newTimeLockPeriodSec The new time lock period in seconds
      */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
+    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
         uint256 oldPeriod = getTimeLockPeriodSec();
-        StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
+        super._updateTimeLockPeriod(newTimeLockPeriodSec);
         emit TimeLockPeriodUpdated(oldPeriod, newTimeLockPeriodSec);
     }
 }

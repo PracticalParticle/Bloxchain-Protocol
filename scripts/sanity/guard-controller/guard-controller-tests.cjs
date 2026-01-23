@@ -214,6 +214,32 @@ class GuardControllerTests extends BaseGuardControllerTest {
             // Add OWNER permission if missing (SIGN only)
             if (!ownerHasSign) {
                 console.log('  📝 Adding SIGN_META_REQUEST_AND_APPROVE permission to OWNER role...');
+                
+                // Debug: Check the function schema first
+                console.log('  🔍 Checking function schema before adding permission...');
+                const functionSchema = await this.callContractMethod(
+                    this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
+                );
+                console.log(`  🔍 Function schema handlerForSelectors: ${JSON.stringify(functionSchema.handlerForSelectors || functionSchema[5] || 'unknown')}`);
+                console.log(`  🔍 Function schema supportedActions: ${JSON.stringify(functionSchema.supportedActions || functionSchema[4] || 'unknown')}`);
+                
+                // Debug: Log the permission we're creating
+                const testPermission = this.createFunctionPermission(
+                    this.NATIVE_TRANSFER_SELECTOR,
+                    [this.TxAction.SIGN_META_REQUEST_AND_APPROVE]
+                );
+                console.log(`  🔍 Creating permission with:`);
+                console.log(`     functionSelector: ${testPermission.functionSelector}`);
+                console.log(`     grantedActionsBitmap: ${testPermission.grantedActionsBitmap}`);
+                console.log(`     handlerForSelectors: ${JSON.stringify(testPermission.handlerForSelectors)}`);
+                
+                // Verify handlerForSelectors match
+                const schemaHandlers = functionSchema.handlerForSelectors || functionSchema[5] || [];
+                const permissionHandlers = testPermission.handlerForSelectors || [];
+                console.log(`  🔍 Schema handlers: ${JSON.stringify(schemaHandlers)}, Permission handlers: ${JSON.stringify(permissionHandlers)}`);
+                const handlersMatch = JSON.stringify(schemaHandlers.map(h => h.toLowerCase())) === JSON.stringify(permissionHandlers.map(h => h.toLowerCase()));
+                console.log(`  🔍 HandlerForSelectors match: ${handlersMatch ? '✅ YES' : '❌ NO'}`);
+                
                 const ownerReceipt = await this.addFunctionToRole(
                     this.ownerRoleHash,
                     this.NATIVE_TRANSFER_SELECTOR,
@@ -229,6 +255,20 @@ class GuardControllerTests extends BaseGuardControllerTest {
                     `Add OWNER permission transaction succeeded (expected: ${expectedOwnerTxStatus}, actual: ${actualOwnerTxStatus})`
                 );
                 console.log('  ✅ OWNER permission added successfully');
+                
+                // Immediately check if permission was added (before waiting)
+                console.log('  🔍 Immediately checking if permission was added...');
+                const immediateCheck = await this.callContractMethod(
+                    this.contract.methods.getActiveRolePermissions(this.ownerRoleHash)
+                );
+                const immediatePermission = immediateCheck.find(perm => {
+                    const selector = perm.functionSelector || perm[0];
+                    return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
+                });
+                console.log(`  🔍 Immediate check: permission ${immediatePermission ? 'FOUND' : 'NOT FOUND'}`);
+                if (immediatePermission) {
+                    console.log(`  🔍 Immediate permission details: ${JSON.stringify(immediatePermission, null, 2)}`);
+                }
             } else {
                 console.log('  ✅ OWNER already has SIGN_META_REQUEST_AND_APPROVE permission');
             }
@@ -255,8 +295,8 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 console.log('  ✅ BROADCASTER already has EXECUTE_META_REQUEST_AND_APPROVE permission');
             }
             
-            // Wait a bit for state to update
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait a bit for state to update (increased from 500ms to 2000ms for blockchain state propagation)
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Verify permissions
             console.log('  🔍 Verifying permissions...');
@@ -267,12 +307,25 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 this.contract.methods.getActiveRolePermissions(broadcasterRoleHash)
             );
             
-            const finalOwnerPermission = finalOwnerPermissions.find(perm => 
-                perm.functionSelector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
-            );
-            const finalBroadcasterPermission = finalBroadcasterPermissions.find(perm => 
-                perm.functionSelector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
-            );
+            // Debug: Log what permissions were returned
+            console.log(`  📋 Owner permissions count: ${finalOwnerPermissions ? finalOwnerPermissions.length : 'null'}`);
+            if (finalOwnerPermissions && finalOwnerPermissions.length > 0) {
+                console.log(`  📋 Owner permission selectors: ${finalOwnerPermissions.map(p => p.functionSelector || p[0] || 'unknown').join(', ')}`);
+            }
+            console.log(`  📋 Broadcaster permissions count: ${finalBroadcasterPermissions ? finalBroadcasterPermissions.length : 'null'}`);
+            if (finalBroadcasterPermissions && finalBroadcasterPermissions.length > 0) {
+                console.log(`  📋 Broadcaster permission selectors: ${finalBroadcasterPermissions.map(p => p.functionSelector || p[0] || 'unknown').join(', ')}`);
+            }
+            console.log(`  📋 Looking for NATIVE_TRANSFER_SELECTOR: ${this.NATIVE_TRANSFER_SELECTOR}`);
+            
+            const finalOwnerPermission = finalOwnerPermissions.find(perm => {
+                const selector = perm.functionSelector || perm[0];
+                return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
+            });
+            const finalBroadcasterPermission = finalBroadcasterPermissions.find(perm => {
+                const selector = perm.functionSelector || perm[0];
+                return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
+            });
             
             // Expected: Permissions should exist
             const expectedOwnerPermissionExists = true;
@@ -289,9 +342,16 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 `NATIVE_TRANSFER function permission exists in BROADCASTER role (expected: ${expectedBroadcasterPermissionExists}, actual: ${actualBroadcasterPermissionExists})`
             );
             
-            // Verify permission bitmaps
-            const ownerBitmap = parseInt(finalOwnerPermission.grantedActionsBitmap);
-            const broadcasterBitmap = parseInt(finalBroadcasterPermission.grantedActionsBitmap);
+            // Verify permission bitmaps (only if permissions exist)
+            if (!finalOwnerPermission) {
+                throw new Error('Cannot verify OWNER permission bitmap: permission not found');
+            }
+            if (!finalBroadcasterPermission) {
+                throw new Error('Cannot verify BROADCASTER permission bitmap: permission not found');
+            }
+            
+            const ownerBitmap = parseInt(finalOwnerPermission.grantedActionsBitmap || finalOwnerPermission[1] || '0');
+            const broadcasterBitmap = parseInt(finalBroadcasterPermission.grantedActionsBitmap || finalBroadcasterPermission[1] || '0');
             
             // Expected: OWNER should have SIGN_META_REQUEST_AND_APPROVE permission (bit 3)
             const expectedOwnerHasSign = true;

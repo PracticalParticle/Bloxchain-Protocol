@@ -112,7 +112,23 @@ library GuardControllerDefinitions {
         
         // ============ GUARDCONTROLLER FUNCTION SCHEMAS ============
         
-        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        // Execution selectors must have self-reference (at least one element pointing to themselves)
+        bytes4[] memory executeWithTimeLockHandlerForSelectors = new bytes4[](1);
+        executeWithTimeLockHandlerForSelectors[0] = EXECUTE_WITH_TIMELOCK_SELECTOR;
+        bytes4[] memory approveTimeLockExecutionHandlerForSelectors = new bytes4[](1);
+        approveTimeLockExecutionHandlerForSelectors[0] = APPROVE_TIMELOCK_EXECUTION_SELECTOR;
+        bytes4[] memory cancelTimeLockExecutionHandlerForSelectors = new bytes4[](1);
+        cancelTimeLockExecutionHandlerForSelectors[0] = CANCEL_TIMELOCK_EXECUTION_SELECTOR;
+        bytes4[] memory approveTimeLockExecutionMetaHandlerForSelectors = new bytes4[](1);
+        approveTimeLockExecutionMetaHandlerForSelectors[0] = APPROVE_TIMELOCK_EXECUTION_META_SELECTOR;
+        bytes4[] memory cancelTimeLockExecutionMetaHandlerForSelectors = new bytes4[](1);
+        cancelTimeLockExecutionMetaHandlerForSelectors[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
+        bytes4[] memory requestAndApproveExecutionHandlerForSelectors = new bytes4[](1);
+        requestAndApproveExecutionHandlerForSelectors[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
+        bytes4[] memory updateTargetWhitelistExecuteHandlerForSelectors = new bytes4[](1);
+        updateTargetWhitelistExecuteHandlerForSelectors[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
+        
+        // Handler selectors point to execution selectors
         bytes4[] memory whitelistHandlerForSelectors = new bytes4[](1);
         whitelistHandlerForSelectors[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
         
@@ -124,7 +140,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: executeWithTimeLockHandlerForSelectors
         });
         
         // Schema 1: GuardController.approveTimeLockExecution
@@ -135,7 +151,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: approveTimeLockExecutionHandlerForSelectors
         });
         
         // Schema 2: GuardController.cancelTimeLockExecution
@@ -146,7 +162,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: cancelTimeLockExecutionHandlerForSelectors
         });
         
         // Schema 3: GuardController.approveTimeLockExecutionWithMetaTx
@@ -157,7 +173,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: approveTimeLockExecutionMetaHandlerForSelectors
         });
         
         // Schema 4: GuardController.cancelTimeLockExecutionWithMetaTx
@@ -168,7 +184,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxCancelActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: cancelTimeLockExecutionMetaHandlerForSelectors
         });
         
         // Schema 5: GuardController.requestAndApproveExecution
@@ -179,7 +195,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: requestAndApproveExecutionHandlerForSelectors
         });
 
         // Schema 6: GuardController.updateTargetWhitelistRequestAndApprove
@@ -205,7 +221,7 @@ library GuardControllerDefinitions {
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(whitelistExecutionActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: updateTargetWhitelistExecuteHandlerForSelectors
         });
 
         return schemas;
@@ -249,58 +265,72 @@ library GuardControllerDefinitions {
         
         // Owner: Execute With TimeLock
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors0 = new bytes4[](1);
+        handlerForSelectors0[0] = EXECUTE_WITH_TIMELOCK_SELECTOR;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockRequestActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors0 // Self-reference indicates execution selector
         });
         
         // Owner: Approve TimeLock Execution
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors1 = new bytes4[](1);
+        handlerForSelectors1[0] = APPROVE_TIMELOCK_EXECUTION_SELECTOR;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors1 // Self-reference indicates execution selector
         });
         
         // Owner: Cancel TimeLock Execution
         roleHashes[2] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors2 = new bytes4[](1);
+        handlerForSelectors2[0] = CANCEL_TIMELOCK_EXECUTION_SELECTOR;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockCancelActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors2 // Self-reference indicates execution selector
         });
         
         // Owner: Request And Approve Execution (Meta-Tx)
         roleHashes[3] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors3 = new bytes4[](1);
+        handlerForSelectors3[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors3 // Self-reference indicates execution selector
         });
         
         // Owner: Approve TimeLock Execution With MetaTx
         roleHashes[4] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors4 = new bytes4[](1);
+        handlerForSelectors4[0] = APPROVE_TIMELOCK_EXECUTION_META_SELECTOR;
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors4 // Self-reference indicates execution selector
         });
         
         // Owner: Cancel TimeLock Execution With MetaTx
         roleHashes[5] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors5 = new bytes4[](1);
+        handlerForSelectors5[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxCancelActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors5 // Self-reference indicates execution selector
         });
 
         // Owner: Update Target Whitelist (Meta-Tx handler)
         roleHashes[6] = StateAbstraction.OWNER_ROLE;
+        bytes4[] memory handlerForSelectors6 = new bytes4[](1);
+        handlerForSelectors6[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
-            handlerForSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR
+            handlerForSelectors: handlerForSelectors6
         });
 
         // Owner: Update Target Whitelist (Execution selector)
@@ -308,7 +338,7 @@ library GuardControllerDefinitions {
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });
         
         // Broadcaster role permissions (5 entries)
@@ -323,10 +353,12 @@ library GuardControllerDefinitions {
         
         // Broadcaster: Request And Approve Execution (Meta-Tx)
         roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
+        bytes4[] memory handlerForSelectors8 = new bytes4[](1);
+        handlerForSelectors8[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors8 // Self-reference indicates execution selector
         });
         
         // Broadcaster: Approve TimeLock Execution With MetaTx
@@ -334,15 +366,17 @@ library GuardControllerDefinitions {
         functionPermissions[9] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors4 // Self-reference indicates execution selector
         });
         
         // Broadcaster: Cancel TimeLock Execution With MetaTx
         roleHashes[10] = StateAbstraction.BROADCASTER_ROLE;
+        bytes4[] memory handlerForSelectors10 = new bytes4[](1);
+        handlerForSelectors10[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
         functionPermissions[10] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxCancelActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors10 // Self-reference indicates execution selector
         });
 
         // Broadcaster: Update Target Whitelist (Meta-Tx handler)
@@ -350,7 +384,7 @@ library GuardControllerDefinitions {
         functionPermissions[11] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
-            handlerForSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR
+            handlerForSelectors: handlerForSelectors6
         });
 
         // Broadcaster: Update Target Whitelist (Execution selector)
@@ -358,7 +392,7 @@ library GuardControllerDefinitions {
         functionPermissions[12] = StateAbstraction.FunctionPermission({
             functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });
         
         // Recovery role permissions (3 entries)
@@ -376,7 +410,7 @@ library GuardControllerDefinitions {
         functionPermissions[13] = StateAbstraction.FunctionPermission({
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockRequestActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors0 // Self-reference indicates execution selector
         });
         
         // Recovery: Approve TimeLock Execution
@@ -384,7 +418,7 @@ library GuardControllerDefinitions {
         functionPermissions[14] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors1 // Self-reference indicates execution selector
         });
         
         // Recovery: Cancel TimeLock Execution
@@ -392,7 +426,7 @@ library GuardControllerDefinitions {
         functionPermissions[15] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(recoveryTimeLockCancelActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: handlerForSelectors2 // Self-reference indicates execution selector
         });
         
         return IDefinition.RolePermission({

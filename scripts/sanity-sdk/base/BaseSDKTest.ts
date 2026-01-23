@@ -48,21 +48,40 @@ export abstract class BaseSDKTest {
     this.testName = testName;
     console.log(`🔧 Test Mode: ${this.config.testMode.toUpperCase()}`);
 
-    // Simple chain definition (minimal object to avoid type issues)
-    // Ensure chainId is a number, not NaN
-    const chainId = Number(this.config.chainId) || 1337;
-    this.chain = {
-      id: chainId,
-      name: 'local',
-      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-      rpcUrls: { default: { http: [this.config.rpcUrl] } }
-    };
-    console.log(`  📋 Chain ID: ${chainId}`);
-
-    // Initialize public client (no chain needed in createPublicClient to avoid type issues)
+    // Initialize public client first to query actual chain ID
     this.publicClient = createPublicClient({
       transport: http(this.config.rpcUrl),
     }) as any;
+  }
+
+  /**
+   * Initialize chain configuration by querying actual chain ID from RPC
+   */
+  protected async initializeChain(): Promise<void> {
+    try {
+      // Query actual chain ID from RPC
+      const actualChainId = await this.publicClient.getChainId();
+      console.log(`  📋 Chain ID: ${actualChainId}`);
+      
+      // Use actual chain ID from RPC instead of config (which might be network_id, not chain_id)
+      this.chain = {
+        id: actualChainId,
+        name: 'local',
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        rpcUrls: { default: { http: [this.config.rpcUrl] } }
+      };
+    } catch (error: any) {
+      console.warn(`⚠️  Could not query chain ID from RPC: ${error.message}`);
+      // Fallback to config chain ID
+      const chainId = Number(this.config.chainId) || 1337;
+      this.chain = {
+        id: chainId,
+        name: 'local',
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        rpcUrls: { default: { http: [this.config.rpcUrl] } }
+      };
+      console.log(`  📋 Using configured Chain ID: ${chainId}`);
+    }
   }
 
   /**
@@ -70,6 +89,9 @@ export abstract class BaseSDKTest {
    */
   async initialize(): Promise<void> {
     console.log(`🔧 Initializing ${this.testName}...`);
+
+    // Initialize chain configuration first
+    await this.initializeChain();
 
     if (this.config.testMode === 'auto') {
       await this.initializeAutoMode();

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
 import "../../../../core/lib/StateAbstraction.sol";
@@ -168,12 +168,16 @@ library GuardianSafeDefinitions {
         StateAbstraction.TxAction[] memory broadcasterMetaRequestApproveActions = new StateAbstraction.TxAction[](1);
         broadcasterMetaRequestApproveActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        // Create reusable handlerForSelectors array
+        bytes4[] memory execSafeTxHandlers = new bytes4[](1);
+        execSafeTxHandlers[0] = EXEC_SAFE_TX_SELECTOR;
+        
         // Owner: Request Transaction
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_TX_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Owner: Approve Transaction After Delay
@@ -181,7 +185,7 @@ library GuardianSafeDefinitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_DELAYED_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Owner: Cancel Transaction
@@ -189,7 +193,7 @@ library GuardianSafeDefinitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Owner: Approve Transaction Meta (signer)
@@ -197,7 +201,7 @@ library GuardianSafeDefinitions {
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Owner: Cancel Transaction Meta (signer)
@@ -205,7 +209,7 @@ library GuardianSafeDefinitions {
         functionPermissions[4] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaCancelActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Owner: Request And Approve Transaction Meta (signer)
@@ -213,7 +217,7 @@ library GuardianSafeDefinitions {
         functionPermissions[5] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Broadcaster: Approve Transaction Meta (executor)
@@ -221,7 +225,7 @@ library GuardianSafeDefinitions {
         functionPermissions[6] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Broadcaster: Cancel Transaction Meta (executor)
@@ -229,7 +233,7 @@ library GuardianSafeDefinitions {
         functionPermissions[7] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaCancelActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         // Broadcaster: Request And Approve Transaction Meta (executor)
@@ -237,7 +241,7 @@ library GuardianSafeDefinitions {
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
-            handlerForSelector: EXEC_SAFE_TX_SELECTOR
+            handlerForSelectors: execSafeTxHandlers
         });
         
         return IDefinition.RolePermission({

@@ -3,7 +3,8 @@
  * Main file to run all RuntimeRBAC SDK tests
  */
 
-import { RuntimeRBACTests } from './rbac-tests';
+import { pathToFileURL } from 'url';
+import { RuntimeRBACTests } from './rbac-tests.ts';
 
 class RuntimeRBACSDKTestRunner {
   private results = {
@@ -181,7 +182,9 @@ class RuntimeRBACSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-if (require.main === module) {
+// Check if this module is being run directly (not imported)
+const isExecutedDirectly = import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isExecutedDirectly) {
   const runner = new RuntimeRBACSDKTestRunner();
   runner.run();
 }

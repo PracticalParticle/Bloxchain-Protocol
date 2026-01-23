@@ -312,8 +312,8 @@ abstract contract GuardController is BaseStateMachine {
         bytes4 functionSelector,
         address target
     ) internal {
-        // Use StateAbstraction storage and helper to manage per-function whitelists.
-        _getSecureState().addTargetToFunctionWhitelist(functionSelector, target);
+        // Use BaseStateMachine wrapper to manage per-function whitelists.
+        _addTargetToFunctionWhitelist(functionSelector, target);
         emit TargetAddedToWhitelist(functionSelector, target);
     }
     
@@ -327,7 +327,7 @@ abstract contract GuardController is BaseStateMachine {
         bytes4 functionSelector,
         address target
     ) internal {
-        _getSecureState().removeTargetFromFunctionWhitelist(functionSelector, target);
+        _removeTargetFromFunctionWhitelist(functionSelector, target);
         emit TargetRemovedFromWhitelist(functionSelector, target);
     }
 
@@ -393,9 +393,9 @@ abstract contract GuardController is BaseStateMachine {
     function getAllowedTargets(
         bytes4 functionSelector
     ) external view returns (address[] memory) {
-        // Delegate to StateAbstraction, which enforces _validateAnyRole internally
+        // Delegate to BaseStateMachine wrapper, which enforces _validateAnyRole internally
         // for privacy protection when reading whitelist configuration.
-        return _getSecureState().getFunctionWhitelistTargets(functionSelector);
+        return _getFunctionWhitelistTargets(functionSelector);
     }
 }
 

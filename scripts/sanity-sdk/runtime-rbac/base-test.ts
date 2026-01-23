@@ -4,13 +4,13 @@
  */
 
 import { Address, Hex } from 'viem';
-import { RuntimeRBAC } from '../../../sdk/typescript/contracts/RuntimeRBAC';
-import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest';
-import { getContractAddressFromArtifacts } from '../base/test-helpers';
-import { getTestConfig } from '../base/test-config';
-import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction';
-import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript/interfaces/lib.index';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
+import { RuntimeRBAC } from '../../../sdk/typescript/contracts/RuntimeRBAC.tsx';
+import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
+import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
+import { getTestConfig } from '../base/test-config.ts';
+import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
+import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
+import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { keccak256, toBytes } from 'viem';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
 import RoleBloxABIJson from '../../../abi/RoleBlox.abi.json';
@@ -42,6 +42,7 @@ export enum RoleConfigActionType {
 export interface FunctionPermission {
   functionSelector: Hex;
   grantedActionsBitmap: number; // uint16
+  handlerForSelectors: Hex[]; // bytes4[]
 }
 
 /**
@@ -274,11 +275,14 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
    */
   protected createFunctionPermission(
     functionSelector: Hex,
-    actions: TxAction[]
+    actions: TxAction[],
+    handlerForSelectors: Hex[] | null = null
   ): FunctionPermission {
+    const finalHandlerForSelectors = handlerForSelectors || [functionSelector]; // Self-reference by default
     return {
       functionSelector,
       grantedActionsBitmap: this.createBitmapFromActions(actions),
+      handlerForSelectors: finalHandlerForSelectors,
     };
   }
 
@@ -294,13 +298,15 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     switch (actionType) {
       case RoleConfigActionType.CREATE_ROLE:
         // Format: (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
+        // FunctionPermission is tuple(bytes4,uint16,bytes4[])
         // Convert FunctionPermission[] to tuple array
         const functionPermissionsArray = data.functionPermissions.map((fp: FunctionPermission) => [
           fp.functionSelector,
           fp.grantedActionsBitmap,
+          fp.handlerForSelectors || [fp.functionSelector], // Default to self-reference if missing
         ]);
         encodedData = encodeAbiParameters(
-          parseAbiParameters('string, uint256, (bytes4, uint16)[]'),
+          parseAbiParameters('string, uint256, (bytes4, uint16, bytes4[])[]'),
           [data.roleName, BigInt(data.maxWallets), functionPermissionsArray]
         ) as Hex;
         break;
@@ -347,9 +353,17 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
 
       case RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
         // Format: (bytes32 roleHash, FunctionPermission functionPermission)
+        // FunctionPermission is tuple(bytes4,uint16,bytes4[])
         encodedData = encodeAbiParameters(
-          parseAbiParameters('bytes32, (bytes4, uint16)'),
-          [data.roleHash, [data.functionPermission.functionSelector, data.functionPermission.grantedActionsBitmap] as [Hex, number]]
+          parseAbiParameters('bytes32, (bytes4, uint16, bytes4[])'),
+          [
+            data.roleHash,
+            [
+              data.functionPermission.functionSelector,
+              data.functionPermission.grantedActionsBitmap,
+              data.functionPermission.handlerForSelectors || [data.functionPermission.functionSelector], // Default to self-reference if missing
+            ] as [Hex, number, Hex[]]
+          ]
         ) as Hex;
         break;
 
