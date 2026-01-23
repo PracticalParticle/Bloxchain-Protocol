@@ -71,7 +71,9 @@ library RuntimeRBACDefinitions {
         executionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         executionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
-        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        // Execution selectors must have at least one element pointing to themselves (self-reference)
+        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
+        executionHandlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
         
         schemas[1] = StateAbstraction.FunctionSchema({
             functionSignature: "executeRoleConfigBatch((uint8,bytes)[])",
@@ -80,7 +82,7 @@ library RuntimeRBACDefinitions {
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: executionHandlerForSelectors
         });
         
         return schemas;
@@ -104,11 +106,14 @@ library RuntimeRBACDefinitions {
         StateAbstraction.TxAction[] memory ownerHandlerActions = new StateAbstraction.TxAction[](1);
         ownerHandlerActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory ownerHandlerHandlerForSelectors = new bytes4[](1);
+        ownerHandlerHandlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+        
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerHandlerActions),
-            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
+            handlerForSelectors: ownerHandlerHandlerForSelectors
         });
         
         // Owner: sign meta batch (execution function permission)
@@ -116,22 +121,28 @@ library RuntimeRBACDefinitions {
         StateAbstraction.TxAction[] memory ownerExecutionActions = new StateAbstraction.TxAction[](1);
         ownerExecutionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory ownerExecutionHandlerForSelectors = new bytes4[](1);
+        ownerExecutionHandlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR; // Self-reference indicates execution selector
+        
         roleHashes[1] = StateAbstraction.OWNER_ROLE;
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: ownerExecutionHandlerForSelectors
         });
         
         // Broadcaster: execute meta batch (handler function permission)
         StateAbstraction.TxAction[] memory broadcasterHandlerActions = new StateAbstraction.TxAction[](1);
         broadcasterHandlerActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory broadcasterHandlerHandlerForSelectors = new bytes4[](1);
+        broadcasterHandlerHandlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+        
         roleHashes[2] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterHandlerActions),
-            handlerForSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR
+            handlerForSelectors: broadcasterHandlerHandlerForSelectors
         });
         
         // Broadcaster: execute meta batch (execution function permission)
@@ -139,11 +150,14 @@ library RuntimeRBACDefinitions {
         StateAbstraction.TxAction[] memory broadcasterExecutionActions = new StateAbstraction.TxAction[](1);
         broadcasterExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
+        bytes4[] memory broadcasterExecutionHandlerForSelectors = new bytes4[](1);
+        broadcasterExecutionHandlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR; // Self-reference indicates execution selector
+        
         roleHashes[3] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: broadcasterExecutionHandlerForSelectors
         });
         
         return IDefinition.RolePermission({

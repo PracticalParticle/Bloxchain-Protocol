@@ -214,8 +214,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             if (action.actionType == RoleConfigActionType.CREATE_ROLE) {
                 // Decode CREATE_ROLE action data
                 // Format: (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
-                // FunctionPermission is struct(bytes4 functionSelector, uint16 grantedActionsBitmap)
-                // When encoding from JavaScript, it's encoded as tuple(bytes4,uint16)[]
+                // FunctionPermission is struct(bytes4 functionSelector, uint16 grantedActionsBitmap, bytes4 handlerForSelector)
+                // When encoding from JavaScript, it's encoded as tuple(bytes4,uint16,bytes4)[]
                 // Solidity can decode tuple[] directly into struct[] if the layout matches
                 (
                     string memory roleName,
@@ -369,15 +369,16 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
-        // Dynamically registered functions are execution selectors (handlerForSelectors = empty array)
-        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
+        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
+        executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
         _createFunctionSchema(
             functionSignature,
             functionSelector,
             operationName,
             supportedActionsBitmap,
             false, // isProtected = false for dynamically registered functions
-            emptyHandlerForSelectors // handlerForSelectors = empty array for execution selectors
+            executionHandlerForSelectors // handlerForSelectors with self-reference for execution selectors
         );
     }
 

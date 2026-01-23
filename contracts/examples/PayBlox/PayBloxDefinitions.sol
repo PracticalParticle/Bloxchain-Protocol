@@ -46,7 +46,13 @@ library PayBloxDefinitions {
         timeDelayCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         
         // Prepare handlerForSelectors arrays
-        bytes4[] memory emptyHandlerForSelectors = new bytes4[](0);
+        // Execution selectors must have self-reference (at least one element pointing to themselves)
+        bytes4[] memory approvePaymentDelayedHandlerForSelectors = new bytes4[](1);
+        approvePaymentDelayedHandlerForSelectors[0] = APPROVE_PAYMENT_DELAYED_SELECTOR;
+        bytes4[] memory cancelPaymentHandlerForSelectors = new bytes4[](1);
+        cancelPaymentHandlerForSelectors[0] = CANCEL_PAYMENT_SELECTOR;
+        
+        // Handler selectors point to execution selectors
         bytes4[] memory nativeTransferHandlerForSelectors = new bytes4[](1);
         nativeTransferHandlerForSelectors[0] = StateAbstraction.NATIVE_TRANSFER_SELECTOR;
         
@@ -68,7 +74,7 @@ library PayBloxDefinitions {
             operationName: "GENERIC_APPROVAL",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: approvePaymentDelayedHandlerForSelectors
         });
         
         schemas[2] = StateAbstraction.FunctionSchema({
@@ -78,7 +84,7 @@ library PayBloxDefinitions {
             operationName: "GENERIC_CANCELLATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true,
-            handlerForSelectors: emptyHandlerForSelectors
+            handlerForSelectors: cancelPaymentHandlerForSelectors
         });
         
         return schemas;
@@ -104,12 +110,20 @@ library PayBloxDefinitions {
         StateAbstraction.TxAction[] memory ownerTimeDelayCancelActions = new StateAbstraction.TxAction[](1);
         ownerTimeDelayCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
      
+        // Create reusable handlerForSelectors arrays
+        bytes4[] memory nativeTransferHandlers = new bytes4[](1);
+        nativeTransferHandlers[0] = StateAbstraction.NATIVE_TRANSFER_SELECTOR;
+        bytes4[] memory approvePaymentDelayedHandlers = new bytes4[](1);
+        approvePaymentDelayedHandlers[0] = APPROVE_PAYMENT_DELAYED_SELECTOR;
+        bytes4[] memory cancelPaymentHandlers = new bytes4[](1);
+        cancelPaymentHandlers[0] = CANCEL_PAYMENT_SELECTOR;
+     
         // Owner: Request Payment With Payment
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
         functionPermissions[0] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_WITH_PAYMENT_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
-            handlerForSelector: StateAbstraction.NATIVE_TRANSFER_SELECTOR
+            handlerForSelectors: nativeTransferHandlers
         });
         
         // Owner: Approve Payment Delayed
@@ -117,7 +131,7 @@ library PayBloxDefinitions {
         functionPermissions[1] = StateAbstraction.FunctionPermission({
             functionSelector: APPROVE_PAYMENT_DELAYED_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: approvePaymentDelayedHandlers // Self-reference indicates execution selector
         });
         
         // Owner: Cancel Payment
@@ -125,7 +139,7 @@ library PayBloxDefinitions {
         functionPermissions[2] = StateAbstraction.FunctionPermission({
             functionSelector: CANCEL_PAYMENT_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
-            handlerForSelector: bytes4(0)
+            handlerForSelectors: cancelPaymentHandlers // Self-reference indicates execution selector
         });
         
         return IDefinition.RolePermission({
