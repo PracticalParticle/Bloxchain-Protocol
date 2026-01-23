@@ -203,7 +203,9 @@ class BaseRuntimeRBACTest {
             const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
             
             if (!artifact.networks || Object.keys(artifact.networks).length === 0) {
-                throw new Error(`No deployment networks found in ${contractName} artifact`);
+                // Fallback: Try reading from deployed-addresses.json
+                console.log(`⚠️  No deployment networks found in ${contractName} artifact, trying deployed-addresses.json...`);
+                return this.getContractAddressFromDeployedAddresses(contractName);
             }
             
             // Get the most recent deployment (highest network ID)
@@ -212,7 +214,9 @@ class BaseRuntimeRBACTest {
             const networkData = artifact.networks[latestNetworkId.toString()];
             
             if (!networkData.address) {
-                throw new Error(`No address found for ${contractName} on network ${latestNetworkId}`);
+                // Fallback: Try reading from deployed-addresses.json
+                console.log(`⚠️  No address found in artifact for ${contractName}, trying deployed-addresses.json...`);
+                return this.getContractAddressFromDeployedAddresses(contractName);
             }
             
             console.log(`📋 Found ${contractName} at ${networkData.address} on network ${latestNetworkId}`);
@@ -220,6 +224,54 @@ class BaseRuntimeRBACTest {
             
         } catch (error) {
             console.error(`❌ Error reading ${contractName} artifact:`, error.message);
+            // Fallback: Try reading from deployed-addresses.json
+            console.log(`⚠️  Trying fallback: deployed-addresses.json...`);
+            return this.getContractAddressFromDeployedAddresses(contractName);
+        }
+    }
+
+    getContractAddressFromDeployedAddresses(contractName) {
+        try {
+            const addressesFile = path.join(__dirname, '../../../deployed-addresses.json');
+            
+            if (!fs.existsSync(addressesFile)) {
+                throw new Error(`deployed-addresses.json not found: ${addressesFile}`);
+            }
+            
+            const addresses = JSON.parse(fs.readFileSync(addressesFile, 'utf8'));
+            
+            // Try to find the contract in any network (prefer 'development' if available)
+            const networks = Object.keys(addresses);
+            let networkToUse = null;
+            
+            if (addresses.development && addresses.development[contractName]) {
+                networkToUse = 'development';
+            } else {
+                // Try any network
+                for (const network of networks) {
+                    if (addresses[network] && addresses[network][contractName]) {
+                        networkToUse = network;
+                        break;
+                    }
+                }
+            }
+            
+            if (!networkToUse || !addresses[networkToUse] || !addresses[networkToUse][contractName]) {
+                throw new Error(`Contract ${contractName} not found in deployed-addresses.json`);
+            }
+            
+            const contractData = addresses[networkToUse][contractName];
+            const address = contractData.address;
+            
+            if (!address) {
+                throw new Error(`No address found for ${contractName} in deployed-addresses.json`);
+            }
+            
+            console.log(`📋 Found ${contractName} at ${address} from deployed-addresses.json (network: ${networkToUse})`);
+            return address;
+            
+        } catch (error) {
+            console.error(`❌ Error reading deployed-addresses.json:`, error.message);
             return null;
         }
     }
@@ -305,8 +357,59 @@ class BaseRuntimeRBACTest {
                 throw new Error('RuntimeRBAC function schema not found. Contract may not be initialized with RuntimeRBAC.initialize()');
             }
             
-            console.log('  ✅ RuntimeRBAC function schema verified');
+            console.log('  ✅ RuntimeRBAC handler function schema verified');
             console.log(`  📋 Operation: ${functionSchema.operationName}`);
+            
+            // Also verify execution function schema exists
+            const executionSchema = await this.callContractMethod(
+                this.contract.methods.getFunctionSchema(this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR)
+            );
+            
+            if (executionSchema.functionSelectorReturn !== this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR) {
+                throw new Error('RuntimeRBAC execution function schema not found. Contract may not be initialized with RuntimeRBAC.initialize()');
+            }
+            
+            console.log('  ✅ RuntimeRBAC execution function schema verified');
+            console.log(`  📋 Execution operation: ${executionSchema.operationName}`);
+            
+            // DIAGNOSTIC: Verify contract returns FunctionPermission with handlerForSelectors
+            // by checking BROADCASTER role permissions
+            try {
+                const broadcasterRoleHash = this.web3.utils.keccak256('BROADCASTER_ROLE');
+                const broadcasterPermissions = await this.callContractMethod(
+                    this.contract.methods.getActiveRolePermissions(broadcasterRoleHash)
+                );
+                
+                if (broadcasterPermissions && broadcasterPermissions.length > 0) {
+                    const firstPerm = broadcasterPermissions[0];
+                    const hasHandlerForSelectors = firstPerm.handlerForSelectors !== undefined || firstPerm[2] !== undefined;
+                    console.log(`  🔍 DIAGNOSTIC: Contract returns FunctionPermission with handlerForSelectors: ${hasHandlerForSelectors ? '✅ YES' : '❌ NO'}`);
+                    if (hasHandlerForSelectors) {
+                        const handlerForSelectors = firstPerm.handlerForSelectors || firstPerm[2];
+                        console.log(`  🔍 DIAGNOSTIC: Sample handlerForSelectors value: ${Array.isArray(handlerForSelectors) ? handlerForSelectors.join(', ') : handlerForSelectors}`);
+                        
+                        // DIAGNOSTIC: Verify the ABI structure matches what we expect
+                        console.log(`  🔍 DIAGNOSTIC: Verifying FunctionPermission struct structure...`);
+                        const permKeys = Object.keys(firstPerm);
+                        console.log(`  🔍 DIAGNOSTIC: FunctionPermission keys: ${permKeys.join(', ')}`);
+                        const expectedKeys = ['functionSelector', 'grantedActionsBitmap', 'handlerForSelectors'];
+                        const hasAllKeys = expectedKeys.every(key => permKeys.includes(key) || firstPerm[key] !== undefined);
+                        console.log(`  🔍 DIAGNOSTIC: FunctionPermission has all expected fields: ${hasAllKeys ? '✅ YES' : '❌ NO'}`);
+                        if (!hasAllKeys) {
+                            console.log(`  ⚠️  DIAGNOSTIC: FunctionPermission struct may be missing fields!`);
+                            console.log(`     Expected: ${expectedKeys.join(', ')}`);
+                            console.log(`     Found: ${permKeys.join(', ')}`);
+                            console.log(`     This could cause ABI decoding mismatches.`);
+                        }
+                    } else {
+                        console.log(`  ⚠️  DIAGNOSTIC: Contract may be using old FunctionPermission struct without handlerForSelectors!`);
+                        console.log(`     This would cause decoding failures when creating roles.`);
+                        console.log(`     Solution: Recompile and redeploy the contract with the updated struct.`);
+                    }
+                }
+            } catch (error) {
+                console.log(`  ⚠️  DIAGNOSTIC: Could not verify FunctionPermission format: ${error.message}`);
+            }
             
             // Verify broadcaster has EXECUTE_META_REQUEST_AND_APPROVE permission
             // Note: We can't directly check permissions via contract, but we can verify the role exists
@@ -329,7 +432,8 @@ class BaseRuntimeRBACTest {
         try {
             // Get actual role addresses from contract
             this.roles.owner = await this.callContractMethod(this.contract.methods.owner());
-            this.roles.broadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+            const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            this.roles.broadcaster = broadcasters[0]; // Get first broadcaster from array
             this.roles.recovery = await this.callContractMethod(this.contract.methods.getRecovery());
             
             console.log('📋 DISCOVERED ROLE ASSIGNMENTS:');
@@ -530,13 +634,17 @@ class BaseRuntimeRBACTest {
         switch (actionType) {
             case this.RoleConfigActionType.CREATE_ROLE:
                 // (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
-                // FunctionPermission is tuple(bytes4,uint16)
-                const functionPermsArray = data.functionPermissions.map(fp => [
-                    fp.functionSelector,
-                    fp.grantedActionsBitmap
-                ]);
+                // FunctionPermission is tuple(bytes4,uint16,bytes4[]) - includes handlerForSelectors array
+                const functionPermsArray = data.functionPermissions.map(fp => {
+                    const handlerForSelectors = fp.handlerForSelectors || (fp.handlerForSelector ? [fp.handlerForSelector] : [fp.functionSelector]);
+                    return [
+                        fp.functionSelector,
+                        fp.grantedActionsBitmap,
+                        handlerForSelectors
+                    ];
+                });
                 encodedData = this.web3.eth.abi.encodeParameters(
-                    ['string', 'uint256', 'tuple(bytes4,uint16)[]'],
+                    ['string', 'uint256', 'tuple(bytes4,uint16,bytes4[])[]'],
                     [data.roleName, data.maxWallets, functionPermsArray]
                 );
                 break;
@@ -562,10 +670,17 @@ class BaseRuntimeRBACTest {
                 break;
             case this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
                 // (bytes32 roleHash, FunctionPermission functionPermission)
-                // FunctionPermission is tuple(bytes4,uint16)
+                // FunctionPermission is tuple(bytes4,uint16,bytes4[]) - includes handlerForSelectors array
+                const handlerForSelectors = data.functionPermission.handlerForSelectors || 
+                    (data.functionPermission.handlerForSelector ? [data.functionPermission.handlerForSelector] : 
+                     [data.functionPermission.functionSelector]); // Default to self-reference for execution selectors
                 encodedData = this.web3.eth.abi.encodeParameters(
-                    ['bytes32', 'tuple(bytes4,uint16)'],
-                    [data.roleHash, [data.functionPermission.functionSelector, data.functionPermission.grantedActionsBitmap]]
+                    ['bytes32', 'tuple(bytes4,uint16,bytes4[])'],
+                    [data.roleHash, [
+                        data.functionPermission.functionSelector, 
+                        data.functionPermission.grantedActionsBitmap,
+                        handlerForSelectors
+                    ]]
                 );
                 break;
             case this.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE:
@@ -586,13 +701,25 @@ class BaseRuntimeRBACTest {
      * Create a FunctionPermission struct
      * @param {string} functionSelector - Function selector (4 bytes)
      * @param {number[]} actions - Array of TxAction enum values
+     * @param {string|string[]} handlerForSelectors - Handler for selectors (array of execution selectors this function can access). If single string provided, will be wrapped in array. If functionSelector is included, this is an execution selector; otherwise, these are handler selectors pointing to execution selectors
      * @returns {Object} FunctionPermission struct
      */
-    createFunctionPermission(functionSelector, actions) {
+    createFunctionPermission(functionSelector, actions, handlerForSelectors = null) {
         const bitmap = this.createBitmapFromActions(actions);
+        // If handlerForSelectors is not provided, use [functionSelector] (self-reference indicates execution selector)
+        let finalHandlerForSelectors;
+        if (handlerForSelectors === null) {
+            finalHandlerForSelectors = [functionSelector];
+        } else if (Array.isArray(handlerForSelectors)) {
+            finalHandlerForSelectors = handlerForSelectors;
+        } else {
+            // Single string provided, wrap in array
+            finalHandlerForSelectors = [handlerForSelectors];
+        }
         return {
             functionSelector: functionSelector,
-            grantedActionsBitmap: bitmap
+            grantedActionsBitmap: bitmap,
+            handlerForSelectors: finalHandlerForSelectors
         };
     }
 
@@ -670,7 +797,8 @@ class BaseRuntimeRBACTest {
             console.log(`  🔍 Signer private key provided: ${signerPrivateKey ? 'YES' : 'NO'}`);
             
             // Verify broadcaster address matches contract's broadcaster
-            const contractBroadcaster = await this.callContractMethod(this.contract.methods.getBroadcaster());
+            const contractBroadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
+            const contractBroadcaster = contractBroadcasters[0]; // Get first broadcaster from array
             if (contractBroadcaster.toLowerCase() !== broadcasterWallet.address.toLowerCase()) {
                 throw new Error(`Broadcaster mismatch: contract has ${contractBroadcaster}, but using ${broadcasterWallet.address}`);
             }
@@ -1019,9 +1147,47 @@ class BaseRuntimeRBACTest {
                                 // Check for common errors
                                 const onlyCallable = this.web3.utils.keccak256('OnlyCallableByContract(address,address)').slice(0, 10);
                                 const resourceExists = this.web3.utils.keccak256('ResourceAlreadyExists(bytes32)').slice(0, 10);
+                                const resourceNotFound = this.web3.utils.keccak256('ResourceNotFound(bytes32)').slice(0, 10);
+                                const handlerMismatch = this.web3.utils.keccak256('HandlerForSelectorMismatch(bytes4,bytes4)').slice(0, 10);
+                                const conflictingPerms = this.web3.utils.keccak256('ConflictingMetaTxPermissions(bytes4)').slice(0, 10);
                                 const notSupported = this.web3.utils.keccak256('NotSupported()').slice(0, 10);
                                 
-                                if (errorSelector === onlyCallable) {
+                                console.log(`  📋 Checking error selector: ${errorSelector}`);
+                                console.log(`  📋 HandlerForSelectorMismatch selector: ${handlerMismatch}`);
+                                console.log(`  📋 ResourceNotFound selector: ${resourceNotFound}`);
+                                
+                                if (errorSelector === handlerMismatch) {
+                                    try {
+                                        const decoded = this.web3.eth.abi.decodeParameters(
+                                            ['bytes4', 'bytes4'],
+                                            '0x' + resultStr.slice(10)
+                                        );
+                                        console.log(`  ❌ HandlerForSelectorMismatch error detected:`);
+                                        console.log(`     Schema handlerForSelectors: ${decoded[0]}`);
+                                        console.log(`     Permission handlerForSelector: ${decoded[1]}`);
+                                        console.log(`     This means the handlerForSelector in the permission doesn't match the schema's handlerForSelectors array!`);
+                                    } catch (e) {
+                                        console.log(`  ⚠️  Could not decode HandlerForSelectorMismatch: ${e.message}`);
+                                    }
+                                } else if (errorSelector === conflictingPerms) {
+                                    try {
+                                        const decoded = this.web3.eth.abi.decodeParameter('bytes4', '0x' + resultStr.slice(10));
+                                        console.log(`  ❌ ConflictingMetaTxPermissions error detected:`);
+                                        console.log(`     Function selector: ${decoded}`);
+                                        console.log(`     This means the permission has both SIGN and EXECUTE actions, which is not allowed!`);
+                                    } catch (e) {
+                                        console.log(`  ⚠️  Could not decode ConflictingMetaTxPermissions: ${e.message}`);
+                                    }
+                                } else if (errorSelector === resourceNotFound) {
+                                    try {
+                                        const decoded = this.web3.eth.abi.decodeParameter('bytes32', '0x' + resultStr.slice(10));
+                                        console.log(`  ❌ ResourceNotFound error detected:`);
+                                        console.log(`     Resource ID: ${decoded}`);
+                                        console.log(`     This could be a function selector or role hash that doesn't exist!`);
+                                    } catch (e) {
+                                        console.log(`  ⚠️  Could not decode ResourceNotFound: ${e.message}`);
+                                    }
+                                } else if (errorSelector === onlyCallable) {
                                     const decoded = this.web3.eth.abi.decodeParameters(
                                         ['address', 'address'],
                                         '0x' + resultStr.slice(10)

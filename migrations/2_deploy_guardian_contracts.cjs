@@ -117,6 +117,11 @@ module.exports = async function(deployer, network, accounts) {
             );
             console.log("✅ SecureBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
+            
+            // Get web3 from deployed contract instance (available for error handling)
+            const web3 = secureBlox.constructor.web3 || global.web3;
+            // Save network info to artifact (fixes issue when network_id is "*")
+            await saveArtifactNetwork(SecureBlox, secureBlox.address, web3, network);
         } catch (error) {
             console.log("❌ SecureBlox initialization failed:");
             console.log("   Error message:", error.message);
