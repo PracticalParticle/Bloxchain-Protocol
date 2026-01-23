@@ -4,7 +4,7 @@
  */
 
 import { Address, Hex } from 'viem';
-import { BaseGuardControllerTest } from './base-test';
+import { BaseGuardControllerTest } from './base-test.ts';
 
 export class WhitelistTests extends BaseGuardControllerTest {
   private testTarget: Address | null = null;

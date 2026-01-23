@@ -4,14 +4,14 @@
  */
 
 import { Address, Hex } from 'viem';
-import { SecureOwnable } from '../../../sdk/typescript/contracts/SecureOwnable';
-import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest';
-import { getContractAddressFromArtifacts } from '../base/test-helpers';
-import { getTestConfig } from '../base/test-config';
-import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction';
-import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
-import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index';
+import { SecureOwnable } from '../../../sdk/typescript/contracts/SecureOwnable.tsx';
+import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
+import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
+import { getTestConfig } from '../base/test-config.ts';
+import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
+import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
+import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
+import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
 
 export interface SecureOwnableRoles {
   owner: Address;

@@ -4,9 +4,9 @@
  */
 
 import { Address, Hex } from 'viem';
-import { BaseSecureOwnableTest } from './base-test';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
-import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index';
+import { BaseSecureOwnableTest } from './base-test.ts';
+import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
+import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
 
 export class EIP712SigningTests extends BaseSecureOwnableTest {
   constructor() {

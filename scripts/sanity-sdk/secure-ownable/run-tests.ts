@@ -3,11 +3,11 @@
  * Main file to run all or selective tests of the SecureOwnable SDK
  */
 
-import { OwnershipTransferTests } from './ownership-transfer-tests';
-import { BroadcasterUpdateTests } from './broadcaster-update-tests';
-import { RecoveryUpdateTests } from './recovery-update-tests';
-import { TimelockPeriodTests } from './timelock-period-tests';
-import { EIP712SigningTests } from './eip712-signing-tests';
+import { OwnershipTransferTests } from './ownership-transfer-tests.ts';
+import { BroadcasterUpdateTests } from './broadcaster-update-tests.ts';
+import { RecoveryUpdateTests } from './recovery-update-tests.ts';
+import { TimelockPeriodTests } from './timelock-period-tests.ts';
+import { EIP712SigningTests } from './eip712-signing-tests.ts';
 
 type TestClass = typeof OwnershipTransferTests | typeof BroadcasterUpdateTests | typeof RecoveryUpdateTests | typeof TimelockPeriodTests | typeof EIP712SigningTests;
 
@@ -207,10 +207,8 @@ class SecureOwnableSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-if (require.main === module) {
-  const runner = new SecureOwnableSDKTestRunner();
-  runner.run();
-}
+const runner = new SecureOwnableSDKTestRunner();
+runner.run();
 
 export { SecureOwnableSDKTestRunner };
 

@@ -3,7 +3,7 @@
  * Main file to run all RuntimeRBAC SDK tests
  */
 
-import { RuntimeRBACTests } from './rbac-tests';
+import { RuntimeRBACTests } from './rbac-tests.ts';
 
 class RuntimeRBACSDKTestRunner {
   private results = {
@@ -181,9 +181,7 @@ class RuntimeRBACSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-if (require.main === module) {
-  const runner = new RuntimeRBACSDKTestRunner();
-  runner.run();
-}
+const runner = new RuntimeRBACSDKTestRunner();
+runner.run();
 
 export { RuntimeRBACSDKTestRunner };

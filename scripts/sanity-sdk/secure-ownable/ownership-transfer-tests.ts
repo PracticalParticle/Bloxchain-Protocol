@@ -4,10 +4,10 @@
  */
 
 import { Address, Hex } from 'viem';
-import { BaseSecureOwnableTest } from './base-test';
-import { TxAction } from '../../../sdk/typescript/types/lib.index';
-import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index';
-import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction';
+import { BaseSecureOwnableTest } from './base-test.ts';
+import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
+import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 
 export class OwnershipTransferTests extends BaseSecureOwnableTest {
   constructor() {
