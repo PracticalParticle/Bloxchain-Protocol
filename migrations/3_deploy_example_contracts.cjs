@@ -6,17 +6,20 @@ const SimpleRWA20 = artifacts.require("SimpleRWA20");
 
 // Import the deployed library artifacts to get their addresses
 const StateAbstraction = artifacts.require("StateAbstraction");
-const StateAbstractionDefinitions = artifacts.require("StateAbstractionDefinitions");
 const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
 const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
 
 // Import the example-specific definitions
 const SimpleVaultDefinitions = artifacts.require("SimpleVaultDefinitions");
 const SimpleRWA20Definitions = artifacts.require("SimpleRWA20Definitions");
+const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 module.exports = async function(deployer, network, accounts) {
   console.log(`🚀 Migration 3: Deploying Example Contracts on ${network}`);
   console.log(`📋 Using account: ${accounts[0]}`);
+  
+  // Get web3 instance from artifacts
+  const web3 = artifacts.web3;
 
   // Configuration flags - set to true/false to control which contracts to deploy
   const deploySimpleVault = process.env.DEPLOY_SIMPLE_VAULT === 'true'; // Default: false
@@ -51,15 +54,32 @@ module.exports = async function(deployer, network, accounts) {
         console.log("\n📦 Step 1: Skipping Example-Specific Definitions Libraries (no contracts enabled)");
     }
 
-    // Retrieve deployed foundation library instances
-    const sa = await StateAbstraction.deployed();
-    const sad = await StateAbstractionDefinitions.deployed();
-    const sod = await SecureOwnableDefinitions.deployed();
-    const drbd = await RuntimeRBACDefinitions.deployed();
+    // Retrieve deployed foundation library instances (deploy if needed)
+    let sa, sod, drbd;
+    try {
+        sa = await StateAbstraction.deployed();
+    } catch (e) {
+        console.log("⚠️  StateAbstraction not found in artifacts; deploying now...");
+        await deployer.deploy(StateAbstraction);
+        sa = await StateAbstraction.deployed();
+    }
+    try {
+        sod = await SecureOwnableDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  SecureOwnableDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(SecureOwnableDefinitions);
+        sod = await SecureOwnableDefinitions.deployed();
+    }
+    try {
+        drbd = await RuntimeRBACDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  RuntimeRBACDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(RuntimeRBACDefinitions);
+        drbd = await RuntimeRBACDefinitions.deployed();
+    }
 
     console.log("\n📦 Step 2: Linking Foundation Libraries...");
     console.log(`✅ Using StateAbstraction at: ${sa.address}`);
-    console.log(`✅ Using StateAbstractionDefinitions at: ${sad.address}`);
     console.log(`✅ Using SecureOwnableDefinitions at: ${sod.address}`);
     console.log(`✅ Using RuntimeRBACDefinitions at: ${drbd.address}`);
 
@@ -68,12 +88,15 @@ module.exports = async function(deployer, network, accounts) {
     if (deploySimpleVault) {
         console.log("\n📦 Step 3: Deploying SimpleVault...");
         await deployer.link(sa, SimpleVault);
-        await deployer.link(sad, SimpleVault);
         await deployer.link(sod, SimpleVault);
         await deployer.link(simpleVaultDefinitions, SimpleVault);
         await deployer.deploy(SimpleVault);
         simpleVault = await SimpleVault.deployed();
         console.log(`✅ SimpleVault deployed at: ${simpleVault.address}`);
+        // Get web3 from deployed contract instance
+        const web3 = simpleVault.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(SimpleVault, simpleVault.address, web3, network);
         
         // Initialize SimpleVault
         console.log("🔧 Initializing SimpleVault...");
@@ -118,12 +141,15 @@ module.exports = async function(deployer, network, accounts) {
     if (deploySimpleRWA20) {
         console.log("\n📦 Step 4: Deploying SimpleRWA20...");
         await deployer.link(sa, SimpleRWA20);
-        await deployer.link(sad, SimpleRWA20);
         await deployer.link(sod, SimpleRWA20);
         await deployer.link(simpleRWA20Definitions, SimpleRWA20);
         await deployer.deploy(SimpleRWA20);
         simpleRWA20 = await SimpleRWA20.deployed();
         console.log(`✅ SimpleRWA20 deployed at: ${simpleRWA20.address}`);
+        // Get web3 from deployed contract instance
+        const web3 = simpleRWA20.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(SimpleRWA20, simpleRWA20.address, web3, network);
         
         // Initialize SimpleRWA20
         console.log("🔧 Initializing SimpleRWA20...");
@@ -170,10 +196,51 @@ module.exports = async function(deployer, network, accounts) {
     if (simpleVault) console.log(`   SimpleVault: ${simpleVault.address}`);
     if (simpleRWA20) console.log(`   SimpleRWA20: ${simpleRWA20.address}`);
 
+    // Save deployed addresses to file for auto mode fallback
+    const fs = require('fs');
+    const path = require('path');
+    const addressesFile = path.join(__dirname, '..', 'deployed-addresses.json');
+    
+    let addresses = {};
+    if (fs.existsSync(addressesFile)) {
+        addresses = JSON.parse(fs.readFileSync(addressesFile, 'utf8'));
+    }
+    
+    if (!addresses[network]) {
+        addresses[network] = {};
+    }
+    
+    if (simpleVaultDefinitions) {
+        addresses[network].SimpleVaultDefinitions = {
+            address: simpleVaultDefinitions.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (simpleRWA20Definitions) {
+        addresses[network].SimpleRWA20Definitions = {
+            address: simpleRWA20Definitions.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (simpleVault) {
+        addresses[network].SimpleVault = {
+            address: simpleVault.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (simpleRWA20) {
+        addresses[network].SimpleRWA20 = {
+            address: simpleRWA20.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    
+    fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2));
+    console.log(`\n💾 Saved addresses to ${addressesFile}`);
+
     console.log("\n🎯 Complete Deployment Summary:");
     console.log("📚 Foundation Libraries:");
     console.log(`   StateAbstraction: ${sa.address}`);
-    console.log(`   StateAbstractionDefinitions: ${sad.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drbd.address}`);
     console.log("📋 Example-Specific Definitions:");

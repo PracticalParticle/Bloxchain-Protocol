@@ -1,9 +1,13 @@
 // Migration 4: Deploy Basic ERC20 Token
 const BasicERC20 = artifacts.require("BasicERC20");
+const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 4: Deploying Basic ERC20 Token on ${network}`);
     console.log(`📋 Using account: ${accounts[0]}`);
+    
+    // Get web3 instance from artifacts
+    const web3 = artifacts.web3;
     
     // Configuration - can be customized via environment variables
     const tokenName = process.env.ERC20_NAME || "Basic Token";
@@ -31,6 +35,11 @@ module.exports = async function(deployer, network, accounts) {
         );
         
         const basicERC20 = await BasicERC20.deployed();
+        
+        // Get web3 from deployed contract instance
+        const web3 = basicERC20.constructor.web3 || global.web3;
+        // Save network info to artifact (fixes issue when network_id is "*")
+        await saveArtifactNetwork(BasicERC20, basicERC20.address, web3, network);
         
         // Verify minter role was granted
         const MINTER_ROLE = await basicERC20.MINTER_ROLE();
