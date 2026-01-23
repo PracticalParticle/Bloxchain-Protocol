@@ -1,8 +1,8 @@
 [profile.default]
 src = "contracts"
 out = "out"
-libs = ["node_modules"]
-test = "test"
+libs = ["node_modules", "lib"]
+test = "test/foundry"
 cache_path = "cache_forge"
 
 # Solidity compiler settings - matching Truffle config for consistency
@@ -12,7 +12,20 @@ optimizer_runs = 1  # Changed from 200 to match Truffle (faster compilation)
 via_ir = true
 evm_version = "shanghai"
 
+# Fuzzing configuration
+[fuzz]
+runs = 256
+max_test_rejects = 65536
+seed = '0x1234'
+
+# Invariant testing configuration
+[invariant]
+runs = 256
+depth = 15
+fail_on_revert = false
+
 # Remappings for OpenZeppelin dependencies
 remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
+    "forge-std/=lib/forge-std/src/",
 ]
