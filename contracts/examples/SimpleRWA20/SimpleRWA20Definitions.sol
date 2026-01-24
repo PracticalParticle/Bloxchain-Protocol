@@ -32,7 +32,7 @@ library SimpleRWA20Definitions {
      * @return Array of function schema definitions
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](2);
+        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](4);
         
         // Meta-transaction function schemas
         StateAbstraction.TxAction[] memory metaTxRequestApproveActions = new StateAbstraction.TxAction[](2);
@@ -66,6 +66,32 @@ library SimpleRWA20Definitions {
             handlerForSelectors: burnHandlerForSelectors
         });
         
+        // Execution selector schemas (for dual-permission model)
+        bytes4[] memory mintExecutionHandlerForSelectors = new bytes4[](1);
+        mintExecutionHandlerForSelectors[0] = MINT_TOKENS_SELECTOR;
+        bytes4[] memory burnExecutionHandlerForSelectors = new bytes4[](1);
+        burnExecutionHandlerForSelectors[0] = BURN_TOKENS_SELECTOR;
+        
+        schemas[2] = StateAbstraction.FunctionSchema({
+            functionSignature: "executeMint(address,uint256)",
+            functionSelector: MINT_TOKENS_SELECTOR,
+            operationType: MINT_TOKENS,
+            operationName: "MINT_TOKENS",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
+            isProtected: true,
+            handlerForSelectors: mintExecutionHandlerForSelectors
+        });
+        
+        schemas[3] = StateAbstraction.FunctionSchema({
+            functionSignature: "executeBurn(address,uint256)",
+            functionSelector: BURN_TOKENS_SELECTOR,
+            operationType: BURN_TOKENS,
+            operationName: "BURN_TOKENS",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
+            isProtected: true,
+            handlerForSelectors: burnExecutionHandlerForSelectors
+        });
+        
         return schemas;
     }
     
@@ -76,8 +102,8 @@ library SimpleRWA20Definitions {
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
         StateAbstraction.FunctionPermission[] memory functionPermissions;
-        roleHashes = new bytes32[](4);
-        functionPermissions = new StateAbstraction.FunctionPermission[](4);
+        roleHashes = new bytes32[](8);
+        functionPermissions = new StateAbstraction.FunctionPermission[](8);
         
         // Owner role permissions for meta-transactions (signing)
         StateAbstraction.TxAction[] memory ownerMetaRequestApproveActions = new StateAbstraction.TxAction[](1);
@@ -121,6 +147,38 @@ library SimpleRWA20Definitions {
         roleHashes[3] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[3] = StateAbstraction.FunctionPermission({
             functionSelector: BURN_TOKENS_META_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            handlerForSelectors: burnTokensHandlers
+        });
+        
+        // Owner: Mint Tokens Execution (for signing)
+        roleHashes[4] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[4] = StateAbstraction.FunctionPermission({
+            functionSelector: MINT_TOKENS_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
+            handlerForSelectors: mintTokensHandlers
+        });
+        
+        // Owner: Burn Tokens Execution (for signing)
+        roleHashes[5] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[5] = StateAbstraction.FunctionPermission({
+            functionSelector: BURN_TOKENS_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaRequestApproveActions),
+            handlerForSelectors: burnTokensHandlers
+        });
+        
+        // Broadcaster: Mint Tokens Execution (for execution)
+        roleHashes[6] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[6] = StateAbstraction.FunctionPermission({
+            functionSelector: MINT_TOKENS_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            handlerForSelectors: mintTokensHandlers
+        });
+        
+        // Broadcaster: Burn Tokens Execution (for execution)
+        roleHashes[7] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[7] = StateAbstraction.FunctionPermission({
+            functionSelector: BURN_TOKENS_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
             handlerForSelectors: burnTokensHandlers
         });

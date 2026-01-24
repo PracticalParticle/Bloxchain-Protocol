@@ -40,7 +40,7 @@ library SimpleVaultDefinitions {
      * @return Array of function schema definitions
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](5);
+        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](7);
         
         // Time-delay function schemas
         StateAbstraction.TxAction[] memory timeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -124,6 +124,38 @@ library SimpleVaultDefinitions {
             handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
         });
         
+        // Execution selector schemas (for dual-permission model)
+        // These support both time-delay and meta-transaction workflows
+        StateAbstraction.TxAction[] memory executionActions = new StateAbstraction.TxAction[](3);
+        executionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        executionActions[1] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        executionActions[2] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        
+        bytes4[] memory withdrawEthExecutionHandlerForSelectors = new bytes4[](1);
+        withdrawEthExecutionHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
+        bytes4[] memory withdrawTokenExecutionHandlerForSelectors = new bytes4[](1);
+        withdrawTokenExecutionHandlerForSelectors[0] = WITHDRAW_TOKEN_SELECTOR;
+        
+        schemas[5] = StateAbstraction.FunctionSchema({
+            functionSignature: "executeWithdrawEth(address,uint256)",
+            functionSelector: WITHDRAW_ETH_SELECTOR,
+            operationType: WITHDRAW_ETH,
+            operationName: "WITHDRAW_ETH",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
+            isProtected: true,
+            handlerForSelectors: withdrawEthExecutionHandlerForSelectors
+        });
+        
+        schemas[6] = StateAbstraction.FunctionSchema({
+            functionSignature: "executeWithdrawToken(address,address,uint256)",
+            functionSelector: WITHDRAW_TOKEN_SELECTOR,
+            operationType: WITHDRAW_TOKEN,
+            operationName: "WITHDRAW_TOKEN",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
+            isProtected: true,
+            handlerForSelectors: withdrawTokenExecutionHandlerForSelectors
+        });
+        
         return schemas;
     }
     
@@ -134,8 +166,8 @@ library SimpleVaultDefinitions {
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
         StateAbstraction.FunctionPermission[] memory functionPermissions;
-        roleHashes = new bytes32[](6);
-        functionPermissions = new StateAbstraction.FunctionPermission[](6);
+        roleHashes = new bytes32[](10);
+        functionPermissions = new StateAbstraction.FunctionPermission[](10);
         
         // Owner role permissions for time-delay operations
         StateAbstraction.TxAction[] memory ownerTimeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -213,6 +245,45 @@ library SimpleVaultDefinitions {
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
             handlerForSelectors: approveWithdrawalMetaHandlers // Self-reference indicates execution selector
+        });
+        
+        // Owner: Withdraw ETH Execution (for time-delay and meta-tx signing)
+        StateAbstraction.TxAction[] memory ownerExecutionActions = new StateAbstraction.TxAction[](2);
+        ownerExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        ownerExecutionActions[1] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        
+        roleHashes[6] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[6] = StateAbstraction.FunctionPermission({
+            functionSelector: WITHDRAW_ETH_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            handlerForSelectors: withdrawEthHandlers
+        });
+        
+        // Owner: Withdraw Token Execution (for time-delay and meta-tx signing)
+        roleHashes[7] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[7] = StateAbstraction.FunctionPermission({
+            functionSelector: WITHDRAW_TOKEN_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            handlerForSelectors: withdrawTokenHandlers
+        });
+        
+        // Broadcaster: Withdraw ETH Execution (for meta-tx execution)
+        StateAbstraction.TxAction[] memory broadcasterExecutionActions = new StateAbstraction.TxAction[](1);
+        broadcasterExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        
+        roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[8] = StateAbstraction.FunctionPermission({
+            functionSelector: WITHDRAW_ETH_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
+            handlerForSelectors: withdrawEthHandlers
+        });
+        
+        // Broadcaster: Withdraw Token Execution (for meta-tx execution)
+        roleHashes[9] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[9] = StateAbstraction.FunctionPermission({
+            functionSelector: WITHDRAW_TOKEN_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
+            handlerForSelectors: withdrawTokenHandlers
         });
         
         return IDefinition.RolePermission({
