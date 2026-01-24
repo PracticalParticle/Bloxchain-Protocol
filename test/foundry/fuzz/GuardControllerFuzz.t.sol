@@ -99,15 +99,23 @@ contract GuardControllerFuzzTest is CommonBase {
         string memory operationName,
         uint8[] memory supportedActions
     ) public {
-        // Bound inputs to reasonable sizes
-        vm.assume(bytes(functionSignature).length > 0 && bytes(functionSignature).length < 200);
-        vm.assume(bytes(operationName).length > 0 && bytes(operationName).length < 100);
-        vm.assume(supportedActions.length > 0 && supportedActions.length <= 10);
+        // Bound array length to reasonable size
+        uint256 arrayLength = bound(supportedActions.length, 1, 10);
         
-        // Ensure supportedActions values are valid TxAction enum values (0-8)
-        for (uint256 i = 0; i < supportedActions.length; i++) {
-            vm.assume(supportedActions[i] <= 8);
+        // Create bounded array with valid TxAction values (0-8)
+        uint8[] memory boundedActions = new uint8[](arrayLength);
+        for (uint256 i = 0; i < arrayLength; i++) {
+            if (i < supportedActions.length) {
+                boundedActions[i] = uint8(bound(uint256(supportedActions[i]), 0, 8));
+            } else {
+                boundedActions[i] = uint8(bound(uint256(i), 0, 8));
+            }
         }
+        supportedActions = boundedActions;
+        
+        // Only check that strings are not empty
+        vm.assume(bytes(functionSignature).length > 0);
+        vm.assume(bytes(operationName).length > 0);
 
         // Create REGISTER_FUNCTION action
         GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
