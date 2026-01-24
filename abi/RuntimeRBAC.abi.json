@@ -16,17 +16,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "CannotRemoveProtected",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
     "type": "error"
@@ -98,17 +87,6 @@
   {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {

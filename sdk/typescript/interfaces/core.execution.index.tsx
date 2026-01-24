@@ -55,43 +55,36 @@ export interface IGuardController extends IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
-  // Target Whitelist Management
+  // Guard Configuration Batch
   /**
-   * @dev Creates execution params for updating the target whitelist for a role and function selector
-   * @param roleHash The role hash (currently ignored by GuardController and kept for backwards compatibility)
-   * @param functionSelector The function selector
-   * @param target The target address to add or remove
-   * @param isAdd True to add the target, false to remove
+   * @dev Creates execution params for a guard configuration batch
+   * @param actions Encoded guard configuration actions
    * @return Promise<Hex> The execution params to be used in a meta-transaction
    */
-  updateTargetWhitelistExecutionParams(
-    roleHash: Hex,
-    functionSelector: Hex,
-    target: Address,
-    isAdd: boolean
+  guardConfigBatchExecutionParams(
+    actions: Array<{ actionType: number; data: Hex }>
   ): Promise<Hex>;
 
   /**
-   * @dev Requests and approves a whitelist update using a meta-transaction
-   * @param metaTx The meta-transaction describing the whitelist update
+   * @dev Requests and approves a guard configuration batch using a meta-transaction
+   * @param metaTx The meta-transaction describing the guard configuration batch
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
    * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
+   * @notice Supports whitelist management and function schema registration
    */
-  updateTargetWhitelistRequestAndApprove(
+  guardConfigBatchRequestAndApprove(
     metaTx: MetaTransaction,
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
   /**
-   * @dev Gets all whitelisted targets for a role and function selector
-   * @param roleHash The role hash (currently ignored by GuardController and kept for backwards compatibility)
+   * @dev Gets all whitelisted targets for a function selector
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
   getAllowedTargets(
-    roleHash: Hex,
     functionSelector: Hex
   ): Promise<Address[]>;
 }

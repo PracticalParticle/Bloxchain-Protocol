@@ -7,9 +7,10 @@ The `RuntimeRBAC` class provides type-safe access to Bloxchain RuntimeRBAC contr
 RuntimeRBAC extends BaseStateMachine with advanced role management:
 - **Dynamic role creation** and management via batch configuration
 - **Flexible permission system** with function-level access control
-- **Function schema registration** for runtime function management
 - **Meta-transaction support** for role operations
 - **Event-driven role updates** for external monitoring
+
+**Note**: Function schema registration has been moved to GuardController for better architectural separation. RuntimeRBAC focuses on role and permission management, while GuardController handles execution control and function schema management.
 
 ## 🚀 **Quick Start**
 
@@ -112,7 +113,7 @@ permissions.forEach(permission => {
   console.log('Permission:', {
     functionSelector: permission.functionSelector,
     grantedActionsBitmap: permission.grantedActionsBitmap,
-    handlerForSelector: permission.handlerForSelector
+    handlerForSelectors: permission.handlerForSelectors
   })
 })
 ```
@@ -150,12 +151,12 @@ enum RoleConfigActionType {
   REMOVE_ROLE,
   ADD_WALLET,
   REVOKE_WALLET,
-  REGISTER_FUNCTION,
-  UNREGISTER_FUNCTION,
   ADD_FUNCTION_TO_ROLE,
   REMOVE_FUNCTION_FROM_ROLE
 }
 ```
+
+**Note**: Function schema registration (REGISTER_FUNCTION/UNREGISTER_FUNCTION) has been moved to GuardController. See [GuardController documentation](./guard-controller.md) for function schema management.
 
 ### **Create Role via Batch**
 
@@ -167,7 +168,7 @@ const functionPermissions = [
   {
     functionSelector: '0xa9059cbb', // transfer(address,uint256)
     grantedActionsBitmap: 0b000000111, // EXECUTE_TIME_DELAY_REQUEST, APPROVE, CANCEL
-    handlerForSelector: '0x00000000' // bytes4(0) for execution selector
+    handlerForSelectors: ['0x00000000'] // bytes4(0) for execution selector
   }
 ]
 
@@ -225,7 +226,7 @@ const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
 
 ```typescript
 const addWalletAction = {
-  actionType: 'ADD_WALLET',
+  actionType: RoleConfigActionType.ADD_WALLET,
   data: encodeAbiParameters(
     ['bytes32', 'address'],
     [roleHash, walletAddress]
@@ -235,33 +236,13 @@ const addWalletAction = {
 // Create and execute batch (similar to create role example)
 ```
 
-### **Register Function via Batch**
-
-```typescript
-const registerFunctionAction = {
-  actionType: 'REGISTER_FUNCTION',
-  data: encodeAbiParameters(
-    ['string', 'string', 'uint8[]'],
-    [
-      'transfer(address,uint256)', // function signature
-      'TOKEN_TRANSFER', // operation name
-      [
-        TxAction.EXECUTE_TIME_DELAY_REQUEST,
-        TxAction.EXECUTE_TIME_DELAY_APPROVE,
-        TxAction.EXECUTE_TIME_DELAY_CANCEL
-      ]
-    ]
-  )
-}
-
-// Create and execute batch (similar to create role example)
-```
-
 ### **Add Function Permission to Role via Batch**
+
+**Note**: The function schema must be registered via GuardController before adding permissions.
 
 ```typescript
 const addFunctionToRoleAction = {
-  actionType: 'ADD_FUNCTION_TO_ROLE',
+  actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
   data: encodeAbiParameters(
     ['bytes32', 'tuple'],
     [
@@ -269,7 +250,7 @@ const addFunctionToRoleAction = {
       {
         functionSelector: '0xa9059cbb',
         grantedActionsBitmap: 0b000000111,
-        handlerForSelector: '0x00000000'
+        handlerForSelectors: ['0x00000000']
       }
     ]
   )
@@ -393,10 +374,14 @@ const actions = [
 
 ### **Function Registration Workflow**
 
+**Note**: Function schema registration is now handled by GuardController. Use GuardController's `guardConfigBatchRequestAndApprove` with the `REGISTER_FUNCTION` action.
+
 ```typescript
-// Step 1: Register function schema
+import { GuardController, GuardConfigActionType } from '@bloxchain/sdk/typescript'
+
+// Step 1: Register function schema via GuardController
 const registerAction = {
-  actionType: 'REGISTER_FUNCTION',
+  actionType: GuardConfigActionType.REGISTER_FUNCTION,
   data: encodeAbiParameters(
     ['string', 'string', 'uint8[]'],
     [
@@ -407,9 +392,12 @@ const registerAction = {
   )
 }
 
-// Step 2: Add function permission to role
+// Execute via GuardController
+await guardController.guardConfigBatchRequestAndApprove(metaTx, { from: broadcasterAddress })
+
+// Step 2: Add function permission to role via RuntimeRBAC
 const addPermissionAction = {
-  actionType: 'ADD_FUNCTION_TO_ROLE',
+  actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
   data: encodeAbiParameters(
     ['bytes32', 'tuple'],
     [
@@ -417,13 +405,14 @@ const addPermissionAction = {
       {
         functionSelector: '0x...', // withdraw selector
         grantedActionsBitmap: 0b000000011,
-        handlerForSelector: '0x00000000'
+        handlerForSelectors: ['0x00000000']
       }
     ]
   )
 }
 
-// Step 3: Execute batch
+// Execute via RuntimeRBAC
+await runtimeRBAC.roleConfigBatchRequestAndApprove(metaTx, { from: broadcasterAddress })
 ```
 
 ## 🧪 **Testing**
@@ -488,7 +477,7 @@ describe('RuntimeRBAC Integration', () => {
 **Solution**: Increase the role's wallet limit or revoke roles from other accounts before adding new ones.
 
 ### **Issue: "Function schema not found"**
-**Solution**: Register the function schema before adding it to a role. Use REGISTER_FUNCTION action in a batch.
+**Solution**: Register the function schema via GuardController before adding it to a role. Use GuardController's `guardConfigBatchRequestAndApprove` with `REGISTER_FUNCTION` action.
 
 ### **Issue: "Insufficient permissions"**
 **Solution**: Ensure the account has the required role and function permissions. Check with `hasActionPermission`.
@@ -497,7 +486,7 @@ describe('RuntimeRBAC Integration', () => {
 **Solution**: Use the correct role hash. Generate it using `keccak256(abi.encodePacked(roleName))`.
 
 ### **Issue: "Handler selector mismatch"**
-**Solution**: Ensure `handlerForSelector` in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
+**Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
 
 ## 📚 **Related Documentation**
 

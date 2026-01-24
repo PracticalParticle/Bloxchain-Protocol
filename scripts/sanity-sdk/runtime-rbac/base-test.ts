@@ -23,17 +23,16 @@ export interface RuntimeRBACRoles {
 
 /**
  * RoleConfigActionType enum values
+ * Note: REGISTER_FUNCTION and UNREGISTER_FUNCTION have been moved to GuardController
+ * Note: LOAD_DEFINITIONS is in IRuntimeRBAC interface but not implemented in RuntimeRBAC contract
  */
 export enum RoleConfigActionType {
   CREATE_ROLE = 0,
   REMOVE_ROLE = 1,
   ADD_WALLET = 2,
   REVOKE_WALLET = 3,
-  REGISTER_FUNCTION = 4,
-  UNREGISTER_FUNCTION = 5,
-  ADD_FUNCTION_TO_ROLE = 6,
-  REMOVE_FUNCTION_FROM_ROLE = 7,
-  LOAD_DEFINITIONS = 8,
+  ADD_FUNCTION_TO_ROLE = 4,
+  REMOVE_FUNCTION_FROM_ROLE = 5,
 }
 
 /**
@@ -332,22 +331,6 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
         encodedData = encodeAbiParameters(
           parseAbiParameters('bytes32, address'),
           [data.roleHash, data.wallet]
-        ) as Hex;
-        break;
-
-      case RoleConfigActionType.REGISTER_FUNCTION:
-        // Format: (string functionSignature, string operationName, TxAction[] supportedActions)
-        encodedData = encodeAbiParameters(
-          parseAbiParameters('string, string, uint8[]'),
-          [data.functionSignature, data.operationName, data.supportedActions]
-        ) as Hex;
-        break;
-
-      case RoleConfigActionType.UNREGISTER_FUNCTION:
-        // Format: (bytes4 functionSelector, bool safeRemoval)
-        encodedData = encodeAbiParameters(
-          parseAbiParameters('bytes4, bool'),
-          [data.functionSelector, data.safeRemoval]
         ) as Hex;
         break;
 

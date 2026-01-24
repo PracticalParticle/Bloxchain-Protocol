@@ -52,29 +52,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
         assertGt(executionParams.length, 0);
     }
 
-    function testFuzz_FunctionRegistration(string memory functionSignature, string memory operationName) public {
-        // Filter invalid inputs
-        vm.assume(bytes(functionSignature).length > 0);
-        vm.assume(bytes(functionSignature).length < 100);
-        vm.assume(bytes(operationName).length > 0);
-        vm.assume(bytes(operationName).length < 50);
-
-        // REGISTER_FUNCTION expects: (string functionSignature, string operationName, StateAbstraction.TxAction[] supportedActions)
-        // The selector is derived from the signature via bytes4(keccak256(bytes(functionSignature)))
-        StateAbstraction.TxAction[] memory supportedActions = new StateAbstraction.TxAction[](1);
-        supportedActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.REGISTER_FUNCTION,
-            data: abi.encode(functionSignature, operationName, supportedActions)
-        });
-
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        assertGt(executionParams.length, 0);
-        
-        // Verify the selector would be derived correctly
-        bytes4 expectedSelector = bytes4(keccak256(bytes(functionSignature)));
-        assertNotEq(expectedSelector, bytes4(0));
-    }
+    // NOTE: Function registration has been moved to GuardController
+    // This test is removed as REGISTER_FUNCTION is no longer part of RuntimeRBAC
+    // Use GuardController.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
 }

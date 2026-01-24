@@ -36,7 +36,7 @@ library GuardianSafeDefinitions {
      * @return Array of function schema definitions
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](6);
+        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](7);
         
         // Time-delay function schemas
         StateAbstraction.TxAction[] memory timeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -127,6 +127,31 @@ library GuardianSafeDefinitions {
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
+        // Execution selector schema (for dual-permission model)
+        // Supports both time-delay and meta-transaction workflows
+        StateAbstraction.TxAction[] memory executionActions = new StateAbstraction.TxAction[](8);
+        executionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        executionActions[1] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        executionActions[2] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        executionActions[3] = StateAbstraction.TxAction.SIGN_META_CANCEL;
+        executionActions[4] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        executionActions[5] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        executionActions[6] = StateAbstraction.TxAction.EXECUTE_META_CANCEL;
+        executionActions[7] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        
+        bytes4[] memory execSafeTxExecutionHandlerForSelectors = new bytes4[](1);
+        execSafeTxExecutionHandlerForSelectors[0] = EXEC_SAFE_TX_SELECTOR;
+        
+        schemas[6] = StateAbstraction.FunctionSchema({
+            functionSignature: "executeTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)",
+            functionSelector: EXEC_SAFE_TX_SELECTOR,
+            operationType: EXEC_SAFE_TX,
+            operationName: "EXEC_SAFE_TX",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
+            isProtected: true,
+            handlerForSelectors: execSafeTxExecutionHandlerForSelectors
+        });
+        
         return schemas;
     }
     
@@ -135,8 +160,8 @@ library GuardianSafeDefinitions {
      * @return RolePermission struct containing roleHashes and functionPermissions arrays
      */
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
-        bytes32[] memory roleHashes = new bytes32[](9);
-        StateAbstraction.FunctionPermission[] memory functionPermissions = new StateAbstraction.FunctionPermission[](9);
+        bytes32[] memory roleHashes = new bytes32[](11);
+        StateAbstraction.FunctionPermission[] memory functionPermissions = new StateAbstraction.FunctionPermission[](11);
         
         // Owner role permissions for time-delay operations
         StateAbstraction.TxAction[] memory ownerTimeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -241,6 +266,34 @@ library GuardianSafeDefinitions {
         functionPermissions[8] = StateAbstraction.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaRequestApproveActions),
+            handlerForSelectors: execSafeTxHandlers
+        });
+        
+        // Owner: Execute Transaction (for time-delay request/approve and meta-tx signing)
+        StateAbstraction.TxAction[] memory ownerExecutionActions = new StateAbstraction.TxAction[](5);
+        ownerExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        ownerExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        ownerExecutionActions[2] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        ownerExecutionActions[3] = StateAbstraction.TxAction.SIGN_META_CANCEL;
+        ownerExecutionActions[4] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        
+        roleHashes[9] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[9] = StateAbstraction.FunctionPermission({
+            functionSelector: EXEC_SAFE_TX_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            handlerForSelectors: execSafeTxHandlers
+        });
+        
+        // Broadcaster: Execute Transaction (for meta-tx execution)
+        StateAbstraction.TxAction[] memory broadcasterExecutionActions = new StateAbstraction.TxAction[](3);
+        broadcasterExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        broadcasterExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_META_CANCEL;
+        broadcasterExecutionActions[2] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        
+        roleHashes[10] = StateAbstraction.BROADCASTER_ROLE;
+        functionPermissions[10] = StateAbstraction.FunctionPermission({
+            functionSelector: EXEC_SAFE_TX_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
             handlerForSelectors: execSafeTxHandlers
         });
         

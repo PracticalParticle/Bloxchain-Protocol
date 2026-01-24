@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "../CommonBase.sol";
+import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 
 /**
@@ -17,13 +18,29 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(target != address(0));
         vm.assume(selector != bytes4(0));
 
-        // Test execution params creation
-        bytes memory params = controlBlox.updateTargetWhitelistExecutionParams(selector, target, isAdd);
-        (bytes4 decodedSelector, address decodedTarget, bool decodedIsAdd) = abi.decode(params, (bytes4, address, bool));
+        // Test execution params creation (now using batch config)
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: isAdd 
+                ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+                : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+            data: abi.encode(selector, target)
+        });
         
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        
+        GuardController.GuardConfigActionType expectedType = isAdd 
+            ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+            : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
+        assertEq(uint8(decodedActions[0].actionType), uint8(expectedType));
+        
+        (bytes4 decodedSelector, address decodedTarget) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(decodedSelector, selector);
         assertEq(decodedTarget, target);
-        assertEq(decodedIsAdd, isAdd);
     }
 
     function testFuzz_ExecutionParams(bytes4 selector, bytes memory params, uint256 value) public {
@@ -75,5 +92,51 @@ contract GuardControllerFuzzTest is CommonBase {
         
         // Verify the contract can receive tokens
         assertEq(mockERC20.balanceOf(address(controlBlox)), amount);
+    }
+
+    function testFuzz_RegisterFunction(
+        string memory functionSignature,
+        string memory operationName,
+        uint8[] memory supportedActions
+    ) public {
+        // Bound inputs to reasonable sizes
+        vm.assume(bytes(functionSignature).length > 0 && bytes(functionSignature).length < 200);
+        vm.assume(bytes(operationName).length > 0 && bytes(operationName).length < 100);
+        vm.assume(supportedActions.length > 0 && supportedActions.length <= 10);
+        
+        // Ensure supportedActions values are valid TxAction enum values (0-8)
+        for (uint256 i = 0; i < supportedActions.length; i++) {
+            vm.assume(supportedActions[i] <= 8);
+        }
+
+        // Create REGISTER_FUNCTION action
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+            data: abi.encode(functionSignature, operationName, supportedActions)
+        });
+        
+        // Test execution params creation
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.REGISTER_FUNCTION));
+        
+        // Decode and verify the data
+        (
+            string memory decodedSignature,
+            string memory decodedOperationName,
+            StateAbstraction.TxAction[] memory decodedActionsArray
+        ) = abi.decode(decodedActions[0].data, (string, string, StateAbstraction.TxAction[]));
+        
+        assertEq(keccak256(bytes(decodedSignature)), keccak256(bytes(functionSignature)));
+        assertEq(keccak256(bytes(decodedOperationName)), keccak256(bytes(operationName)));
+        assertEq(decodedActionsArray.length, supportedActions.length);
+        
+        for (uint256 i = 0; i < supportedActions.length; i++) {
+            assertEq(uint8(decodedActionsArray[i]), supportedActions[i]);
+        }
     }
 }

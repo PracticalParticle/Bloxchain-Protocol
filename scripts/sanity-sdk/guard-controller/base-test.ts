@@ -11,7 +11,8 @@ import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { keccak256 } from 'viem';
+import { GuardConfigActionType, GuardConfigAction } from '../../../sdk/typescript/types/core.execution.index.tsx';
+import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 
 export interface GuardControllerRoles {
   owner: Address;
@@ -31,11 +32,11 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
   // GuardController constants
   protected readonly CONTROLLER_OPERATION_TYPE: Hex = keccak256(new TextEncoder().encode('CONTROLLER_OPERATION')) as Hex;
-  protected readonly UPDATE_TARGET_WHITELIST_META_SELECTOR: Hex = keccak256(
-    new TextEncoder().encode('updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+  protected readonly GUARD_CONFIG_BATCH_META_SELECTOR: Hex = keccak256(
+    new TextEncoder().encode('guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
-  protected readonly UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR: Hex = keccak256(
-    new TextEncoder().encode('executeUpdateTargetWhitelist(bytes4,address,bool)')
+  protected readonly GUARD_CONFIG_BATCH_EXECUTE_SELECTOR: Hex = keccak256(
+    new TextEncoder().encode('executeGuardConfigBatch((uint8,bytes)[])')
   ).slice(0, 10) as Hex;
   protected readonly NATIVE_TRANSFER_SELECTOR: Hex = '0x58e2cfdb' as Hex; // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
 
@@ -214,7 +215,56 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   }
 
   /**
-   * Create and sign a meta-transaction for whitelist update
+   * Encode guard config action data
+   */
+  protected encodeGuardConfigAction(
+    actionType: GuardConfigActionType,
+    data: {
+      functionSelector?: Hex;
+      target?: Address;
+      isAdd?: boolean;
+      functionSignature?: string;
+      operationName?: string;
+      supportedActions?: number[];
+      safeRemoval?: boolean;
+    }
+  ): Hex {
+    switch (actionType) {
+      case GuardConfigActionType.ADD_TARGET_TO_WHITELIST:
+      case GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST:
+        if (!data.functionSelector || !data.target) {
+          throw new Error('Missing required data for whitelist action');
+        }
+        return encodeAbiParameters(
+          parseAbiParameters('bytes4, address'),
+          [data.functionSelector, data.target]
+        ) as Hex;
+
+      case GuardConfigActionType.REGISTER_FUNCTION:
+        if (!data.functionSignature || !data.operationName || !data.supportedActions) {
+          throw new Error('Missing required data for register function action');
+        }
+        return encodeAbiParameters(
+          parseAbiParameters('string, string, uint8[]'),
+          [data.functionSignature, data.operationName, data.supportedActions]
+        ) as Hex;
+
+      case GuardConfigActionType.UNREGISTER_FUNCTION:
+        if (!data.functionSelector || data.safeRemoval === undefined) {
+          throw new Error('Missing required data for unregister function action');
+        }
+        return encodeAbiParameters(
+          parseAbiParameters('bytes4, bool'),
+          [data.functionSelector, data.safeRemoval]
+        ) as Hex;
+
+      default:
+        throw new Error(`Unknown action type: ${actionType}`);
+    }
+  }
+
+  /**
+   * Create and sign a meta-transaction for guard config batch (whitelist update)
    */
   protected async createSignedMetaTxForWhitelistUpdate(
     functionSelector: Hex,
@@ -231,23 +281,37 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       throw new Error(`Wallet not found: ${signerWalletName}`);
     }
 
-    // Get execution params
-    console.log(`    📋 Getting execution params for whitelist update...`);
-    const executionParams = await this.guardController.updateTargetWhitelistExecutionParams(
+    // Create guard config action
+    const actionType = isAdd 
+      ? GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+      : GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
+    
+    const actionData = this.encodeGuardConfigAction(actionType, {
       functionSelector,
       target,
-      isAdd
-    );
+      isAdd,
+    });
+
+    const actions: GuardConfigAction[] = [
+      {
+        actionType,
+        data: actionData,
+      },
+    ];
+
+    // Get execution params using the new batch method
+    console.log(`    📋 Getting execution params for guard config batch...`);
+    const executionParams = await this.guardController.guardConfigBatchExecutionParams(actions);
     console.log(`    ✅ Execution params obtained`);
 
     // Create meta-tx params
     console.log(`    📋 Creating meta-transaction parameters...`);
-    console.log(`       Handler Selector: ${this.UPDATE_TARGET_WHITELIST_META_SELECTOR}`);
+    console.log(`       Handler Selector: ${this.GUARD_CONFIG_BATCH_META_SELECTOR}`);
     console.log(`       Action: ${TxAction.SIGN_META_REQUEST_AND_APPROVE}`);
     console.log(`       Signer: ${signerWallet.address}`);
     
     const metaTxParams = await this.createMetaTxParams(
-      this.UPDATE_TARGET_WHITELIST_META_SELECTOR,
+      this.GUARD_CONFIG_BATCH_META_SELECTOR,
       TxAction.SIGN_META_REQUEST_AND_APPROVE,
       signerWallet.address
     );
@@ -264,12 +328,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       value: BigInt(0),
       gasLimit: BigInt(200000),
       operationType: this.CONTROLLER_OPERATION_TYPE,
-      executionSelector: this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+      executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams: executionParams
     };
 
     // Generate unsigned meta-transaction
-    console.log(`    📋 Generating unsigned meta-transaction for whitelist update...`);
+    console.log(`    📋 Generating unsigned meta-transaction for guard config batch...`);
     const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
       txParams,
       metaTxParams

@@ -37,8 +37,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         REMOVE_ROLE,
         ADD_WALLET,
         REVOKE_WALLET,
-        REGISTER_FUNCTION,
-        UNREGISTER_FUNCTION,
         ADD_FUNCTION_TO_ROLE,
         REMOVE_FUNCTION_FROM_ROLE
     }
@@ -261,32 +259,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                     bytes4(0),
                     "" // optional: abi.encode(wallet)
                 );
-            } else if (action.actionType == RoleConfigActionType.REGISTER_FUNCTION) {
-                (
-                    string memory functionSignature,
-                    string memory operationName,
-                    StateAbstraction.TxAction[] memory supportedActions
-                ) = abi.decode(action.data, (string, string, StateAbstraction.TxAction[]));
-
-                bytes4 functionSelector =
-                    _registerFunction(functionSignature, operationName, supportedActions);
-
-                emit RoleConfigApplied(
-                    RoleConfigActionType.REGISTER_FUNCTION,
-                    bytes32(0),
-                    functionSelector,
-                    "" // optional: abi.encode(operationName)
-                );
-            } else if (action.actionType == RoleConfigActionType.UNREGISTER_FUNCTION) {
-                (bytes4 functionSelector, bool safeRemoval) = abi.decode(action.data, (bytes4, bool));
-                _unregisterFunction(functionSelector, safeRemoval);
-
-                emit RoleConfigApplied(
-                    RoleConfigActionType.UNREGISTER_FUNCTION,
-                    bytes32(0),
-                    functionSelector,
-                    ""
-                );
             } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
                 (
                     bytes32 roleHash,
@@ -349,55 +321,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             // 3. Actions are supported by function schema (via _validateMetaTxPermissions)
             _addFunctionToRole(roleHash, functionPermissions[i]);
         }
-    }
-
-
-    function _registerFunction(
-        string memory functionSignature,
-        string memory operationName,
-        StateAbstraction.TxAction[] memory supportedActions
-    ) internal returns (bytes4 functionSelector) {
-        // Derive function selector from signature
-        functionSelector = bytes4(keccak256(bytes(functionSignature)));
-
-        // Validate that function schema doesn't already exist
-        if (functionSchemaExists(functionSelector)) {
-            revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
-        }
-
-        // Convert actions array to bitmap
-        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
-
-        // Create function schema directly (always non-protected)
-        // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
-        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
-        executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
-        _createFunctionSchema(
-            functionSignature,
-            functionSelector,
-            operationName,
-            supportedActionsBitmap,
-            false, // isProtected = false for dynamically registered functions
-            executionHandlerForSelectors // handlerForSelectors with self-reference for execution selectors
-        );
-    }
-
-    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        // Load schema and validate it exists
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
-        if (schema.functionSelector != functionSelector) {
-            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
-        }
-
-        // Ensure not protected
-        if (schema.isProtected) {
-            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
-        }
-
-        // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
-        // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
-        // during meta-tx execution msg.sender is the contract, causing NoPermission)
-        _removeFunctionSchema(functionSelector, safeRemoval);
     }
 
 }

@@ -52,16 +52,16 @@ library GuardControllerDefinitions {
     // GuardController: requestAndApproveExecution(...)
     bytes4 public constant REQUEST_AND_APPROVE_EXECUTION_SELECTOR = bytes4(keccak256("requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
 
-    // GuardController: updateTargetWhitelistRequestAndApprove(...)
-    bytes4 public constant UPDATE_TARGET_WHITELIST_META_SELECTOR = bytes4(
+    // GuardController: guardConfigBatchRequestAndApprove(...)
+    bytes4 public constant GUARD_CONFIG_BATCH_META_SELECTOR = bytes4(
         keccak256(
-            "updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
+            "guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
         )
     );
 
-    // GuardController: executeUpdateTargetWhitelist(bytes4,address,bool)
-    bytes4 public constant UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR =
-        bytes4(keccak256("executeUpdateTargetWhitelist(bytes4,address,bool)"));
+    // GuardController: executeGuardConfigBatch((uint8,bytes)[])
+    bytes4 public constant GUARD_CONFIG_BATCH_EXECUTE_SELECTOR =
+        bytes4(keccak256("executeGuardConfigBatch((uint8,bytes)[])"));
     
     /**
      * @dev Returns predefined function schemas for GuardController execution functions
@@ -125,12 +125,12 @@ library GuardControllerDefinitions {
         cancelTimeLockExecutionMetaHandlerForSelectors[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
         bytes4[] memory requestAndApproveExecutionHandlerForSelectors = new bytes4[](1);
         requestAndApproveExecutionHandlerForSelectors[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
-        bytes4[] memory updateTargetWhitelistExecuteHandlerForSelectors = new bytes4[](1);
-        updateTargetWhitelistExecuteHandlerForSelectors[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
+        bytes4[] memory guardConfigBatchExecuteHandlerForSelectors = new bytes4[](1);
+        guardConfigBatchExecuteHandlerForSelectors[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
         
         // Handler selectors point to execution selectors
-        bytes4[] memory whitelistHandlerForSelectors = new bytes4[](1);
-        whitelistHandlerForSelectors[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
+        bytes4[] memory guardConfigHandlerForSelectors = new bytes4[](1);
+        guardConfigHandlerForSelectors[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
         
         // Schema 0: GuardController.executeWithTimeLock
         schemas[0] = StateAbstraction.FunctionSchema({
@@ -198,30 +198,30 @@ library GuardControllerDefinitions {
             handlerForSelectors: requestAndApproveExecutionHandlerForSelectors
         });
 
-        // Schema 6: GuardController.updateTargetWhitelistRequestAndApprove
+        // Schema 6: GuardController.guardConfigBatchRequestAndApprove
         schemas[6] = StateAbstraction.FunctionSchema({
-            functionSignature: "updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
-            functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
+            functionSignature: "guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
             isProtected: true,
-            handlerForSelectors: whitelistHandlerForSelectors
+            handlerForSelectors: guardConfigHandlerForSelectors
         });
 
-        // Schema 7: GuardController.executeUpdateTargetWhitelist
-        StateAbstraction.TxAction[] memory whitelistExecutionActions = new StateAbstraction.TxAction[](2);
-        whitelistExecutionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
-        whitelistExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        // Schema 7: GuardController.executeGuardConfigBatch
+        StateAbstraction.TxAction[] memory guardConfigExecutionActions = new StateAbstraction.TxAction[](2);
+        guardConfigExecutionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        guardConfigExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
 
         schemas[7] = StateAbstraction.FunctionSchema({
-            functionSignature: "executeUpdateTargetWhitelist(bytes4,address,bool)",
-            functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+            functionSignature: "executeGuardConfigBatch((uint8,bytes)[])",
+            functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(whitelistExecutionActions),
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(guardConfigExecutionActions),
             isProtected: true,
-            handlerForSelectors: updateTargetWhitelistExecuteHandlerForSelectors
+            handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
         });
 
         return schemas;
@@ -323,20 +323,20 @@ library GuardControllerDefinitions {
             handlerForSelectors: handlerForSelectors5 // Self-reference indicates execution selector
         });
 
-        // Owner: Update Target Whitelist (Meta-Tx handler)
+        // Owner: Guard Config Batch (Meta-Tx handler)
         roleHashes[6] = StateAbstraction.OWNER_ROLE;
         bytes4[] memory handlerForSelectors6 = new bytes4[](1);
-        handlerForSelectors6[0] = UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR;
+        handlerForSelectors6[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
         functionPermissions[6] = StateAbstraction.FunctionPermission({
-            functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
+            functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6
         });
 
-        // Owner: Update Target Whitelist (Execution selector)
+        // Owner: Guard Config Batch (Execution selector)
         roleHashes[7] = StateAbstraction.OWNER_ROLE;
         functionPermissions[7] = StateAbstraction.FunctionPermission({
-            functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+            functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });
@@ -379,18 +379,18 @@ library GuardControllerDefinitions {
             handlerForSelectors: handlerForSelectors10 // Self-reference indicates execution selector
         });
 
-        // Broadcaster: Update Target Whitelist (Meta-Tx handler)
+        // Broadcaster: Guard Config Batch (Meta-Tx handler)
         roleHashes[11] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[11] = StateAbstraction.FunctionPermission({
-            functionSelector: UPDATE_TARGET_WHITELIST_META_SELECTOR,
+            functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6
         });
 
-        // Broadcaster: Update Target Whitelist (Execution selector)
+        // Broadcaster: Guard Config Batch (Execution selector)
         roleHashes[12] = StateAbstraction.BROADCASTER_ROLE;
         functionPermissions[12] = StateAbstraction.FunctionPermission({
-            functionSelector: UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+            functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });

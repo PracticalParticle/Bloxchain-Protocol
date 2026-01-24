@@ -90,7 +90,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
         ) || 'wallet2'
       );
 
-      const result = await broadcasterGuardController.updateTargetWhitelistRequestAndApprove(
+      const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
         { from: broadcasterWallet.address }
       );
@@ -227,7 +227,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
         ) || 'wallet2'
       );
 
-      const result = await broadcasterGuardController.updateTargetWhitelistRequestAndApprove(
+      const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
         { from: broadcasterWallet.address }
       );
