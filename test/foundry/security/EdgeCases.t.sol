@@ -36,8 +36,8 @@ contract EdgeCasesTest is CommonBase {
         secureBlox.transferOwnershipCancellation(txId);
     }
 
-    function test_ExpiredDeadlines() public {
-        // Create meta-tx params with very short deadline (will expire quickly)
+    function test_CreateMetaTxParams_ShortDeadline() public {
+        // Create meta-tx params with very short deadline duration
         // Note: createMetaTxParams expects duration, so we use a small duration
         uint256 shortDuration = 1; // 1 second duration
         
@@ -59,7 +59,9 @@ contract EdgeCasesTest is CommonBase {
         // Params creation doesn't validate deadline, only execution does
         // Deadline is calculated as block.timestamp + shortDuration
         assertEq(params.deadline, block.timestamp + shortDuration);
-        // Note: nonce is set to 0 in createMetaTxParams
+        assertGt(params.deadline, block.timestamp, "Deadline should be in the future");
+        // Note: nonce is set to 0 in createMetaTxParams (populated in generateMetaTransaction)
+        assertEq(params.nonce, 0);
         // The actual deadline validation happens when the meta-transaction is executed
     }
 
