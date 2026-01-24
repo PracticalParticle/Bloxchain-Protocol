@@ -65,8 +65,12 @@ contract BaseStateMachineTest is CommonBase {
         secureBlox.transferOwnershipRequest();
 
         vm.prank(owner);
-        StateAbstraction.TxRecord[] memory history = secureBlox.getTransactionHistory(1, 1);
-        assertGe(history.length, 1);
+        secureBlox.updateBroadcasterRequest(user1);
+
+        // getTransactionHistory requires fromTxId < toTxId (strictly less than)
+        vm.prank(owner);
+        StateAbstraction.TxRecord[] memory history = secureBlox.getTransactionHistory(1, 2);
+        assertGe(history.length, 2);
     }
 
     function test_GetPendingTransactions_ReturnsPendingOnly() public {

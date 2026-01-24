@@ -52,24 +52,29 @@ contract RuntimeRBACFuzzTest is CommonBase {
         assertGt(executionParams.length, 0);
     }
 
-    function testFuzz_FunctionRegistration(bytes4 selector, bytes32 operationType) public {
-        vm.assume(selector != bytes4(0));
-        vm.assume(operationType != bytes32(0));
+    function testFuzz_FunctionRegistration(string memory functionSignature, string memory operationName) public {
+        // Filter invalid inputs
+        vm.assume(bytes(functionSignature).length > 0);
+        vm.assume(bytes(functionSignature).length < 100);
+        vm.assume(bytes(operationName).length > 0);
+        vm.assume(bytes(operationName).length < 50);
 
-        // Test execution params creation
+        // REGISTER_FUNCTION expects: (string functionSignature, string operationName, StateAbstraction.TxAction[] supportedActions)
+        // The selector is derived from the signature via bytes4(keccak256(bytes(functionSignature)))
+        StateAbstraction.TxAction[] memory supportedActions = new StateAbstraction.TxAction[](1);
+        supportedActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        string memory functionSignature = "testFunction()";
-        string memory operationName = "TEST_OPERATION";
-        uint16 supportedActionsBitmap = 1; // EXECUTE_TIME_DELAY_REQUEST
-        bool isProtected = false;
-        bytes4[] memory handlerForSelectors = new bytes4[](0);
-
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.REGISTER_FUNCTION,
-            data: abi.encode(selector, functionSignature, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors)
+            data: abi.encode(functionSignature, operationName, supportedActions)
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
         assertGt(executionParams.length, 0);
+        
+        // Verify the selector would be derived correctly
+        bytes4 expectedSelector = bytes4(keccak256(bytes(functionSignature)));
+        assertNotEq(expectedSelector, bytes4(0));
     }
 }

@@ -88,10 +88,14 @@ contract EdgeCasesTest is CommonBase {
         uint256 maxPeriod = type(uint256).max;
         
         // May or may not revert depending on validation - test that function handles it
-        try secureBlox.updateTimeLockExecutionParams(maxPeriod) returns (bytes memory) {
+        try secureBlox.updateTimeLockExecutionParams(maxPeriod) returns (bytes memory params) {
             // Function accepted the value (validation may allow it)
+            // Verify params were created correctly
+            uint256 decoded = abi.decode(params, (uint256));
+            assertEq(decoded, maxPeriod);
         } catch {
             // Function rejected the value (expected for very large values)
+            // This is also valid behavior - validation may reject extreme values
         }
     }
 

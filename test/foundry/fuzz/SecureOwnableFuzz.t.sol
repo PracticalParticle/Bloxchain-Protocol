@@ -13,11 +13,8 @@ contract SecureOwnableFuzzTest is CommonBase {
         super.setUp();
     }
 
-    function testFuzz_OwnershipTransfer(address newOwner, uint256 timelockPeriod) public {
+    function testFuzz_OwnershipTransfer(uint256 timelockPeriod) public {
         // Filter invalid inputs
-        vm.assume(newOwner != address(0));
-        vm.assume(newOwner != owner);
-        vm.assume(newOwner != recovery);
         vm.assume(timelockPeriod > 0);
         vm.assume(timelockPeriod < 365 days);
 
@@ -32,7 +29,7 @@ contract SecureOwnableFuzzTest is CommonBase {
             address(mockEventForwarder)
         );
 
-        // Request ownership transfer
+        // Request ownership transfer (always transfers to recovery)
         vm.prank(recovery);
         StateAbstraction.TxRecord memory requestTx = newContract.transferOwnershipRequest();
         uint256 txId = requestTx.txId;

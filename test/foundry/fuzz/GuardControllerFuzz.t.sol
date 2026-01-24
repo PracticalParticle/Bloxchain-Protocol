@@ -39,7 +39,7 @@ contract GuardControllerFuzzTest is CommonBase {
         // Verify that executeWithTimeLock exists and handles the call
         // It will fail without whitelist, but we verify the function structure
         vm.prank(owner);
-        bool reverted = false;
+        bool succeeded = false;
         try controlBlox.executeWithTimeLock(
             address(mockTarget),
             value,
@@ -47,30 +47,33 @@ contract GuardControllerFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (StateAbstraction.TxRecord memory) {
-            // If it didn't revert, execution params were accepted
-            // (unlikely without whitelist, but possible if permissions allow)
+        ) returns (StateAbstraction.TxRecord memory txRecord) {
+            succeeded = true;
+            // If it didn't revert, verify the transaction record is valid
+            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+            assertGt(txRecord.txId, 0);
         } catch {
-            reverted = true;
             // Expected - execution fails without whitelist or proper permissions
+            // This is valid behavior, so we just verify the function handled the call
         }
         
         // Function should handle the call (either succeed or revert gracefully)
-        assertTrue(true); // Test passes if function handles the call
+        // The test passes if we reach here without a panic
+        assertTrue(true);
     }
 
-    function testFuzz_Payment(address token, uint256 amount) public {
-        vm.assume(token != address(0));
+    function testFuzz_Payment(uint256 amount) public {
         vm.assume(amount > 0);
         vm.assume(amount < 1000000 * 10**18);
 
-        // Test with mock ERC20
-        if (token == address(mockERC20)) {
-            // Mint tokens to contract
-            mockERC20.mint(address(controlBlox), amount);
-            
-            // Verify balance
-            assertGe(mockERC20.balanceOf(address(controlBlox)), amount);
-        }
+        // Test with mock ERC20 - use the actual mock contract address
+        // Mint tokens to contract
+        mockERC20.mint(address(controlBlox), amount);
+        
+        // Verify balance
+        assertGe(mockERC20.balanceOf(address(controlBlox)), amount);
+        
+        // Verify the contract can receive tokens
+        assertEq(mockERC20.balanceOf(address(controlBlox)), amount);
     }
 }

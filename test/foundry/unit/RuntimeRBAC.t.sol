@@ -55,16 +55,20 @@ contract RuntimeRBACTest is CommonBase {
         // This may or may not be registered depending on initialization
         // We test the function exists and handles both cases
         try roleBlox.getFunctionSchema(selector) returns (
-            string memory,
-            bytes4,
-            bytes32,
-            string memory,
-            StateAbstraction.TxAction[] memory,
-            bool
+            string memory functionSignature,
+            bytes4 functionSelector,
+            bytes32 operationType,
+            string memory operationName,
+            StateAbstraction.TxAction[] memory supportedActions,
+            bool isProtected
         ) {
-            // Function schema exists
+            // Function schema exists - verify it's valid
+            assertGt(bytes(functionSignature).length, 0);
+            assertEq(functionSelector, selector);
+            assertGt(bytes(operationName).length, 0);
         } catch {
             // Function schema doesn't exist - expected for some functions
+            // This is valid if the function wasn't registered during initialization
         }
     }
 

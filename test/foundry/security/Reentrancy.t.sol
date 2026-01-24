@@ -24,23 +24,19 @@ contract ReentrancyTest is CommonBase {
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
-        // Attempt reentrancy during approval
-        // The state machine should prevent reentrancy through status checks
+        // First approval should succeed
         vm.prank(recovery);
-        secureBlox.transferOwnershipDelayedApproval(txId);
+        StateAbstraction.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
 
-        // Verify single execution
+        // Verify single execution completed
+        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
         assertEq(secureBlox.owner(), recovery);
-    }
 
-    function test_ReentrancyProtection_Execution() public {
-        // Note: Execution requires whitelist setup via meta-transactions
-        // For now, we test the reentrancy protection structure
-        // The state machine prevents reentrancy through status transitions
-        
-        // Test that state machine prevents reentrancy
-        // This is demonstrated in test_ReentrancyProtection_StateMachinePrevents
-        assertTrue(true);
+        // Attempt to call again - state machine should prevent reentrancy
+        // The transaction status is now COMPLETED, not PENDING, so it should revert
+        vm.prank(recovery);
+        vm.expectRevert();
+        secureBlox.transferOwnershipDelayedApproval(txId);
     }
 
     function test_ReentrancyProtection_StateMachinePrevents() public {

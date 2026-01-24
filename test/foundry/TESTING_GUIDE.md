@@ -45,8 +45,8 @@ vm.prank(attacker);
 vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, attacker));
 secureBlox.someProtectedFunction();
 
-// Test role-specific access
-vm.prank(recovery);
+// Test role-specific access (recovery-only function)
+vm.prank(attacker);
 vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedRecovery.selector, attacker, recovery));
 secureBlox.transferOwnershipRequest();
 ```

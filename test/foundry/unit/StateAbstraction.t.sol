@@ -58,7 +58,9 @@ contract StateAbstractionTest is CommonBase {
         secureBlox.transferOwnershipDelayedApproval(txId);
 
         // Verify COMPLETED status
-        vm.prank(owner);
+        // Note: After ownership transfer, the owner changes from owner to recovery
+        // So we need to use recovery (the new owner) to view the transaction
+        vm.prank(recovery);
         StateAbstraction.TxRecord memory completedTx = secureBlox.getTransaction(txId);
         assertEq(uint8(completedTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
     }

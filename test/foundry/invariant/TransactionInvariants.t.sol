@@ -44,20 +44,26 @@ contract TransactionInvariantsTest is CommonBase {
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
             StateAbstraction.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
-            // Release time should be in the future for pending transactions
-            assertGe(txRecord.releaseTime, block.timestamp);
+            // Release time should be validly set (greater than zero)
+            // Note: Pending transactions can have releaseTime <= block.timestamp when timelock has elapsed
+            // but transaction hasn't been approved/cancelled yet
+            assertGt(txRecord.releaseTime, 0);
         }
     }
 
+    // Ghost variable to track last observed nonce
+    uint256 private lastObservedNonce;
+
     function invariant_MetaTransactionNonceMonotonic() public {
         vm.prank(owner);
-        uint256 nonce1 = secureBlox.getSignerNonce(owner);
+        uint256 currentNonce = secureBlox.getSignerNonce(owner);
         
-        // Perform an operation that increments nonce (if any)
-        // For now, we just verify nonce is non-decreasing
-        vm.prank(owner);
-        uint256 nonce2 = secureBlox.getSignerNonce(owner);
-        assertGe(nonce2, nonce1);
+        // Nonce should be non-decreasing across all state transitions
+        // This invariant is checked across multiple calls via the ghost variable
+        assertGe(currentNonce, lastObservedNonce);
+        
+        // Update ghost variable for next check
+        lastObservedNonce = currentNonce;
     }
 
     function invariant_PaymentValidation() public {
@@ -73,9 +79,13 @@ contract TransactionInvariantsTest is CommonBase {
             for (uint256 i = 0; i < history.length; i++) {
                 StateAbstraction.PaymentDetails memory payment = history[i].payment;
                 
-                // If payment recipient is set, it should not be zero address
+                // If payment recipient is set, verify at least one amount is non-zero
                 if (payment.recipient != address(0)) {
                     assertNotEq(payment.recipient, address(0));
+                    // Payment should have either native token amount or ERC20 amount
+                    bool hasNativePayment = payment.nativeTokenAmount > 0;
+                    bool hasERC20Payment = payment.erc20TokenAddress != address(0) && payment.erc20TokenAmount > 0;
+                    assertTrue(hasNativePayment || hasERC20Payment, "Payment recipient set but no amount");
                 }
             }
         }
