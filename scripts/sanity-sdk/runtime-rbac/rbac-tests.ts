@@ -540,10 +540,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     console.log('       data: encodeUnregisterFunctionData(...)');
     console.log('     }], ...)');
     console.log('  ✅ Step 6 skipped - use GuardController for function unregistration');
-    const functionExistsAfter = await this.functionSchemaExists(this.mintFunctionSelector);
-    this.assertTest(!functionExistsAfter, 'Mint function unregistered');
-
-    console.log('  ✅ Step 6 completed successfully');
+    return;
   }
 
   /**

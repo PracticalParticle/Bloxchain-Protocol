@@ -113,7 +113,7 @@ permissions.forEach(permission => {
   console.log('Permission:', {
     functionSelector: permission.functionSelector,
     grantedActionsBitmap: permission.grantedActionsBitmap,
-    handlerForSelector: permission.handlerForSelector
+    handlerForSelectors: permission.handlerForSelectors
   })
 })
 ```
@@ -168,7 +168,7 @@ const functionPermissions = [
   {
     functionSelector: '0xa9059cbb', // transfer(address,uint256)
     grantedActionsBitmap: 0b000000111, // EXECUTE_TIME_DELAY_REQUEST, APPROVE, CANCEL
-    handlerForSelector: '0x00000000' // bytes4(0) for execution selector
+    handlerForSelectors: ['0x00000000'] // bytes4(0) for execution selector
   }
 ]
 
@@ -486,7 +486,7 @@ describe('RuntimeRBAC Integration', () => {
 **Solution**: Use the correct role hash. Generate it using `keccak256(abi.encodePacked(roleName))`.
 
 ### **Issue: "Handler selector mismatch"**
-**Solution**: Ensure `handlerForSelector` in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
+**Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
 
 ## 📚 **Related Documentation**
 

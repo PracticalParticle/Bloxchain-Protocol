@@ -232,12 +232,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     switch (actionType) {
       case GuardConfigActionType.ADD_TARGET_TO_WHITELIST:
       case GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST:
-        if (!data.functionSelector || !data.target || data.isAdd === undefined) {
+        if (!data.functionSelector || !data.target) {
           throw new Error('Missing required data for whitelist action');
         }
         return encodeAbiParameters(
-          parseAbiParameters('bytes4, address, bool'),
-          [data.functionSelector, data.target, data.isAdd]
+          parseAbiParameters('bytes4, address'),
+          [data.functionSelector, data.target]
         ) as Hex;
 
       case GuardConfigActionType.REGISTER_FUNCTION:

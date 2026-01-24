@@ -24,6 +24,7 @@ export interface RuntimeRBACRoles {
 /**
  * RoleConfigActionType enum values
  * Note: REGISTER_FUNCTION and UNREGISTER_FUNCTION have been moved to GuardController
+ * Note: LOAD_DEFINITIONS is in IRuntimeRBAC interface but not implemented in RuntimeRBAC contract
  */
 export enum RoleConfigActionType {
   CREATE_ROLE = 0,
@@ -32,7 +33,6 @@ export enum RoleConfigActionType {
   REVOKE_WALLET = 3,
   ADD_FUNCTION_TO_ROLE = 4,
   REMOVE_FUNCTION_FROM_ROLE = 5,
-  LOAD_DEFINITIONS = 6,
 }
 
 /**

@@ -41,11 +41,10 @@ contract AccessControlTest is CommonBase {
     // This test is removed as REGISTER_FUNCTION is no longer part of RuntimeRBAC
     // Use GuardController.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
 
-    function test_Revert_UnauthorizedWhitelistModification() public {
-        // Whitelist modification requires meta-transaction workflow
-        // Direct calls are not available - this is tested through the workflow
-        // For now, we verify the execution params function requires proper setup
-        // NOTE: Now uses guardConfigBatchExecutionParams with GuardConfigAction
+    function test_GuardConfigBatchExecutionParams() public {
+        // Test that guardConfigBatchExecutionParams correctly encodes GuardConfigAction data
+        // NOTE: This is a pure function that doesn't check authorization
+        // Authorization is tested through the meta-transaction workflow
         GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
         actions[0] = GuardController.GuardConfigAction({
             actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
@@ -54,6 +53,11 @@ contract AccessControlTest is CommonBase {
         
         bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
         assertGt(params.length, 0);
+        
+        // Verify the params can be decoded back to the original actions
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
     }
 
     function test_Revert_ProtectedRoleModification() public {

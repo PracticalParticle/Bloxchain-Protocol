@@ -129,12 +129,15 @@ library GuardianSafeDefinitions {
         
         // Execution selector schema (for dual-permission model)
         // Supports both time-delay and meta-transaction workflows
-        StateAbstraction.TxAction[] memory executionActions = new StateAbstraction.TxAction[](5);
+        StateAbstraction.TxAction[] memory executionActions = new StateAbstraction.TxAction[](8);
         executionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         executionActions[1] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         executionActions[2] = StateAbstraction.TxAction.SIGN_META_APPROVE;
         executionActions[3] = StateAbstraction.TxAction.SIGN_META_CANCEL;
         executionActions[4] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        executionActions[5] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        executionActions[6] = StateAbstraction.TxAction.EXECUTE_META_CANCEL;
+        executionActions[7] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
         bytes4[] memory execSafeTxExecutionHandlerForSelectors = new bytes4[](1);
         execSafeTxExecutionHandlerForSelectors[0] = EXEC_SAFE_TX_SELECTOR;
