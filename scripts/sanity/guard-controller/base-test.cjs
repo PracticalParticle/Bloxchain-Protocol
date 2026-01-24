@@ -57,7 +57,7 @@ class BaseGuardControllerTest {
         
         this.roleWallets = {};
         
-        // Constants for RuntimeRBAC (needed for function registration)
+        // Constants for RuntimeRBAC (ControlBlox includes RuntimeRBAC)
         this.ROLE_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
             'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10); // First 4 bytes
@@ -68,17 +68,22 @@ class BaseGuardControllerTest {
         
         this.ROLE_CONFIG_BATCH_OPERATION_TYPE = this.web3.utils.keccak256('ROLE_CONFIG_BATCH');
         
-        // RoleConfigActionType enum values
+        // RoleConfigActionType enum values (RuntimeRBAC component)
         this.RoleConfigActionType = {
             CREATE_ROLE: 0,
             REMOVE_ROLE: 1,
             ADD_WALLET: 2,
             REVOKE_WALLET: 3,
-            REGISTER_FUNCTION: 4,
-            UNREGISTER_FUNCTION: 5,
-            ADD_FUNCTION_TO_ROLE: 6,
-            REMOVE_FUNCTION_FROM_ROLE: 7,
-            LOAD_DEFINITIONS: 8
+            ADD_FUNCTION_TO_ROLE: 4,
+            REMOVE_FUNCTION_FROM_ROLE: 5
+        };
+        
+        // GuardConfigActionType enum values (GuardController component)
+        this.GuardConfigActionType = {
+            ADD_TARGET_TO_WHITELIST: 0,
+            REMOVE_TARGET_FROM_WHITELIST: 1,
+            REGISTER_FUNCTION: 2,
+            UNREGISTER_FUNCTION: 3
         };
         
         // TxAction enum values
@@ -102,14 +107,13 @@ class BaseGuardControllerTest {
             'requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
-        // GuardController whitelist update constants
+        // GuardController batch config constants
         this.CONTROLLER_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_OPERATION');
-        this.UPDATE_TARGET_WHITELIST_META_SELECTOR = this.web3.utils.keccak256(
-            'updateTargetWhitelistRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+        this.GUARD_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
+            'guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
-        // executeUpdateTargetWhitelist(bytes4 functionSelector, address target, bool isAdd)
-        this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR = this.web3.utils.keccak256(
-            'executeUpdateTargetWhitelist(bytes4,address,bool)'
+        this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR = this.web3.utils.keccak256(
+            'executeGuardConfigBatch((uint8,bytes)[])'
         ).slice(0, 10);
         
         // Test results
@@ -540,13 +544,6 @@ class BaseGuardControllerTest {
         let encodedData;
         
         switch (actionType) {
-            case this.RoleConfigActionType.REGISTER_FUNCTION:
-                // (string functionSignature, string operationName, uint8[] supportedActions)
-                encodedData = this.web3.eth.abi.encodeParameters(
-                    ['string', 'string', 'uint8[]'],
-                    [data.functionSignature, data.operationName, data.supportedActions]
-                );
-                break;
             case this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
                 // (bytes32 roleHash, FunctionPermission functionPermission)
                 // FunctionPermission is tuple(bytes4,uint16,bytes4[])
@@ -560,7 +557,49 @@ class BaseGuardControllerTest {
                 );
                 break;
             default:
-                throw new Error(`Unsupported action type for GuardController tests: ${actionType}`);
+                throw new Error(`Unsupported RoleConfigActionType for GuardController tests: ${actionType}`);
+        }
+        
+        return {
+            actionType: actionType,
+            data: encodedData
+        };
+    }
+
+    /**
+     * Encode a GuardConfigAction struct
+     * @param {number} actionType - GuardConfigActionType enum value
+     * @param {any} data - Data to encode (will be ABI encoded based on action type)
+     * @returns {Object} GuardConfigAction struct
+     */
+    encodeGuardConfigAction(actionType, data) {
+        let encodedData;
+        
+        switch (actionType) {
+            case this.GuardConfigActionType.ADD_TARGET_TO_WHITELIST:
+            case this.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST:
+                // (bytes4 functionSelector, address target)
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['bytes4', 'address'],
+                    [data.functionSelector, data.target]
+                );
+                break;
+            case this.GuardConfigActionType.REGISTER_FUNCTION:
+                // (string functionSignature, string operationName, TxAction[] supportedActions)
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['string', 'string', 'uint8[]'],
+                    [data.functionSignature, data.operationName, data.supportedActions]
+                );
+                break;
+            case this.GuardConfigActionType.UNREGISTER_FUNCTION:
+                // (bytes4 functionSelector, bool safeRemoval)
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['bytes4', 'bool'],
+                    [data.functionSelector, data.safeRemoval]
+                );
+                break;
+            default:
+                throw new Error(`Unknown GuardConfigActionType: ${actionType}`);
         }
         
         return {
@@ -685,9 +724,9 @@ class BaseGuardControllerTest {
     }
 
     /**
-     * Register a function schema using RuntimeRBAC
-     * @param {string} functionSelector - Function selector (4 bytes)
-     * @param {string} functionSignature - Function signature (can be empty string for bytes4(0))
+     * Register a function schema using GuardController batch config
+     * @param {string} functionSelector - Function selector (4 bytes) - kept for compatibility but not used
+     * @param {string} functionSignature - Function signature
      * @param {string} operationName - Operation name (e.g., "ETH_TRANSFER")
      * @param {number[]} supportedActions - Array of TxAction enum values
      * @param {string} signerPrivateKey - Private key of the signer (owner)
@@ -695,8 +734,9 @@ class BaseGuardControllerTest {
      * @returns {Promise<Object>} Transaction receipt
      */
     async registerFunction(functionSelector, functionSignature, operationName, supportedActions, signerPrivateKey, broadcasterWallet) {
-        const action = this.encodeRoleConfigAction(
-            this.RoleConfigActionType.REGISTER_FUNCTION,
+        // Use GuardController batch config (function registration moved from RuntimeRBAC to GuardController)
+        const action = this.encodeGuardConfigAction(
+            this.GuardConfigActionType.REGISTER_FUNCTION,
             {
                 functionSignature: functionSignature,
                 operationName: operationName,
@@ -704,7 +744,7 @@ class BaseGuardControllerTest {
             }
         );
         
-        return await this.executeRoleConfigBatch([action], signerPrivateKey, broadcasterWallet);
+        return await this.executeGuardConfigBatch([action], signerPrivateKey, broadcasterWallet);
     }
 
     /**
@@ -851,32 +891,61 @@ class BaseGuardControllerTest {
     }
 
     /**
-     * Create a meta-transaction for whitelist update.
-     * Note: Whitelist is now scoped per function selector only; roleHash is ignored but kept
-     * in the signature for backwards compatibility with existing tests.
-     * @param {string} roleHash - Legacy role hash (unused)
-     * @param {string} functionSelector - Function selector (hex string)
-     * @param {string} target - Target address to add or remove
-     * @param {boolean} isAdd - True to add, false to remove
+     * Execute a guard config batch via meta-transaction
+     * @param {Object[]} actions - Array of GuardConfigAction structs
+     * @param {string} signerPrivateKey - Private key of the signer
+     * @param {Object} broadcasterWallet - Wallet object for broadcaster
+     * @returns {Promise<Object>} Transaction receipt
+     */
+    async executeGuardConfigBatch(actions, signerPrivateKey, broadcasterWallet) {
+        try {
+            const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
+            
+            // Create unsigned meta-transaction
+            const unsignedMetaTx = await this.createGuardConfigBatchMetaTx(actions, signerAddress);
+            
+            // Sign meta-transaction
+            const signedMetaTx = await this.eip712Signer.signMetaTransaction(
+                unsignedMetaTx,
+                signerPrivateKey,
+                this.contract
+            );
+            
+            // Execute meta-transaction via broadcaster
+            const receipt = await this.sendTransaction(
+                this.contract.methods.guardConfigBatchRequestAndApprove(signedMetaTx),
+                broadcasterWallet
+            );
+            
+            return receipt;
+            
+        } catch (error) {
+            console.error('❌ Failed to execute guard config batch:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a meta-transaction for guard config batch
+     * @param {Object[]} actions - Array of GuardConfigAction structs
      * @param {string} signerAddress - Address that will sign the meta-transaction
      * @returns {Promise<Object>} Unsigned meta-transaction ready for signing
      */
-    async createWhitelistUpdateMetaTx(roleHash, functionSelector, target, isAdd, signerAddress) {
+    async createGuardConfigBatchMetaTx(actions, signerAddress) {
         try {
-            // Get execution params from contract (per-function-selector whitelist)
+            // Convert actions to format expected by contract (array of [actionType, data] tuples)
+            const actionsArray = actions.map(a => [a.actionType, a.data]);
+            
+            // Get execution params from contract method (matches RuntimeRBAC pattern)
             const executionParams = await this.callContractMethod(
-                this.contract.methods.updateTargetWhitelistExecutionParams(
-                    functionSelector,
-                    target,
-                    isAdd
-                )
+                this.contract.methods.guardConfigBatchExecutionParams(actionsArray)
             );
             
-            // Create meta-transaction parameters
+            // Create meta-transaction parameters using contract method
             const metaParams = await this.callContractMethod(
                 this.contract.methods.createMetaTxParams(
-                    this.contractAddress, // handlerContract
-                    this.UPDATE_TARGET_WHITELIST_META_SELECTOR, // handlerSelector
+                    this.contractAddress,
+                    this.GUARD_CONFIG_BATCH_META_SELECTOR,
                     this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                     3600, // 1 hour default
                     0, // maxGasPrice
@@ -888,11 +957,11 @@ class BaseGuardControllerTest {
             const unsignedMetaTx = await this.callContractMethod(
                 this.contract.methods.generateUnsignedMetaTransactionForNew(
                     signerAddress,
-                    this.contractAddress, // target (contract itself)
+                    this.contractAddress,
                     0, // value
-                    200000, // gasLimit
+                    1000000, // gasLimit
                     this.CONTROLLER_OPERATION_TYPE,
-                    this.UPDATE_TARGET_WHITELIST_EXECUTE_SELECTOR,
+                    this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
                     executionParams,
                     metaParams
                 )
@@ -907,54 +976,48 @@ class BaseGuardControllerTest {
             };
             
         } catch (error) {
-            console.error('❌ Failed to create whitelist update meta-transaction:', error.message);
+            console.error('❌ Failed to create guard config batch meta-transaction:', error.message);
             throw error;
         }
     }
 
     /**
-     * Add target to whitelist for a role and function selector using meta-transaction
-     * @param {string} roleHash - Role hash (hex string)
+     * Add target to whitelist using GuardController batch config
      * @param {string} functionSelector - Function selector (hex string)
      * @param {string} target - Target address to whitelist
      * @param {string} signerPrivateKey - Private key of the signer (owner)
      * @param {Object} broadcasterWallet - Wallet object for broadcaster
      * @returns {Promise<Object>} Transaction receipt
+     * @deprecated Legacy signature kept for compatibility, use with functionSelector only
      */
-    async addTargetToWhitelist(roleHash, functionSelector, target, signerPrivateKey, broadcasterWallet) {
-        try {
-            console.log(`  📝 Adding target ${target} to whitelist for role ${roleHash} and function ${functionSelector}...`);
-            
-            const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
-            
-            // Create unsigned meta-transaction
-            const unsignedMetaTx = await this.createWhitelistUpdateMetaTx(
-                roleHash,
-                functionSelector,
-                target,
-                true, // isAdd = true
-                signerAddress
-            );
-            
-            // Sign meta-transaction
-            const signedMetaTx = await this.eip712Signer.signMetaTransaction(
-                unsignedMetaTx,
-                signerPrivateKey,
-                this.contract
-            );
-            
-            // Execute meta-transaction via broadcaster
-            const receipt = await this.sendTransaction(
-                this.contract.methods.updateTargetWhitelistRequestAndApprove(signedMetaTx),
-                broadcasterWallet
-            );
-            
-            console.log(`  ✅ Target added to whitelist successfully`);
-            return receipt;
-        } catch (error) {
-            console.error(`  ❌ Failed to add target to whitelist: ${error.message}`);
-            throw error;
+    async addTargetToWhitelist(functionSelector, target, signerPrivateKey, broadcasterWallet) {
+        // Handle both old (roleHash, functionSelector, target, ...) and new (functionSelector, target, ...) signatures
+        let actualFunctionSelector, actualTarget, actualSignerKey, actualBroadcaster;
+        
+        if (arguments.length === 5) {
+            // Old signature: (roleHash, functionSelector, target, signerPrivateKey, broadcasterWallet)
+            actualFunctionSelector = arguments[1]; // functionSelector
+            actualTarget = arguments[2]; // target
+            actualSignerKey = arguments[3]; // signerPrivateKey
+            actualBroadcaster = arguments[4]; // broadcasterWallet
+            console.log(`  ⚠️  Using legacy whitelist signature (roleHash ignored)`);
+        } else {
+            // New signature: (functionSelector, target, signerPrivateKey, broadcasterWallet)
+            actualFunctionSelector = functionSelector;
+            actualTarget = target;
+            actualSignerKey = signerPrivateKey;
+            actualBroadcaster = broadcasterWallet;
         }
+        
+        const action = this.encodeGuardConfigAction(
+            this.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            {
+                functionSelector: actualFunctionSelector,
+                target: actualTarget
+            }
+        );
+        
+        return await this.executeGuardConfigBatch([action], actualSignerKey, actualBroadcaster);
     }
 
     /**

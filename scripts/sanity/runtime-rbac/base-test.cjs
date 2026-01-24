@@ -78,11 +78,8 @@ class BaseRuntimeRBACTest {
             REMOVE_ROLE: 1,
             ADD_WALLET: 2,
             REVOKE_WALLET: 3,
-            REGISTER_FUNCTION: 4,
-            UNREGISTER_FUNCTION: 5,
-            ADD_FUNCTION_TO_ROLE: 6,
-            REMOVE_FUNCTION_FROM_ROLE: 7,
-            LOAD_DEFINITIONS: 8
+            ADD_FUNCTION_TO_ROLE: 4,
+            REMOVE_FUNCTION_FROM_ROLE: 5
         };
         
         // TxAction enum values
@@ -656,17 +653,6 @@ class BaseRuntimeRBACTest {
             case this.RoleConfigActionType.REVOKE_WALLET:
                 // (bytes32 roleHash, address wallet)
                 encodedData = this.web3.eth.abi.encodeParameters(['bytes32', 'address'], data);
-                break;
-            case this.RoleConfigActionType.REGISTER_FUNCTION:
-                // (string functionSignature, string operationName, TxAction[] supportedActions)
-                encodedData = this.web3.eth.abi.encodeParameters(
-                    ['string', 'string', 'uint8[]'],
-                    [data.functionSignature, data.operationName, data.supportedActions]
-                );
-                break;
-            case this.RoleConfigActionType.UNREGISTER_FUNCTION:
-                // (bytes4 functionSelector, bool safeRemoval)
-                encodedData = this.web3.eth.abi.encodeParameters(['bytes4', 'bool'], data);
                 break;
             case this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
                 // (bytes32 roleHash, FunctionPermission functionPermission)

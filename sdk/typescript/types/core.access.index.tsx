@@ -1,6 +1,26 @@
 import { keccak256, Hex } from 'viem';
 
 /**
+ * RoleConfigActionType enum matching Solidity RuntimeRBAC.RoleConfigActionType
+ */
+export enum RoleConfigActionType {
+  CREATE_ROLE = 0,
+  REMOVE_ROLE = 1,
+  ADD_WALLET = 2,
+  REVOKE_WALLET = 3,
+  ADD_FUNCTION_TO_ROLE = 4,
+  REMOVE_FUNCTION_FROM_ROLE = 5
+}
+
+/**
+ * Type for RoleConfigAction struct
+ */
+export interface RoleConfigAction {
+  actionType: RoleConfigActionType;
+  data: Hex;
+}
+
+/**
  * Constants for RuntimeRBAC operation types
  * These match the keccak256 hashes defined in RuntimeRBACDefinitions.sol
  */

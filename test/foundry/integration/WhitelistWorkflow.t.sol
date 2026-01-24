@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import "../CommonBase.sol";
 import "../helpers/TestHelpers.sol";
+import "../../../contracts/core/execution/GuardController.sol";
 
 /**
  * @title WhitelistWorkflowTest
@@ -17,19 +18,25 @@ contract WhitelistWorkflowTest is CommonBase {
     }
 
     /**
-     * @dev Test whitelist execution params creation
+     * @dev Test whitelist execution params creation (now using batch config)
      */
     function test_Whitelist_ExecutionParamsCreation() public {
-        bytes memory params = controlBlox.updateTargetWhitelistExecutionParams(
-            TEST_FUNCTION_SELECTOR,
-            address(mockTarget),
-            true
-        );
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
+        });
         
-        (bytes4 selector, address target, bool isAdd) = abi.decode(params, (bytes4, address, bool));
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        
+        (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
         assertEq(target, address(mockTarget));
-        assertTrue(isAdd);
     }
 
     /**
@@ -60,50 +67,61 @@ contract WhitelistWorkflowTest is CommonBase {
     }
 
     /**
-     * @dev Test whitelist removal execution params
+     * @dev Test whitelist removal execution params (now using batch config)
      */
     function test_Whitelist_RemoveExecutionParams() public {
-        bytes memory params = controlBlox.updateTargetWhitelistExecutionParams(
-            TEST_FUNCTION_SELECTOR,
-            address(mockTarget),
-            false
-        );
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+            data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
+        });
         
-        (bytes4 selector, address target, bool isAdd) = abi.decode(params, (bytes4, address, bool));
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST));
+        
+        (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
         assertEq(target, address(mockTarget));
-        assertFalse(isAdd);
     }
 
     /**
-     * @dev Test multiple whitelist operations
+     * @dev Test multiple whitelist operations (now using batch config)
      */
     function test_Whitelist_MultipleTargets() public {
         address target1 = address(0x100);
         address target2 = address(0x200);
         
-        bytes memory params1 = controlBlox.updateTargetWhitelistExecutionParams(
-            TEST_FUNCTION_SELECTOR,
-            target1,
-            true
-        );
+        // Test batch with multiple actions
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](2);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            data: abi.encode(TEST_FUNCTION_SELECTOR, target1)
+        });
+        actions[1] = GuardController.GuardConfigAction({
+            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            data: abi.encode(TEST_FUNCTION_SELECTOR, target2)
+        });
         
-        bytes memory params2 = controlBlox.updateTargetWhitelistExecutionParams(
-            TEST_FUNCTION_SELECTOR,
-            target2,
-            true
-        );
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
         
-        // Verify both params are created correctly
-        (bytes4 sel1, address t1, bool add1) = abi.decode(params1, (bytes4, address, bool));
-        (bytes4 sel2, address t2, bool add2) = abi.decode(params2, (bytes4, address, bool));
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 2);
         
+        // Verify first action
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        (bytes4 sel1, address t1) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(sel1, TEST_FUNCTION_SELECTOR);
         assertEq(t1, target1);
-        assertTrue(add1);
         
+        // Verify second action
+        assertEq(uint8(decodedActions[1].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        (bytes4 sel2, address t2) = abi.decode(decodedActions[1].data, (bytes4, address));
         assertEq(sel2, TEST_FUNCTION_SELECTOR);
         assertEq(t2, target2);
-        assertTrue(add2);
     }
 }

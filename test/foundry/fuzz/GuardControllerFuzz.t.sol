@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "../CommonBase.sol";
+import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 
 /**
@@ -17,13 +18,29 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(target != address(0));
         vm.assume(selector != bytes4(0));
 
-        // Test execution params creation
-        bytes memory params = controlBlox.updateTargetWhitelistExecutionParams(selector, target, isAdd);
-        (bytes4 decodedSelector, address decodedTarget, bool decodedIsAdd) = abi.decode(params, (bytes4, address, bool));
+        // Test execution params creation (now using batch config)
+        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
+        actions[0] = GuardController.GuardConfigAction({
+            actionType: isAdd 
+                ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+                : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+            data: abi.encode(selector, target)
+        });
         
+        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        
+        // Decode the actions array
+        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        assertEq(decodedActions.length, 1);
+        
+        GuardController.GuardConfigActionType expectedType = isAdd 
+            ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+            : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
+        assertEq(uint8(decodedActions[0].actionType), uint8(expectedType));
+        
+        (bytes4 decodedSelector, address decodedTarget) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(decodedSelector, selector);
         assertEq(decodedTarget, target);
-        assertEq(decodedIsAdd, isAdd);
     }
 
     function testFuzz_ExecutionParams(bytes4 selector, bytes memory params, uint256 value) public {

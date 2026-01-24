@@ -179,75 +179,41 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
     );
   }
 
-  // ============ TARGET WHITELIST MANAGEMENT ============
+  // ============ GUARD CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution params for updating the target whitelist for a function selector.
-   * @param functionSelector The function selector
-   * @param target The target address to add or remove
-   * @param isAdd True to add the target, false to remove
+   * @dev Creates execution params for a guard configuration batch
+   * @param actions Encoded guard configuration actions
    * @return Promise<Hex> The execution params to be used in a meta-transaction
-   * @notice Validation focuses on basic input checks; full validation occurs during execution
    */
-  async updateTargetWhitelistExecutionParams(
-    functionSelector: Hex,
-    target: Address,
-    isAdd: boolean
+  async guardConfigBatchExecutionParams(
+    actions: Array<{ actionType: number; data: Hex }>
   ): Promise<Hex> {
-    const result = await this.executeReadContract<any>('updateTargetWhitelistExecutionParams', [
-      functionSelector,
-      target,
-      isAdd
-    ]);
-    
-    // viem returns bytes as Hex string, but ensure it's properly formatted
-    if (result === null || result === undefined) {
-      throw new Error('updateTargetWhitelistExecutionParams returned null or undefined');
-    }
-    
-    // Convert to Hex if needed
-    if (typeof result === 'string' && result.startsWith('0x')) {
-      return result as Hex;
-    }
-    
-    // If result is Uint8Array, convert to Hex
-    if (result instanceof Uint8Array) {
-      const { toHex } = await import('viem');
-      return toHex(result) as Hex;
-    }
-    
-    // If result is already a Hex type from viem
-    if (typeof result === 'string') {
-      return `0x${result.replace(/^0x/, '')}` as Hex;
-    }
-    
-    throw new Error(`Unexpected return type from updateTargetWhitelistExecutionParams: ${typeof result}, value: ${result}`);
+    return this.executeReadContract<Hex>('guardConfigBatchExecutionParams', [actions]);
   }
 
   /**
-   * @dev Requests and approves a whitelist update using a meta-transaction
-   * @param metaTx The meta-transaction describing the whitelist update
+   * @dev Requests and approves a guard configuration batch using a meta-transaction
+   * @param metaTx The meta-transaction describing the guard configuration batch
    * @param options Transaction options including from address
    * @return TransactionResult with hash and wait function
    * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
+   * @notice Supports whitelist management and function schema registration
    */
-  async updateTargetWhitelistRequestAndApprove(
+  async guardConfigBatchRequestAndApprove(
     metaTx: MetaTransaction,
     options: TransactionOptions
   ): Promise<TransactionResult> {
-    return this.executeWriteContract('updateTargetWhitelistRequestAndApprove', [metaTx], options);
+    return this.executeWriteContract('guardConfigBatchRequestAndApprove', [metaTx], options);
   }
 
   /**
-   * @dev Gets all whitelisted targets for a role and function selector.
-   * @param roleHash The role hash (currently ignored by the underlying contract; kept for backwards compatibility)
+   * @dev Gets all whitelisted targets for a function selector.
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
   async getAllowedTargets(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    roleHash: Hex,
     functionSelector: Hex
   ): Promise<Address[]> {
     const result = await this.executeReadContract<Address[]>('getAllowedTargets', [
@@ -271,13 +237,14 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
     return this.supportsInterface(INTERFACE_IDS.IGuardController);
   }
 
-  // Note: Function schema query (functionSchemaExists) is available through inheritance from BaseStateMachine
+  // Note: Function schema query (functionSchemaExists) and registration are available through:
+  // - functionSchemaExists(): inherited from BaseStateMachine
+  // - Function registration: use guardConfigBatchRequestAndApprove with REGISTER_FUNCTION action
   // Note: Meta-transaction utility functions (createMetaTxParams,
   // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
   // are already available through inheritance from BaseStateMachine
-  // Note: For role management and function registration, combine with RuntimeRBAC
-  // Note: executeUpdateTargetWhitelist is an internal execution function called by the contract itself
-  //       during StateAbstraction workflows - it should not be called directly
+  // Note: For role management, combine with RuntimeRBAC
+  // Note: Target whitelist management now uses guardConfigBatchRequestAndApprove with ADD/REMOVE_TARGET_TO_WHITELIST actions
 }
 
 export default GuardController;

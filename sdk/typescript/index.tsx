@@ -19,12 +19,21 @@ export * from './interfaces/definition.index';
 
 // Types and Constants
 export { 
-  RUNTIME_RBAC_FUNCTION_SELECTORS
+  RUNTIME_RBAC_FUNCTION_SELECTORS,
+  RUNTIME_RBAC_OPERATION_TYPES,
+  RoleConfigActionType
 } from './types/core.access.index';
+export type { RoleConfigAction } from './types/core.access.index';
 export { 
   OPERATION_TYPES
 } from './types/core.security.index';
 export type { OperationType } from './types/core.security.index';
+export {
+  GUARD_CONTROLLER_FUNCTION_SELECTORS,
+  GUARD_CONTROLLER_OPERATION_TYPES,
+  GuardConfigActionType
+} from './types/core.execution.index';
+export type { GuardConfigAction } from './types/core.execution.index';
 export * from './types/base.state.machine.index';
 export * from './types/lib.index';
 export * from './types/definition.index';

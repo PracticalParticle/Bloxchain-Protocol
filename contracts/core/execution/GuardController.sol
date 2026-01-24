@@ -48,9 +48,8 @@ import "./interface/IGuardController.sol";
  * - Meta-transaction workflows: signed approvals/cancellations
  * 
  * Whitelist Management:
- * - addTargetToWhitelist: Add a target address to whitelist (OWNER_ROLE only)
- * - removeTargetFromWhitelist: Remove a target address from whitelist (OWNER_ROLE only)
- * - getAllowedTargets: Query whitelisted targets for a role and function selector
+ * - executeGuardConfigBatch: Batch execution for adding/removing targets from whitelist (OWNER_ROLE only)
+ * - getAllowedTargets: Query whitelisted targets for a function selector
  * 
  * @notice This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
  * @notice Target whitelist is a GuardController-specific security feature, not part of StateAbstraction library
@@ -59,26 +58,39 @@ import "./interface/IGuardController.sol";
 abstract contract GuardController is BaseStateMachine {
     using StateAbstraction for StateAbstraction.SecureOperationState;
 
+    /**
+     * @dev Action types for batched Guard configuration
+     */
+    enum GuardConfigActionType {
+        ADD_TARGET_TO_WHITELIST,
+        REMOVE_TARGET_FROM_WHITELIST,
+        REGISTER_FUNCTION,
+        UNREGISTER_FUNCTION
+    }
+
+    /**
+     * @dev Encodes a single Guard configuration action in a batch
+     */
+    struct GuardConfigAction {
+        GuardConfigActionType actionType;
+        bytes data;
+    }
+
     // ============ EVENTS ============
     
     /**
-     * @dev Emitted when a target address is added to the whitelist
-     * @param functionSelector The function selector
-     * @param target The target address that was whitelisted
+     * @dev Unified event for all Guard configuration changes applied via batches
+     *
+     * - actionType: the high-level type of configuration action
+     * - functionSelector: affected function selector (if applicable, otherwise 0)
+     * - target: affected target address (if applicable, otherwise 0)
+     * - data: optional action-specific payload (kept minimal for size; decoded off-chain if needed)
      */
-    event TargetAddedToWhitelist(
+    event GuardConfigApplied(
+        GuardConfigActionType indexed actionType,
         bytes4 indexed functionSelector,
-        address indexed target
-    );
-    
-    /**
-     * @dev Emitted when a target address is removed from the whitelist
-     * @param functionSelector The function selector
-     * @param target The target address that was removed
-     */
-    event TargetRemovedFromWhitelist(
-        bytes4 indexed functionSelector,
-        address indexed target
+        address indexed target,
+        bytes data
     );
 
     /**
@@ -300,61 +312,26 @@ abstract contract GuardController is BaseStateMachine {
         }
     }
 
-    // ============ TARGET WHITELIST MANAGEMENT ============
+    // ============ GUARD CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Internal helper to add a target address to the whitelist for a function selector
-     * @param functionSelector The function selector
-     * @param target The target address to whitelist
-     * @notice Access control is enforced by StateAbstraction workflows on the caller of the execution function
+     * @dev Creates execution params for a Guard configuration batch
+     * @param actions Encoded guard configuration actions
+     * @return The execution params for StateAbstraction
      */
-    function _addTargetToWhitelist(
-        bytes4 functionSelector,
-        address target
-    ) internal {
-        // Use BaseStateMachine wrapper to manage per-function whitelists.
-        _addTargetToFunctionWhitelist(functionSelector, target);
-        emit TargetAddedToWhitelist(functionSelector, target);
-    }
-    
-    /**
-     * @dev Internal helper to remove a target address from the whitelist
-     * @param functionSelector The function selector
-     * @param target The target address to remove
-     * @notice Access control is enforced by StateAbstraction workflows on the caller of the execution function
-     */
-    function _removeTargetFromWhitelist(
-        bytes4 functionSelector,
-        address target
-    ) internal {
-        _removeTargetFromFunctionWhitelist(functionSelector, target);
-        emit TargetRemovedFromWhitelist(functionSelector, target);
-    }
-
-    /**
-     * @dev Creates execution params for updating the target whitelist for a function selector
-     * @param functionSelector The function selector
-     * @param target The target address to add or remove
-     * @param isAdd True to add the target, false to remove
-     * @return The execution params to be used in a meta-transaction
-     * @notice Validation focuses on basic input checks; full validation occurs during execution
-     */
-    function updateTargetWhitelistExecutionParams(
-        bytes4 functionSelector,
-        address target,
-        bool isAdd
+    function guardConfigBatchExecutionParams(
+        GuardConfigAction[] memory actions
     ) public pure returns (bytes memory) {
-        SharedValidation.validateNotZeroAddress(target);
-        return abi.encode(functionSelector, target, isAdd);
+        return abi.encode(actions);
     }
 
     /**
-     * @dev Requests and approves a whitelist update using a meta-transaction
-     * @param metaTx The meta-transaction describing the whitelist update
+     * @dev Requests and approves a Guard configuration batch using a meta-transaction
+     * @param metaTx The meta-transaction
      * @return The transaction record
      * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
      */
-    function updateTargetWhitelistRequestAndApprove(
+    function guardConfigBatchRequestAndApprove(
         StateAbstraction.MetaTransaction memory metaTx
     ) public returns (StateAbstraction.TxRecord memory) {
         _validateBroadcaster(msg.sender);
@@ -364,24 +341,146 @@ abstract contract GuardController is BaseStateMachine {
     }
 
     /**
-     * @dev External execution entrypoint for whitelist updates.
-     *      Can only be called by the contract itself during protected StateAbstraction workflows.
-     * @param functionSelector The function selector
-     * @param target The target address to add or remove
-     * @param isAdd True to add the target, false to remove
+     * @dev External function that can only be called by the contract itself to execute a Guard configuration batch
+     * @param actions Encoded guard configuration actions
      */
-    function executeUpdateTargetWhitelist(
-        bytes4 functionSelector,
-        address target,
-        bool isAdd
-    ) external {
+    function executeGuardConfigBatch(GuardConfigAction[] calldata actions) external {
         SharedValidation.validateInternalCall(address(this));
+        _executeGuardConfigBatch(actions);
+    }
 
-        if (isAdd) {
-            _addTargetToWhitelist(functionSelector, target);
-        } else {
-            _removeTargetFromWhitelist(functionSelector, target);
+    // ============ HELPER FUNCTIONS ============
+
+    /**
+     * @dev Internal helper to execute a Guard configuration batch
+     * @param actions Encoded guard configuration actions
+     */
+    function _executeGuardConfigBatch(GuardConfigAction[] calldata actions) internal {
+        for (uint256 i = 0; i < actions.length; i++) {
+            GuardConfigAction calldata action = actions[i];
+
+            if (action.actionType == GuardConfigActionType.ADD_TARGET_TO_WHITELIST) {
+                // Decode ADD_TARGET_TO_WHITELIST action data
+                // Format: (bytes4 functionSelector, address target)
+                (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
+
+                _addTargetToFunctionWhitelist(functionSelector, target);
+
+                emit GuardConfigApplied(
+                    GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+                    functionSelector,
+                    target,
+                    "" // optional: could encode additional data if needed
+                );
+            } else if (action.actionType == GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
+                // Decode REMOVE_TARGET_FROM_WHITELIST action data
+                // Format: (bytes4 functionSelector, address target)
+                (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
+
+                _removeTargetFromFunctionWhitelist(functionSelector, target);
+
+                emit GuardConfigApplied(
+                    GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+                    functionSelector,
+                    target,
+                    ""
+                );
+            } else if (action.actionType == GuardConfigActionType.REGISTER_FUNCTION) {
+                // Decode REGISTER_FUNCTION action data
+                // Format: (string functionSignature, string operationName, TxAction[] supportedActions)
+                (
+                    string memory functionSignature,
+                    string memory operationName,
+                    StateAbstraction.TxAction[] memory supportedActions
+                ) = abi.decode(action.data, (string, string, StateAbstraction.TxAction[]));
+
+                bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
+
+                emit GuardConfigApplied(
+                    GuardConfigActionType.REGISTER_FUNCTION,
+                    functionSelector,
+                    address(0),
+                    "" // optional: abi.encode(operationName)
+                );
+            } else if (action.actionType == GuardConfigActionType.UNREGISTER_FUNCTION) {
+                // Decode UNREGISTER_FUNCTION action data
+                // Format: (bytes4 functionSelector, bool safeRemoval)
+                (bytes4 functionSelector, bool safeRemoval) = abi.decode(action.data, (bytes4, bool));
+
+                _unregisterFunction(functionSelector, safeRemoval);
+
+                emit GuardConfigApplied(
+                    GuardConfigActionType.UNREGISTER_FUNCTION,
+                    functionSelector,
+                    address(0),
+                    ""
+                );
+            } else {
+                revert SharedValidation.NotSupported();
+            }
         }
+    }
+
+    // ============ INTERNAL FUNCTION SCHEMA HELPERS ============
+
+    /**
+     * @dev Internal helper to register a new function schema
+     * @param functionSignature The function signature
+     * @param operationName The operation name
+     * @param supportedActions Array of supported actions
+     * @return functionSelector The derived function selector
+     */
+    function _registerFunction(
+        string memory functionSignature,
+        string memory operationName,
+        StateAbstraction.TxAction[] memory supportedActions
+    ) internal returns (bytes4 functionSelector) {
+        // Derive function selector from signature
+        functionSelector = bytes4(keccak256(bytes(functionSignature)));
+
+        // Validate that function schema doesn't already exist
+        if (functionSchemaExists(functionSelector)) {
+            revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
+        }
+
+        // Convert actions array to bitmap
+        uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
+
+        // Create function schema directly (always non-protected)
+        // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
+        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
+        executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
+        _createFunctionSchema(
+            functionSignature,
+            functionSelector,
+            operationName,
+            supportedActionsBitmap,
+            false, // isProtected = false for dynamically registered functions
+            executionHandlerForSelectors // handlerForSelectors with self-reference for execution selectors
+        );
+    }
+
+    /**
+     * @dev Internal helper to unregister a function schema
+     * @param functionSelector The function selector to unregister
+     * @param safeRemoval If true, checks for role references before removal
+     */
+    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
+        // Load schema and validate it exists
+        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        if (schema.functionSelector != functionSelector) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        // Ensure not protected
+        if (schema.isProtected) {
+            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
+        }
+
+        // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
+        // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
+        // during meta-tx execution msg.sender is the contract, causing NoPermission)
+        _removeFunctionSchema(functionSelector, safeRemoval);
     }
 
     /**
