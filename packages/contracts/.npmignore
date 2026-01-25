@@ -1,0 +1,15 @@
+# Ignore everything except what we want to publish
+*
+
+# Include these
+!contracts/
+!abi/
+!README.md
+!package.json
+!package-lock.json
+
+# Ignore scripts and other dev files
+scripts/
+*.cjs
+*.js
+*.ts

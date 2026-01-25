@@ -32,6 +32,8 @@
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
     "prepublish:sdk": "npm run extract-abi && npm run build:sdk",
+    "generate:contracts-lock": "cd packages/contracts && npm install --package-lock-only",
+    "publish:contracts": "cd packages/contracts && npm publish",
     "docgen": "hardhat docgen",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
   },

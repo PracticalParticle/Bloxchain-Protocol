@@ -1,0 +1,39 @@
+{
+  "name": "@bloxchain/contracts",
+  "version": "1.0.0",
+  "description": "Bloxchain Protocol Smart Contracts - State Abstraction for Blockchain Security",
+  "files": [
+    "contracts",
+    "abi",
+    "README.md"
+  ],
+  "scripts": {
+    "prepublishOnly": "node scripts/prepublish-contracts.cjs",
+    "postpublish": "node scripts/postpublish-contracts.cjs"
+  },
+  "keywords": [
+    "bloxchain",
+    "solidity",
+    "ethereum",
+    "smart-contracts",
+    "state-abstraction",
+    "security",
+    "multi-signature",
+    "rbac",
+    "secure-ownership"
+  ],
+  "author": "Particle Crypto Security",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PracticalParticle/Bloxchain-Protocol.git",
+    "directory": "packages/contracts"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
