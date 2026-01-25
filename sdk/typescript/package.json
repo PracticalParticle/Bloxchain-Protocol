@@ -1,0 +1,57 @@
+{
+  "name": "@bloxchain/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Bloxchain Protocol - State Abstraction for Blockchain Security",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "abi",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "bloxchain",
+    "blockchain",
+    "ethereum",
+    "smart-contracts",
+    "state-abstraction",
+    "typescript",
+    "sdk",
+    "viem",
+    "multi-signature",
+    "rbac",
+    "secure-ownership"
+  ],
+  "author": "Particle Crypto Security",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PracticalParticle/Bloxchain-Protocol.git",
+    "directory": "sdk/typescript"
+  },
+  "dependencies": {
+    "viem": "^2.23.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

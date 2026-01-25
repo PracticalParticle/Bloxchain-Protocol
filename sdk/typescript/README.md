@@ -46,6 +46,13 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 ## Installation
 
 ```bash
+# Install the SDK package
+npm install @bloxchain/sdk
+
+# Or install from the repository
+npm install https://github.com/PracticalParticle/Bloxchain-Protocol.git#main --save
+
+# The SDK requires viem as a peer dependency
 npm install viem
 ```
 
@@ -54,13 +61,14 @@ npm install viem
 ```typescript
 import { 
   SecureOwnable, 
-  DynamicRBAC,
+  RuntimeRBAC,
+  GuardController,
   Definitions,
   type Address,
   type PublicClient,
   type WalletClient,
   type Chain
-} from './index';
+} from '@bloxchain/sdk';
 
 // Initialize clients (using your preferred provider)
 const publicClient: PublicClient = createPublicClient({...});

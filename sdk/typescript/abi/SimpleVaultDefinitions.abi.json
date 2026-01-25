@@ -1,0 +1,250 @@
+[
+  {
+    "inputs": [],
+    "name": "APPROVE_WITHDRAWAL_DELAYED_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "APPROVE_WITHDRAWAL_META_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CANCEL_WITHDRAWAL_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GENERIC_APPROVAL",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GENERIC_CANCELLATION",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GENERIC_META_APPROVAL",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_ETH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_ETH_REQUEST_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_ETH_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_TOKEN",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_TOKEN_REQUEST_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WITHDRAW_TOKEN_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFunctionSchemas",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "functionSignature",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "operationType",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "string",
+            "name": "operationName",
+            "type": "string"
+          },
+          {
+            "internalType": "uint16",
+            "name": "supportedActionsBitmap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isProtected",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes4[]",
+            "name": "handlerForSelectors",
+            "type": "bytes4[]"
+          }
+        ],
+        "internalType": "struct StateAbstraction.FunctionSchema[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRolePermissions",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32[]",
+            "name": "roleHashes",
+            "type": "bytes32[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes4",
+                "name": "functionSelector",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "uint16",
+                "name": "grantedActionsBitmap",
+                "type": "uint16"
+              },
+              {
+                "internalType": "bytes4[]",
+                "name": "handlerForSelectors",
+                "type": "bytes4[]"
+              }
+            ],
+            "internalType": "struct StateAbstraction.FunctionPermission[]",
+            "name": "functionPermissions",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IDefinition.RolePermission",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

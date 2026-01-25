@@ -1,0 +1,172 @@
+[
+  {
+    "inputs": [],
+    "name": "BURN_TOKENS",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "BURN_TOKENS_META_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "BURN_TOKENS_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MINT_TOKENS",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MINT_TOKENS_META_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MINT_TOKENS_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFunctionSchemas",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "functionSignature",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "operationType",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "string",
+            "name": "operationName",
+            "type": "string"
+          },
+          {
+            "internalType": "uint16",
+            "name": "supportedActionsBitmap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isProtected",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes4[]",
+            "name": "handlerForSelectors",
+            "type": "bytes4[]"
+          }
+        ],
+        "internalType": "struct StateAbstraction.FunctionSchema[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRolePermissions",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32[]",
+            "name": "roleHashes",
+            "type": "bytes32[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "bytes4",
+                "name": "functionSelector",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "uint16",
+                "name": "grantedActionsBitmap",
+                "type": "uint16"
+              },
+              {
+                "internalType": "bytes4[]",
+                "name": "handlerForSelectors",
+                "type": "bytes4[]"
+              }
+            ],
+            "internalType": "struct StateAbstraction.FunctionPermission[]",
+            "name": "functionPermissions",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IDefinition.RolePermission",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

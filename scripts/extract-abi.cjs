@@ -28,11 +28,15 @@ const contractsToProcess = [
 
 // Define the source and destination folders
 const sourceFolder = path.join(__dirname, '..', 'build', 'contracts');
-const destinationFolder = path.join(__dirname, '..', 'abi');
+const rootAbiFolder = path.join(__dirname, '..', 'abi');
+const sdkAbiFolder = path.join(__dirname, '..', 'sdk', 'typescript', 'abi');
 
-// Create the destination folder if it doesn't exist
-if (!fs.existsSync(destinationFolder)) {
-  fs.mkdirSync(destinationFolder);
+// Create the destination folders if they don't exist
+if (!fs.existsSync(rootAbiFolder)) {
+  fs.mkdirSync(rootAbiFolder, { recursive: true });
+}
+if (!fs.existsSync(sdkAbiFolder)) {
+  fs.mkdirSync(sdkAbiFolder, { recursive: true });
 }
 
 // Function to extract ABI from a contract file
@@ -41,21 +45,32 @@ function extractABI(filePath) {
   return contractJson.abi;
 }
 
+// Function to write ABI to a destination
+function writeABI(destinationPath, abi) {
+  fs.writeFileSync(destinationPath, JSON.stringify(abi, null, 2));
+}
+
 // Process the specified contracts
 contractsToProcess.forEach(contractName => {
   const fileName = `${contractName}.json`;
   const sourcePath = path.join(sourceFolder, fileName);
   
   if (fs.existsSync(sourcePath)) {
-    const destinationPath = path.join(destinationFolder, `${contractName}.abi.json`);
-    
     const abi = extractABI(sourcePath);
-    fs.writeFileSync(destinationPath, JSON.stringify(abi, null, 2));
+    const abiFileName = `${contractName}.abi.json`;
     
-    console.log(`ABI extracted and saved: ${destinationPath}`);
+    // Write to root abi folder (for compatibility with existing scripts)
+    const rootAbiPath = path.join(rootAbiFolder, abiFileName);
+    writeABI(rootAbiPath, abi);
+    console.log(`✅ Root ABI: ${rootAbiPath}`);
+    
+    // Write to SDK abi folder (for npm package)
+    const sdkAbiPath = path.join(sdkAbiFolder, abiFileName);
+    writeABI(sdkAbiPath, abi);
+    console.log(`✅ SDK ABI: ${sdkAbiPath}`);
   } else {
-    console.log(`Contract file not found: ${fileName}`);
+    console.log(`⚠️  Contract file not found: ${fileName}`);
   }
 });
 
-console.log('ABI extraction complete.');
+console.log('\n✨ ABI extraction complete. ABIs saved to both root and SDK locations.');

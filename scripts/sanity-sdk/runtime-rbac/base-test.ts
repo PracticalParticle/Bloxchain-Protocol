@@ -13,7 +13,7 @@ import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { keccak256, toBytes } from 'viem';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
-import RoleBloxABIJson from '../../../abi/RoleBlox.abi.json';
+import RoleBloxABIJson from '../../../sdk/typescript/abi/RoleBlox.abi.json';
 
 export interface RuntimeRBACRoles {
   owner: Address;

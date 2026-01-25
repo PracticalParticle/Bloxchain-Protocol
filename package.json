@@ -28,6 +28,10 @@
     "test:sanity-sdk:guard-controller": "tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/guard-controller/run-tests.ts",
     "test:sanity-sdk:runtime-rbac": "tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/runtime-rbac/run-tests.ts",
     "test:sanity-sdk:all": "npm run test:sanity-sdk:secure-ownable -- --all && npm run test:sanity-sdk:guard-controller -- --all && npm run test:sanity-sdk:runtime-rbac -- --all",
+    "extract-abi": "node scripts/extract-abi.cjs",
+    "build:sdk": "cd sdk/typescript && npm run build",
+    "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
+    "prepublish:sdk": "npm run extract-abi && npm run build:sdk",
     "docgen": "hardhat docgen",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
   },

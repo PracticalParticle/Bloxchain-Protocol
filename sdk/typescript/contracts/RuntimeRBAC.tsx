@@ -1,5 +1,5 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import RuntimeRBACABIJson from '../../../abi/RuntimeRBAC.abi.json';
+import RuntimeRBACABIJson from '../abi/RuntimeRBAC.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IRuntimeRBAC } from '../interfaces/core.access.index';
 import { TxAction } from '../types/lib.index';

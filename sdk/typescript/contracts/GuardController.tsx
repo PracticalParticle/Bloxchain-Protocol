@@ -1,5 +1,5 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import GuardControllerABIJson from '../../../abi/GuardController.abi.json';
+import GuardControllerABIJson from '../abi/GuardController.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IGuardController } from '../interfaces/core.execution.index';
 import { MetaTransaction } from '../interfaces/lib.index';
