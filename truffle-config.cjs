@@ -160,7 +160,7 @@ module.exports = {
          runs: 1
        },
        viaIR: true,  // Enable IR-based code generator to handle deep stack issues
-       evmVersion: "osaka"  // Latest EVM version (default in Solidity 0.8.33)
+       evmVersion: "shanghai"  // Compatible with Truffle 5.11.5 (osaka not supported by Truffle)
       }
     }
   },
