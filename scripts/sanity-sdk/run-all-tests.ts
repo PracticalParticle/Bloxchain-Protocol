@@ -3,9 +3,12 @@
  * Runs core tests (secure-ownable, runtime-rbac, guard-controller) and optionally example tests
  */
 
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -58,45 +61,64 @@ class SanitySDKTestRunner {
   }
 
   async runTest(testName: string, testPath: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`🚀 Running ${testName} tests...`);
-      console.log('='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🚀 Running ${testName} tests...`);
+    console.log('='.repeat(60));
 
-      const startTime = Date.now();
-      // testPath is already absolute from constructor, but ensure it's properly resolved
-      const absolutePath = resolve(testPath);
-      // Use shell: true on Windows to handle paths with spaces properly
-      const isWindows = process.platform === 'win32';
-      // Spawn child process - tsx passes arguments after the file path directly to the script
-      const child = spawn('npx', ['tsx', '--tsconfig', join(__dirname, 'tsconfig.json'), absolutePath, '--all'], {
-        stdio: 'inherit',
-        shell: isWindows,
-        cwd: process.cwd()
+    const startTime = Date.now();
+    const absolutePath = resolve(testPath);
+    const tsconfigPath = join(__dirname, 'tsconfig.json');
+    
+    // Use exec for better Windows compatibility with shell commands
+    // Quote paths to handle spaces correctly
+    const quotedTsconfig = `"${tsconfigPath}"`;
+    const quotedPath = `"${absolutePath}"`;
+    const command = `npx tsx --tsconfig ${quotedTsconfig} ${quotedPath} --all`;
+    
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: process.cwd(),
+        env: { ...process.env },
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
       });
-
-      child.on('close', (code) => {
-        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-        this.results.total++;
-
-        if (code === 0) {
-          console.log(`\n✅ ${testName} tests passed (${duration}s)`);
-          this.results.passed++;
-          resolve(true);
-        } else {
-          console.log(`\n❌ ${testName} tests failed (${duration}s)`);
-          this.results.failed++;
-          resolve(false);
+      
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      const durationNum = parseFloat(duration);
+      this.results.total++;
+      
+      // Check if process exited too quickly
+      if (durationNum < 0.1) {
+        console.error(`\n⚠️  ${testName} tests exited too quickly (${duration}s) - tests may not have run`);
+        if (stderr) {
+          console.error(`   Stderr: ${stderr}`);
         }
-      });
-
-      child.on('error', (error) => {
-        console.error(`\n❌ Error running ${testName} tests:`, error.message);
-        this.results.total++;
         this.results.failed++;
-        resolve(false);
-      });
-    });
+        return false;
+      }
+      
+      // Check stderr for actual errors (ignore dotenv messages)
+      if (stderr && !stderr.includes('injecting env') && !stderr.trim().match(/^\[dotenv@[\d.]+\]/)) {
+        console.error(`\n⚠️  ${testName} tests produced warnings:`, stderr);
+      }
+      
+      console.log(`\n✅ ${testName} tests passed (${duration}s)`);
+      this.results.passed++;
+      return true;
+    } catch (error: any) {
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      this.results.total++;
+      this.results.failed++;
+      
+      // exec provides stdout/stderr in the error object
+      if (error.stderr) {
+        console.error(`\n❌ ${testName} tests failed (${duration}s)`);
+        // stderr is already shown via exec, but log it for clarity
+      } else {
+        console.error(`\n❌ ${testName} tests failed:`, error.message);
+        console.error(`   Command: ${command}`);
+      }
+      return false;
+    }
   }
 
   async runTests(testsToRun: TestConfig): Promise<void> {
