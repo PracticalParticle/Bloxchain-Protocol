@@ -5,7 +5,6 @@
   "type": "module",
   "main": "truffle-config.cjs",
   "scripts": {
-    "test:truffle": "truffle test --config truffle-config.cjs",
     "test:hardhat": "hardhat test",
     "compile:truffle": "truffle compile --config truffle-config.cjs",
     "compile:truffle:size": "npm run compile:truffle && npx truffle run contract-size --config truffle-config.cjs",
