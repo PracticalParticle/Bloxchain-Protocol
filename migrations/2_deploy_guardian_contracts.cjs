@@ -100,7 +100,10 @@ module.exports = async function(deployer, network, accounts) {
         // Wait for nonce to sync after deployment
         const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
         console.log(`   Current account nonce: ${currentNonce}`);
-        await waitForNonceSync(web3, accounts[0], currentNonce);
+        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
+        if (!synced) {
+            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
+        }
         
         // Initialize SecureBlox
         console.log("🔧 Initializing SecureBlox...");
@@ -181,6 +184,15 @@ module.exports = async function(deployer, network, accounts) {
         console.log("✅ RoleBlox deployed at:", roleBlox.address);
         // Get web3 from deployed contract instance (available for error handling)
         const web3 = roleBlox.constructor.web3 || global.web3;
+        
+        // Wait for nonce to sync after deployment
+        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
+        console.log(`   Current account nonce: ${currentNonce}`);
+        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
+        if (!synced) {
+            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
+        }
+        
         // Save network info to artifact (fixes issue when network_id is "*")
         await saveArtifactNetwork(RoleBlox, roleBlox.address, web3, network);
         
@@ -236,6 +248,15 @@ module.exports = async function(deployer, network, accounts) {
         console.log("✅ BareBlox deployed at:", bareBlox.address);
         // Get web3 from deployed contract instance
         const web3 = bareBlox.constructor.web3 || global.web3;
+        
+        // Wait for nonce to sync after deployment
+        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
+        console.log(`   Current account nonce: ${currentNonce}`);
+        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
+        if (!synced) {
+            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
+        }
+        
         // Save network info to artifact (fixes issue when network_id is "*")
         await saveArtifactNetwork(BareBlox, bareBlox.address, web3, network);
         
@@ -294,6 +315,15 @@ module.exports = async function(deployer, network, accounts) {
         console.log("✅ ControlBlox deployed at:", controlBlox.address);
         // Get web3 from deployed contract instance (available for error handling)
         const web3 = controlBlox.constructor.web3 || global.web3;
+        
+        // Wait for nonce to sync after deployment
+        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
+        console.log(`   Current account nonce: ${currentNonce}`);
+        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
+        if (!synced) {
+            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
+        }
+        
         // Save network info to artifact (fixes issue when network_id is "*")
         await saveArtifactNetwork(ControlBlox, controlBlox.address, web3, network);
         

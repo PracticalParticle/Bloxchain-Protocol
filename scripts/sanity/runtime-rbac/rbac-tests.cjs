@@ -707,10 +707,42 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                             console.log(`  ⚠️  Could not query schemas: ${schemaError.message}`);
                         }
                         
-                        // If ResourceAlreadyExists was detected, be more lenient
+                        // If ResourceAlreadyExists was detected, retry verification with backoff
                         if (resourceAlreadyExistsDetected) {
-                            console.log(`  ⚠️  ResourceAlreadyExists detected - assuming permissions exist and continuing`);
-                            // Don't throw - allow test to continue
+                            console.log(`  ⚠️  ResourceAlreadyExists detected - retrying verification with backoff...`);
+                            let verified = false;
+                            for (let retry = 0; retry < 3; retry++) {
+                                await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                                const retryCheck = await this.callContractMethod(
+                                    this.contract.methods.getActiveRolePermissions(roleHash),
+                                    this.getRoleWalletObject('owner')
+                                );
+                                let retryHandler = false, retryExecution = false;
+                                if (retryCheck && Array.isArray(retryCheck)) {
+                                    for (const p of retryCheck) {
+                                        const selector = p.functionSelector || p[0];
+                                        const bitmap = p.grantedActionsBitmap || p[1];
+                                        const bitmapValue = typeof bitmap === 'string' 
+                                            ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                            : parseInt(bitmap);
+                                        if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                            retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                        }
+                                        if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                            retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                        }
+                                    }
+                                }
+                                if (retryHandler && retryExecution) {
+                                    verified = true;
+                                    console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                                    break;
+                                }
+                            }
+                            if (!verified) {
+                                console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource, continuing anyway`);
+                                // Don't throw - allow test to continue but log warning
+                            }
                         } else {
                             // If schemas exist but permissions still failed, re-throw the error
                             throw new Error(`Failed to add required permissions to role despite schemas being registered: ${addError.message}`);
@@ -750,16 +782,54 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             }
             
-            // If ResourceAlreadyExists was detected but permissions aren't found, assume they exist anyway
+            // If ResourceAlreadyExists was detected but permissions aren't found, retry verification
             // (they might be there but not yet visible due to timing)
             if (resourceAlreadyExistsDetected && !finalHandler && !finalExecution) {
-                console.log(`  ⚠️  ResourceAlreadyExists detected but permissions not yet visible - assuming they exist`);
-                return {
-                    handler: true, // Assume true if ResourceAlreadyExists
-                    execution: true, // Assume true if ResourceAlreadyExists
-                    verified: true,
-                    resourceAlreadyExists: true
-                };
+                console.log(`  ⚠️  ResourceAlreadyExists detected but permissions not yet visible - retrying verification...`);
+                let retryVerified = false;
+                for (let retry = 0; retry < 3; retry++) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                    const retryCheck = await this.callContractMethod(
+                        this.contract.methods.getActiveRolePermissions(roleHash),
+                        this.getRoleWalletObject('owner')
+                    );
+                    let retryHandler = false, retryExecution = false;
+                    if (retryCheck && Array.isArray(retryCheck)) {
+                        for (const perm of retryCheck) {
+                            const selector = perm.functionSelector || perm[0];
+                            const bitmap = perm.grantedActionsBitmap || perm[1];
+                            const bitmapValue = typeof bitmap === 'string' 
+                                ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                : parseInt(bitmap);
+                            if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            }
+                            if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            }
+                        }
+                    }
+                    if (retryHandler && retryExecution) {
+                        retryVerified = true;
+                        console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                        return {
+                            handler: true,
+                            execution: true,
+                            verified: true,
+                            resourceAlreadyExists: true
+                        };
+                    }
+                }
+                if (!retryVerified) {
+                    console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource`);
+                    // Return unverified status rather than assuming success
+                    return {
+                        handler: false,
+                        execution: false,
+                        verified: false,
+                        resourceAlreadyExists: true
+                    };
+                }
             }
             
             return {
@@ -778,11 +848,50 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                                   error.message.includes('Permissions were not added')));
             
             if (isResourceAlreadyExists) {
-                console.log(`  ⚠️  ResourceAlreadyExists detected - assuming permissions exist and returning success`);
+                console.log(`  ⚠️  ResourceAlreadyExists detected - retrying verification with backoff...`);
+                // Retry verification with exponential backoff
+                for (let retry = 0; retry < 3; retry++) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                    try {
+                        const retryCheck = await this.callContractMethod(
+                            this.contract.methods.getActiveRolePermissions(roleHash),
+                            this.getRoleWalletObject('owner')
+                        );
+                        let retryHandler = false, retryExecution = false;
+                        if (retryCheck && Array.isArray(retryCheck)) {
+                            for (const perm of retryCheck) {
+                                const selector = perm.functionSelector || perm[0];
+                                const bitmap = perm.grantedActionsBitmap || perm[1];
+                                const bitmapValue = typeof bitmap === 'string' 
+                                    ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                    : parseInt(bitmap);
+                                if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                    retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                }
+                                if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                    retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                }
+                            }
+                        }
+                        if (retryHandler && retryExecution) {
+                            console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                            return {
+                                handler: true,
+                                execution: true,
+                                verified: true,
+                                resourceAlreadyExists: true
+                            };
+                        }
+                    } catch (retryError) {
+                        console.log(`  ⚠️  Verification retry ${retry + 1} failed: ${retryError.message}`);
+                    }
+                }
+                console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource`);
+                // Return unverified status rather than assuming success
                 return {
-                    handler: true, // Assume true if ResourceAlreadyExists
-                    execution: true, // Assume true if ResourceAlreadyExists
-                    verified: true,
+                    handler: false,
+                    execution: false,
+                    verified: false,
                     resourceAlreadyExists: true
                 };
             }
@@ -1395,8 +1504,47 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             } catch (error) {
                 // If ensureRoleHasRequiredPermissions fails, check if it's due to ResourceAlreadyExists
                 if (error.message && (error.message.includes('ResourceAlreadyExists') || error.message.includes('0x430fab94'))) {
-                    console.log(`  ⚠️  Permissions may already exist (ResourceAlreadyExists), continuing...`);
-                    permissionStatus = { handler: true, execution: true, verified: true, resourceAlreadyExists: true };
+                    console.log(`  ⚠️  Permissions may already exist (ResourceAlreadyExists) - retrying verification...`);
+                    // Retry verification with backoff instead of assuming success
+                    let verified = false;
+                    for (let retry = 0; retry < 3; retry++) {
+                        await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                        try {
+                            const retryCheck = await this.callContractMethod(
+                                this.contract.methods.getActiveRolePermissions(this.registryAdminRoleHash),
+                                this.getRoleWalletObject('owner')
+                            );
+                            let retryHandler = false, retryExecution = false;
+                            if (retryCheck && Array.isArray(retryCheck)) {
+                                for (const perm of retryCheck) {
+                                    const selector = perm.functionSelector || perm[0];
+                                    const bitmap = perm.grantedActionsBitmap || perm[1];
+                                    const bitmapValue = typeof bitmap === 'string' 
+                                        ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                        : parseInt(bitmap);
+                                    if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                        retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                    }
+                                    if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                        retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                    }
+                                }
+                            }
+                            if (retryHandler && retryExecution) {
+                                verified = true;
+                                console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                                permissionStatus = { handler: true, execution: true, verified: true, resourceAlreadyExists: true };
+                                break;
+                            }
+                        } catch (retryError) {
+                            console.log(`  ⚠️  Verification retry ${retry + 1} failed: ${retryError.message}`);
+                        }
+                    }
+                    if (!verified) {
+                        console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource, continuing anyway`);
+                        // Still continue but mark as unverified
+                        permissionStatus = { handler: false, execution: false, verified: false, resourceAlreadyExists: true };
+                    }
                 } else {
                     throw error;
                 }

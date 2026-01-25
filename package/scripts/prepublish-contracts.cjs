@@ -6,7 +6,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const contractsDir = __dirname.replace(/[\\/]scripts$/, '');
-const rootDir = path.join(contractsDir, '../..');
+const rootDir = path.join(contractsDir, '..');
 const sourceContractsDir = path.join(rootDir, 'contracts');
 const sourceAbiDir = path.join(rootDir, 'abi');
 const destContractsDir = path.join(contractsDir, 'contracts');

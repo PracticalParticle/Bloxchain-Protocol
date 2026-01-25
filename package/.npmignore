@@ -1,14 +1,14 @@
 # Ignore everything except what we want to publish
 *
 
-# Include these
-!contracts/
-!abi/
+# Include these (must use ** to include directory contents recursively)
+!contracts/**
+!abi/**
 !README.md
 !package.json
 !package-lock.json
 
-# Ignore scripts and other dev files
+# Ignore scripts and other dev files (these come AFTER negations)
 scripts/
 *.cjs
 *.js

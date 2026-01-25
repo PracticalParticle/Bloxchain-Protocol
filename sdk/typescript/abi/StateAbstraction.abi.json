@@ -632,7 +632,7 @@
       {
         "internalType": "enum StateAbstraction.TxAction",
         "name": "action",
-        "type": "StateAbstraction.TxAction"
+        "type": "uint8"
       },
       {
         "internalType": "uint256",
