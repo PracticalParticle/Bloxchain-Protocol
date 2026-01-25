@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity ^0.8.25;
+pragma solidity 0.8.33;
 
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
@@ -342,8 +342,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param fromTxId The starting transaction ID (inclusive)
      * @param toTxId The ending transaction ID (inclusive)
      * @return The transaction history within the specified range
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (StateAbstraction.TxRecord[] memory) {    
+    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (StateAbstraction.TxRecord[] memory) {
+        _validateAnyRole();
+        
         // Validate the range
         fromTxId = fromTxId > 0 ? fromTxId : 1;
         toTxId = toTxId > _secureState.txCounter ? _secureState.txCounter : toTxId;
@@ -365,16 +368,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets a transaction by ID
      * @param txId The transaction ID
      * @return The transaction record
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getTransaction(uint256 txId) public view returns (StateAbstraction.TxRecord memory) {
+        _validateAnyRole();
         return _secureState.getTxRecord(txId);
     }
 
     /**
      * @dev Gets all pending transaction IDs
      * @return Array of pending transaction IDs
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getPendingTransactions() public view returns (uint256[] memory) {
+        _validateAnyRole();
         return _secureState.getPendingTransactionsList();
     }
 
@@ -388,6 +395,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return maxWallets The maximum number of wallets allowed for this role
      * @return walletCount The current number of wallets assigned to this role
      * @return isProtected Whether the role is protected from removal
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getRole(bytes32 roleHash) public view returns (
         string memory roleName,
@@ -396,6 +404,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         uint256 walletCount,
         bool isProtected
     ) {
+        _validateAnyRole();
         StateAbstraction.Role storage role = _secureState.getRole(roleHash);
         return (
             role.roleName,
@@ -439,8 +448,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets the function permissions for a specific role
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getActiveRolePermissions(bytes32 roleHash) public view returns (StateAbstraction.FunctionPermission[] memory) {
+        _validateAnyRole();
         return _secureState.getRoleFunctionPermissions(roleHash);
     }
 
@@ -448,8 +459,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets the current nonce for a specific signer
      * @param signer The address of the signer
      * @return The current nonce for the signer
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getSignerNonce(address signer) public view returns (uint256) {
+        _validateAnyRole();
         return _secureState.getSignerNonce(signer);
     }
 
@@ -458,24 +471,30 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Returns the supported operation types
      * @return The supported operation types
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getSupportedOperationTypes() public view returns (bytes32[] memory) {
+        _validateAnyRole();
         return _secureState.getSupportedOperationTypesList();
     }
 
     /**
      * @dev Returns the supported roles list
      * @return The supported roles list
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getSupportedRoles() public view returns (bytes32[] memory) {
+        _validateAnyRole();
         return _secureState.getSupportedRolesList();
     }
 
     /**
      * @dev Returns the supported functions list
      * @return The supported functions list
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getSupportedFunctions() public view returns (bytes4[] memory) {
+        _validateAnyRole();
         return _secureState.getSupportedFunctionsList();
     }
 

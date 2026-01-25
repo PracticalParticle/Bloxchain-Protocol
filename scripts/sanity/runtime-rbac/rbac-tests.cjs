@@ -707,8 +707,46 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                             console.log(`  ⚠️  Could not query schemas: ${schemaError.message}`);
                         }
                         
-                        // If schemas exist but permissions still failed, re-throw the error
-                        throw new Error(`Failed to add required permissions to role despite schemas being registered: ${addError.message}`);
+                        // If ResourceAlreadyExists was detected, retry verification with backoff
+                        if (resourceAlreadyExistsDetected) {
+                            console.log(`  ⚠️  ResourceAlreadyExists detected - retrying verification with backoff...`);
+                            let verified = false;
+                            for (let retry = 0; retry < 3; retry++) {
+                                await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                                const retryCheck = await this.callContractMethod(
+                                    this.contract.methods.getActiveRolePermissions(roleHash),
+                                    this.getRoleWalletObject('owner')
+                                );
+                                let retryHandler = false, retryExecution = false;
+                                if (retryCheck && Array.isArray(retryCheck)) {
+                                    for (const p of retryCheck) {
+                                        const selector = p.functionSelector || p[0];
+                                        const bitmap = p.grantedActionsBitmap || p[1];
+                                        const bitmapValue = typeof bitmap === 'string' 
+                                            ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                            : parseInt(bitmap);
+                                        if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                            retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                        }
+                                        if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                            retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                        }
+                                    }
+                                }
+                                if (retryHandler && retryExecution) {
+                                    verified = true;
+                                    console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                                    break;
+                                }
+                            }
+                            if (!verified) {
+                                console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource, continuing anyway`);
+                                // Don't throw - allow test to continue but log warning
+                            }
+                        } else {
+                            // If schemas exist but permissions still failed, re-throw the error
+                            throw new Error(`Failed to add required permissions to role despite schemas being registered: ${addError.message}`);
+                        }
                     }
                 }
             } else {
@@ -716,6 +754,11 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             }
             
             // Final verification - return status
+            // Wait a bit for state to settle if ResourceAlreadyExists was detected
+            if (resourceAlreadyExistsDetected) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
             const finalCheck = await this.callContractMethod(
                 this.contract.methods.getActiveRolePermissions(roleHash),
                 this.getRoleWalletObject('owner')
@@ -739,6 +782,56 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             }
             
+            // If ResourceAlreadyExists was detected but permissions aren't found, retry verification
+            // (they might be there but not yet visible due to timing)
+            if (resourceAlreadyExistsDetected && !finalHandler && !finalExecution) {
+                console.log(`  ⚠️  ResourceAlreadyExists detected but permissions not yet visible - retrying verification...`);
+                let retryVerified = false;
+                for (let retry = 0; retry < 3; retry++) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                    const retryCheck = await this.callContractMethod(
+                        this.contract.methods.getActiveRolePermissions(roleHash),
+                        this.getRoleWalletObject('owner')
+                    );
+                    let retryHandler = false, retryExecution = false;
+                    if (retryCheck && Array.isArray(retryCheck)) {
+                        for (const perm of retryCheck) {
+                            const selector = perm.functionSelector || perm[0];
+                            const bitmap = perm.grantedActionsBitmap || perm[1];
+                            const bitmapValue = typeof bitmap === 'string' 
+                                ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                : parseInt(bitmap);
+                            if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            }
+                            if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            }
+                        }
+                    }
+                    if (retryHandler && retryExecution) {
+                        retryVerified = true;
+                        console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                        return {
+                            handler: true,
+                            execution: true,
+                            verified: true,
+                            resourceAlreadyExists: true
+                        };
+                    }
+                }
+                if (!retryVerified) {
+                    console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource`);
+                    // Return unverified status rather than assuming success
+                    return {
+                        handler: false,
+                        execution: false,
+                        verified: false,
+                        resourceAlreadyExists: true
+                    };
+                }
+            }
+            
             return {
                 handler: finalHandler,
                 execution: finalExecution,
@@ -747,10 +840,60 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             };
         } catch (error) {
             console.log(`  ❌ Error verifying/adding permissions: ${error.message}`);
-            // If ResourceAlreadyExists was detected, return partial success
-            if (error.message && (error.message.includes('ResourceAlreadyExists') || error.message.includes('0x430fab94'))) {
-                resourceAlreadyExistsDetected = true;
-                console.log(`  ⚠️  ResourceAlreadyExists detected - returning partial status for idempotent test`);
+            // If ResourceAlreadyExists was detected earlier, return success (permissions likely already exist)
+            // Also check if error message mentions ResourceAlreadyExists or the error selector
+            // Only use explicit identifiers - do not use broad substring matches
+            const isResourceAlreadyExists = resourceAlreadyExistsDetected || 
+                (error.message && (error.message.includes('ResourceAlreadyExists') || 
+                                  error.message.includes('0x430fab94')));
+            
+            if (isResourceAlreadyExists) {
+                console.log(`  ⚠️  ResourceAlreadyExists detected - retrying verification with backoff...`);
+                // Retry verification with exponential backoff
+                for (let retry = 0; retry < 3; retry++) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                    try {
+                        const retryCheck = await this.callContractMethod(
+                            this.contract.methods.getActiveRolePermissions(roleHash),
+                            this.getRoleWalletObject('owner')
+                        );
+                        let retryHandler = false, retryExecution = false;
+                        if (retryCheck && Array.isArray(retryCheck)) {
+                            for (const perm of retryCheck) {
+                                const selector = perm.functionSelector || perm[0];
+                                const bitmap = perm.grantedActionsBitmap || perm[1];
+                                const bitmapValue = typeof bitmap === 'string' 
+                                    ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                    : parseInt(bitmap);
+                                if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                    retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                }
+                                if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                    retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                }
+                            }
+                        }
+                        if (retryHandler && retryExecution) {
+                            console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                            return {
+                                handler: true,
+                                execution: true,
+                                verified: true,
+                                resourceAlreadyExists: true
+                            };
+                        }
+                    } catch (retryError) {
+                        console.log(`  ⚠️  Verification retry ${retry + 1} failed: ${retryError.message}`);
+                    }
+                }
+                console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource`);
+                // Return unverified status rather than assuming success
+                return {
+                    handler: false,
+                    execution: false,
+                    verified: false,
+                    resourceAlreadyExists: true
+                };
             }
             
             // Always return status, even on error, if ResourceAlreadyExists was detected
@@ -1355,7 +1498,57 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             
             // CRITICAL: Since we create the role with empty functionPermissions, we need to add them now
             // This ensures the role has the required permissions for roleConfigBatch operations
-            const permissionStatus = await this.ensureRoleHasRequiredPermissions(this.registryAdminRoleHash);
+            let permissionStatus;
+            try {
+                permissionStatus = await this.ensureRoleHasRequiredPermissions(this.registryAdminRoleHash);
+            } catch (error) {
+                // If ensureRoleHasRequiredPermissions fails, check if it's due to ResourceAlreadyExists
+                if (error.message && (error.message.includes('ResourceAlreadyExists') || error.message.includes('0x430fab94'))) {
+                    console.log(`  ⚠️  Permissions may already exist (ResourceAlreadyExists) - retrying verification...`);
+                    // Retry verification with backoff instead of assuming success
+                    let verified = false;
+                    for (let retry = 0; retry < 3; retry++) {
+                        await new Promise(resolve => setTimeout(resolve, 500 * (retry + 1)));
+                        try {
+                            const retryCheck = await this.callContractMethod(
+                                this.contract.methods.getActiveRolePermissions(this.registryAdminRoleHash),
+                                this.getRoleWalletObject('owner')
+                            );
+                            let retryHandler = false, retryExecution = false;
+                            if (retryCheck && Array.isArray(retryCheck)) {
+                                for (const perm of retryCheck) {
+                                    const selector = perm.functionSelector || perm[0];
+                                    const bitmap = perm.grantedActionsBitmap || perm[1];
+                                    const bitmapValue = typeof bitmap === 'string' 
+                                        ? (bitmap.startsWith('0x') ? parseInt(bitmap, 16) : parseInt(bitmap, 10))
+                                        : parseInt(bitmap);
+                                    if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                                        retryHandler = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                    }
+                                    if (selector && selector.toLowerCase() === this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                                        retryExecution = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                                    }
+                                }
+                            }
+                            if (retryHandler && retryExecution) {
+                                verified = true;
+                                console.log(`  ✅ Permissions verified after ResourceAlreadyExists (retry ${retry + 1})`);
+                                permissionStatus = { handler: true, execution: true, verified: true, resourceAlreadyExists: true };
+                                break;
+                            }
+                        } catch (retryError) {
+                            console.log(`  ⚠️  Verification retry ${retry + 1} failed: ${retryError.message}`);
+                        }
+                    }
+                    if (!verified) {
+                        console.log(`  ⚠️  ResourceAlreadyExists but permissions not verified after retries - may be different resource, continuing anyway`);
+                        // Still continue but mark as unverified
+                        permissionStatus = { handler: false, execution: false, verified: false, resourceAlreadyExists: true };
+                    }
+                } else {
+                    throw error;
+                }
+            }
             
             // Verify role has required permissions after ensuring they exist
             console.log(`  🔍 Verifying REGISTRY_ADMIN role has required permissions...`);
@@ -1537,6 +1730,10 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             // Skip registration - this is now handled by GuardController
             await this.passTest('Register ERC20 mint function', `Skipped - function registration moved to GuardController`);
             return;
+        } catch (error) {
+            await this.failTest('Register ERC20 mint function', error);
+            throw error;
+        }
     }
 
     async testStep4AddMintFunctionToRole() {

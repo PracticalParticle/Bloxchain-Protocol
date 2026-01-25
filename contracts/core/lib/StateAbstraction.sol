@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity ^0.8.25;
+pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -255,9 +255,9 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param txId The ID of the transaction to check.
      * @return The TxRecord associated with the transaction ID.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getTxRecord(SecureOperationState storage self, uint256 txId) public view returns (TxRecord memory) {
-        _validateAnyRole(self);
         return self.txRecords[txId];
     }
 
@@ -714,9 +714,9 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param role The role to get the hash for.
      * @return The role associated with the hash, or Role(0) if the role doesn't exist.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getRole(SecureOperationState storage self, bytes32 role) public view returns (Role storage) {
-        _validateAnyRole(self);
         _validateRoleExists(self, role);
         return self.roles[role];
     }
@@ -1092,9 +1092,7 @@ library StateAbstraction {
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector to remove.
      * @param safeRemoval If true, reverts with ResourceAlreadyExists when any role still references this function.
-     *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) to avoid
-     *        calling getSupportedRolesList/getRoleFunctionPermissions, which use _validateAnyRole and would
-     *        revert NoPermission when the caller is the contract itself (e.g. during executeRoleConfigBatch).
+     *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) for efficiency.
      * @notice Security: Cannot remove protected function schemas to maintain system integrity.
      * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
      */
@@ -1109,9 +1107,7 @@ library StateAbstraction {
             revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
         }
 
-        // If safeRemoval: ensure no role references this function. Iterate supportedRolesSet directly
-        // to avoid getSupportedRolesList/getRoleFunctionPermissions which use _validateAnyRole and
-        // would revert NoPermission when called from contract-internal paths (msg.sender = contract).
+        // If safeRemoval: ensure no role references this function. Iterate supportedRolesSet directly for efficiency.
         if (safeRemoval) {
             uint256 rolesLength = self.supportedRolesSet.length();
             for (uint256 i = 0; i < rolesLength; i++) {
@@ -1135,8 +1131,6 @@ library StateAbstraction {
         }
 
         // Check if the operation type is still in use by other functions.
-        // Use _getFunctionsByOperationType to avoid _validateAnyRole when called from
-        // contract-internal paths (e.g. _unregisterFunction -> removeFunctionSchema).
         // Now that the function has been removed, this will correctly detect if the
         // operation type is no longer in use.
         bytes4[] memory functionsUsingOperationType = _getFunctionsByOperationType(self, operationType);
@@ -1252,14 +1246,12 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param functionSelector The function selector to query.
      * @return Array of whitelisted target addresses.
-     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getFunctionWhitelistTargets(
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public view returns (address[] memory) {
-        _validateAnyRole(self);
-
         EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
         return _convertAddressSetToArray(set);
     }
@@ -1312,14 +1304,12 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param functionSelector The function selector to query.
      * @return Array of hook target addresses.
-     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getFunctionHookTargets(
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public view returns (address[] memory) {
-        _validateAnyRole(self);
-
         EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
         return _convertAddressSetToArray(set);
     }
@@ -1329,20 +1319,18 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param operationType The operation type to search for.
      * @return Array of function selectors that use the specified operation type.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getFunctionsByOperationType(
         SecureOperationState storage self,
         bytes32 operationType
     ) public view returns (bytes4[] memory) {
-        _validateAnyRole(self);
         return _getFunctionsByOperationType(self, operationType);
     }
 
     /**
-     * @dev Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
-     * Used by removeFunctionSchema when called from contract-internal paths (e.g. _unregisterFunction)
-     * where msg.sender is the contract and would fail _validateAnyRole.
-     * Also used by getFunctionsByOperationType after role validation.
+     * @dev Internal: Returns all function schemas that use a specific operation type.
+     * Used by removeFunctionSchema and getFunctionsByOperationType.
      */
     function _getFunctionsByOperationType(
         SecureOperationState storage self,
@@ -1376,9 +1364,9 @@ library StateAbstraction {
      * @dev Gets all pending transaction IDs as an array for backward compatibility
      * @param self The SecureOperationState to check
      * @return Array of pending transaction IDs
+     * @notice Access control should be enforced by the calling contract.
      */
     function getPendingTransactionsList(SecureOperationState storage self) public view returns (uint256[] memory) {
-        _validateAnyRole(self);
         return _convertUintSetToArray(self.pendingTransactionsSet);
     }
 
@@ -1386,9 +1374,9 @@ library StateAbstraction {
      * @dev Gets all supported roles as an array for backward compatibility
      * @param self The SecureOperationState to check
      * @return Array of supported role hashes
+     * @notice Access control should be enforced by the calling contract.
      */
     function getSupportedRolesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
-        _validateAnyRole(self);
         return _convertBytes32SetToArray(self.supportedRolesSet);
     }
 
@@ -1396,9 +1384,9 @@ library StateAbstraction {
      * @dev Gets all supported function selectors as an array for backward compatibility
      * @param self The SecureOperationState to check
      * @return Array of supported function selectors
+     * @notice Access control should be enforced by the calling contract.
      */
     function getSupportedFunctionsList(SecureOperationState storage self) public view returns (bytes4[] memory) {
-        _validateAnyRole(self);
         return _convertBytes4SetToArray(self.supportedFunctionsSet);
     }
 
@@ -1406,9 +1394,9 @@ library StateAbstraction {
      * @dev Gets all supported operation types as an array for backward compatibility
      * @param self The SecureOperationState to check
      * @return Array of supported operation type hashes
+     * @notice Access control should be enforced by the calling contract.
      */
     function getSupportedOperationTypesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
-        _validateAnyRole(self);
         return _convertBytes32SetToArray(self.supportedOperationTypesSet);
     }
 
@@ -1430,9 +1418,9 @@ library StateAbstraction {
      * @param self The SecureOperationState to check
      * @param roleHash The role hash to get function permissions from
      * @return Array of function permissions with arrays (for external API)
+     * @notice Access control should be enforced by the calling contract.
      */
     function getRoleFunctionPermissions(SecureOperationState storage self, bytes32 roleHash) public view returns (FunctionPermission[] memory) {
-        _validateAnyRole(self);
         Role storage role = self.roles[roleHash];
         
         uint256 length = role.functionSelectorsSet.length();
@@ -1453,9 +1441,9 @@ library StateAbstraction {
      * @param self The SecureOperationState to check.
      * @param signer The address of the signer.
      * @return The current nonce for the signer.
+     * @notice Access control should be enforced by the calling contract.
      */
     function getSignerNonce(SecureOperationState storage self, address signer) public view returns (uint256) {
-        _validateAnyRole(self);
         return self.signerNonces[signer];
     }
 

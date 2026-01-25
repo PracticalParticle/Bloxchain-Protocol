@@ -12,7 +12,7 @@ import { TxAction } from '../types/lib.index';
 import { fromContractValue } from '../utils/bitmap';
 
 // Import the ABI
-import IDefinitionABI from '../../../abi/IDefinition.abi.json';
+import IDefinitionABI from '../abi/IDefinition.abi.json';
 
 /**
  * Definitions class for interacting with any definition library

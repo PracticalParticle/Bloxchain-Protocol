@@ -30,7 +30,7 @@ Before contributing, ensure you have:
 - **npm** (v8 or higher)
 - **Truffle** (v5.15 or higher)
 - **Git** (latest version)
-- **Solidity** knowledge (^0.8.25)
+- **Solidity** knowledge (0.8.33)
 - **TypeScript** knowledge (for SDK contributions)
 
 ### Development Environment

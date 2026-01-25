@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity ^0.8.25;
+pragma solidity 0.8.33;
 
 // Contracts imports
 import "../../lib/StateAbstraction.sol";

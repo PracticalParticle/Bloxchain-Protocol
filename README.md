@@ -1,7 +1,7 @@
 # Bloxchain Protocol: State Abstraction for Blockchain Security
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Solidity](https://img.shields.io/badge/Solidity-^0.8.25-blue.svg)](https://soliditylang.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.33-blue.svg)](https://soliditylang.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-green.svg)](./sdk/typescript/)
 [![Truffle](https://img.shields.io/badge/Truffle-Development-orange.svg)](https://trufflesuite.com/)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
@@ -446,7 +446,7 @@ abstract contract HookManager is BaseStateMachine {
 ```
 
 **Technical Features**:
-- **Solidity Version**: ^0.8.25
+- **Solidity Version**: 0.8.33 (fixed version for reproducible builds)
 - **OpenZeppelin**: ^5.4.0 (with upgradeable contracts)
 - **Contract Size**: < 24KB (optimized for mainnet deployment)
 - **Gas Optimization**: Library-based architecture with modular definitions

@@ -1,0 +1,33 @@
+# Source files (only dist should be published)
+*.ts
+*.tsx
+!*.d.ts
+
+# Development files
+tsconfig.json
+*.test.ts
+*.test.tsx
+scripts/
+
+# Documentation (can be included if desired)
+# docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+*.map
+node_modules/
+
+# Test files
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# Config files
+.env
+.env.local
+*.log

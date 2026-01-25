@@ -34,14 +34,15 @@ class RuntimeRBACSDKTestRunner {
   parseArguments(): string[] | null {
     const args = process.argv.slice(2);
 
-    if (args.length === 0 || args.includes('--help')) {
+    if (args.includes('--help')) {
       this.printUsage();
       return null;
     }
 
     const selectedSuites: string[] = [];
 
-    if (args.includes('--all')) {
+    // Default to --all if no arguments provided (for master runner compatibility)
+    if (args.length === 0 || args.includes('--all')) {
       selectedSuites.push('rbac');
     } else {
       if (args.includes('--rbac')) selectedSuites.push('rbac');
@@ -168,6 +169,8 @@ class RuntimeRBACSDKTestRunner {
     const selectedSuites = this.parseArguments();
 
     if (!selectedSuites) {
+      // Only exit early for --help, otherwise this shouldn't happen
+      process.exit(0);
       return;
     }
 
@@ -181,12 +184,9 @@ class RuntimeRBACSDKTestRunner {
   }
 }
 
-// Run the test runner if this file is executed directly
-// Check if this module is being run directly (not imported)
-const isExecutedDirectly = import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isExecutedDirectly) {
-  const runner = new RuntimeRBACSDKTestRunner();
-  runner.run();
-}
+// Always run the test runner when this file is executed
+// This ensures it works whether called directly or via spawn/tsx
+const runner = new RuntimeRBACSDKTestRunner();
+runner.run();
 
 export { RuntimeRBACSDKTestRunner };

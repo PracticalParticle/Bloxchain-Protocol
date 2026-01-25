@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity ^0.8.25;
+pragma solidity 0.8.33;
 
 // Contract imports
 import "../base/BaseStateMachine.sol";
@@ -180,7 +180,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @dev Gets all authorized wallets for a role
      * @param roleHash The role hash to get wallets for
      * @return Array of authorized wallet addresses
-     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
         _validateAnyRole();

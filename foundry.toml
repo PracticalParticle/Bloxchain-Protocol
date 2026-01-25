@@ -6,11 +6,11 @@ test = "test/foundry"
 cache_path = "cache_forge"
 
 # Solidity compiler settings - matching Truffle config for consistency
-solc = "0.8.25"
+solc = "0.8.33"
 optimizer = true
 optimizer_runs = 1  # Changed from 200 to match Truffle (faster compilation)
 via_ir = true
-evm_version = "shanghai"
+evm_version = "osaka"
 
 # Fuzzing configuration
 [fuzz]
