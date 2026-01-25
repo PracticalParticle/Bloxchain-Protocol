@@ -6,6 +6,18 @@ const BareBlox = artifacts.require("BareBlox");
 const ControlBlox = artifacts.require("ControlBlox");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
+// Helper function to wait for nonce to sync
+async function waitForNonceSync(web3, address, expectedNonce, maxRetries = 10) {
+    for (let i = 0; i < maxRetries; i++) {
+        const currentNonce = await web3.eth.getTransactionCount(address, 'pending');
+        if (currentNonce === expectedNonce) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    return false;
+}
+
 module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 2: Deploying Guardian Contracts on ${network}`);
     console.log(`📋 Using account: ${accounts[0]}`);
@@ -82,6 +94,14 @@ module.exports = async function(deployer, network, accounts) {
         secureBlox = await SecureBlox.deployed();
         console.log("✅ SecureBlox deployed at:", secureBlox.address);
         
+        // Get web3 instance for nonce checking
+        const web3 = secureBlox.constructor.web3 || global.web3;
+        
+        // Wait for nonce to sync after deployment
+        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
+        console.log(`   Current account nonce: ${currentNonce}`);
+        await waitForNonceSync(web3, accounts[0], currentNonce);
+        
         // Initialize SecureBlox
         console.log("🔧 Initializing SecureBlox...");
         try {
@@ -118,8 +138,6 @@ module.exports = async function(deployer, network, accounts) {
             console.log("✅ SecureBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
             
-            // Get web3 from deployed contract instance (available for error handling)
-            const web3 = secureBlox.constructor.web3 || global.web3;
             // Save network info to artifact (fixes issue when network_id is "*")
             await saveArtifactNetwork(SecureBlox, secureBlox.address, web3, network);
         } catch (error) {

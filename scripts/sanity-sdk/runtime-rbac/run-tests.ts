@@ -182,9 +182,9 @@ class RuntimeRBACSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-// Check if this module is being run directly (not imported)
-const isExecutedDirectly = import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isExecutedDirectly) {
+// Always run if there are command line arguments (being executed as a script)
+// This works whether called directly or via spawn
+if (process.argv.length > 2 || process.argv[1]?.includes('run-tests.ts')) {
   const runner = new RuntimeRBACSDKTestRunner();
   runner.run();
 }

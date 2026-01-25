@@ -188,8 +188,9 @@ class GuardControllerSDKTestRunner {
 }
 
 // Run the test runner if this file is executed directly
-// Check if this module is being run directly (not imported)
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+// Always run if there are command line arguments (being executed as a script)
+// This works whether called directly or via spawn
+if (process.argv.length > 2 || process.argv[1]?.includes('run-tests.ts')) {
   const runner = new GuardControllerSDKTestRunner();
   runner.run();
 }
