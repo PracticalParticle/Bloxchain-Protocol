@@ -842,10 +842,10 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             console.log(`  ❌ Error verifying/adding permissions: ${error.message}`);
             // If ResourceAlreadyExists was detected earlier, return success (permissions likely already exist)
             // Also check if error message mentions ResourceAlreadyExists or the error selector
+            // Only use explicit identifiers - do not use broad substring matches
             const isResourceAlreadyExists = resourceAlreadyExistsDetected || 
                 (error.message && (error.message.includes('ResourceAlreadyExists') || 
-                                  error.message.includes('0x430fab94') ||
-                                  error.message.includes('Permissions were not added')));
+                                  error.message.includes('0x430fab94')));
             
             if (isResourceAlreadyExists) {
                 console.log(`  ⚠️  ResourceAlreadyExists detected - retrying verification with backoff...`);
