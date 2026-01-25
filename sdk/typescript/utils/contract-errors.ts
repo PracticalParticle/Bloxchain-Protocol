@@ -317,9 +317,9 @@ export interface CannotModifyProtectedRolesError extends ContractError {
   params: {}
 }
 
-export interface CannotRemoveProtectedRoleError extends ContractError {
-  name: 'CannotRemoveProtectedRole'
-  params: {}
+export interface CannotModifyProtectedError extends ContractError {
+  name: 'CannotModifyProtected'
+  params: { resourceId: string }
 }
 
 export interface RoleEditingDisabledError extends ContractError {
@@ -455,7 +455,7 @@ export type GuardianContractError =
   | RoleNameEmptyError
   | MaxWalletsZeroError
   | CannotModifyProtectedRolesError
-  | CannotRemoveProtectedRoleError
+  | CannotModifyProtectedError
   | RoleEditingDisabledError
   | FunctionPermissionExistsError
   | ActionNotSupportedError

@@ -771,7 +771,7 @@ library StateAbstraction {
         
         // Security check: Prevent removing protected roles
         if (self.roles[roleHash].isProtected) {
-            revert SharedValidation.CannotRemoveProtected(roleHash);
+            revert SharedValidation.CannotModifyProtected(roleHash);
         }
         
         // Clear the role data from roles mapping
@@ -862,7 +862,7 @@ library StateAbstraction {
         
         // Security check: Prevent removing the last wallet from a protected role
         if (roleData.isProtected && roleData.authorizedWallets.length() <= 1) {
-            revert SharedValidation.CannotRemoveProtected(bytes32(role));
+            revert SharedValidation.CannotModifyProtected(bytes32(role));
         }
         
         // Remove the wallet (O(1) operation)
@@ -923,7 +923,7 @@ library StateAbstraction {
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             FunctionSchema memory functionSchema = self.functions[functionSelector];
             if (functionSchema.isProtected) {
-                revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
+                revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
             }
         }
         
@@ -1104,7 +1104,7 @@ library StateAbstraction {
         // Security check: Prevent removing protected function schemas
         // MUST check BEFORE removing from set to avoid inconsistent state
         if (self.functions[functionSelector].isProtected) {
-            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
+            revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
         }
 
         // If safeRemoval: ensure no role references this function. Iterate supportedRolesSet directly for efficiency.

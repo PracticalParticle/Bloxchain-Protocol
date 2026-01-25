@@ -474,7 +474,7 @@ abstract contract GuardController is BaseStateMachine {
 
         // Ensure not protected
         if (schema.isProtected) {
-            revert SharedValidation.CannotRemoveProtected(bytes32(functionSelector));
+            revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
         }
 
         // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema

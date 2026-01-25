@@ -544,17 +544,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to update assigned wallet for a role
-     * @param roleHash The role hash
-     * @param newWallet The new wallet address
-     * @param oldWallet The old wallet address
-     * @notice This function is virtual to allow extensions to add hook functionality or additional validation
-     */
-    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
-        StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
-    }
-
-    /**
      * @dev Centralized function to create a new role
      * @param roleName The name of the role
      * @param maxWallets The maximum number of wallets allowed for this role
@@ -599,6 +588,17 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function _revokeWallet(bytes32 roleHash, address wallet) internal virtual {
         StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
+    }
+
+    /**
+     * @dev Centralized function to update assigned wallet for a role
+     * @param roleHash The role hash
+     * @param newWallet The new wallet address
+     * @param oldWallet The old wallet address
+     * @notice This function is virtual to allow extensions to add hook functionality or additional validation
+     */
+    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
+        StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
     /**

@@ -28,7 +28,7 @@
         "type": "bytes32"
       }
     ],
-    "name": "CannotRemoveProtected",
+    "name": "CannotModifyProtected",
     "type": "error"
   },
   {
@@ -632,7 +632,7 @@
       {
         "internalType": "enum StateAbstraction.TxAction",
         "name": "action",
-        "type": "uint8"
+        "type": "StateAbstraction.TxAction"
       },
       {
         "internalType": "uint256",

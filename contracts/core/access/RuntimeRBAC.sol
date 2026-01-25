@@ -241,6 +241,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 );
             } else if (action.actionType == RoleConfigActionType.ADD_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
+                
+                // Security check: Prevent editing protected roles
+                if (_getSecureState().roles[roleHash].isProtected) {
+                    revert SharedValidation.CannotModifyProtected(roleHash);
+                }
+                
                 _assignWallet(roleHash, wallet);
 
                 emit RoleConfigApplied(
@@ -251,6 +257,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 );
             } else if (action.actionType == RoleConfigActionType.REVOKE_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
+                
+                // Security check: Prevent editing protected roles
+                if (_getSecureState().roles[roleHash].isProtected) {
+                    revert SharedValidation.CannotModifyProtected(roleHash);
+                }
+                
                 _revokeWallet(roleHash, wallet);
 
                 emit RoleConfigApplied(
