@@ -5,13 +5,14 @@ require("solidity-docgen");
 module.exports = {
   plugins: [hardhatToolboxMochaEthers],
   solidity: {
-    version: "0.8.25",
+    version: "0.8.33",
     settings: {
       optimizer: {
         enabled: true,
         runs: 200
       },
-      viaIR: true
+      viaIR: true,
+      evmVersion: "osaka"
     }
   },
   networks: {

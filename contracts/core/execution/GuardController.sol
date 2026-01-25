@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity ^0.8.25;
+pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../base/BaseStateMachine.sol";
@@ -487,13 +487,12 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Gets all whitelisted targets for a function selector
      * @param functionSelector The function selector
      * @return Array of whitelisted target addresses
-     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
     function getAllowedTargets(
         bytes4 functionSelector
     ) external view returns (address[] memory) {
-        // Delegate to BaseStateMachine wrapper, which enforces _validateAnyRole internally
-        // for privacy protection when reading whitelist configuration.
+        _validateAnyRole();
         return _getFunctionWhitelistTargets(functionSelector);
     }
 }
