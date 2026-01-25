@@ -52,14 +52,15 @@ class SecureOwnableSDKTestRunner {
   parseArguments(): string[] | null {
     const args = process.argv.slice(2);
 
-    if (args.length === 0 || args.includes('--help')) {
+    if (args.includes('--help')) {
       this.printUsage();
       return null;
     }
 
     const selectedSuites: string[] = [];
 
-    if (args.includes('--all')) {
+    // Default to --all if no arguments provided (for master runner compatibility)
+    if (args.length === 0 || args.includes('--all')) {
       // Run all test suites in proper order (recovery first, then timelock, etc.)
       const orderedSuites = ['recovery', 'timelock', 'broadcaster', 'ownership', 'eip712'];
       selectedSuites.push(...orderedSuites);
@@ -193,6 +194,8 @@ class SecureOwnableSDKTestRunner {
     const selectedSuites = this.parseArguments();
 
     if (!selectedSuites) {
+      // Only exit early for --help, otherwise this shouldn't happen
+      process.exit(0);
       return;
     }
 
@@ -206,13 +209,10 @@ class SecureOwnableSDKTestRunner {
   }
 }
 
-// Run the test runner if this file is executed directly
-// Always run if there are command line arguments (being executed as a script)
-// This works whether called directly or via spawn
-if (process.argv.length > 2 || process.argv[1]?.includes('run-tests.ts')) {
-  const runner = new SecureOwnableSDKTestRunner();
-  runner.run();
-}
+// Always run the test runner when this file is executed
+// This ensures it works whether called directly or via spawn/tsx
+const runner = new SecureOwnableSDKTestRunner();
+runner.run();
 
 export { SecureOwnableSDKTestRunner };
 

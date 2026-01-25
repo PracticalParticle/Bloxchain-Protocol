@@ -68,6 +68,7 @@ class SanitySDKTestRunner {
       const absolutePath = resolve(testPath);
       // Use shell: true on Windows to handle paths with spaces properly
       const isWindows = process.platform === 'win32';
+      // Spawn child process - tsx passes arguments after the file path directly to the script
       const child = spawn('npx', ['tsx', '--tsconfig', join(__dirname, 'tsconfig.json'), absolutePath, '--all'], {
         stdio: 'inherit',
         shell: isWindows,
