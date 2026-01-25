@@ -1,7 +1,7 @@
 {
   "name": "@bloxchain/sdk",
   "version": "1.0.0",
-  "description": "TypeScript SDK for Bloxchain Protocol - State Abstraction for Blockchain Security",
+  "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "cd ../.. && npm run sync:versions && cd sdk/typescript && npm run build",
     "clean": "rm -rf dist"
   },
   "keywords": [
@@ -40,6 +40,11 @@
     "type": "git",
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol.git",
     "directory": "sdk/typescript"
+  },
+  "homepage": "https://bloxchain.app/",
+  "bugs": {
+    "url": "https://github.com/PracticalParticle/Bloxchain-Protocol/issues",
+    "email": "security@particlecs.com"
   },
   "dependencies": {
     "viem": "^2.23.7"

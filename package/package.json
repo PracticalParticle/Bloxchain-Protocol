@@ -1,7 +1,7 @@
 {
   "name": "@bloxchain/contracts",
   "version": "1.0.0",
-  "description": "Bloxchain Protocol Smart Contracts - State Abstraction for Blockchain Security",
+  "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "files": [
     "contracts",
     "abi",
@@ -28,6 +28,11 @@
     "type": "git",
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol.git",
     "directory": "package"
+  },
+  "homepage": "https://bloxchain.app/",
+  "bugs": {
+    "url": "https://github.com/PracticalParticle/Bloxchain-Protocol/issues",
+    "email": "security@particlecs.com"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",

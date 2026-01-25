@@ -14,6 +14,16 @@ const destAbiDir = path.join(contractsDir, 'abi');
 
 console.log('📦 Preparing @bloxchain/contracts for publishing...\n');
 
+// Step 0: Sync versions from root
+console.log('📋 Step 0: Syncing versions from root...');
+try {
+  execSync('npm run sync:versions', { cwd: rootDir, stdio: 'inherit' });
+  console.log('✅ Versions synced\n');
+} catch (error) {
+  console.error('❌ Failed to sync versions:', error.message);
+  process.exit(1);
+}
+
 // Step 1: Extract ABIs from root
 console.log('📋 Step 1: Extracting ABIs...');
 try {

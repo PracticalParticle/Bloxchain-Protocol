@@ -1,7 +1,7 @@
 {
   "name": "Bloxchain",
   "version": "1.0.0",
-  "description": "Particle's Bloxchain protocol smart state abstraction contracts",
+  "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "truffle-config.cjs",
   "scripts": {
@@ -28,11 +28,14 @@
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
     "test:e2e": "npm run deploy:truffle && npm run test:sanity:core && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
+    "sync:versions": "node scripts/sync-versions.cjs",
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
-    "prepublish:sdk": "npm run extract-abi && npm run build:sdk",
+    "prepublish:sdk": "npm run sync:versions && npm run extract-abi && npm run build:sdk",
+    "prepublish:contracts": "npm run sync:versions",
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
-    "publish:contracts": "cd package && npm publish",
+    "publish:contracts": "npm run prepublish:contracts && cd package && npm publish",
+    "publish:sdk": "npm run prepublish:sdk && cd sdk/typescript && npm publish",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
