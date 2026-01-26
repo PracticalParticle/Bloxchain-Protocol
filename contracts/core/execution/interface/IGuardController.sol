@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../../lib/StateAbstraction.sol";
+import "../../lib/EngineBlox.sol";
 
 /**
  * @title IGuardController
@@ -29,7 +29,7 @@ interface IGuardController {
     ) external;
 
     /**
-     * @dev Requests a time-locked execution via StateAbstraction workflow
+     * @dev Requests a time-locked execution via EngineBlox workflow
      * @param target The address of the target contract
      * @param value The ETH value to send (0 for standard function calls)
      * @param functionSelector The function selector to execute (0x00000000 for simple ETH transfers)
@@ -73,7 +73,7 @@ interface IGuardController {
     function cancelTimeLockExecution(
         uint256 txId,
         bytes32 expectedOperationType
-    ) external returns (StateAbstraction.TxRecord memory);
+    ) external returns (EngineBlox.TxRecord memory);
 
     /**
      * @dev Approves a time-locked transaction using a meta-transaction
@@ -84,10 +84,10 @@ interface IGuardController {
      * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
-    ) external returns (StateAbstraction.TxRecord memory);
+    ) external returns (EngineBlox.TxRecord memory);
 
     /**
      * @dev Cancels a time-locked transaction using a meta-transaction
@@ -98,10 +98,10 @@ interface IGuardController {
      * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
-    ) external returns (StateAbstraction.TxRecord memory);
+    ) external returns (EngineBlox.TxRecord memory);
 
     /**
      * @dev Requests and approves a transaction in one step using a meta-transaction
@@ -113,8 +113,8 @@ interface IGuardController {
      * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
      */
     function requestAndApproveExecution(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         bytes4 requiredSelector
-    ) external returns (StateAbstraction.TxRecord memory);
+    ) external returns (EngineBlox.TxRecord memory);
 }
 

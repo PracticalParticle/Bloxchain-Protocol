@@ -2,7 +2,7 @@
 pragma solidity 0.8.33;
 
 import "forge-std/Test.sol";
-import "../../contracts/core/lib/StateAbstraction.sol";
+import "../../contracts/core/lib/EngineBlox.sol";
 import "../../contracts/examples/templates/SecureBlox.sol";
 import "../../contracts/examples/templates/RoleBlox.sol";
 import "../../contracts/examples/templates/ControlBlox.sol";
@@ -40,9 +40,9 @@ contract CommonBase is Test {
 
     // Constants
     uint256 public constant DEFAULT_TIMELOCK_PERIOD = 3600; // 1 hour
-    bytes32 public constant OWNER_ROLE = StateAbstraction.OWNER_ROLE;
-    bytes32 public constant BROADCASTER_ROLE = StateAbstraction.BROADCASTER_ROLE;
-    bytes32 public constant RECOVERY_ROLE = StateAbstraction.RECOVERY_ROLE;
+    bytes32 public constant OWNER_ROLE = EngineBlox.OWNER_ROLE;
+    bytes32 public constant BROADCASTER_ROLE = EngineBlox.BROADCASTER_ROLE;
+    bytes32 public constant RECOVERY_ROLE = EngineBlox.RECOVERY_ROLE;
 
     // SecureOwnable operation types
     bytes32 public constant OWNERSHIP_TRANSFER = keccak256("OWNERSHIP_TRANSFER");

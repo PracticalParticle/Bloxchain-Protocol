@@ -7,7 +7,7 @@ TypeScript SDK tests for GuardController contract functionality, specifically te
 These tests verify that the GuardController SDK correctly implements the secure whitelist update workflow:
 - **Owner signs** meta-transactions for whitelist updates
 - **Broadcaster executes** the meta-transactions
-- All operations are protected by StateAbstraction's workflow system
+- All operations are protected by EngineBlox's workflow system
 
 ## Test Suites
 
@@ -101,7 +101,7 @@ The tests verify the complete meta-transaction workflow:
 
 - ✅ Owner must sign meta-transactions
 - ✅ Broadcaster must execute meta-transactions
-- ✅ All operations go through StateAbstraction workflow
+- ✅ All operations go through EngineBlox workflow
 - ✅ Role and function selector validation
 - ✅ Target address validation
 

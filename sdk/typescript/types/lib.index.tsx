@@ -8,7 +8,7 @@ const keccak256 = (str: string): string => {
 };
 
 /**
- * Enums and constants for StateAbstraction
+ * Enums and constants for EngineBlox
  */
 export const TxStatus = {
   UNDEFINED: 0,

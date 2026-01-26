@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Test} from "forge-std/Test.sol";
-import "../../../contracts/core/lib/StateAbstraction.sol";
+import "../../../contracts/core/lib/EngineBlox.sol";
 
 /**
  * @title TestHelpers
@@ -31,7 +31,7 @@ library TestHelpers {
     /**
      * @dev Hashes TxRecord for EIP-712
      */
-    function _hashTxRecord(StateAbstraction.TxRecord memory record) private pure returns (bytes32) {
+    function _hashTxRecord(EngineBlox.TxRecord memory record) private pure returns (bytes32) {
         return keccak256(abi.encode(
             record.txId,
             record.releaseTime,
@@ -46,7 +46,7 @@ library TestHelpers {
     /**
      * @dev Hashes TxParams for EIP-712
      */
-    function _hashTxParams(StateAbstraction.TxParams memory params) private pure returns (bytes32) {
+    function _hashTxParams(EngineBlox.TxParams memory params) private pure returns (bytes32) {
         return keccak256(abi.encode(
             params.requester,
             params.target,
@@ -61,7 +61,7 @@ library TestHelpers {
     /**
      * @dev Hashes MetaTxParams for EIP-712
      */
-    function _hashMetaTxParams(StateAbstraction.MetaTxParams memory params) private pure returns (bytes32) {
+    function _hashMetaTxParams(EngineBlox.MetaTxParams memory params) private pure returns (bytes32) {
         return keccak256(abi.encode(
             params.chainId,
             params.nonce,
@@ -77,7 +77,7 @@ library TestHelpers {
     /**
      * @dev Hashes PaymentDetails for EIP-712
      */
-    function _hashPaymentDetails(StateAbstraction.PaymentDetails memory payment) private pure returns (bytes32) {
+    function _hashPaymentDetails(EngineBlox.PaymentDetails memory payment) private pure returns (bytes32) {
         return keccak256(abi.encode(
             payment.recipient,
             payment.nativeTokenAmount,
@@ -95,10 +95,10 @@ contract MetaTxSigner is Test {
     using MessageHashUtils for bytes32;
     using ECDSA for bytes32;
 
-    // EIP-712 constants matching StateAbstraction
+    // EIP-712 constants matching EngineBlox
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant LIBRARY_NAME_HASH = keccak256("StateAbstraction");
+    bytes32 private constant PROTOCOL_NAME_HASH = keccak256("Bloxchain");
     string private constant VERSION = "1.0.0";
 
     /**
@@ -109,7 +109,7 @@ contract MetaTxSigner is Test {
      * @return The signature bytes
      */
     function signMetaTransaction(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         uint256 signerPrivateKey,
         address verifyingContract
     ) public view returns (bytes memory) {
@@ -123,23 +123,23 @@ contract MetaTxSigner is Test {
      * @param metaTx The meta-transaction
      * @param verifyingContract The contract address
      * @return The message hash
-     * @notice This matches StateAbstraction.generateMessageHash exactly
+     * @notice This matches EngineBlox.generateMessageHash exactly
      */
     function generateMessageHash(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         address verifyingContract
     ) public view returns (bytes32) {
-        // Domain separator - matches StateAbstraction
+        // Domain separator - matches EngineBlox
         bytes32 domainSeparator = keccak256(abi.encode(
             DOMAIN_SEPARATOR_TYPE_HASH,
-            LIBRARY_NAME_HASH,
+            PROTOCOL_NAME_HASH,
             keccak256(abi.encodePacked(uint8(1), ".", uint8(0), ".", uint8(0))), // VERSION_MAJOR.MINOR.PATCH
             block.chainid,
             verifyingContract
         ));
 
-        // Struct hash - matches StateAbstraction exactly
-        // Note: StateAbstraction only hashes specific TxParams fields, not the full TxRecord
+        // Struct hash - matches EngineBlox exactly
+        // Note: EngineBlox only hashes specific TxParams fields, not the full TxRecord
         bytes32 structHash = keccak256(abi.encode(
             TYPE_HASH,
             keccak256(abi.encode(
@@ -172,7 +172,7 @@ contract MetaTxSigner is Test {
     /**
      * @dev Hashes TxRecord for EIP-712
      */
-    function _hashTxRecord(StateAbstraction.TxRecord memory record) private pure returns (bytes32) {
+    function _hashTxRecord(EngineBlox.TxRecord memory record) private pure returns (bytes32) {
         return keccak256(abi.encode(
             record.txId,
             record.releaseTime,
@@ -187,7 +187,7 @@ contract MetaTxSigner is Test {
     /**
      * @dev Hashes TxParams for EIP-712
      */
-    function _hashTxParams(StateAbstraction.TxParams memory params) private pure returns (bytes32) {
+    function _hashTxParams(EngineBlox.TxParams memory params) private pure returns (bytes32) {
         return keccak256(abi.encode(
             params.requester,
             params.target,
@@ -202,7 +202,7 @@ contract MetaTxSigner is Test {
     /**
      * @dev Hashes MetaTxParams for EIP-712
      */
-    function _hashMetaTxParams(StateAbstraction.MetaTxParams memory params) private pure returns (bytes32) {
+    function _hashMetaTxParams(EngineBlox.MetaTxParams memory params) private pure returns (bytes32) {
         return keccak256(abi.encode(
             params.chainId,
             params.nonce,
@@ -218,7 +218,7 @@ contract MetaTxSigner is Test {
     /**
      * @dev Hashes PaymentDetails for EIP-712
      */
-    function _hashPaymentDetails(StateAbstraction.PaymentDetails memory payment) private pure returns (bytes32) {
+    function _hashPaymentDetails(EngineBlox.PaymentDetails memory payment) private pure returns (bytes32) {
         return keccak256(abi.encode(
             payment.recipient,
             payment.nativeTokenAmount,

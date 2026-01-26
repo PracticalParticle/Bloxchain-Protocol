@@ -9,18 +9,18 @@ import { Uint16Bitmap } from '../utils/bitmap';
 import { INTERFACE_IDS } from '../utils/interface-ids';
 
 /**
- * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
+ * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission
  */
-interface StateAbstractionFunctionPermission {
+interface EngineBloxFunctionPermission {
   functionSelector: Hex;
   grantedActionsBitmap: Uint16Bitmap; // uint16
   handlerForSelectors: Hex[]; // Array of execution selectors this function can access
 }
 
 /**
- * FunctionSchema structure matching Solidity StateAbstraction.FunctionSchema for loadDefinitions
+ * FunctionSchema structure matching Solidity EngineBlox.FunctionSchema for loadDefinitions
  */
-interface StateAbstractionFunctionSchema {
+interface EngineBloxFunctionSchema {
   functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;

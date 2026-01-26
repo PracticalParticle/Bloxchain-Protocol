@@ -33,7 +33,7 @@ Bloxchain Protocol is a **revolutionary blockchain security architecture** that 
 
 ```mermaid
 graph TB
-    A[StateAbstraction Library] --> B[BaseStateMachine]
+    A[EngineBlox Library] --> B[BaseStateMachine]
     B --> C[SecureOwnable]
     B --> D[RuntimeRBAC]
     B --> E[GuardController]
@@ -241,19 +241,19 @@ const wallets = await runtimeRBAC.getWalletsInRole(roleHash);
 ```solidity
 contract SimpleVault is SecureOwnable {
     // Time-locked ETH withdrawal request
-    function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (EngineBlox.TxRecord memory) {
         // Creates time-locked withdrawal request
         // Requires approval after time-lock period
     }
     
     // Standard approval workflow (after time delay)
-    function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (EngineBlox.TxRecord memory) {
         // Approves withdrawal after mandatory time-lock period
         // Requires owner role permission
     }
     
     // Meta-transaction approval workflow (gasless)
-    function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public onlyBroadcaster returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public onlyBroadcaster returns (EngineBlox.TxRecord memory) {
         // Approves withdrawal using meta-transaction
         // Requires broadcaster role execution with off-chain signature
     }
@@ -400,7 +400,7 @@ Validation Phase: Contract → Verifies signatures and executes
 ### Smart Contract Architecture
 
 **Core Library Implementation**:
-- **StateAbstraction Library v1.0.0**: Core state machine with mandatory multi-signature workflows
+- **EngineBlox Library v1.0.0**: Core state machine with mandatory multi-signature workflows
 - **BaseStateMachine**: Foundation for all security contracts with meta-transaction support
 - **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
 - **RuntimeRBAC**: Runtime role configuration with function-level permissions
@@ -410,7 +410,7 @@ Validation Phase: Contract → Verifies signatures and executes
 **Contract Hierarchy**:
 ```solidity
 // Core Library
-library StateAbstraction {
+library EngineBlox {
     struct SecureOperationState {
         bool initialized;
         uint256 txCounter;
@@ -423,7 +423,7 @@ library StateAbstraction {
 
 // Base State Machine
 abstract contract BaseStateMachine is Initializable, ERC165Upgradeable {
-    StateAbstraction.SecureOperationState internal _secureState;
+    EngineBlox.SecureOperationState internal _secureState;
     // Meta-transaction utilities and state queries
 }
 
@@ -469,7 +469,7 @@ abstract contract HookManager is BaseStateMachine {
 
 ### ✅ Available Features
 **Core Components**:
-- ✅ **StateAbstraction Library v1.0.0**: Centralized state management with multi-phase workflows
+- ✅ **EngineBlox Library v1.0.0**: Centralized state management with multi-phase workflows
 - ✅ **BaseStateMachine**: Foundation contract with core state machine functionality
 - ✅ **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
 - ✅ **RuntimeRBAC**: Dynamic role-based access control with runtime configuration

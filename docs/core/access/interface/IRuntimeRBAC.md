@@ -10,7 +10,7 @@ All role management operations are performed via the batch interface for atomic 
 Key Features:
 - Batch-based role configuration (atomic operations)
 - Runtime function schema registration
-- Integration with StateAbstraction for secure operations
+- Integration with EngineBlox for secure operations
 - Query functions for role and permission inspection
 
 Note: This contract inherits from BaseStateMachine which provides additional query functions
@@ -33,7 +33,7 @@ Creates execution params for a RBAC configuration batch
 - `` (): Encoded role configuration actions
 
 **Returns:**
-- The execution params for StateAbstraction
+- The execution params for EngineBlox
 
 
 ---
@@ -41,7 +41,7 @@ Creates execution params for a RBAC configuration batch
 ### roleConfigBatchRequestAndApprove
 
 ```solidity
-function roleConfigBatchRequestAndApprove(struct StateAbstraction.MetaTransaction metaTx) external nonpayable returns (struct StateAbstraction.TxRecord)
+function roleConfigBatchRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a RBAC configuration batch using a meta-transaction
@@ -58,7 +58,7 @@ Requests and approves a RBAC configuration batch using a meta-transaction
 ### getFunctionSchema
 
 ```solidity
-function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum StateAbstraction.TxAction[], bool)
+function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum EngineBlox.TxAction[], bool)
 ```
 
 Gets function schema information

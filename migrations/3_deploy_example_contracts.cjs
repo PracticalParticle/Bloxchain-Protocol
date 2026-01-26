@@ -5,7 +5,7 @@ const SimpleVault = artifacts.require("SimpleVault");
 const SimpleRWA20 = artifacts.require("SimpleRWA20");
 
 // Import the deployed library artifacts to get their addresses
-const StateAbstraction = artifacts.require("StateAbstraction");
+const EngineBlox = artifacts.require("EngineBlox");
 const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
 const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
 
@@ -57,11 +57,11 @@ module.exports = async function(deployer, network, accounts) {
     // Retrieve deployed foundation library instances (deploy if needed)
     let sa, sod, drbd;
     try {
-        sa = await StateAbstraction.deployed();
+        sa = await EngineBlox.deployed();
     } catch (e) {
-        console.log("⚠️  StateAbstraction not found in artifacts; deploying now...");
-        await deployer.deploy(StateAbstraction);
-        sa = await StateAbstraction.deployed();
+        console.log("⚠️  EngineBlox not found in artifacts; deploying now...");
+        await deployer.deploy(EngineBlox);
+        sa = await EngineBlox.deployed();
     }
     try {
         sod = await SecureOwnableDefinitions.deployed();
@@ -79,7 +79,7 @@ module.exports = async function(deployer, network, accounts) {
     }
 
     console.log("\n📦 Step 2: Linking Foundation Libraries...");
-    console.log(`✅ Using StateAbstraction at: ${sa.address}`);
+    console.log(`✅ Using EngineBlox at: ${sa.address}`);
     console.log(`✅ Using SecureOwnableDefinitions at: ${sod.address}`);
     console.log(`✅ Using RuntimeRBACDefinitions at: ${drbd.address}`);
 
@@ -240,7 +240,7 @@ module.exports = async function(deployer, network, accounts) {
 
     console.log("\n🎯 Complete Deployment Summary:");
     console.log("📚 Foundation Libraries:");
-    console.log(`   StateAbstraction: ${sa.address}`);
+    console.log(`   EngineBlox: ${sa.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drbd.address}`);
     console.log("📋 Example-Specific Definitions:");

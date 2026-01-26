@@ -10,7 +10,7 @@ import { Uint16Bitmap } from '../utils/bitmap';
  */
 
 /**
- * Function permission structure matching StateAbstraction.FunctionPermission
+ * Function permission structure matching EngineBlox.FunctionPermission
  */
 export interface FunctionPermission {
   functionSelector: Hex;
@@ -19,7 +19,7 @@ export interface FunctionPermission {
 }
 
 /**
- * Function schema structure matching StateAbstraction.FunctionSchema
+ * Function schema structure matching EngineBlox.FunctionSchema
  */
 export interface FunctionSchema {
   functionSignature: string;

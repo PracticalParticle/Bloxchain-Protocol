@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.33;
 
-import "../../core/lib/StateAbstraction.sol";
+import "../../core/lib/EngineBlox.sol";
 import "../../interfaces/IDefinition.sol";
 
 /**
@@ -10,7 +10,7 @@ import "../../interfaces/IDefinition.sol";
  * This library holds static data that can be used to initialize SimpleVault contracts
  * without increasing the main contract size
  * 
- * This library implements the IDefinition interface from StateAbstraction
+ * This library implements the IDefinition interface from EngineBlox
  * and provides a direct initialization function for SimpleVault contracts
  */
 library SimpleVaultDefinitions {
@@ -39,23 +39,23 @@ library SimpleVaultDefinitions {
      * @dev Returns predefined function schemas
      * @return Array of function schema definitions
      */
-    function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](7);
+    function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](7);
         
         // Time-delay function schemas
-        StateAbstraction.TxAction[] memory timeDelayRequestActions = new StateAbstraction.TxAction[](1);
-        timeDelayRequestActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        EngineBlox.TxAction[] memory timeDelayRequestActions = new EngineBlox.TxAction[](1);
+        timeDelayRequestActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
-        StateAbstraction.TxAction[] memory timeDelayApproveActions = new StateAbstraction.TxAction[](1);
-        timeDelayApproveActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        EngineBlox.TxAction[] memory timeDelayApproveActions = new EngineBlox.TxAction[](1);
+        timeDelayApproveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         
-        StateAbstraction.TxAction[] memory timeDelayCancelActions = new StateAbstraction.TxAction[](1);
-        timeDelayCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        EngineBlox.TxAction[] memory timeDelayCancelActions = new EngineBlox.TxAction[](1);
+        timeDelayCancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         
         // Meta-transaction function schemas
-        StateAbstraction.TxAction[] memory metaTxApproveActions = new StateAbstraction.TxAction[](2);
-        metaTxApproveActions[0] = StateAbstraction.TxAction.SIGN_META_APPROVE;
-        metaTxApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory metaTxApproveActions = new EngineBlox.TxAction[](2);
+        metaTxApproveActions[0] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        metaTxApproveActions[1] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
         // Prepare handlerForSelectors arrays
         // Execution selectors must have self-reference (at least one element pointing to themselves)
@@ -73,85 +73,85 @@ library SimpleVaultDefinitions {
         withdrawTokenHandlerForSelectors[0] = WITHDRAW_TOKEN_SELECTOR;
         
         // Time-delay functions
-        schemas[0] = StateAbstraction.FunctionSchema({
+        schemas[0] = EngineBlox.FunctionSchema({
             functionSignature: "withdrawEthRequest(address,uint256)",
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
             handlerForSelectors: withdrawEthHandlerForSelectors
         });
         
-        schemas[1] = StateAbstraction.FunctionSchema({
+        schemas[1] = EngineBlox.FunctionSchema({
             functionSignature: "withdrawTokenRequest(address,address,uint256)",
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
             handlerForSelectors: withdrawTokenHandlerForSelectors
         });
         
-        schemas[2] = StateAbstraction.FunctionSchema({
+        schemas[2] = EngineBlox.FunctionSchema({
             functionSignature: "approveWithdrawalAfterDelay(uint256)",
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true,
             handlerForSelectors: approveWithdrawalDelayedHandlerForSelectors
         });
         
-        schemas[3] = StateAbstraction.FunctionSchema({
+        schemas[3] = EngineBlox.FunctionSchema({
             functionSignature: "cancelWithdrawal(uint256)",
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true,
             handlerForSelectors: cancelWithdrawalHandlerForSelectors
         });
         
         // Meta-transaction functions
-        schemas[4] = StateAbstraction.FunctionSchema({
+        schemas[4] = EngineBlox.FunctionSchema({
             functionSignature: "approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             isProtected: true,
             handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
         });
         
         // Execution selector schemas (for dual-permission model)
         // These support both time-delay and meta-transaction workflows
-        StateAbstraction.TxAction[] memory executionActions = new StateAbstraction.TxAction[](3);
-        executionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        executionActions[1] = StateAbstraction.TxAction.SIGN_META_APPROVE;
-        executionActions[2] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory executionActions = new EngineBlox.TxAction[](3);
+        executionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        executionActions[1] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        executionActions[2] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
         bytes4[] memory withdrawEthExecutionHandlerForSelectors = new bytes4[](1);
         withdrawEthExecutionHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
         bytes4[] memory withdrawTokenExecutionHandlerForSelectors = new bytes4[](1);
         withdrawTokenExecutionHandlerForSelectors[0] = WITHDRAW_TOKEN_SELECTOR;
         
-        schemas[5] = StateAbstraction.FunctionSchema({
+        schemas[5] = EngineBlox.FunctionSchema({
             functionSignature: "executeWithdrawEth(address,uint256)",
             functionSelector: WITHDRAW_ETH_SELECTOR,
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             isProtected: true,
             handlerForSelectors: withdrawEthExecutionHandlerForSelectors
         });
         
-        schemas[6] = StateAbstraction.FunctionSchema({
+        schemas[6] = EngineBlox.FunctionSchema({
             functionSignature: "executeWithdrawToken(address,address,uint256)",
             functionSelector: WITHDRAW_TOKEN_SELECTOR,
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(executionActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             isProtected: true,
             handlerForSelectors: withdrawTokenExecutionHandlerForSelectors
         });
@@ -165,27 +165,27 @@ library SimpleVaultDefinitions {
      */
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
-        StateAbstraction.FunctionPermission[] memory functionPermissions;
+        EngineBlox.FunctionPermission[] memory functionPermissions;
         roleHashes = new bytes32[](10);
-        functionPermissions = new StateAbstraction.FunctionPermission[](10);
+        functionPermissions = new EngineBlox.FunctionPermission[](10);
         
         // Owner role permissions for time-delay operations
-        StateAbstraction.TxAction[] memory ownerTimeDelayRequestActions = new StateAbstraction.TxAction[](1);
-        ownerTimeDelayRequestActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        EngineBlox.TxAction[] memory ownerTimeDelayRequestActions = new EngineBlox.TxAction[](1);
+        ownerTimeDelayRequestActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
-        StateAbstraction.TxAction[] memory ownerTimeDelayApproveActions = new StateAbstraction.TxAction[](1);
-        ownerTimeDelayApproveActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        EngineBlox.TxAction[] memory ownerTimeDelayApproveActions = new EngineBlox.TxAction[](1);
+        ownerTimeDelayApproveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         
-        StateAbstraction.TxAction[] memory ownerTimeDelayCancelActions = new StateAbstraction.TxAction[](1);
-        ownerTimeDelayCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        EngineBlox.TxAction[] memory ownerTimeDelayCancelActions = new EngineBlox.TxAction[](1);
+        ownerTimeDelayCancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         
         // Owner role permissions for meta-transactions
-        StateAbstraction.TxAction[] memory ownerMetaApproveActions = new StateAbstraction.TxAction[](1);
-        ownerMetaApproveActions[0] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        EngineBlox.TxAction[] memory ownerMetaApproveActions = new EngineBlox.TxAction[](1);
+        ownerMetaApproveActions[0] = EngineBlox.TxAction.SIGN_META_APPROVE;
 
         // Broadcaster role permissions for meta-transactions
-        StateAbstraction.TxAction[] memory broadcasterMetaApproveActions = new StateAbstraction.TxAction[](1);
-        broadcasterMetaApproveActions[0] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory broadcasterMetaApproveActions = new EngineBlox.TxAction[](1);
+        broadcasterMetaApproveActions[0] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
      
         // Create reusable handlerForSelectors arrays
         bytes4[] memory withdrawEthHandlers = new bytes4[](1);
@@ -200,89 +200,89 @@ library SimpleVaultDefinitions {
         approveWithdrawalMetaHandlers[0] = APPROVE_WITHDRAWAL_META_SELECTOR;
      
         // Owner: Withdraw ETH Request
-        roleHashes[0] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[0] = StateAbstraction.FunctionPermission({
+        roleHashes[0] = EngineBlox.OWNER_ROLE;
+        functionPermissions[0] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_ETH_REQUEST_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayRequestActions),
             handlerForSelectors: withdrawEthHandlers
         });
         
         // Owner: Withdraw Token Request
-        roleHashes[1] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[1] = StateAbstraction.FunctionPermission({
+        roleHashes[1] = EngineBlox.OWNER_ROLE;
+        functionPermissions[1] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_REQUEST_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayRequestActions),
             handlerForSelectors: withdrawTokenHandlers
         });
         
         // Owner: Approve Withdrawal Delayed
-        roleHashes[2] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[2] = StateAbstraction.FunctionPermission({
+        roleHashes[2] = EngineBlox.OWNER_ROLE;
+        functionPermissions[2] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayApproveActions),
             handlerForSelectors: approveWithdrawalDelayedHandlers // Self-reference indicates execution selector
         });
         
         // Owner: Cancel Withdrawal
-        roleHashes[3] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[3] = StateAbstraction.FunctionPermission({
+        roleHashes[3] = EngineBlox.OWNER_ROLE;
+        functionPermissions[3] = EngineBlox.FunctionPermission({
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayCancelActions),
             handlerForSelectors: cancelWithdrawalHandlers // Self-reference indicates execution selector
         });
         
         // Owner: Approve Withdrawal Meta (signer)
-        roleHashes[4] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[4] = StateAbstraction.FunctionPermission({
+        roleHashes[4] = EngineBlox.OWNER_ROLE;
+        functionPermissions[4] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaApproveActions),
             handlerForSelectors: approveWithdrawalMetaHandlers // Self-reference indicates execution selector
         });
 
         // Broadcaster: Approve Withdrawal Meta (executor)
-        roleHashes[5] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[5] = StateAbstraction.FunctionPermission({
+        roleHashes[5] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[5] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaApproveActions),
             handlerForSelectors: approveWithdrawalMetaHandlers // Self-reference indicates execution selector
         });
         
         // Owner: Withdraw ETH Execution (for time-delay and meta-tx signing)
-        StateAbstraction.TxAction[] memory ownerExecutionActions = new StateAbstraction.TxAction[](2);
-        ownerExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        ownerExecutionActions[1] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        EngineBlox.TxAction[] memory ownerExecutionActions = new EngineBlox.TxAction[](2);
+        ownerExecutionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        ownerExecutionActions[1] = EngineBlox.TxAction.SIGN_META_APPROVE;
         
-        roleHashes[6] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[6] = StateAbstraction.FunctionPermission({
+        roleHashes[6] = EngineBlox.OWNER_ROLE;
+        functionPermissions[6] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_ETH_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerExecutionActions),
             handlerForSelectors: withdrawEthHandlers
         });
         
         // Owner: Withdraw Token Execution (for time-delay and meta-tx signing)
-        roleHashes[7] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[7] = StateAbstraction.FunctionPermission({
+        roleHashes[7] = EngineBlox.OWNER_ROLE;
+        functionPermissions[7] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerExecutionActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerExecutionActions),
             handlerForSelectors: withdrawTokenHandlers
         });
         
         // Broadcaster: Withdraw ETH Execution (for meta-tx execution)
-        StateAbstraction.TxAction[] memory broadcasterExecutionActions = new StateAbstraction.TxAction[](1);
-        broadcasterExecutionActions[0] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory broadcasterExecutionActions = new EngineBlox.TxAction[](1);
+        broadcasterExecutionActions[0] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
-        roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[8] = StateAbstraction.FunctionPermission({
+        roleHashes[8] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[8] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_ETH_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterExecutionActions),
             handlerForSelectors: withdrawEthHandlers
         });
         
         // Broadcaster: Withdraw Token Execution (for meta-tx execution)
-        roleHashes[9] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[9] = StateAbstraction.FunctionPermission({
+        roleHashes[9] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[9] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterExecutionActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterExecutionActions),
             handlerForSelectors: withdrawTokenHandlers
         });
         

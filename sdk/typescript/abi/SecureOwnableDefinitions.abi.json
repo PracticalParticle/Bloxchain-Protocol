@@ -301,7 +301,7 @@
             "type": "bytes4[]"
           }
         ],
-        "internalType": "struct StateAbstraction.FunctionSchema[]",
+        "internalType": "struct EngineBlox.FunctionSchema[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -338,7 +338,7 @@
                 "type": "bytes4[]"
               }
             ],
-            "internalType": "struct StateAbstraction.FunctionPermission[]",
+            "internalType": "struct EngineBlox.FunctionPermission[]",
             "name": "functionPermissions",
             "type": "tuple[]"
           }

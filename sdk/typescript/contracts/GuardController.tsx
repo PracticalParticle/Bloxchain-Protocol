@@ -9,10 +9,10 @@ import { INTERFACE_IDS } from '../utils/interface-ids';
 /**
  * @title GuardController
  * @notice TypeScript wrapper for GuardController smart contract
- * @dev Lightweight controller for generic contract delegation with full StateAbstraction workflows
+ * @dev Lightweight controller for generic contract delegation with full EngineBlox workflows
  * 
  * This contract provides a complete solution for delegating control to external addresses.
- * It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
+ * It extends BaseStateMachine for core state machine functionality and supports all EngineBlox
  * execution patterns including time-locked transactions, meta-transactions, and payment management.
  * 
  * This contract is modular and can be combined with RuntimeRBAC and SecureOwnable for role management.
@@ -57,7 +57,7 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ EXECUTION FUNCTIONS ============
 
   /**
-   * @dev Requests a time-locked execution via StateAbstraction workflow
+   * @dev Requests a time-locked execution via EngineBlox workflow
    * @param target The address of the target contract
    * @param value The ETH value to send (0 for standard function calls)
    * @param functionSelector The function selector to execute (0x00000000 for simple ETH transfers)

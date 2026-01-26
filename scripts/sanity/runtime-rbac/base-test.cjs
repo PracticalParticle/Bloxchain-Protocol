@@ -68,7 +68,7 @@ class BaseRuntimeRBACTest {
         
         this.ROLE_CONFIG_BATCH_OPERATION_TYPE = this.web3.utils.keccak256('ROLE_CONFIG_BATCH');
 
-        // Precomputed role hashes (must match StateAbstraction constants)
+        // Precomputed role hashes (must match EngineBlox constants)
         this.OWNER_ROLE_HASH = this.web3.utils.keccak256('OWNER_ROLE');
         this.BROADCASTER_ROLE_HASH = this.web3.utils.keccak256('BROADCASTER_ROLE');
         

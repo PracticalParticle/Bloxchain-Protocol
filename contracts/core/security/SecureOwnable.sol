@@ -92,11 +92,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Requests a transfer of ownership
      * @return The transaction record
      */
-    function transferOwnershipRequest() public returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipRequest() public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateRecovery(getRecovery());
         if (_hasOpenOwnershipRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
             0, // value
@@ -116,10 +116,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function transferOwnershipDelayedApproval(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipDelayedApproval(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
         
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
+        EngineBlox.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -129,11 +129,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function transferOwnershipApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         return updatedRecord;
     }
@@ -143,9 +143,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function transferOwnershipCancellation(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipCancellation(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateRecovery(getRecovery());
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(txId);
         return updatedRecord;
@@ -156,11 +156,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function transferOwnershipCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+    function transferOwnershipCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
         emit OwnershipTransferCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -172,14 +172,14 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param newBroadcaster The new broadcaster address
      * @return The execution options
      */
-    function updateBroadcasterRequest(address newBroadcaster) public returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterRequest(address newBroadcaster) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
         address[] memory broadcasters = getBroadcasters();
         address currentBroadcaster = broadcasters.length > 0 ? broadcasters[0] : address(0);
         SharedValidation.validateAddressUpdate(newBroadcaster, currentBroadcaster);
         
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
             0, // value
@@ -199,9 +199,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function updateBroadcasterDelayedApproval(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterDelayedApproval(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransaction(txId);
+        EngineBlox.TxRecord memory updatedRecord = _approveTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -211,11 +211,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function updateBroadcasterApprovalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
-        StateAbstraction.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory updatedRecord = _approveTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         return updatedRecord;
     }
@@ -225,9 +225,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param txId The transaction ID
      * @return The updated transaction record
      */
-    function updateBroadcasterCancellation(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterCancellation(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(txId);
         return updatedRecord;
@@ -238,11 +238,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @param metaTx The meta-transaction
      * @return The updated transaction record
      */
-    function updateBroadcasterCancellationWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+    function updateBroadcasterCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
         emit BroadcasterUpdateCancelled(updatedRecord.txId);
         return updatedRecord;
@@ -267,8 +267,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The transaction record
      */
     function updateRecoveryRequestAndApprove(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
@@ -294,8 +294,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @return The transaction record
      */
     function updateTimeLockRequestAndApprove(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
@@ -347,7 +347,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function _transferOwnership(address newOwner) internal virtual {
         address oldOwner = owner();
-        _updateAssignedWallet(StateAbstraction.OWNER_ROLE, newOwner, oldOwner);
+        _updateAssignedWallet(EngineBlox.OWNER_ROLE, newOwner, oldOwner);
         emit OwnershipTransferUpdated(oldOwner, newOwner);
     }
 
@@ -365,13 +365,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      *   revoke that broadcaster from the role.
      */
     function _updateBroadcaster(address newBroadcaster, uint256 location) internal virtual {
-        StateAbstraction.Role storage role = _getSecureState().roles[StateAbstraction.BROADCASTER_ROLE];
+        EngineBlox.Role storage role = _getSecureState().roles[EngineBlox.BROADCASTER_ROLE];
 
         address oldBroadcaster;
         uint256 length = role.walletCount;
 
         if (location < length) {
-            oldBroadcaster = _getAuthorizedWalletAt(StateAbstraction.BROADCASTER_ROLE, location);
+            oldBroadcaster = _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, location);
         } else {
             oldBroadcaster = address(0);
         }
@@ -379,7 +379,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         // Case 1: Revoke existing broadcaster at location
         if (newBroadcaster == address(0)) {
             if (oldBroadcaster != address(0)) {
-                _revokeWallet(StateAbstraction.BROADCASTER_ROLE, oldBroadcaster);
+                _revokeWallet(EngineBlox.BROADCASTER_ROLE, oldBroadcaster);
                 emit BroadcasterUpdated(oldBroadcaster, address(0));
             }
             return;
@@ -387,13 +387,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
         // Case 2: Update existing broadcaster at location
         if (oldBroadcaster != address(0)) {
-            _updateAssignedWallet(StateAbstraction.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
+            _updateAssignedWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
             emit BroadcasterUpdated(oldBroadcaster, newBroadcaster);
             return;
         }
 
         // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
-        _assignWallet(StateAbstraction.BROADCASTER_ROLE, newBroadcaster);
+        _assignWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster);
         emit BroadcasterUpdated(address(0), newBroadcaster);
     }
 
@@ -403,7 +403,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function _updateRecoveryAddress(address newRecoveryAddress) internal virtual {
         address oldRecovery = getRecovery();
-        _updateAssignedWallet(StateAbstraction.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
+        _updateAssignedWallet(EngineBlox.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
         emit RecoveryAddressUpdated(oldRecovery, newRecoveryAddress);
     }
 

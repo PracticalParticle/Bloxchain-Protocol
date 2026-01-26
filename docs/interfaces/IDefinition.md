@@ -20,7 +20,7 @@ Definition contracts should implement this interface to provide:
 ### getFunctionSchemas
 
 ```solidity
-function getFunctionSchemas() external pure returns (struct StateAbstraction.FunctionSchema[])
+function getFunctionSchemas() external pure returns (struct EngineBlox.FunctionSchema[])
 ```
 
 Returns all function schema definitions

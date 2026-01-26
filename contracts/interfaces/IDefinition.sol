@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../core/lib/StateAbstraction.sol";
+import "../core/lib/EngineBlox.sol";
 
 /**
  * @dev Interface for definition contracts that provide operation types, function schemas, and role permissions
@@ -22,14 +22,14 @@ interface IDefinition {
      */
     struct RolePermission {
         bytes32[] roleHashes;
-        StateAbstraction.FunctionPermission[] functionPermissions;
+        EngineBlox.FunctionPermission[] functionPermissions;
     }
 
     /**
      * @dev Returns all function schema definitions
      * @return Array of function schema definitions
      */
-    function getFunctionSchemas() external pure returns (StateAbstraction.FunctionSchema[] memory);
+    function getFunctionSchemas() external pure returns (EngineBlox.FunctionSchema[] memory);
     
     /**
      * @dev Returns all role hashes and their corresponding function permissions

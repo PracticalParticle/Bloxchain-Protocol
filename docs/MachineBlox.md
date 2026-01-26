@@ -50,7 +50,7 @@ See {IERC165-supportsInterface}.
 ### _requestTransaction
 
 ```solidity
-function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -63,7 +63,7 @@ function _requestTransaction(address requester, address target, uint256 value, u
 ### _approveTransaction
 
 ```solidity
-function _approveTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -76,7 +76,7 @@ function _approveTransaction(uint256 txId) internal nonpayable returns (struct S
 ### _approveTransactionWithMetaTx
 
 ```solidity
-function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -89,7 +89,7 @@ function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction m
 ### _cancelTransaction
 
 ```solidity
-function _cancelTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -102,7 +102,7 @@ function _cancelTransaction(uint256 txId) internal nonpayable returns (struct St
 ### _cancelTransactionWithMetaTx
 
 ```solidity
-function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -115,7 +115,7 @@ function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction me
 ### _requestAndApproveTransaction
 
 ```solidity
-function _requestAndApproveTransaction(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestAndApproveTransaction(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 

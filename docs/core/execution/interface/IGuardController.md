@@ -38,7 +38,7 @@ function initialize(address initialOwner, address broadcaster, address recovery,
 function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) external nonpayable returns (uint256)
 ```
 
-Requests a time-locked execution via StateAbstraction workflow
+Requests a time-locked execution via EngineBlox workflow
 
 **Parameters:**
 - `` (): The address of the target contract
@@ -75,7 +75,7 @@ Approves and executes a time-locked transaction
 ### cancelTimeLockExecution
 
 ```solidity
-function cancelTimeLockExecution(uint256 txId, bytes32 expectedOperationType) external nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTimeLockExecution(uint256 txId, bytes32 expectedOperationType) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a time-locked transaction
@@ -93,7 +93,7 @@ Cancels a time-locked transaction
 ### approveTimeLockExecutionWithMetaTx
 
 ```solidity
-function approveTimeLockExecutionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct StateAbstraction.TxRecord)
+function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a time-locked transaction using a meta-transaction
@@ -112,7 +112,7 @@ Approves a time-locked transaction using a meta-transaction
 ### cancelTimeLockExecutionWithMetaTx
 
 ```solidity
-function cancelTimeLockExecutionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a time-locked transaction using a meta-transaction
@@ -131,7 +131,7 @@ Cancels a time-locked transaction using a meta-transaction
 ### requestAndApproveExecution
 
 ```solidity
-function requestAndApproveExecution(struct StateAbstraction.MetaTransaction metaTx, bytes4 requiredSelector) external nonpayable returns (struct StateAbstraction.TxRecord)
+function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a transaction in one step using a meta-transaction

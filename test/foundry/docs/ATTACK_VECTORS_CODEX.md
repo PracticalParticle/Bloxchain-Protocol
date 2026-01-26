@@ -44,7 +44,7 @@ This codex serves as a comprehensive knowledge base of attack vectors identified
 
 #### CRITICAL: Protected Role Modification Bypass
 - **ID**: `AC-001`
-- **Location**: `StateAbstraction.sol:765-789`, `RuntimeRBAC.sol:242-248`
+- **Location**: `EngineBlox.sol:765-789`, `RuntimeRBAC.sol:242-248`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -64,8 +64,8 @@ executeRoleConfigBatch(actions);
 
 **Current Protection**:
 - ✅ Protected role check at `RuntimeRBAC.sol:246-248`
-- ✅ Protected role check at `StateAbstraction.sol:773-775` (removeRole)
-- ✅ Protected role check at `StateAbstraction.sol:864-866` (revokeWallet)
+- ✅ Protected role check at `EngineBlox.sol:773-775` (removeRole)
+- ✅ Protected role check at `EngineBlox.sol:864-866` (revokeWallet)
 - ✅ Batch operations validate protected roles before execution
 
 **Verification**:
@@ -83,7 +83,7 @@ executeRoleConfigBatch(actions);
 
 #### HIGH: Protected Role Last Wallet Removal
 - **ID**: `AC-002`
-- **Location**: `StateAbstraction.sol:858-873`
+- **Location**: `EngineBlox.sol:858-873`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -116,7 +116,7 @@ revokeWallet(OWNER_ROLE, ownerAddress);
 
 #### HIGH: Function Selector Manipulation
 - **ID**: `AC-003`
-- **Location**: `StateAbstraction.sol:946-966`, `StateAbstraction.sol:1949-1964`
+- **Location**: `EngineBlox.sol:946-966`, `EngineBlox.sol:1949-1964`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -158,7 +158,7 @@ addFunctionToRole(roleHash, FunctionPermission({
 
 #### HIGH: Handler Selector Self-Reference Exploitation
 - **ID**: `AC-004`
-- **Location**: `StateAbstraction.sol:1974-2011`
+- **Location**: `EngineBlox.sol:1974-2011`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -193,7 +193,7 @@ addFunctionToRole(roleHash, FunctionPermission({
 
 #### HIGH: Cross-Role Permission Accumulation
 - **ID**: `AC-005`
-- **Location**: `StateAbstraction.sol:946-966`
+- **Location**: `EngineBlox.sol:946-966`
 - **Severity**: HIGH
 - **Status**: ⚠️ **INTENTIONAL BEHAVIOR**
 
@@ -277,7 +277,7 @@ executeRoleConfigBatch(actions);
 
 #### MEDIUM: Role Wallet Limit Bypass
 - **ID**: `AC-007`
-- **Location**: `StateAbstraction.sol:809-823`
+- **Location**: `EngineBlox.sol:809-823`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -309,7 +309,7 @@ Bypassing `maxWallets` limit through concurrent operations or race conditions.
 
 #### MEDIUM: Duplicate Wallet Addition
 - **ID**: `AC-008`
-- **Location**: `StateAbstraction.sol:809-823`
+- **Location**: `EngineBlox.sol:809-823`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -338,7 +338,7 @@ assignWallet(roleHash, existingWallet);
 
 #### MEDIUM: Protected Role Name Collision
 - **ID**: `AC-009`
-- **Location**: `StateAbstraction.sol:731-757`
+- **Location**: `EngineBlox.sol:731-757`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -373,7 +373,7 @@ createRole("collision_string", 10, permissions);
 
 #### CRITICAL: Cross-Chain Signature Replay
 - **ID**: `MT-001`
-- **Location**: `StateAbstraction.sol:1507-1548`, `StateAbstraction.sol:1477`
+- **Location**: `EngineBlox.sol:1507-1548`, `EngineBlox.sol:1477`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -414,7 +414,7 @@ metaTx.params.chainId = 137; // Polygon
 
 #### CRITICAL: Nonce Replay Attack
 - **ID**: `MT-002`
-- **Location**: `StateAbstraction.sol:1446-1457`, `StateAbstraction.sol:1484`
+- **Location**: `EngineBlox.sol:1446-1457`, `EngineBlox.sol:1484`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -455,7 +455,7 @@ executeMetaTransaction(metaTx2); // Should fail - nonce mismatch
 
 #### HIGH: Signature Malleability Attack
 - **ID**: `MT-003`
-- **Location**: `StateAbstraction.sol:1556-1587`, `SharedValidation.sol:212-217`
+- **Location**: `EngineBlox.sol:1556-1587`, `SharedValidation.sol:212-217`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -486,7 +486,7 @@ ECDSA signature malleability (s-value manipulation) allowing creation of differe
 
 #### HIGH: Message Hash Manipulation
 - **ID**: `MT-004`
-- **Location**: `StateAbstraction.sol:1507-1548`
+- **Location**: `EngineBlox.sol:1507-1548`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -516,7 +516,7 @@ Manipulating EIP-712 message hash components after signing to change transaction
 
 #### MEDIUM: Expired Meta-Transaction
 - **ID**: `MT-005`
-- **Location**: `StateAbstraction.sol:1478`, `StateAbstraction.sol:1700`
+- **Location**: `EngineBlox.sol:1478`, `EngineBlox.sol:1700`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -550,7 +550,7 @@ MetaTransaction memory metaTx = {
 
 #### MEDIUM: Gas Price Limit Exceeded
 - **ID**: `MT-006`
-- **Location**: `StateAbstraction.sol:1481`, `SharedValidation.sol:357-364`
+- **Location**: `EngineBlox.sol:1481`, `SharedValidation.sol:357-364`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -586,7 +586,7 @@ MetaTransaction memory metaTx = {
 
 #### MEDIUM: Invalid Signature Rejected
 - **ID**: `MT-007`
-- **Location**: `StateAbstraction.sol:1556-1587`
+- **Location**: `EngineBlox.sol:1556-1587`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -627,7 +627,7 @@ MetaTransaction memory metaTx = {
 
 #### CRITICAL: Transaction Status Race Condition
 - **ID**: `SM-001`
-- **Location**: `StateAbstraction.sol:360-378`, `StateAbstraction.sol:387-399`, `StateAbstraction.sol:426-457`
+- **Location**: `EngineBlox.sol:360-378`, `EngineBlox.sol:387-399`, `EngineBlox.sol:426-457`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -667,7 +667,7 @@ cancelTransaction(txId);
 
 #### HIGH: Status Transition Bypass
 - **ID**: `SM-002`
-- **Location**: `StateAbstraction.sol:1928-1937`
+- **Location**: `EngineBlox.sol:1928-1937`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -702,7 +702,7 @@ cancelTransaction(txId); // Should fail - not PENDING
 
 #### HIGH: Premature Approval Attack
 - **ID**: `SM-003`
-- **Location**: `StateAbstraction.sol:360-378`, `StateAbstraction.sol:186`
+- **Location**: `EngineBlox.sol:360-378`, `EngineBlox.sol:186`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -737,7 +737,7 @@ approveTransaction(txId); // Should fail - time-lock not expired
 
 #### CRITICAL: Transaction Execution Reentrancy
 - **ID**: `RE-001`
-- **Location**: `StateAbstraction.sol:502-534`
+- **Location**: `EngineBlox.sol:502-534`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -777,7 +777,7 @@ contract MaliciousTarget {
 
 #### HIGH: Payment Execution Reentrancy
 - **ID**: `RE-002`
-- **Location**: `StateAbstraction.sol:550-590`
+- **Location**: `EngineBlox.sol:550-590`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -816,7 +816,7 @@ contract MaliciousRecipient {
 
 #### HIGH: ERC20 Token Reentrancy
 - **ID**: `RE-003`
-- **Location**: `StateAbstraction.sol:588`
+- **Location**: `EngineBlox.sol:588`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -858,7 +858,7 @@ contract MaliciousERC20 {
 
 #### HIGH: Time-Lock Period Manipulation
 - **ID**: `SM-004`
-- **Location**: `StateAbstraction.sol:246-249`, `SecureOwnable.sol:296-303`
+- **Location**: `EngineBlox.sol:246-249`, `SecureOwnable.sol:296-303`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -889,7 +889,7 @@ updateTimeLockPeriod(1); // 1 second instead of 24 hours
 
 #### MEDIUM: Block Timestamp Manipulation
 - **ID**: `SM-005`
-- **Location**: `StateAbstraction.sol:638`, `StateAbstraction.sol:186`
+- **Location**: `EngineBlox.sol:638`, `EngineBlox.sol:186`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -923,7 +923,7 @@ Miner manipulation of `block.timestamp` to accelerate time-lock expiration.
 
 #### HIGH: Gas Limit Manipulation
 - **ID**: `SM-006`
-- **Location**: `StateAbstraction.sol:508-511`, `StateAbstraction.sol:516`
+- **Location**: `EngineBlox.sol:508-511`, `EngineBlox.sol:516`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -955,7 +955,7 @@ requestTransaction(target, value, selector, params, 1000, operationType);
 
 #### HIGH: Target Contract Revert Exploitation
 - **ID**: `SM-007`
-- **Location**: `StateAbstraction.sol:516-518`, `StateAbstraction.sol:528-530`
+- **Location**: `EngineBlox.sol:516-518`, `EngineBlox.sol:528-530`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -993,7 +993,7 @@ contract RevertingTarget {
 
 #### HIGH: Insufficient Balance Exploitation
 - **ID**: `SM-008`
-- **Location**: `StateAbstraction.sol:563-565`, `StateAbstraction.sol:580-582`
+- **Location**: `EngineBlox.sol:563-565`, `EngineBlox.sol:580-582`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1067,7 +1067,7 @@ Injecting zero address (`address(0)`) in parameters where it's not expected.
 
 #### HIGH: Array Length Manipulation
 - **ID**: `IV-002`
-- **Location**: `StateAbstraction.sol:775`, `RuntimeRBAC.sol:208-302`
+- **Location**: `EngineBlox.sol:775`, `RuntimeRBAC.sol:208-302`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1098,7 +1098,7 @@ RoleConfigAction[] memory actions = new RoleConfigAction[](10000);
 
 #### MEDIUM: Array Index Out of Bounds
 - **ID**: `IV-003`
-- **Location**: `StateAbstraction.sol:1410-1414`
+- **Location**: `EngineBlox.sol:1410-1414`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1161,7 +1161,7 @@ executeRoleConfigBatch(actions);
 
 #### MEDIUM: Role Name Length Exploitation
 - **ID**: `IV-005`
-- **Location**: `StateAbstraction.sol:731-757`
+- **Location**: `EngineBlox.sol:731-757`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1192,7 +1192,7 @@ createRole(longName, 10, permissions);
 
 #### MEDIUM: Function Signature Validation
 - **ID**: `IV-006`
-- **Location**: `StateAbstraction.sol:1029-1088`
+- **Location**: `EngineBlox.sol:1029-1088`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1281,7 +1281,7 @@ requestTransaction(target, value, selector, params, gasLimit, bytes32(0));
 
 #### MEDIUM: Time-Lock Period Bounds
 - **ID**: `IV-009`
-- **Location**: `StateAbstraction.sol:246-249`
+- **Location**: `EngineBlox.sol:246-249`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1311,7 +1311,7 @@ updateTimeLockPeriod(type(uint256).max); // Overflow risk
 
 #### MEDIUM: Max Wallets Validation
 - **ID**: `IV-010`
-- **Location**: `StateAbstraction.sol:731-757`
+- **Location**: `EngineBlox.sol:731-757`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1346,7 +1346,7 @@ createRole("ROLE", type(uint256).max, permissions); // No limit
 
 #### HIGH: Payment Recipient Update After Request
 - **ID**: `PAY-001`
-- **Location**: `StateAbstraction.sol:697-707`
+- **Location**: `EngineBlox.sol:697-707`
 - **Severity**: HIGH
 - **Status**: ⚠️ **REQUIRES VERIFICATION**
 
@@ -1385,7 +1385,7 @@ updatePaymentForTransaction(txId, PaymentDetails({
 
 #### HIGH: Payment Amount Manipulation
 - **ID**: `PAY-002`
-- **Location**: `StateAbstraction.sol:697-707`
+- **Location**: `EngineBlox.sol:697-707`
 - **Severity**: HIGH
 - **Status**: ⚠️ **REQUIRES VERIFICATION**
 
@@ -1424,7 +1424,7 @@ updatePayment(txId, PaymentDetails({
 
 #### MEDIUM: Double Payment Exploitation
 - **ID**: `PAY-003`
-- **Location**: `StateAbstraction.sol:550-590`
+- **Location**: `EngineBlox.sol:550-590`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1454,7 +1454,7 @@ approveTransaction(txId); // Second execution - should fail
 
 #### MEDIUM: ERC20 Token Address Manipulation
 - **ID**: `PAY-004`
-- **Location**: `StateAbstraction.sol:576-589`
+- **Location**: `EngineBlox.sol:576-589`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1490,7 +1490,7 @@ updatePayment(txId, PaymentDetails({
 
 #### HIGH: Balance Drain Prevention
 - **ID**: `PAY-005`
-- **Location**: `StateAbstraction.sol:562-573`
+- **Location**: `EngineBlox.sol:562-573`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1520,7 +1520,7 @@ Draining contract native token balance through multiple transactions with large 
 
 #### MEDIUM: Payment Update Timing
 - **ID**: `PAY-006`
-- **Location**: `StateAbstraction.sol:697-707`
+- **Location**: `EngineBlox.sol:697-707`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1586,7 +1586,7 @@ Combining multiple vulnerabilities for privilege escalation through a multi-stag
 
 #### HIGH: Time-Lock + Meta-Transaction Bypass
 - **ID**: `COMP-002`
-- **Location**: `StateAbstraction.sol:360-378`, `StateAbstraction.sol:1477-1548`
+- **Location**: `EngineBlox.sol:360-378`, `EngineBlox.sol:1477-1548`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1617,7 +1617,7 @@ Bypassing time-lock using meta-transactions by signing approval immediately afte
 
 #### HIGH: Payment Update + Execution Bypass
 - **ID**: `COMP-003`
-- **Location**: `StateAbstraction.sol:697-707`, `StateAbstraction.sol:550-590`
+- **Location**: `EngineBlox.sol:697-707`, `EngineBlox.sol:550-590`
 - **Severity**: HIGH
 - **Status**: ⚠️ **REQUIRES VERIFICATION**
 
@@ -1648,7 +1648,7 @@ Combining payment update with execution to redirect funds during execution.
 
 #### HIGH: Nonce Prediction + Signature Replay
 - **ID**: `COMP-004`
-- **Location**: `StateAbstraction.sol:1446-1457`, `StateAbstraction.sol:1484`
+- **Location**: `EngineBlox.sol:1446-1457`, `EngineBlox.sol:1484`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1719,7 +1719,7 @@ updateTimeLockPeriod(1); // 1 second instead of 24 hours
 
 #### MEDIUM: Block Timestamp Manipulation
 - **ID**: `TIME-002`
-- **Location**: `StateAbstraction.sol:638`, `StateAbstraction.sol:186`
+- **Location**: `EngineBlox.sol:638`, `EngineBlox.sol:186`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1751,7 +1751,7 @@ Miner manipulation of `block.timestamp` to accelerate time-lock expiration.
 
 #### MEDIUM: Deadline Extension
 - **ID**: `TIME-003`
-- **Location**: `StateAbstraction.sol:1700`
+- **Location**: `EngineBlox.sol:1700`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1787,7 +1787,7 @@ MetaTransaction memory metaTx = {
 
 #### HIGH: Duplicate Role Creation
 - **ID**: `RM-001`
-- **Location**: `StateAbstraction.sol:731-757`
+- **Location**: `EngineBlox.sol:731-757`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1816,7 +1816,7 @@ createRole("EXISTING_ROLE", 10, permissions); // Second call - should fail
 
 #### MEDIUM: Role Wallet Limit Bypass
 - **ID**: `RM-002`
-- **Location**: `StateAbstraction.sol:809-823`
+- **Location**: `EngineBlox.sol:809-823`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1846,7 +1846,7 @@ Exceeding role wallet limits through concurrent operations.
 
 #### MEDIUM: Last Wallet Removal from Protected Role
 - **ID**: `RM-003`
-- **Location**: `StateAbstraction.sol:858-873`
+- **Location**: `EngineBlox.sol:858-873`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -1881,7 +1881,7 @@ revokeWallet(OWNER_ROLE, ownerAddress);
 
 #### CRITICAL: Whitelist Bypass via address(this)
 - **ID**: `WL-001`
-- **Location**: `StateAbstraction.sol:1227-1231`
+- **Location**: `EngineBlox.sol:1227-1231`
 - **Severity**: CRITICAL
 - **Status**: ✅ **INTENTIONAL**
 
@@ -1909,7 +1909,7 @@ requestTransaction(address(this), value, selector, params, ...);
 
 #### HIGH: Empty Whitelist Exploitation
 - **ID**: `WL-002`
-- **Location**: `StateAbstraction.sol:1217-1242`
+- **Location**: `EngineBlox.sol:1217-1242`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1936,7 +1936,7 @@ Exploiting empty whitelist behavior (all targets denied except `address(this)`).
 
 #### HIGH: Whitelist Removal Attack
 - **ID**: `WL-003`
-- **Location**: `StateAbstraction.sol:1197-1206`
+- **Location**: `EngineBlox.sol:1197-1206`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -1968,7 +1968,7 @@ approveTransaction(txId); // Should fail - target not whitelisted
 
 #### MEDIUM: Function Selector Not Registered
 - **ID**: `WL-004`
-- **Location**: `StateAbstraction.sol:1223-1225`
+- **Location**: `EngineBlox.sol:1223-1225`
 - **Severity**: MEDIUM
 - **Status**: ✅ **INTENTIONAL**
 
@@ -1997,7 +1997,7 @@ Bypassing whitelist for unregistered selectors (whitelist validation skipped).
 
 #### HIGH: Handler Selector Validation Bypass
 - **ID**: `FS-001`
-- **Location**: `StateAbstraction.sol:1974-2011`
+- **Location**: `EngineBlox.sol:1974-2011`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -2029,7 +2029,7 @@ addFunctionToRole(roleHash, FunctionPermission({
 
 #### MEDIUM: Protected Function Schema Modification
 - **ID**: `FS-002`
-- **Location**: `StateAbstraction.sol:1099-1144`
+- **Location**: `EngineBlox.sol:1099-1144`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -2056,7 +2056,7 @@ removeFunctionSchema(TRANSFER_OWNERSHIP_SELECTOR, false);
 
 #### MEDIUM: Operation Type Cleanup Exploitation
 - **ID**: `FS-003`
-- **Location**: `StateAbstraction.sol:1133-1143`
+- **Location**: `EngineBlox.sol:1133-1143`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -2088,7 +2088,7 @@ removeFunctionSchema(selector, false);
 
 #### CRITICAL: Multiple Initialization Attack
 - **ID**: `INIT-001`
-- **Location**: `StateAbstraction.sol:209-239`, `BaseStateMachine.sol:79-92`
+- **Location**: `EngineBlox.sol:209-239`, `BaseStateMachine.sol:79-92`
 - **Severity**: CRITICAL
 - **Status**: ✅ **PROTECTED**
 
@@ -2115,7 +2115,7 @@ initialize(attacker, attacker, attacker, ...); // Second call - should fail
 
 #### HIGH: Uninitialized State Exploitation
 - **ID**: `INIT-002`
-- **Location**: `StateAbstraction.sol:209-239`
+- **Location**: `EngineBlox.sol:209-239`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
 
@@ -2142,7 +2142,7 @@ requestTransaction(...); // Should fail - not initialized
 
 #### MEDIUM: Initialization Parameter Manipulation
 - **ID**: `INIT-003`
-- **Location**: `StateAbstraction.sol:209-239`
+- **Location**: `EngineBlox.sol:209-239`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -2328,7 +2328,7 @@ setHook(HookType.ON_ACTION, maliciousHook); // Should fail
 
 #### MEDIUM: Malicious Event Forwarder
 - **ID**: `EVENT-001`
-- **Location**: `StateAbstraction.sol:1724-1759`
+- **Location**: `EngineBlox.sol:1724-1759`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -2358,7 +2358,7 @@ setEventForwarder(maliciousForwarder);
 
 #### LOW: Event Forwarder Gas Exhaustion
 - **ID**: `EVENT-002`
-- **Location**: `StateAbstraction.sol:1746-1758`
+- **Location**: `EngineBlox.sol:1746-1758`
 - **Severity**: LOW
 - **Status**: ✅ **PROTECTED**
 

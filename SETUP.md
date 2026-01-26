@@ -126,7 +126,7 @@ CUSTOM_NETWORK_NAME=custom_network
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `MULTIPHASE_DEFINITIONS_ADDRESS` | StateAbstractionDefinitions address | Yes |
+| `MULTIPHASE_DEFINITIONS_ADDRESS` | EngineBloxDefinitions address | Yes |
 | `SECURE_OWNABLE_DEFINITIONS_ADDRESS` | SecureOwnableDefinitions address | Yes |
 | `RUNTIME_RBAC_DEFINITIONS_ADDRESS` | RuntimeRBACDefinitions address | Yes |
 

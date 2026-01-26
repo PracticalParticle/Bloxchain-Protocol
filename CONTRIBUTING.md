@@ -77,7 +77,7 @@ Bloxchain-Protocol/
 
 ### Key Components
 
-- **StateAbstraction Library**: Core state machine engine
+- **EngineBlox Library**: Core state machine engine
 - **BaseStateMachine**: Foundation contract for all implementations
 - **SecureOwnable**: Multi-role security implementation
 - **DynamicRBAC**: Role-based access control system

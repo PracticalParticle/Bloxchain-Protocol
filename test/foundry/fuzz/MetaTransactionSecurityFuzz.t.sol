@@ -36,24 +36,24 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
 
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             deadline
         );
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Transaction should fail with MetaTxExpired error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.MetaTxExpired.selector,
@@ -73,7 +73,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
 
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
@@ -82,10 +82,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
 
         // Create meta-transaction with wrong nonce
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
             0,
             owner
@@ -94,7 +94,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         // Override nonce with wrong value
         metaTxParams.nonce = wrongNonce;
 
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             owner,
             address(roleBlox),
             0,
@@ -114,10 +114,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         metaTx.signature = signature;
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Transaction should fail with InvalidNonce error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.InvalidNonce.selector,
@@ -135,7 +135,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
 
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
@@ -144,10 +144,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
 
         // Create meta-transaction with wrong chain ID
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
             0,
             owner
@@ -156,7 +156,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         // Override chain ID with wrong value
         metaTxParams.chainId = wrongChainId;
 
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             owner,
             address(roleBlox),
             0,
@@ -176,10 +176,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         metaTx.signature = signature;
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Transaction should fail with ChainIdMismatch error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.ChainIdMismatch.selector,
@@ -197,14 +197,14 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
 
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
@@ -214,10 +214,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         metaTx.signature = invalidSignature;
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Transaction should fail with InvalidSignatureLength or InvalidSignature error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         assertGt(txRecord.result.length, 0, "Should have error in result");
     }
 
@@ -243,7 +243,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
 
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
@@ -252,16 +252,16 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
 
         // Create meta-transaction signed by unauthorized address
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
             0,
             unauthorizedSigner
         );
 
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             unauthorizedSigner,
             address(roleBlox),
             0,
@@ -281,10 +281,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         metaTx.signature = signature;
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Transaction should fail with SignerNotAuthorized error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.SignerNotAuthorized.selector,
@@ -299,14 +299,14 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
     function testFuzz_NonceReplayProtection() public {
         // Create a valid action
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE_1", 10, permissions)
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
@@ -329,10 +329,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         uint256 currentNonce = roleBlox.getSignerNonce(owner);
         
         // Create new meta-transaction with old nonce
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
             0,
             owner
@@ -341,7 +341,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         // Override with old nonce (should be currentNonce - 1)
         metaTxParams.nonce = currentNonce - 1;
 
-        StateAbstraction.MetaTransaction memory metaTx2 = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx2 = roleBlox.generateUnsignedMetaTransactionForNew(
             owner,
             address(roleBlox),
             0,
@@ -361,10 +361,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         metaTx2.signature = signature2;
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord2 = roleBlox.roleConfigBatchRequestAndApprove(metaTx2);
+        EngineBlox.TxRecord memory txRecord2 = roleBlox.roleConfigBatchRequestAndApprove(metaTx2);
         
         // Transaction should fail with InvalidNonce error
-        assertEq(uint8(txRecord2.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord2.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.InvalidNonce.selector,
@@ -381,19 +381,19 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         address signer,
         bytes memory executionParams,
         uint256 deadline
-    ) internal returns (StateAbstraction.MetaTransaction memory) {
+    ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
             0, // maxGasPrice
             signer
         );
 
         // Generate unsigned meta-transaction
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             signer,
             address(roleBlox),
             0, // value

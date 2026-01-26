@@ -19,19 +19,19 @@ contract TransactionInvariantsTest is CommonBase {
         
         if (pending.length > 0) {
             vm.prank(owner);
-            StateAbstraction.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
+            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
             
             for (uint256 i = 0; i < history.length; i++) {
-                StateAbstraction.TxStatus status = history[i].status;
+                EngineBlox.TxStatus status = history[i].status;
                 
                 // Status should be a valid enum value
                 assertTrue(
-                    status == StateAbstraction.TxStatus.PENDING ||
-                    status == StateAbstraction.TxStatus.EXECUTING ||
-                    status == StateAbstraction.TxStatus.COMPLETED ||
-                    status == StateAbstraction.TxStatus.CANCELLED ||
-                    status == StateAbstraction.TxStatus.FAILED ||
-                    status == StateAbstraction.TxStatus.REJECTED
+                    status == EngineBlox.TxStatus.PENDING ||
+                    status == EngineBlox.TxStatus.EXECUTING ||
+                    status == EngineBlox.TxStatus.COMPLETED ||
+                    status == EngineBlox.TxStatus.CANCELLED ||
+                    status == EngineBlox.TxStatus.FAILED ||
+                    status == EngineBlox.TxStatus.REJECTED
                 );
             }
         }
@@ -43,7 +43,7 @@ contract TransactionInvariantsTest is CommonBase {
         
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            StateAbstraction.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
             // Release time should be validly set (greater than zero)
             // Note: Pending transactions can have releaseTime <= block.timestamp when timelock has elapsed
             // but transaction hasn't been approved/cancelled yet
@@ -74,10 +74,10 @@ contract TransactionInvariantsTest is CommonBase {
         
         if (pending.length > 0) {
             vm.prank(owner);
-            StateAbstraction.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
+            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
             
             for (uint256 i = 0; i < history.length; i++) {
-                StateAbstraction.PaymentDetails memory payment = history[i].payment;
+                EngineBlox.PaymentDetails memory payment = history[i].payment;
                 
                 // If payment recipient is set, verify at least one amount is non-zero
                 if (payment.recipient != address(0)) {

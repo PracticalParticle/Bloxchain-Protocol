@@ -16,7 +16,7 @@ event identification and categorization.
 ### forwardTxEvent
 
 ```solidity
-function forwardTxEvent(uint256 txId, bytes4 functionSelector, enum StateAbstraction.TxStatus status, address requester, address target, bytes32 operationType) external nonpayable
+function forwardTxEvent(uint256 txId, bytes4 functionSelector, enum EngineBlox.TxStatus status, address requester, address target, bytes32 operationType) external nonpayable
 ```
 
 Forward a transaction event from a deployed instance

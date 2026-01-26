@@ -45,7 +45,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
 
         // Create role config batch
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
@@ -56,17 +56,17 @@ contract RuntimeRBACFuzzTest is CommonBase {
         assertGt(executionParams.length, 0);
 
         // Actually execute through meta-transaction
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
         );
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Verify transaction completed
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify role was created
         vm.prank(owner);
@@ -95,14 +95,14 @@ contract RuntimeRBACFuzzTest is CommonBase {
 
         // First create the role
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
 
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -119,17 +119,17 @@ contract RuntimeRBACFuzzTest is CommonBase {
         });
 
         bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
-        StateAbstraction.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addParams,
             block.timestamp + 1 hours
         );
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         
         // Verify transaction completed
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify wallet was added
         vm.prank(owner);
@@ -143,19 +143,19 @@ contract RuntimeRBACFuzzTest is CommonBase {
         address signer,
         bytes memory executionParams,
         uint256 deadline
-    ) internal returns (StateAbstraction.MetaTransaction memory) {
+    ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
             0, // maxGasPrice
             signer
         );
 
         // Generate unsigned meta-transaction
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             signer,
             address(roleBlox),
             0, // value

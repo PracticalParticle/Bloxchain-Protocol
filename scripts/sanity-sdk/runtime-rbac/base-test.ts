@@ -36,7 +36,7 @@ export enum RoleConfigActionType {
 }
 
 /**
- * FunctionPermission structure matching Solidity StateAbstraction.FunctionPermission
+ * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission
  */
 export interface FunctionPermission {
   functionSelector: Hex;

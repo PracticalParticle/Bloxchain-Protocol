@@ -140,7 +140,7 @@ function setDelegatedCallEnabled(bool enabled) external nonpayable
 ### requestTransaction
 
 ```solidity
-function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayable returns (struct StateAbstraction.TxRecord)
+function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -155,7 +155,7 @@ function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayab
 ### approveTransactionAfterDelay
 
 ```solidity
-function approveTransactionAfterDelay(uint256 txId) external nonpayable returns (struct StateAbstraction.TxRecord)
+function approveTransactionAfterDelay(uint256 txId) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -170,7 +170,7 @@ function approveTransactionAfterDelay(uint256 txId) external nonpayable returns 
 ### approveTransactionWithMetaTx
 
 ```solidity
-function approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) external nonpayable returns (struct StateAbstraction.TxRecord)
+function approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -185,7 +185,7 @@ function approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction me
 ### cancelTransaction
 
 ```solidity
-function cancelTransaction(uint256 txId) external nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTransaction(uint256 txId) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -200,7 +200,7 @@ function cancelTransaction(uint256 txId) external nonpayable returns (struct Sta
 ### cancelTransactionWithMetaTx
 
 ```solidity
-function cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) external nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -215,7 +215,7 @@ function cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction met
 ### requestAndApproveTransactionWithMetaTx
 
 ```solidity
-function requestAndApproveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function requestAndApproveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -277,7 +277,7 @@ Receive function to accept ETH
 ### generateUnsignedSafeMetaTxForNew
 
 ```solidity
-function generateUnsignedSafeMetaTxForNew(struct GuardianSafe.SafeTx safeTx, struct GuardianSafe.SafeMetaTxParams params) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedSafeMetaTxForNew(struct GuardianSafe.SafeTx safeTx, struct GuardianSafe.SafeMetaTxParams params) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 
@@ -295,7 +295,7 @@ function generateUnsignedSafeMetaTxForNew(struct GuardianSafe.SafeTx safeTx, str
 ### generateUnsignedSafeMetaTxForExisting
 
 ```solidity
-function generateUnsignedSafeMetaTxForExisting(uint256 txId, struct GuardianSafe.SafeMetaTxParams params, bool isApproval) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedSafeMetaTxForExisting(uint256 txId, struct GuardianSafe.SafeMetaTxParams params, bool isApproval) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 

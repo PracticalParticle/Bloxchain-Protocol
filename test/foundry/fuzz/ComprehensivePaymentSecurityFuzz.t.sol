@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/execution/GuardController.sol";
-import "../../../contracts/core/lib/StateAbstraction.sol";
+import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
@@ -89,14 +89,14 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             0,
             0,
             operationType,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             assertTrue(txId > 0, "Transaction should be created");
             
             // Set initial payment to original recipient
-            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
                 recipient: originalRecipient,
                 nativeTokenAmount: paymentAmount,
                 erc20TokenAddress: address(0),
@@ -107,7 +107,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             paymentHelper.updatePaymentForTransaction(txId, initialPayment);
             
             // Update payment to new recipient (simulating potential attack)
-            StateAbstraction.PaymentDetails memory updatedPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
                 recipient: newRecipient,
                 nativeTokenAmount: paymentAmount,
                 erc20TokenAddress: address(0),
@@ -125,9 +125,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             vm.prank(owner);
             
             // Some recipients might be contracts that reject payments - handle gracefully
-            try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
                 // If execution succeeded, verify payment went to new recipient
-                if (result.status == StateAbstraction.TxStatus.COMPLETED) {
+                if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     assertEq(newRecipient.balance, newBalance + paymentAmount, "Payment should go to new recipient");
                     assertEq(originalRecipient.balance, originalBalance, "Original recipient should not receive payment");
                 }
@@ -183,13 +183,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             0,
             0,
             operationType,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
             // Set initial payment amount
-            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
                 recipient: recipient,
                 nativeTokenAmount: initialAmount,
                 erc20TokenAddress: address(0),
@@ -200,7 +200,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             paymentHelper.updatePaymentForTransaction(txId, initialPayment);
             
             // Attempt to manipulate payment amount
-            StateAbstraction.PaymentDetails memory manipulatedPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory manipulatedPayment = EngineBlox.PaymentDetails({
                 recipient: recipient,
                 nativeTokenAmount: manipulatedAmount,
                 erc20TokenAddress: address(0),
@@ -224,8 +224,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 paymentHelper.approveTransaction(txId);
             } else {
                 // If amount is valid, execution should succeed
-                StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txId);
-                assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.COMPLETED), "Should succeed when amount is valid");
+                EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED), "Should succeed when amount is valid");
                 uint256 recipientBalance = recipient.balance;
                 assertEq(recipientBalance, manipulatedAmount, "Payment should be sent");
             }
@@ -265,13 +265,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             0,
             0,
             operationType,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
             // Set up payment
-            StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
                 recipient: recipient,
                 nativeTokenAmount: paymentAmount,
                 erc20TokenAddress: address(0),
@@ -293,13 +293,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             
             // Get transaction status after first execution (requires role)
             vm.prank(owner);
-            StateAbstraction.TxRecord memory recordAfterFirst = paymentHelper.getTransaction(txId);
+            EngineBlox.TxRecord memory recordAfterFirst = paymentHelper.getTransaction(txId);
             
             // Attempt to execute again - should fail (status not PENDING)
             vm.prank(owner);
             vm.expectRevert(abi.encodeWithSelector(
                 SharedValidation.TransactionStatusMismatch.selector,
-                uint8(StateAbstraction.TxStatus.PENDING),
+                uint8(EngineBlox.TxStatus.PENDING),
                 uint8(recordAfterFirst.status)
             ));
             paymentHelper.approveTransaction(txId);
@@ -309,7 +309,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             
             // Verify transaction status unchanged (prevents double execution)
             vm.prank(owner);
-            StateAbstraction.TxRecord memory recordAfterSecond = paymentHelper.getTransaction(txId);
+            EngineBlox.TxRecord memory recordAfterSecond = paymentHelper.getTransaction(txId);
             assertEq(uint8(recordAfterSecond.status), uint8(recordAfterFirst.status), "Transaction should not execute twice");
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
@@ -353,13 +353,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             0,
             0,
             operationType,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
             // Set up ERC20 payment with fuzzed token address
-            StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
                 recipient: recipient,
                 nativeTokenAmount: 0,
                 erc20TokenAddress: tokenAddress,
@@ -379,9 +379,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             if (tokenAddress != address(mockERC20)) {
                 // Invalid token address should revert (non-contract or doesn't support ERC20)
                 // The execution will fail when trying to call balanceOf or transfer
-                try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+                try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
                     // If it doesn't revert, verify it failed
-                    assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.FAILED), "Should fail with invalid token address");
+                    assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with invalid token address");
                     assertTrue(result.result.length > 0, "Should have error message");
                 } catch {
                     // Revert is also acceptable for invalid token addresses
@@ -389,8 +389,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 }
             } else {
                 // Valid token should succeed
-                StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txId);
-                assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.COMPLETED), "Should succeed with valid token");
+                EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED), "Should succeed with valid token");
                 assertEq(mockERC20.balanceOf(recipient), initialTokenBalance + paymentAmount, "Token payment should be sent");
             }
         } catch (bytes memory reason) {
@@ -437,13 +437,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 0,
                 0,
                 operationType,
-                StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+                EngineBlox.NATIVE_TRANSFER_SELECTOR,
                 ""
-            ) returns (StateAbstraction.TxRecord memory txRecord) {
+            ) returns (EngineBlox.TxRecord memory txRecord) {
                 txIds[i] = txRecord.txId;
             
                 // Set up payment for each transaction
-                StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+                EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
                     recipient: recipient,
                     nativeTokenAmount: paymentAmount,
                     erc20TokenAddress: address(0),
@@ -469,9 +469,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             }
             
             vm.prank(owner);
-            StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txIds[i]);
+            EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txIds[i]);
             
-            if (result.status == StateAbstraction.TxStatus.COMPLETED) {
+            if (result.status == EngineBlox.TxStatus.COMPLETED) {
                 totalPaid += paymentAmount;
             }
         }
@@ -522,13 +522,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             0,
             0,
             operationType,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
             // Set initial payment to original recipient
-            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
                 recipient: originalRecipient,
                 nativeTokenAmount: paymentAmount,
                 erc20TokenAddress: address(0),
@@ -547,7 +547,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             advanceTime(advance);
             
             // Update payment to new recipient (before release time)
-            StateAbstraction.PaymentDetails memory updatedPayment = StateAbstraction.PaymentDetails({
+            EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
                 recipient: newRecipient,
                 nativeTokenAmount: paymentAmount,
                 erc20TokenAddress: address(0),
@@ -564,9 +564,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             vm.prank(owner);
             
             // Some recipients might be contracts that reject payments - handle gracefully
-            try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
                 // If execution succeeded, verify payment went to new recipient
-                if (result.status == StateAbstraction.TxStatus.COMPLETED) {
+                if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     // Get current balances to account for any pre-existing balance
                     uint256 finalNewBalance = newRecipient.balance;
                     uint256 finalOriginalBalance = originalRecipient.balance;

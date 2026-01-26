@@ -11,7 +11,7 @@ import "../../utils/SharedValidation.sol";
 import "../../interfaces/IEventForwarder.sol";
 
 /**
- * @title StateAbstraction
+ * @title EngineBlox
  * @dev A library for implementing secure state abstraction with time-locks and meta-transactions
  * 
  * This library provides a comprehensive framework for creating secure operations that require
@@ -30,9 +30,9 @@ import "../../interfaces/IEventForwarder.sol";
  * The library is designed to be used as a building block for secure smart contract systems
  * that require high levels of security and flexibility through state abstraction.
  */
-library StateAbstraction {
+library EngineBlox {
     // ============ VERSION INFORMATION ============
-    bytes32 public constant LIBRARY_NAME_HASH = keccak256("StateAbstraction");
+    bytes32 public constant PROTOCOL_NAME_HASH = keccak256("Bloxchain");
     uint8 public constant VERSION_MAJOR = 1;
     uint8 public constant VERSION_MINOR = 0;
     uint8 public constant VERSION_PATCH = 0;
@@ -179,8 +179,12 @@ library StateAbstraction {
     bytes32 constant RECOVERY_ROLE = keccak256(bytes("RECOVERY_ROLE"));
 
     // Native token transfer selector (reserved signature unlikely to exist in real contracts)
-    bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"));
+    bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__()"));
     bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
+    
+    // Payment update selector (reserved signature for payment detail updates)
+    bytes4 public constant UPDATE_PAYMENT_SELECTOR = bytes4(keccak256("__bloxchain_update_payment__()"));
+    bytes32 public constant UPDATE_PAYMENT_OPERATION = keccak256("UPDATE_PAYMENT");
 
     // EIP-712 Type Hashes
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
@@ -693,6 +697,10 @@ library StateAbstraction {
      * @param self The SecureOperationState to modify
      * @param txId The transaction ID to update payment for
      * @param paymentDetails The new payment details
+     * @notice Access control: Requires permission for UPDATE_PAYMENT_SELECTOR and execution selector
+     * @notice This prevents attackers from redirecting funds after transaction request
+     * @notice Contracts must register UPDATE_PAYMENT_SELECTOR schema and grant permissions
+     * @notice Permission check: Both UPDATE_PAYMENT_SELECTOR AND execution selector permissions required
      */
     function updatePaymentForTransaction(
         SecureOperationState storage self,
@@ -700,6 +708,18 @@ library StateAbstraction {
         PaymentDetails memory paymentDetails
     ) public {
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        
+        // Permission-based access control using macro selector
+        // Requires permission for UPDATE_PAYMENT_SELECTOR with EXECUTE_TIME_DELAY_REQUEST action
+        if (!hasActionPermission(self, msg.sender, UPDATE_PAYMENT_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
+        
+        // Also verify permission for the transaction's execution selector
+        // This ensures caller has permission for the underlying transaction (dual permission check)
+        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
+            revert SharedValidation.NoPermission(msg.sender);
+        }
            
         self.txRecords[txId].payment = paymentDetails;
         
@@ -1512,7 +1532,7 @@ library StateAbstraction {
     function generateMessageHash(MetaTransaction memory metaTx) private view returns (bytes32) {
         bytes32 domainSeparator = keccak256(abi.encode(
             DOMAIN_SEPARATOR_TYPE_HASH,
-            LIBRARY_NAME_HASH,
+            PROTOCOL_NAME_HASH,
             keccak256(abi.encodePacked(VERSION_MAJOR, ".", VERSION_MINOR, ".", VERSION_PATCH)),
             block.chainid,
             address(this)

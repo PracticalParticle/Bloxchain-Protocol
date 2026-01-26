@@ -354,7 +354,7 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                                             
                                             if (errorSelector === resourceNotFound) {
                                                 console.log(`  ❌ DIAGNOSTIC: ResourceNotFound - function selector or role not found in addFunctionToRole`);
-                                                console.log(`     - This happens at StateAbstraction.addFunctionToRole line 880 or 883`);
+                                                console.log(`     - This happens at EngineBlox.addFunctionToRole line 880 or 883`);
                                             } else if (errorSelector === resourceAlreadyExists) {
                                                 console.log(`  ⚠️  DIAGNOSTIC: ResourceAlreadyExists - permission already exists, will verify`);
                                             } else if (errorSelector === notSupported) {
@@ -1045,7 +1045,7 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             // NOTE:
             // Historically we tried to create the role and attach its permissions
             // in a single CREATE_ROLE action by passing FunctionPermission[].
-            // After tightening validation in StateAbstraction (handlerForSelectors invariants,
+            // After tightening validation in EngineBlox (handlerForSelectors invariants,
             // stricter meta-tx permission checks), that combined path became brittle:
             // any mismatch in FunctionPermission validation causes _createNewRole to revert,
             // so the role is never created and later ADD_FUNCTION_TO_ROLE actions fail with
@@ -2688,11 +2688,11 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
             console.log(`  ⚠️  NOTE: Function registration has been moved to GuardController.`);
             console.log(`  📋 This test step is skipped - function registration should be done via GuardController.guardConfigBatchRequestAndApprove`);
             
-            // Reserved signature for native token transfers (matches StateAbstraction.NATIVE_TRANSFER_SELECTOR)
+            // Reserved signature for native token transfers (matches EngineBlox.NATIVE_TRANSFER_SELECTOR)
             const functionSignature = '__bloxchain_native_transfer__(address,uint256)';
             const operationName = 'NATIVE_TRANSFER';
 
-            // Calculate the selector from signature (must match StateAbstraction.NATIVE_TRANSFER_SELECTOR)
+            // Calculate the selector from signature (must match EngineBlox.NATIVE_TRANSFER_SELECTOR)
             const nativeTransferSelector = this.web3.utils.keccak256(functionSignature).slice(0, 10);
             
             console.log(`  📋 Native transfer selector: ${nativeTransferSelector}`);

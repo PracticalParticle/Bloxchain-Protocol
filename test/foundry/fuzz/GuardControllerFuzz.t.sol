@@ -64,10 +64,10 @@ contract GuardControllerFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (StateAbstraction.TxRecord memory txRecord) {
+        ) returns (EngineBlox.TxRecord memory txRecord) {
             succeeded = true;
             // If it didn't revert, verify the transaction record is valid
-            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+            assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
             assertGt(txRecord.txId, 0);
         } catch {
             // Expected - execution fails without whitelist or proper permissions
@@ -136,8 +136,8 @@ contract GuardControllerFuzzTest is CommonBase {
         (
             string memory decodedSignature,
             string memory decodedOperationName,
-            StateAbstraction.TxAction[] memory decodedActionsArray
-        ) = abi.decode(decodedActions[0].data, (string, string, StateAbstraction.TxAction[]));
+            EngineBlox.TxAction[] memory decodedActionsArray
+        ) = abi.decode(decodedActions[0].data, (string, string, EngineBlox.TxAction[]));
         
         assertEq(keccak256(bytes(decodedSignature)), keccak256(bytes(functionSignature)));
         assertEq(keccak256(bytes(decodedOperationName)), keccak256(bytes(operationName)));

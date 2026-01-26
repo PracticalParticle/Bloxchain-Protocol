@@ -783,9 +783,9 @@ This document provides comprehensive documentation of all test functions in the 
 - **Purpose**: Unit tests for GuardController functionality
 - **Status**: ✅ Tests passing
 
-#### StateAbstraction.t.sol
-- **Location**: `test/foundry/unit/StateAbstraction.t.sol`
-- **Purpose**: Unit tests for StateAbstraction library
+#### EngineBlox.t.sol
+- **Location**: `test/foundry/unit/EngineBlox.t.sol`
+- **Purpose**: Unit tests for EngineBlox library
 - **Status**: ✅ Tests passing
 
 ---

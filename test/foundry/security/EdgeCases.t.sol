@@ -23,7 +23,7 @@ contract EdgeCasesTest is CommonBase {
     function test_InvalidStateTransitions() public {
         // Create and complete a transaction
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -43,11 +43,11 @@ contract EdgeCasesTest is CommonBase {
         
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 maxGasPrice = 100 gwei;
 
         // Creating params with short duration should be allowed (validation happens on execution)
-        StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -131,7 +131,7 @@ contract EdgeCasesTest is CommonBase {
     function test_BeforeReleaseTime() public {
         // Create request
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Try to approve before release time

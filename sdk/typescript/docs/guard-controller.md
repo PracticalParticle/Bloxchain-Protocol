@@ -5,7 +5,7 @@ The `GuardController` class provides type-safe access to Bloxchain GuardControll
 ## 🎯 **Overview**
 
 GuardController extends BaseStateMachine with execution control features:
-- **Generic contract delegation** with full StateAbstraction workflows
+- **Generic contract delegation** with full EngineBlox workflows
 - **Target whitelist management** via batch configuration
 - **Function schema registration** for runtime function management
 - **Time-locked execution** with approval workflows

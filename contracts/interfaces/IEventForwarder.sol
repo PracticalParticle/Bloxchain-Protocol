@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-// Import TxRecord struct from StateAbstraction
-import "../core/lib/StateAbstraction.sol";
+// Import TxRecord struct from EngineBlox
+import "../core/lib/EngineBlox.sol";
 
 /**
  * @title IEventForwarder
@@ -25,7 +25,7 @@ interface IEventForwarder {
     function forwardTxEvent(
         uint256 txId,
         bytes4 functionSelector,
-        StateAbstraction.TxStatus status,
+        EngineBlox.TxStatus status,
         address requester,
         address target,
         bytes32 operationType

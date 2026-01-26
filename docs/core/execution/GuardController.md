@@ -2,10 +2,10 @@
 
 # GuardController
 
-Lightweight controller for generic contract delegation with full StateAbstraction workflows
+Lightweight controller for generic contract delegation with full EngineBlox workflows
 
 This contract provides a complete solution for delegating control to external addresses.
-It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
+It extends BaseStateMachine for core state machine functionality and supports all EngineBlox
 execution patterns including time-locked transactions, meta-transactions, and payment management.
 
 Key Features:
@@ -46,7 +46,7 @@ Whitelist Management:
 
 
 **Notice:** This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
-Target whitelist is a GuardController-specific security feature, not part of StateAbstraction library
+Target whitelist is a GuardController-specific security feature, not part of EngineBlox library
 
 **Security Contact:** security@particlecrypto.com
 
@@ -87,10 +87,10 @@ See {IERC165-supportsInterface}.
 ### executeWithTimeLock
 
 ```solidity
-function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) public nonpayable returns (struct StateAbstraction.TxRecord)
+function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
-Requests a time-locked execution via StateAbstraction workflow
+Requests a time-locked execution via EngineBlox workflow
 
 **Parameters:**
 - `` (): The address of the target contract
@@ -109,7 +109,7 @@ Requests a time-locked execution via StateAbstraction workflow
 ### approveTimeLockExecution
 
 ```solidity
-function approveTimeLockExecution(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function approveTimeLockExecution(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves and executes a time-locked transaction
@@ -126,7 +126,7 @@ Approves and executes a time-locked transaction
 ### cancelTimeLockExecution
 
 ```solidity
-function cancelTimeLockExecution(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTimeLockExecution(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a time-locked transaction
@@ -143,7 +143,7 @@ Cancels a time-locked transaction
 ### approveTimeLockExecutionWithMetaTx
 
 ```solidity
-function approveTimeLockExecutionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a time-locked transaction using a meta-transaction
@@ -160,7 +160,7 @@ Approves a time-locked transaction using a meta-transaction
 ### cancelTimeLockExecutionWithMetaTx
 
 ```solidity
-function cancelTimeLockExecutionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a time-locked transaction using a meta-transaction
@@ -177,7 +177,7 @@ Cancels a time-locked transaction using a meta-transaction
 ### requestAndApproveExecution
 
 ```solidity
-function requestAndApproveExecution(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a transaction in one step using a meta-transaction
@@ -278,7 +278,7 @@ Creates execution params for updating the target whitelist for a function select
 ### updateTargetWhitelistRequestAndApprove
 
 ```solidity
-function updateTargetWhitelistRequestAndApprove(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateTargetWhitelistRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a whitelist update using a meta-transaction
@@ -299,7 +299,7 @@ function executeUpdateTargetWhitelist(bytes4 functionSelector, address target, b
 ```
 
 External execution entrypoint for whitelist updates.
-     Can only be called by the contract itself during protected StateAbstraction workflows.
+     Can only be called by the contract itself during protected EngineBlox workflows.
 
 **Parameters:**
 - `` (): The function selector

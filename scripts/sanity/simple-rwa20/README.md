@@ -132,7 +132,7 @@ RECOVERY_PRIVATE_KEY=0x...
 
 ### Integration Features
 - ✅ Bloxchain protocol integration
-- ✅ StateAbstraction usage
+- ✅ EngineBlox usage
 - ✅ EIP-712 signing
 - ✅ Event emission
 - ✅ Upgradeable contract support

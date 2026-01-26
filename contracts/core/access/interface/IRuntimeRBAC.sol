@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../../lib/StateAbstraction.sol";
+import "../../lib/EngineBlox.sol";
 
 /**
  * @title IRuntimeRBAC
@@ -13,7 +13,7 @@ import "../../lib/StateAbstraction.sol";
  * Key Features:
  * - Batch-based role configuration (atomic operations)
  * - Runtime function schema registration
- * - Integration with StateAbstraction for secure operations
+ * - Integration with EngineBlox for secure operations
  * - Query functions for role and permission inspection
  * 
  * Note: This contract inherits from BaseStateMachine which provides additional query functions
@@ -62,7 +62,7 @@ interface IRuntimeRBAC {
     /**
      * @dev Creates execution params for a RBAC configuration batch
      * @param actions Encoded role configuration actions
-     * @return The execution params for StateAbstraction
+     * @return The execution params for EngineBlox
      */
     function roleConfigBatchExecutionParams(
         RoleConfigAction[] memory actions
@@ -74,8 +74,8 @@ interface IRuntimeRBAC {
      * @return The transaction record
      */
     function roleConfigBatchRequestAndApprove(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) external returns (StateAbstraction.TxRecord memory);
+        EngineBlox.MetaTransaction memory metaTx
+    ) external returns (EngineBlox.TxRecord memory);
 
     // ============ QUERY FUNCTIONS ============
 
@@ -94,7 +94,7 @@ interface IRuntimeRBAC {
         bytes4 functionSelectorReturn,
         bytes32 operationType,
         string memory operationName,
-        StateAbstraction.TxAction[] memory supportedActions,
+        EngineBlox.TxAction[] memory supportedActions,
         bool isProtected
     );
 

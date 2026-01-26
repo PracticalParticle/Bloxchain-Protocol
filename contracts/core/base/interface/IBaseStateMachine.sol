@@ -2,7 +2,7 @@
 pragma solidity 0.8.33;
 
 // Contracts imports
-import "../../lib/StateAbstraction.sol";
+import "../../lib/EngineBlox.sol";
 
 /**
  * @title IBaseStateMachine
@@ -24,11 +24,11 @@ interface IBaseStateMachine {
     function createMetaTxParams(
         address handlerContract,
         bytes4 handlerSelector,
-        StateAbstraction.TxAction action,
+        EngineBlox.TxAction action,
         uint256 deadline,
         uint256 maxGasPrice,
         address signer
-    ) external view returns (StateAbstraction.MetaTxParams memory);
+    ) external view returns (EngineBlox.MetaTxParams memory);
 
     /**
      * @dev Generates an unsigned meta-transaction for a new operation
@@ -50,8 +50,8 @@ interface IBaseStateMachine {
         bytes32 operationType,
         bytes4 executionSelector,
         bytes memory executionParams,
-        StateAbstraction.MetaTxParams memory metaTxParams
-    ) external view returns (StateAbstraction.MetaTransaction memory);
+        EngineBlox.MetaTxParams memory metaTxParams
+    ) external view returns (EngineBlox.MetaTransaction memory);
 
     /**
      * @dev Generates an unsigned meta-transaction for an existing transaction
@@ -61,8 +61,8 @@ interface IBaseStateMachine {
      */
     function generateUnsignedMetaTransactionForExisting(
         uint256 txId,
-        StateAbstraction.MetaTxParams memory metaTxParams
-    ) external view returns (StateAbstraction.MetaTransaction memory);
+        EngineBlox.MetaTxParams memory metaTxParams
+    ) external view returns (EngineBlox.MetaTransaction memory);
 
     // ============ STATE QUERIES ============
 
@@ -72,14 +72,14 @@ interface IBaseStateMachine {
      * @param toTxId The ending transaction ID (inclusive)
      * @return The transaction history within the specified range
      */
-    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) external view returns (StateAbstraction.TxRecord[] memory);
+    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) external view returns (EngineBlox.TxRecord[] memory);
 
     /**
      * @dev Gets a transaction by ID
      * @param txId The transaction ID
      * @return The transaction record
      */
-    function getTransaction(uint256 txId) external view returns (StateAbstraction.TxRecord memory);
+    function getTransaction(uint256 txId) external view returns (EngineBlox.TxRecord memory);
 
     /**
      * @dev Gets all pending transaction IDs
@@ -103,14 +103,14 @@ interface IBaseStateMachine {
      * @param action The action to check
      * @return True if the action is supported by the function, false otherwise
      */
-    function isActionSupportedByFunction(bytes4 functionSelector, StateAbstraction.TxAction action) external view returns (bool);
+    function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) external view returns (bool);
 
     /**
      * @dev Gets the function permissions for a specific role
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role
      */
-    function getActiveRolePermissions(bytes32 roleHash) external view returns (StateAbstraction.FunctionPermission[] memory);
+    function getActiveRolePermissions(bytes32 roleHash) external view returns (EngineBlox.FunctionPermission[] memory);
 
     /**
      * @dev Gets the current nonce for a specific signer

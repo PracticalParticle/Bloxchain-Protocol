@@ -25,7 +25,7 @@ contract AccessControlTest is CommonBase {
         // Role creation requires proper permissions through state machine
         // Direct execution is internal-only (executeRoleConfigBatch)
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("ATTACKER_ROLE", 10, permissions)
@@ -62,7 +62,7 @@ contract AccessControlTest is CommonBase {
 
     function test_Revert_ProtectedRoleModification() public {
         // Protected roles cannot be removed or modified
-        // This is enforced in StateAbstraction library
+        // This is enforced in EngineBlox library
         // We verify the roles remain protected
         vm.prank(owner);
         (, , , , bool ownerProtected) = secureBlox.getRole(OWNER_ROLE);

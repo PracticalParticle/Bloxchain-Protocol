@@ -489,7 +489,7 @@
       },
       {
         "indexed": false,
-        "internalType": "enum StateAbstraction.TxStatus",
+        "internalType": "enum EngineBlox.TxStatus",
         "name": "status",
         "type": "uint8"
       },
@@ -517,19 +517,6 @@
   },
   {
     "inputs": [],
-    "name": "LIBRARY_NAME_HASH",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "NATIVE_TRANSFER_OPERATION",
     "outputs": [
       {
@@ -544,6 +531,45 @@
   {
     "inputs": [],
     "name": "NATIVE_TRANSFER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PROTOCOL_NAME_HASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPDATE_PAYMENT_OPERATION",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPDATE_PAYMENT_SELECTOR",
     "outputs": [
       {
         "internalType": "bytes4",
@@ -630,9 +656,9 @@
         "type": "bytes4"
       },
       {
-        "internalType": "enum StateAbstraction.TxAction",
+        "internalType": "enum EngineBlox.TxAction",
         "name": "action",
-        "type": "uint8"
+        "type": "EngineBlox.TxAction"
       },
       {
         "internalType": "uint256",
@@ -675,9 +701,9 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction",
+            "internalType": "enum EngineBlox.TxAction",
             "name": "action",
-            "type": "StateAbstraction.TxAction"
+            "type": "EngineBlox.TxAction"
           },
           {
             "internalType": "uint256",
@@ -695,7 +721,7 @@
             "type": "address"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTxParams",
+        "internalType": "struct EngineBlox.MetaTxParams",
         "name": "",
         "type": "tuple"
       }

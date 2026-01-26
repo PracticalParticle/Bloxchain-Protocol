@@ -62,7 +62,7 @@ See {IERC165-supportsInterface}.
 ### transferOwnershipRequest
 
 ```solidity
-function transferOwnershipRequest() public nonpayable returns (struct StateAbstraction.TxRecord)
+function transferOwnershipRequest() public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests a transfer of ownership
@@ -77,7 +77,7 @@ Requests a transfer of ownership
 ### transferOwnershipDelayedApproval
 
 ```solidity
-function transferOwnershipDelayedApproval(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function transferOwnershipDelayedApproval(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending ownership transfer transaction after the release time
@@ -94,7 +94,7 @@ Approves a pending ownership transfer transaction after the release time
 ### transferOwnershipApprovalWithMetaTx
 
 ```solidity
-function transferOwnershipApprovalWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function transferOwnershipApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending ownership transfer transaction using a meta-transaction
@@ -111,7 +111,7 @@ Approves a pending ownership transfer transaction using a meta-transaction
 ### transferOwnershipCancellation
 
 ```solidity
-function transferOwnershipCancellation(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function transferOwnershipCancellation(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending ownership transfer transaction
@@ -128,7 +128,7 @@ Cancels a pending ownership transfer transaction
 ### transferOwnershipCancellationWithMetaTx
 
 ```solidity
-function transferOwnershipCancellationWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function transferOwnershipCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending ownership transfer transaction using a meta-transaction
@@ -145,7 +145,7 @@ Cancels a pending ownership transfer transaction using a meta-transaction
 ### updateBroadcasterRequest
 
 ```solidity
-function updateBroadcasterRequest(address newBroadcaster) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateBroadcasterRequest(address newBroadcaster) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Updates the broadcaster address
@@ -162,7 +162,7 @@ Updates the broadcaster address
 ### updateBroadcasterDelayedApproval
 
 ```solidity
-function updateBroadcasterDelayedApproval(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateBroadcasterDelayedApproval(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending broadcaster update transaction after the release time
@@ -179,7 +179,7 @@ Approves a pending broadcaster update transaction after the release time
 ### updateBroadcasterApprovalWithMetaTx
 
 ```solidity
-function updateBroadcasterApprovalWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateBroadcasterApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending broadcaster update transaction using a meta-transaction
@@ -196,7 +196,7 @@ Approves a pending broadcaster update transaction using a meta-transaction
 ### updateBroadcasterCancellation
 
 ```solidity
-function updateBroadcasterCancellation(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateBroadcasterCancellation(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending broadcaster update transaction
@@ -213,7 +213,7 @@ Cancels a pending broadcaster update transaction
 ### updateBroadcasterCancellationWithMetaTx
 
 ```solidity
-function updateBroadcasterCancellationWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateBroadcasterCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending broadcaster update transaction using a meta-transaction
@@ -247,7 +247,7 @@ Creates execution params for updating the recovery address
 ### updateRecoveryRequestAndApprove
 
 ```solidity
-function updateRecoveryRequestAndApprove(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateRecoveryRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a recovery address update using a meta-transaction
@@ -281,7 +281,7 @@ Creates execution params for updating the time lock period
 ### updateTimeLockRequestAndApprove
 
 ```solidity
-function updateTimeLockRequestAndApprove(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function updateTimeLockRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a time lock period update using a meta-transaction

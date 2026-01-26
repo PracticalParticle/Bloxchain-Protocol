@@ -31,7 +31,7 @@ contract SecureOwnableFuzzTest is CommonBase {
 
         // Request ownership transfer (always transfers to recovery)
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = newContract.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = newContract.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Advance time past timelock
@@ -39,10 +39,10 @@ contract SecureOwnableFuzzTest is CommonBase {
 
         // Approve
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory approvalTx = newContract.transferOwnershipDelayedApproval(txId);
+        EngineBlox.TxRecord memory approvalTx = newContract.transferOwnershipDelayedApproval(txId);
 
         // Verify completion
-        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
         assertEq(newContract.owner(), recovery);
     }
 
@@ -53,7 +53,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != recovery);
 
         vm.prank(owner);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -97,9 +97,9 @@ contract SecureOwnableFuzzTest is CommonBase {
         // Create meta-tx params
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
 
-        StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,

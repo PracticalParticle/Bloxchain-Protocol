@@ -2,13 +2,13 @@
 
 # RuntimeRBAC
 
-Minimal Runtime Role-Based Access Control system based on StateAbstraction
+Minimal Runtime Role-Based Access Control system based on EngineBlox
 
 This contract provides essential runtime RBAC functionality:
 - Creation of non-protected roles
 - Basic wallet assignment to roles
 - Function permission management per role
-- Integration with StateAbstraction for secure operations
+- Integration with EngineBlox for secure operations
 
 Key Features:
 - Only non-protected roles can be created dynamically
@@ -65,7 +65,7 @@ Creates execution params for a RBAC configuration batch
 - `` (): Encoded role configuration actions
 
 **Returns:**
-- The execution params for StateAbstraction
+- The execution params for EngineBlox
 
 
 ---
@@ -73,7 +73,7 @@ Creates execution params for a RBAC configuration batch
 ### roleConfigBatchRequestAndApprove
 
 ```solidity
-function roleConfigBatchRequestAndApprove(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function roleConfigBatchRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and approves a RBAC configuration batch using a meta-transaction
@@ -105,7 +105,7 @@ External function that can only be called by the contract itself to execute a RB
 ### getFunctionSchema
 
 ```solidity
-function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum StateAbstraction.TxAction[], bool)
+function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum EngineBlox.TxAction[], bool)
 ```
 
 Gets function schema information
@@ -159,7 +159,7 @@ Internal helper to execute a RBAC configuration batch
 ### _createNewRole
 
 ```solidity
-function _createNewRole(string roleName, uint256 maxWallets, struct StateAbstraction.FunctionPermission[] functionPermissions) internal nonpayable returns (bytes32)
+function _createNewRole(string roleName, uint256 maxWallets, struct EngineBlox.FunctionPermission[] functionPermissions) internal nonpayable returns (bytes32)
 ```
 
 
@@ -224,7 +224,7 @@ Validates that a role is not protected
 ### _registerFunction
 
 ```solidity
-function _registerFunction(string functionSignature, string operationName, enum StateAbstraction.TxAction[] supportedActions) internal nonpayable returns (bytes4)
+function _registerFunction(string functionSignature, string operationName, enum EngineBlox.TxAction[] supportedActions) internal nonpayable returns (bytes4)
 ```
 
 
@@ -250,7 +250,7 @@ function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal
 ### _addFunctionToRole
 
 ```solidity
-function _addFunctionToRole(bytes32 roleHash, struct StateAbstraction.FunctionPermission functionPermission) internal nonpayable
+function _addFunctionToRole(bytes32 roleHash, struct EngineBlox.FunctionPermission functionPermission) internal nonpayable
 ```
 
 Adds a function permission to an existing role

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../core/lib/StateAbstraction.sol";
+import "../core/lib/EngineBlox.sol";
 
 /**
  * @title IOnActionHook
@@ -17,7 +17,7 @@ interface IOnActionHook {
      * @param caller The address that initiated the request
      */
     function onRequest(
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) external;
 
@@ -27,7 +27,7 @@ interface IOnActionHook {
      * @param caller The address that approved the transaction
      */
     function onApprove(
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) external;
 
@@ -37,7 +37,7 @@ interface IOnActionHook {
      * @param caller The address that cancelled the transaction
      */
     function onCancel(
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) external;
 
@@ -48,8 +48,8 @@ interface IOnActionHook {
      * @param caller The address executing the meta-transaction
      */
     function onMetaApprove(
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) external;
 
@@ -60,8 +60,8 @@ interface IOnActionHook {
      * @param caller The address executing the meta-transaction
      */
     function onMetaCancel(
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) external;
 
@@ -72,8 +72,8 @@ interface IOnActionHook {
      * @param caller The address executing the meta-transaction
      */
     function onRequestAndApprove(
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) external;
 }

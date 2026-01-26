@@ -26,7 +26,7 @@ type UserAddress = Address & { __brand: 'UserAddress' }
 // Contract definition types
 type DefinitionType = 
   | 'SecureOwnable'
-  | 'StateAbstraction'
+  | 'EngineBlox'
   | 'RuntimeRBAC'
   | 'Generic'
 
@@ -132,7 +132,7 @@ interface OperationWorkflow {
   supportedRoles: string[];
 }
 
-// Readable operation type (from StateAbstraction)
+// Readable operation type (from EngineBlox)
 interface ReadableOperationType {
   operationType: Hex;
   name: string;

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // Contracts imports
-import "../lib/StateAbstraction.sol";
+import "../lib/EngineBlox.sol";
 import "../../utils/SharedValidation.sol";
 import "./interface/IBaseStateMachine.sol";
 
@@ -25,7 +25,7 @@ import "./interface/IBaseStateMachine.sol";
  *
  * The contract is designed to be inherited by security-specific contracts that implement
  * their own operation types and business logic while leveraging the core state machine.
- * All access to StateAbstraction library functions is centralized through BaseStateMachine
+ * All access to EngineBlox library functions is centralized through BaseStateMachine
  * wrapper functions to ensure consistency and maintainability.
  *
  * Key Features:
@@ -37,10 +37,10 @@ import "./interface/IBaseStateMachine.sol";
  * - Event forwarding for external monitoring
  */
 abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, ReentrancyGuardUpgradeable {
-    using StateAbstraction for StateAbstraction.SecureOperationState;
+    using EngineBlox for EngineBlox.SecureOperationState;
     using SharedValidation for *;
 
-    StateAbstraction.SecureOperationState internal _secureState;
+    EngineBlox.SecureOperationState internal _secureState;
 
     // Events for core state machine operations
     event TransactionRequested(
@@ -98,7 +98,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The owner of the contract
      */
     function owner() public view returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.OWNER_ROLE, 0);
+        return _getAuthorizedWalletAt(EngineBlox.OWNER_ROLE, 0);
     }
 
     /**
@@ -106,7 +106,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of broadcaster addresses
      */
     function getBroadcasters() public view returns (address[] memory) {
-        return _getAuthorizedWallets(StateAbstraction.BROADCASTER_ROLE);
+        return _getAuthorizedWallets(EngineBlox.BROADCASTER_ROLE);
     }
 
     /**
@@ -114,7 +114,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The recovery address
      */
     function getRecovery() public view returns (address) {
-        return _getAuthorizedWalletAt(StateAbstraction.RECOVERY_ROLE, 0);
+        return _getAuthorizedWalletAt(EngineBlox.RECOVERY_ROLE, 0);
     }
 
     // ============ INTERFACE SUPPORT ============
@@ -156,8 +156,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bytes32 operationType,
         bytes4 functionSelector,
         bytes memory params
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.txRequest(
+    ) internal virtual returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txRequest(
             _getSecureState(),
             requester,
             target,
@@ -181,8 +181,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function _approveTransaction(
         uint256 txId
-    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
+    ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
@@ -195,9 +195,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _approveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.txApprovalWithMetaTx(_getSecureState(), metaTx);
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txApprovalWithMetaTx(_getSecureState(), metaTx);
     }
 
     /**
@@ -210,8 +210,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function _cancelTransaction(
         uint256 txId
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
+    ) internal virtual returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
     }
 
     /**
@@ -223,9 +223,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _cancelTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.txCancellationWithMetaTx(_getSecureState(), metaTx);
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txCancellationWithMetaTx(_getSecureState(), metaTx);
     }
 
     /**
@@ -238,9 +238,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _requestAndApproveTransaction(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual nonReentrant returns (StateAbstraction.TxRecord memory) {
-        return StateAbstraction.requestAndApprove(_getSecureState(), metaTx);
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.requestAndApprove(_getSecureState(), metaTx);
     }
 
     /**
@@ -251,9 +251,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function _updatePaymentForTransaction(
         uint256 txId,
-        StateAbstraction.PaymentDetails memory paymentDetails
-    ) internal virtual returns (StateAbstraction.TxRecord memory) {
-        StateAbstraction.updatePaymentForTransaction(_getSecureState(), txId, paymentDetails);
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) internal virtual returns (EngineBlox.TxRecord memory) {
+        EngineBlox.updatePaymentForTransaction(_getSecureState(), txId, paymentDetails);
         return _secureState.getTxRecord(txId);
     }
 
@@ -272,12 +272,12 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function createMetaTxParams(
         address handlerContract,
         bytes4 handlerSelector,
-        StateAbstraction.TxAction action,
+        EngineBlox.TxAction action,
         uint256 deadline,
         uint256 maxGasPrice,
         address signer
-    ) public view returns (StateAbstraction.MetaTxParams memory) {
-        return StateAbstraction.createMetaTxParams(
+    ) public view returns (EngineBlox.MetaTxParams memory) {
+        return EngineBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -307,9 +307,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bytes32 operationType,
         bytes4 executionSelector,
         bytes memory executionParams,
-        StateAbstraction.MetaTxParams memory metaTxParams
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
-        StateAbstraction.TxParams memory txParams = StateAbstraction.TxParams({
+        EngineBlox.MetaTxParams memory metaTxParams
+    ) public view returns (EngineBlox.MetaTransaction memory) {
+        EngineBlox.TxParams memory txParams = EngineBlox.TxParams({
             requester: requester,
             target: target,
             value: value,
@@ -330,8 +330,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function generateUnsignedMetaTransactionForExisting(
         uint256 txId,
-        StateAbstraction.MetaTxParams memory metaTxParams
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
+        EngineBlox.MetaTxParams memory metaTxParams
+    ) public view returns (EngineBlox.MetaTransaction memory) {
         return _secureState.generateUnsignedForExistingMetaTx(txId, metaTxParams);
     }
 
@@ -344,7 +344,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The transaction history within the specified range
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (StateAbstraction.TxRecord[] memory) {
+    function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (EngineBlox.TxRecord[] memory) {
         _validateAnyRole();
         
         // Validate the range
@@ -355,7 +355,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         SharedValidation.validateLessThan(fromTxId, toTxId);
 
         uint256 rangeSize = toTxId - fromTxId + 1;
-        StateAbstraction.TxRecord[] memory history = new StateAbstraction.TxRecord[](rangeSize);
+        EngineBlox.TxRecord[] memory history = new EngineBlox.TxRecord[](rangeSize);
         
         for (uint256 i = 0; i < rangeSize; i++) {
             history[i] = _secureState.getTxRecord(fromTxId + i);
@@ -370,7 +370,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The transaction record
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getTransaction(uint256 txId) public view returns (StateAbstraction.TxRecord memory) {
+    function getTransaction(uint256 txId) public view returns (EngineBlox.TxRecord memory) {
         _validateAnyRole();
         return _secureState.getTxRecord(txId);
     }
@@ -405,7 +405,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool isProtected
     ) {
         _validateAnyRole();
-        StateAbstraction.Role storage role = _secureState.getRole(roleHash);
+        EngineBlox.Role storage role = _secureState.getRole(roleHash);
         return (
             role.roleName,
             role.roleHash,
@@ -440,7 +440,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param action The action to check
      * @return True if the action is supported by the function, false otherwise
      */
-    function isActionSupportedByFunction(bytes4 functionSelector, StateAbstraction.TxAction action) public view returns (bool) {
+    function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) public view returns (bool) {
         return _secureState.isActionSupportedByFunction(functionSelector, action);
     }
 
@@ -450,7 +450,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The function permissions array for the role
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getActiveRolePermissions(bytes32 roleHash) public view returns (StateAbstraction.FunctionPermission[] memory) {
+    function getActiveRolePermissions(bytes32 roleHash) public view returns (EngineBlox.FunctionPermission[] memory) {
         _validateAnyRole();
         return _secureState.getRoleFunctionPermissions(roleHash);
     }
@@ -523,7 +523,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The authorized wallet address
      */
     function _getAuthorizedWalletAt(bytes32 roleHash, uint256 index) internal view returns (address) {
-        return StateAbstraction.getAuthorizedWalletAt(_getSecureState(), roleHash, index);
+        return EngineBlox.getAuthorizedWalletAt(_getSecureState(), roleHash, index);
     }
 
     /**
@@ -532,7 +532,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      */
     function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[] memory) {
-        StateAbstraction.Role storage role = _secureState.roles[roleHash];
+        EngineBlox.Role storage role = _secureState.roles[roleHash];
         uint256 walletCount = role.walletCount;
 
         address[] memory wallets = new address[](walletCount);
@@ -557,7 +557,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool isProtected
     ) internal virtual returns (bytes32) {
         bytes32 roleHash = keccak256(bytes(roleName));
-        StateAbstraction.createRole(_getSecureState(), roleName, maxWallets, isProtected);
+        EngineBlox.createRole(_getSecureState(), roleName, maxWallets, isProtected);
         return roleHash;
     }
 
@@ -567,7 +567,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _removeRole(bytes32 roleHash) internal virtual {
-        StateAbstraction.removeRole(_getSecureState(), roleHash);
+        EngineBlox.removeRole(_getSecureState(), roleHash);
     }
 
     /**
@@ -577,7 +577,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _assignWallet(bytes32 roleHash, address wallet) internal virtual {
-        StateAbstraction.assignWallet(_getSecureState(), roleHash, wallet);
+        EngineBlox.assignWallet(_getSecureState(), roleHash, wallet);
     }
 
     /**
@@ -587,7 +587,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _revokeWallet(bytes32 roleHash, address wallet) internal virtual {
-        StateAbstraction.revokeWallet(_getSecureState(), roleHash, wallet);
+        EngineBlox.revokeWallet(_getSecureState(), roleHash, wallet);
     }
 
     /**
@@ -598,7 +598,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality or additional validation
      */
     function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
-        StateAbstraction.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
+        EngineBlox.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
     /**
@@ -607,7 +607,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
-        StateAbstraction.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
+        EngineBlox.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
     }
 
     // ============ FUNCTION SCHEMA MANAGEMENT ============
@@ -630,7 +630,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool isProtected,
         bytes4[] memory handlerForSelectors
     ) internal virtual {
-        StateAbstraction.createFunctionSchema(
+        EngineBlox.createFunctionSchema(
             _getSecureState(),
             functionSignature,
             functionSelector,
@@ -648,7 +648,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _removeFunctionSchema(bytes4 functionSelector, bool safeRemoval) internal virtual {
-        StateAbstraction.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
+        EngineBlox.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
     }
 
     /**
@@ -659,9 +659,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function _addFunctionToRole(
         bytes32 roleHash,
-        StateAbstraction.FunctionPermission memory functionPermission
+        EngineBlox.FunctionPermission memory functionPermission
     ) internal virtual {
-        StateAbstraction.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
+        EngineBlox.addFunctionToRole(_getSecureState(), roleHash, functionPermission);
     }
 
     /**
@@ -671,7 +671,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _removeFunctionFromRole(bytes32 roleHash, bytes4 functionSelector) internal virtual {
-        StateAbstraction.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
+        EngineBlox.removeFunctionFromRole(_getSecureState(), roleHash, functionSelector);
     }
 
     // ============ PERMISSION VALIDATION ============
@@ -681,7 +681,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateAnyRole() internal view {
-        StateAbstraction._validateAnyRole(_getSecureState());
+        EngineBlox._validateAnyRole(_getSecureState());
     }
 
     /**
@@ -690,7 +690,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateRoleExists(bytes32 roleHash) internal view {
-        StateAbstraction._validateRoleExists(_getSecureState(), roleHash);
+        EngineBlox._validateRoleExists(_getSecureState(), roleHash);
     }
 
     // ============ UTILITY FUNCTIONS ============
@@ -700,8 +700,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param bitmap The bitmap to convert
      * @return Array of TxAction values
      */
-    function _convertBitmapToActions(uint16 bitmap) internal pure returns (StateAbstraction.TxAction[] memory) {
-        return StateAbstraction.convertBitmapToActions(bitmap);
+    function _convertBitmapToActions(uint16 bitmap) internal pure returns (EngineBlox.TxAction[] memory) {
+        return EngineBlox.convertBitmapToActions(bitmap);
     }
 
     /**
@@ -709,8 +709,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param actions Array of TxAction values
      * @return The bitmap representation
      */
-    function _createBitmapFromActions(StateAbstraction.TxAction[] memory actions) internal pure returns (uint16) {
-        return StateAbstraction.createBitmapFromActions(actions);
+    function _createBitmapFromActions(EngineBlox.TxAction[] memory actions) internal pure returns (uint16) {
+        return EngineBlox.createBitmapFromActions(actions);
     }
 
     // ============ TARGET WHITELIST MANAGEMENT ============
@@ -754,13 +754,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
      */
     function _loadDefinitions(
-        StateAbstraction.FunctionSchema[] memory functionSchemas,
+        EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
+        EngineBlox.FunctionPermission[] memory functionPermissions
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
-            StateAbstraction.createFunctionSchema(
+            EngineBlox.createFunctionSchema(
                 _getSecureState(),
                 functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
@@ -774,7 +774,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Load role permissions using parallel arrays
         SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
         for (uint256 i = 0; i < roleHashes.length; i++) {
-            StateAbstraction.addFunctionToRole(
+            EngineBlox.addFunctionToRole(
                 _getSecureState(),
                 roleHashes[i],
                 functionPermissions[i]
@@ -788,7 +788,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Internal function to get the secure state
      * @return secureState The secure state
      */
-    function _getSecureState() internal view returns (StateAbstraction.SecureOperationState storage) {
+    function _getSecureState() internal view returns (EngineBlox.SecureOperationState storage) {
         return _secureState;
     }
 
@@ -802,7 +802,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _hasActionPermission(
         address caller,
         bytes4 functionSelector,
-        StateAbstraction.TxAction action
+        EngineBlox.TxAction action
     ) internal view returns (bool) {
         return _secureState.hasActionPermission(caller, functionSelector, action);
     }
@@ -812,7 +812,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param caller The address to validate
      */
     function _validateBroadcaster(address caller) internal view {
-        if (!hasRole(StateAbstraction.BROADCASTER_ROLE, caller)) {
+        if (!hasRole(EngineBlox.BROADCASTER_ROLE, caller)) {
             revert SharedValidation.NoPermission(caller);
         }
     }
