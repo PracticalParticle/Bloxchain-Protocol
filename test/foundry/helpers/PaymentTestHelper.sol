@@ -88,7 +88,7 @@ contract PaymentTestHelper is BaseStateMachine {
         if (!state.supportedFunctionsSet.contains(bytes32(nativeTransferSelector))) {
             StateAbstraction.createFunctionSchema(
                 state,
-                "__bloxchain_native_transfer__(address,uint256)",
+                "__bloxchain_native_transfer__()",
                 nativeTransferSelector,
                 "NATIVE_TRANSFER",
                 bothActionsBitmap, // Support both REQUEST and APPROVE
@@ -175,6 +175,33 @@ contract PaymentTestHelper is BaseStateMachine {
                 handlerForSelectors: approveTxHandlers
             });
             StateAbstraction.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
+        }
+        
+        // Register UPDATE_PAYMENT_SELECTOR function schema if not already registered
+        bytes4 updatePaymentSelector = StateAbstraction.UPDATE_PAYMENT_SELECTOR;
+        bytes4[] memory updatePaymentHandlers = new bytes4[](1);
+        updatePaymentHandlers[0] = updatePaymentSelector; // Self-reference
+        
+        if (!state.supportedFunctionsSet.contains(bytes32(updatePaymentSelector))) {
+            StateAbstraction.createFunctionSchema(
+                state,
+                "__bloxchain_update_payment__()",
+                updatePaymentSelector,
+                "UPDATE_PAYMENT",
+                requestActionsBitmap, // Use REQUEST action for payment updates
+                false,
+                updatePaymentHandlers
+            );
+        }
+        
+        // Ensure permissions are granted even if schema already exists
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(updatePaymentSelector))) {
+            StateAbstraction.FunctionPermission memory updatePaymentPermission = StateAbstraction.FunctionPermission({
+                functionSelector: updatePaymentSelector,
+                grantedActionsBitmap: requestActionsBitmap, // REQUEST action
+                handlerForSelectors: updatePaymentHandlers
+            });
+            StateAbstraction.addFunctionToRole(state, ownerRoleHash, updatePaymentPermission);
         }
     }
     

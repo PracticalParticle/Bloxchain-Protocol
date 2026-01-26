@@ -33,7 +33,7 @@ contract StateAbstractionTest is CommonBase {
     }
 
     function test_NativeTransferSelector_Constant() public {
-        bytes4 expected = bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"));
+        bytes4 expected = bytes4(keccak256("__bloxchain_native_transfer__()"));
         assertEq(StateAbstraction.NATIVE_TRANSFER_SELECTOR, expected);
     }
 

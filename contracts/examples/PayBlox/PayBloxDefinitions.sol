@@ -33,7 +33,7 @@ library PayBloxDefinitions {
      * @return Array of function schema definitions
      */
     function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](3);
+        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](4);
         
         // Time-delay function schemas
         StateAbstraction.TxAction[] memory timeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -87,6 +87,20 @@ library PayBloxDefinitions {
             handlerForSelectors: cancelPaymentHandlerForSelectors
         });
         
+        // UPDATE_PAYMENT_SELECTOR schema for payment detail updates
+        bytes4[] memory updatePaymentHandlerForSelectors = new bytes4[](1);
+        updatePaymentHandlerForSelectors[0] = StateAbstraction.UPDATE_PAYMENT_SELECTOR;
+        
+        schemas[3] = StateAbstraction.FunctionSchema({
+            functionSignature: "__bloxchain_update_payment__()",
+            functionSelector: StateAbstraction.UPDATE_PAYMENT_SELECTOR,
+            operationType: StateAbstraction.UPDATE_PAYMENT_OPERATION,
+            operationName: "UPDATE_PAYMENT",
+            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            isProtected: false, // Not a protected function, but requires permissions
+            handlerForSelectors: updatePaymentHandlerForSelectors
+        });
+        
         return schemas;
     }
     
@@ -97,8 +111,8 @@ library PayBloxDefinitions {
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
         StateAbstraction.FunctionPermission[] memory functionPermissions;
-        roleHashes = new bytes32[](3);
-        functionPermissions = new StateAbstraction.FunctionPermission[](3);
+        roleHashes = new bytes32[](4);
+        functionPermissions = new StateAbstraction.FunctionPermission[](4);
         
         // Owner role permissions for time-delay operations
         StateAbstraction.TxAction[] memory ownerTimeDelayRequestActions = new StateAbstraction.TxAction[](1);
@@ -117,6 +131,8 @@ library PayBloxDefinitions {
         approvePaymentDelayedHandlers[0] = APPROVE_PAYMENT_DELAYED_SELECTOR;
         bytes4[] memory cancelPaymentHandlers = new bytes4[](1);
         cancelPaymentHandlers[0] = CANCEL_PAYMENT_SELECTOR;
+        bytes4[] memory updatePaymentHandlers = new bytes4[](1);
+        updatePaymentHandlers[0] = StateAbstraction.UPDATE_PAYMENT_SELECTOR;
      
         // Owner: Request Payment With Payment
         roleHashes[0] = StateAbstraction.OWNER_ROLE;
@@ -140,6 +156,14 @@ library PayBloxDefinitions {
             functionSelector: CANCEL_PAYMENT_SELECTOR,
             grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayCancelActions),
             handlerForSelectors: cancelPaymentHandlers // Self-reference indicates execution selector
+        });
+        
+        // Owner: Update Payment (for payment detail updates)
+        roleHashes[3] = StateAbstraction.OWNER_ROLE;
+        functionPermissions[3] = StateAbstraction.FunctionPermission({
+            functionSelector: StateAbstraction.UPDATE_PAYMENT_SELECTOR,
+            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeDelayRequestActions),
+            handlerForSelectors: updatePaymentHandlers
         });
         
         return IDefinition.RolePermission({

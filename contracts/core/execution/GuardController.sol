@@ -278,7 +278,8 @@ abstract contract GuardController is BaseStateMachine {
      *         - NATIVE_TRANSFER_SELECTOR: For native token transfers
      */
     function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
-        return functionSelector == StateAbstraction.NATIVE_TRANSFER_SELECTOR;
+        return functionSelector == StateAbstraction.NATIVE_TRANSFER_SELECTOR
+            || functionSelector == StateAbstraction.UPDATE_PAYMENT_SELECTOR;
     }
 
     /**
