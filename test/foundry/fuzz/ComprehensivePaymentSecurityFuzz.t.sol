@@ -6,8 +6,7 @@ import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/core/lib/StateAbstraction.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 import "../helpers/MockContracts.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "../helpers/PaymentTestHelper.sol";
 
 /**
  * @title ComprehensivePaymentSecurityFuzzTest
@@ -24,12 +23,31 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
  * Based on: SECURITY_ATTACK_VECTORS_ECONOMIC.md
  */
 contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
+    PaymentTestHelper public paymentHelper;
     
     function setUp() public override {
         super.setUp();
         // Fund controlBlox for payment tests
         vm.deal(address(controlBlox), 1000 ether);
         mockERC20.mint(address(controlBlox), 1000000e18);
+        
+        // Deploy payment helper contract
+        paymentHelper = new PaymentTestHelper();
+        vm.prank(owner);
+        paymentHelper.initialize(
+            owner,
+            broadcaster,
+            recovery,
+            DEFAULT_TIMELOCK_PERIOD,
+            address(0)
+        );
+        
+        // Fund payment helper for tests
+        vm.deal(address(paymentHelper), 1000 ether);
+        mockERC20.mint(address(paymentHelper), 1000000e18);
+        
+        // PaymentTestHelper sets up permissions in initialize() for NATIVE_TRANSFER_SELECTOR
+        // and requestTransaction/approveTransaction functions
         
         // Whitelist controlBlox for native transfers (already done in StateMachine tests, but ensure it's done)
         // Note: This might already be whitelisted, but we ensure it here
@@ -41,8 +59,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
      * @dev Test: Payment recipient update access control
      * Attack Vector: Payment Recipient Update After Request (HIGH)
      * 
-     * CRITICAL: This test verifies who can update payments
-     * Need to verify access control in updatePaymentForTransaction
+     * This test verifies that payment recipient updates work correctly and
+     * that payments go to the updated recipient, not the original one.
      */
     function testFuzz_PaymentRecipientUpdateAccessControl(
         address originalRecipient,
@@ -52,31 +70,84 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         vm.assume(originalRecipient != address(0));
         vm.assume(newRecipient != address(0));
         vm.assume(originalRecipient != newRecipient);
+        // Exclude PaymentTestHelper and test accounts from being recipients
+        vm.assume(originalRecipient != address(paymentHelper));
+        vm.assume(newRecipient != address(paymentHelper));
+        vm.assume(originalRecipient != owner && originalRecipient != broadcaster && originalRecipient != recovery);
+        vm.assume(newRecipient != owner && newRecipient != broadcaster && newRecipient != recovery);
         // Bound payment amount to available balance
-        paymentAmount = bound(paymentAmount, 1, address(controlBlox).balance);
+        paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction - may fail with NoPermission if setup didn't complete
+        // Create transaction using payment helper
+        // Note: This may fail with NoPermission if permissions aren't set up
+        // In a full test setup, permissions would be configured via GuardController
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try paymentHelper.requestTransaction(
+            owner,
+            address(paymentHelper),
             0,
+            0,
+            operationType,
             StateAbstraction.NATIVE_TRANSFER_SELECTOR,
-            "",
-            0,
-            operationType
+            ""
         ) returns (StateAbstraction.TxRecord memory txRecord) {
-            // Verify transaction was created successfully
-            assertTrue(txRecord.txId > 0, "Transaction should be created");
+            uint256 txId = txRecord.txId;
+            assertTrue(txId > 0, "Transaction should be created");
             
-            // Note: Payment updates are internal and require proper access control
-            // This test verifies that transactions can be created with payment details
-            // Actual payment update testing would require access to internal functions
-            // which is tested through the workflow in other tests
+            // Set initial payment to original recipient
+            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+                recipient: originalRecipient,
+                nativeTokenAmount: paymentAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
+            
+            // Update payment to new recipient (simulating potential attack)
+            StateAbstraction.PaymentDetails memory updatedPayment = StateAbstraction.PaymentDetails({
+                recipient: newRecipient,
+                nativeTokenAmount: paymentAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            uint256 originalBalance = originalRecipient.balance;
+            uint256 newBalance = newRecipient.balance;
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, updatedPayment);
+            
+            // Advance time and execute
+            advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
+            vm.prank(owner);
+            
+            // Some recipients might be contracts that reject payments - handle gracefully
+            try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+                // If execution succeeded, verify payment went to new recipient
+                if (result.status == StateAbstraction.TxStatus.COMPLETED) {
+                    assertEq(newRecipient.balance, newBalance + paymentAmount, "Payment should go to new recipient");
+                    assertEq(originalRecipient.balance, originalBalance, "Original recipient should not receive payment");
+                }
+            } catch (bytes memory reason) {
+                // Handle PaymentFailed - some recipients might reject payments
+                bytes4 errorSelector = bytes4(reason);
+                if (errorSelector == SharedValidation.PaymentFailed.selector) {
+                    // Payment failed - recipient might be a contract that rejects payments
+                    // This is acceptable for fuzz testing
+                    return;
+                }
+                assembly {
+                    revert(add(reason, 0x20), mload(reason))
+                }
+            }
         } catch (bytes memory reason) {
+            // Handle NoPermission error - permissions may not be set up
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
+                return; // Skip test if permissions not set up
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -87,56 +158,81 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     /**
      * @dev Test: Payment amount manipulation prevention
      * Attack Vector: Payment Amount Manipulation (HIGH)
+     * 
+     * This test verifies that payment amounts can be updated but are validated
+     * against contract balance at execution time.
      */
     function testFuzz_PaymentAmountManipulationPrevented(
         uint256 initialAmount,
         uint256 manipulatedAmount
     ) public {
-        uint256 maxBalance = address(controlBlox).balance;
+        address recipient = address(0x1234);
+        uint256 maxBalance = address(paymentHelper).balance;
         vm.assume(maxBalance > 0);
         // Bound amounts to valid ranges
         initialAmount = bound(initialAmount, 1, maxBalance - 1);
-        manipulatedAmount = bound(manipulatedAmount, initialAmount + 1, maxBalance);
+        manipulatedAmount = bound(manipulatedAmount, initialAmount + 1, maxBalance * 2); // Allow exceeding balance
         
-        // Create transaction - may fail with NoPermission if setup didn't complete
+        // Create transaction using payment helper
+        // Note: This may fail with NoPermission if permissions aren't set up
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try paymentHelper.requestTransaction(
+            owner,
+            address(paymentHelper),
             0,
+            0,
+            operationType,
             StateAbstraction.NATIVE_TRANSFER_SELECTOR,
-            "",
-            0,
-            operationType
+            ""
         ) returns (StateAbstraction.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
-            // Advance time and execute
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            // Set initial payment amount
+            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+                recipient: recipient,
+                nativeTokenAmount: initialAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
             
-            // If payment amount exceeds balance, should fail
-            if (manipulatedAmount > address(controlBlox).balance) {
-                vm.prank(owner);
-                StateAbstraction.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
-                
-                // Should fail with insufficient balance
-                if (result.status == StateAbstraction.TxStatus.FAILED) {
-                    bytes memory expectedError = abi.encodeWithSelector(
-                        SharedValidation.InsufficientBalance.selector,
-                        address(controlBlox).balance,
-                        manipulatedAmount
-                    );
-                    assertEq(result.result, expectedError);
-                }
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
+            
+            // Attempt to manipulate payment amount
+            StateAbstraction.PaymentDetails memory manipulatedPayment = StateAbstraction.PaymentDetails({
+                recipient: recipient,
+                nativeTokenAmount: manipulatedAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, manipulatedPayment);
+            
+            // Advance time and execute
+            advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
+            vm.prank(owner);
+            
+            // If manipulated amount exceeds balance, should revert with InsufficientBalance
+            if (manipulatedAmount > maxBalance) {
+                vm.expectRevert(abi.encodeWithSelector(
+                    SharedValidation.InsufficientBalance.selector,
+                    maxBalance,
+                    manipulatedAmount
+                ));
+                paymentHelper.approveTransaction(txId);
             } else {
                 // If amount is valid, execution should succeed
-                vm.prank(owner);
-                controlBlox.approveTimeLockExecution(txId);
+                StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.COMPLETED), "Should succeed when amount is valid");
+                uint256 recipientBalance = recipient.balance;
+                assertEq(recipientBalance, manipulatedAmount, "Payment should be sent");
             }
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
+                return; // Skip test if permissions not set up
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -147,6 +243,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     /**
      * @dev Test: Double payment prevention
      * Attack Vector: Double Payment Exploitation (MEDIUM)
+     * 
+     * This test verifies that a transaction with payment can only execute once,
+     * preventing double payment exploitation.
      */
     function testFuzz_DoublePaymentPrevented(
         address recipient,
@@ -154,32 +253,47 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     ) public {
         vm.assume(recipient != address(0));
         // Bound payment amount to available balance
-        paymentAmount = bound(paymentAmount, 1, address(controlBlox).balance);
+        paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction with payment - may fail with NoPermission if setup didn't complete
+        // Create transaction using payment helper
+        // Note: This may fail with NoPermission if permissions aren't set up
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try paymentHelper.requestTransaction(
+            owner,
+            address(paymentHelper),
             0,
+            0,
+            operationType,
             StateAbstraction.NATIVE_TRANSFER_SELECTOR,
-            "",
-            0,
-            operationType
+            ""
         ) returns (StateAbstraction.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
-            // Note: Payment details are not set up in this test because _updatePaymentForTransaction
-            // is internal. This test verifies transaction execution uniqueness (double execution prevention).
-            // For actual payment testing, use PayBlox which exposes payment functionality.
+            // Set up payment
+            StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+                recipient: recipient,
+                nativeTokenAmount: paymentAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            uint256 initialBalance = recipient.balance;
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, payment);
             
             // Advance time and execute
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
-            controlBlox.approveTimeLockExecution(txId);
+            paymentHelper.approveTransaction(txId);
             
-            // Get transaction status after first execution
-            StateAbstraction.TxRecord memory recordAfterFirst = controlBlox.getTransaction(txId);
+            // Verify payment was sent
+            assertEq(recipient.balance, initialBalance + paymentAmount, "Payment should be sent once");
+            
+            // Get transaction status after first execution (requires role)
+            vm.prank(owner);
+            StateAbstraction.TxRecord memory recordAfterFirst = paymentHelper.getTransaction(txId);
             
             // Attempt to execute again - should fail (status not PENDING)
             vm.prank(owner);
@@ -188,15 +302,19 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 uint8(StateAbstraction.TxStatus.PENDING),
                 uint8(recordAfterFirst.status)
             ));
-            controlBlox.approveTimeLockExecution(txId);
+            paymentHelper.approveTransaction(txId);
+            
+            // Verify payment was only sent once
+            assertEq(recipient.balance, initialBalance + paymentAmount, "Payment should not be sent twice");
             
             // Verify transaction status unchanged (prevents double execution)
-            StateAbstraction.TxRecord memory recordAfterSecond = controlBlox.getTransaction(txId);
+            vm.prank(owner);
+            StateAbstraction.TxRecord memory recordAfterSecond = paymentHelper.getTransaction(txId);
             assertEq(uint8(recordAfterSecond.status), uint8(recordAfterFirst.status), "Transaction should not execute twice");
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
+                return; // Skip test if permissions not set up
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -207,45 +325,78 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     /**
      * @dev Test: ERC20 token address validation
      * Attack Vector: ERC20 Token Address Manipulation (MEDIUM)
+     * 
+     * This test verifies that invalid ERC20 token addresses are handled correctly
+     * and that valid tokens work properly.
      */
     function testFuzz_ERC20TokenAddressValidation(
         address tokenAddress,
         uint256 paymentAmount
     ) public {
         vm.assume(tokenAddress != address(0));
-        vm.assume(tokenAddress != address(mockERC20)); // Use different address
-        // Bound payment amount
-        paymentAmount = bound(paymentAmount, 1, type(uint128).max);
+        // Bound payment amount to available balance
+        uint256 maxBalance = mockERC20.balanceOf(address(paymentHelper));
+        if (maxBalance == 0) {
+            return; // Skip if no balance
+        }
+        paymentAmount = bound(paymentAmount, 1, maxBalance);
         
-        // Create transaction - use whitelisted selector
-        bytes32 operationType = keccak256("TEST_OPERATION");
-        bytes4 functionSelector = bytes4(keccak256("execute()"));
+        address recipient = address(0x5678);
+        
+        // Create transaction using payment helper
+        // Note: This may fail with NoPermission if permissions aren't set up
+        bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(mockTarget),
+        try paymentHelper.requestTransaction(
+            owner,
+            address(paymentHelper),
             0,
-            functionSelector,
-            "",
             0,
-            operationType
+            operationType,
+            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            ""
         ) returns (StateAbstraction.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
-            // Advance time and execute
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            // Set up ERC20 payment with fuzzed token address
+            StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+                recipient: recipient,
+                nativeTokenAmount: 0,
+                erc20TokenAddress: tokenAddress,
+                erc20TokenAmount: paymentAmount
+            });
+            
+            uint256 initialTokenBalance = tokenAddress == address(mockERC20) ? mockERC20.balanceOf(recipient) : 0;
+            
             vm.prank(owner);
-            StateAbstraction.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
+            paymentHelper.updatePaymentForTransaction(txId, payment);
+            
+            // Advance time and execute
+            advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
+            vm.prank(owner);
             
             // If token address is invalid or contract doesn't support ERC20, should fail
-            // SafeERC20 will handle this
-            if (result.status == StateAbstraction.TxStatus.FAILED) {
-                // Payment failed - expected for invalid token
-                assertTrue(result.result.length > 0, "Should have error message");
+            if (tokenAddress != address(mockERC20)) {
+                // Invalid token address should revert (non-contract or doesn't support ERC20)
+                // The execution will fail when trying to call balanceOf or transfer
+                try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+                    // If it doesn't revert, verify it failed
+                    assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.FAILED), "Should fail with invalid token address");
+                    assertTrue(result.result.length > 0, "Should have error message");
+                } catch {
+                    // Revert is also acceptable for invalid token addresses
+                    // This verifies that invalid tokens are rejected
+                }
+            } else {
+                // Valid token should succeed
+                StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                assertEq(uint8(result.status), uint8(StateAbstraction.TxStatus.COMPLETED), "Should succeed with valid token");
+                assertEq(mockERC20.balanceOf(recipient), initialTokenBalance + paymentAmount, "Token payment should be sent");
             }
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
+                return; // Skip test if permissions not set up
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -256,62 +407,88 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     /**
      * @dev Test: Balance drain prevention
      * Attack Vector: Native Token Balance Drain (MEDIUM)
+     * 
+     * This test verifies that multiple transactions with payments don't drain
+     * the contract balance beyond what's available.
      */
     function testFuzz_BalanceDrainPrevented(
         uint256 paymentAmount,
         uint256 numberOfTransactions
     ) public {
+        address recipient = address(0xABCD);
         // Bound to reasonable ranges
         numberOfTransactions = bound(numberOfTransactions, 1, 10); // Limit to 10 to avoid gas issues
-        uint256 contractBalance = address(controlBlox).balance;
+        uint256 contractBalance = address(paymentHelper).balance;
         vm.assume(contractBalance > 0);
         // Ensure total payments don't exceed balance
         paymentAmount = bound(paymentAmount, 1, contractBalance / numberOfTransactions);
         
         uint256[] memory txIds = new uint256[](numberOfTransactions);
+        uint256 initialRecipientBalance = recipient.balance;
         
-        // Create multiple transactions with payments - may fail with NoPermission
+        // Create multiple transactions with payments
+        // Note: This may fail with NoPermission if permissions aren't set up
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         for (uint256 i = 0; i < numberOfTransactions; i++) {
             vm.prank(owner);
-            try controlBlox.executeWithTimeLock(
-                address(controlBlox),
+            try paymentHelper.requestTransaction(
+                owner,
+                address(paymentHelper),
                 0,
+                0,
+                operationType,
                 StateAbstraction.NATIVE_TRANSFER_SELECTOR,
-                "",
-                0,
-                operationType
+                ""
             ) returns (StateAbstraction.TxRecord memory txRecord) {
                 txIds[i] = txRecord.txId;
+            
+                // Set up payment for each transaction
+                StateAbstraction.PaymentDetails memory payment = StateAbstraction.PaymentDetails({
+                    recipient: recipient,
+                    nativeTokenAmount: paymentAmount,
+                    erc20TokenAddress: address(0),
+                    erc20TokenAmount: 0
+                });
+                
+                vm.prank(owner);
+                paymentHelper.updatePaymentForTransaction(txIds[i], payment);
             } catch (bytes memory) {
                 // If NoPermission, skip this transaction
                 txIds[i] = 0; // Mark as invalid
             }
         }
         
-        // Advance time and execute all valid transactions
-        advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+        // Advance time and execute all transactions
+        advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
         
         uint256 totalPaid = 0;
         for (uint256 i = 0; i < numberOfTransactions; i++) {
-            if (txIds[i] == 0) continue; // Skip invalid transactions
-            
             vm.prank(owner);
-            StateAbstraction.TxRecord memory result = controlBlox.approveTimeLockExecution(txIds[i]);
+            StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txIds[i]);
             
             if (result.status == StateAbstraction.TxStatus.COMPLETED) {
                 totalPaid += paymentAmount;
             }
         }
         
+        // Verify actual balance changes
+        uint256 finalBalance = address(paymentHelper).balance;
+        uint256 expectedFinalBalance = contractBalance - totalPaid;
+        assertEq(finalBalance, expectedFinalBalance, "Balance should reflect actual payments");
+        
+        // Verify recipient received all payments
+        assertEq(recipient.balance, initialRecipientBalance + totalPaid, "Recipient should receive all payments");
+        
         // Verify balance check prevents over-draining
-        uint256 finalBalance = address(controlBlox).balance;
-        assertGe(finalBalance, contractBalance - totalPaid, "Balance should not be over-drained");
+        assertGe(finalBalance, 0, "Balance should not go negative");
     }
 
     /**
      * @dev Test: Payment update timing
      * Attack Vector: Payment Update Timing (MEDIUM)
+     * 
+     * This test verifies that payment updates can occur before execution
+     * and that the final payment configuration is what gets executed.
      */
     function testFuzz_PaymentUpdateTiming(
         address originalRecipient,
@@ -322,43 +499,94 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         vm.assume(originalRecipient != address(0));
         vm.assume(newRecipient != address(0));
         vm.assume(originalRecipient != newRecipient);
+        // Exclude PaymentTestHelper and test accounts from being recipients
+        vm.assume(originalRecipient != address(paymentHelper));
+        vm.assume(newRecipient != address(paymentHelper));
+        vm.assume(originalRecipient != owner && originalRecipient != broadcaster && originalRecipient != recovery);
+        vm.assume(newRecipient != owner && newRecipient != broadcaster && newRecipient != recovery);
         // Bound payment amount to available balance
-        paymentAmount = bound(paymentAmount, 1, address(controlBlox).balance);
+        paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction - may fail with NoPermission if setup didn't complete
+        // Create transaction using payment helper
+        // Note: This may fail with NoPermission if permissions aren't set up
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try paymentHelper.requestTransaction(
+            owner,
+            address(paymentHelper),
             0,
+            0,
+            operationType,
             StateAbstraction.NATIVE_TRANSFER_SELECTOR,
-            "",
-            0,
-            operationType
+            ""
         ) returns (StateAbstraction.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             
+            // Set initial payment to original recipient
+            StateAbstraction.PaymentDetails memory initialPayment = StateAbstraction.PaymentDetails({
+                recipient: originalRecipient,
+                nativeTokenAmount: paymentAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            uint256 originalBalance = originalRecipient.balance;
+            uint256 newBalance = newRecipient.balance;
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
+            
             // Advance time close to release time
-            uint256 timeLockPeriod = controlBlox.getTimeLockPeriodSec();
+            uint256 timeLockPeriod = paymentHelper.getTimeLockPeriodSec();
             uint256 advance = bound(timeAdvance, 1, timeLockPeriod - 1);
             advanceTime(advance);
+            
+            // Update payment to new recipient (before release time)
+            StateAbstraction.PaymentDetails memory updatedPayment = StateAbstraction.PaymentDetails({
+                recipient: newRecipient,
+                nativeTokenAmount: paymentAmount,
+                erc20TokenAddress: address(0),
+                erc20TokenAmount: 0
+            });
+            
+            vm.prank(owner);
+            paymentHelper.updatePaymentForTransaction(txId, updatedPayment);
             
             // Advance to release time
             advanceTime(timeLockPeriod - advance + 1);
             
             // Execute
             vm.prank(owner);
-            StateAbstraction.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
             
-            // Verify payment went to correct recipient
-            if (result.status == StateAbstraction.TxStatus.COMPLETED) {
-                // Check which recipient received payment
-                // This tests payment update behavior
+            // Some recipients might be contracts that reject payments - handle gracefully
+            try paymentHelper.approveTransaction(txId) returns (StateAbstraction.TxRecord memory result) {
+                // If execution succeeded, verify payment went to new recipient
+                if (result.status == StateAbstraction.TxStatus.COMPLETED) {
+                    // Get current balances to account for any pre-existing balance
+                    uint256 finalNewBalance = newRecipient.balance;
+                    uint256 finalOriginalBalance = originalRecipient.balance;
+                    
+                    // Payment should have increased new recipient's balance by paymentAmount
+                    assertGe(finalNewBalance, newBalance + paymentAmount, "Payment should go to new recipient");
+                    assertEq(finalOriginalBalance, originalBalance, "Original recipient should not receive payment");
+                }
+            } catch (bytes memory reason) {
+                // Handle PaymentFailed - some recipients might reject payments
+                bytes4 errorSelector = bytes4(reason);
+                if (errorSelector == SharedValidation.PaymentFailed.selector) {
+                    // Payment failed - recipient might be a contract that rejects payments
+                    // This is acceptable for fuzz testing
+                    return;
+                }
+                assembly {
+                    revert(add(reason, 0x20), mload(reason))
+                }
             }
         } catch (bytes memory reason) {
+            // Handle NoPermission error - permissions may not be set up
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
+                return; // Skip test if permissions not set up
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
