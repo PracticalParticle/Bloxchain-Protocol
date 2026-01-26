@@ -72,7 +72,7 @@ class EIP712Signer {
                 ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
                 [
                     domainTypeHash,
-                    this.web3.utils.keccak256('EngineBlox'),
+                    this.web3.utils.keccak256('Bloxchain'),
                     this.web3.utils.keccak256('1'),
                     this.chainId,
                     this.contractAddress
