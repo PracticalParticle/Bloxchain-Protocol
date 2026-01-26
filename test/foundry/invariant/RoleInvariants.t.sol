@@ -45,6 +45,34 @@ contract RoleInvariantsTest is CommonBase {
         assertTrue(recoveryProtected);
     }
 
+    /**
+     * @dev Enhanced invariant: Protected roles cannot be modified via RuntimeRBAC
+     * This invariant would have caught the CannotModifyProtected vulnerability
+     */
+    function invariant_ProtectedRolesNeverModifiedViaRuntimeRBAC() public {
+        // Verify protected roles unchanged
+        address currentOwner = roleBlox.owner();
+        address currentRecovery = roleBlox.getRecovery();
+        address[] memory currentBroadcasters = roleBlox.getBroadcasters();
+
+        assertEq(currentOwner, owner, "Owner should never change via RuntimeRBAC");
+        assertEq(currentRecovery, recovery, "Recovery should never change via RuntimeRBAC");
+        assertGt(currentBroadcasters.length, 0, "Broadcaster should exist");
+        assertEq(currentBroadcasters[0], broadcaster, "Broadcaster should never change via RuntimeRBAC");
+
+        // Verify protection flags remain true
+        vm.prank(owner);
+        (, , , , bool ownerProtected) = roleBlox.getRole(OWNER_ROLE);
+        vm.prank(owner);
+        (, , , , bool broadcasterProtected) = roleBlox.getRole(BROADCASTER_ROLE);
+        vm.prank(owner);
+        (, , , , bool recoveryProtected) = roleBlox.getRole(RECOVERY_ROLE);
+
+        assertTrue(ownerProtected, "OWNER_ROLE should remain protected");
+        assertTrue(broadcasterProtected, "BROADCASTER_ROLE should remain protected");
+        assertTrue(recoveryProtected, "RECOVERY_ROLE should remain protected");
+    }
+
     function invariant_RoleHashConsistency() public {
         vm.prank(owner);
         bytes32[] memory roles = secureBlox.getSupportedRoles();

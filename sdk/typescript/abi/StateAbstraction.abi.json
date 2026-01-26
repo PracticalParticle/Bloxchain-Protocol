@@ -28,7 +28,7 @@
         "type": "bytes32"
       }
     ],
-    "name": "CannotRemoveProtected",
+    "name": "CannotModifyProtected",
     "type": "error"
   },
   {

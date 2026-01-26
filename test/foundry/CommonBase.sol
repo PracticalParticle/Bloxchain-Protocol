@@ -58,10 +58,11 @@ contract CommonBase is Test {
 
     // Setup function - called before each test
     function setUp() public virtual {
-        // Create test accounts
-        owner = address(0x1);
-        broadcaster = address(0x2);
-        recovery = address(0x3);
+        // Create test accounts using vm.addr() to ensure addresses match private keys for signing
+        // Private keys: 1, 2, 3 for owner, broadcaster, recovery
+        owner = vm.addr(1);
+        broadcaster = vm.addr(2);
+        recovery = vm.addr(3);
         attacker = address(0x999);
         user1 = address(0x10);
         user2 = address(0x11);

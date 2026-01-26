@@ -31,3 +31,8 @@ node_modules/
 .env
 .env.local
 *.log
+
+# Experimental contracts (not part of stable API)
+**/experimental/**
+abi/**/experimental/**
+contracts/**/experimental/**

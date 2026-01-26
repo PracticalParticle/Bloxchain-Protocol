@@ -75,7 +75,7 @@ library SharedValidation {
     // Consolidated resource errors
     error ResourceNotFound(bytes32 resourceId);
     error ResourceAlreadyExists(bytes32 resourceId);
-    error CannotRemoveProtected(bytes32 resourceId);
+    error CannotModifyProtected(bytes32 resourceId);
     
     // Consolidated item errors (for addresses: wallets, policies, etc.)
     error ItemAlreadyExists(address item);

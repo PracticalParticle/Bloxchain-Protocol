@@ -702,10 +702,10 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
         return;
       }
       
-      if (failureReason.includes('CannotRemoveProtected') || failureReason.includes('0x889a922b')) {
-        // Cannot remove last wallet from protected role
-        console.log(`  ⚠️  Cannot remove last wallet from protected role`);
-        console.log('  ✅ Step 7 skipped - cannot revoke last wallet from protected role');
+      if (failureReason.includes('CannotModifyProtected') || failureReason.includes('0xee809d50')) {
+        // Cannot modify protected role (adding/removing wallets)
+        console.log(`  ⚠️  Cannot modify protected role`);
+        console.log('  ✅ Step 7 skipped - cannot revoke wallet from protected role');
         return;
       }
 

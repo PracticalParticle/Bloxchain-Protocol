@@ -356,4 +356,42 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected getRoleHash(roleName: string): Hex {
     return keccak256(new TextEncoder().encode(roleName)) as Hex;
   }
+
+  /**
+   * Decode error selector from transaction result
+   */
+  protected decodeErrorSelector(result: any): string | null {
+    if (!result || typeof result !== 'string') {
+      return null;
+    }
+    const resultStr = result.startsWith('0x') ? result : `0x${result}`;
+    if (resultStr.length < 10) {
+      return null;
+    }
+    const errorSelector = resultStr.slice(0, 10);
+    return errorSelector;
+  }
+
+  /**
+   * Get error name from error selector
+   */
+  protected getErrorName(errorSelector: string): string {
+    // Common error selectors (calculated from keccak256 of error signature)
+    const errorMap: Record<string, string> = {
+      '0x430fab94': 'ResourceAlreadyExists',
+      '0x474d3baf': 'ResourceNotFound',
+      '0x3b94fe24': 'SignerNotAuthorized',
+      '0xf37a3442': 'NoPermission',
+      '0xc26028e0': 'InvalidOperation',
+      '0x6e8eb7bc': 'ResourceNotFound', // Alternative selector
+      '0x7a6318f1': 'ItemNotFound',
+      '0x0da9443d': 'ItemAlreadyExists',
+      '0xf438c55f': 'InvalidOperation',
+      '0xa0387940': 'NotSupported',
+      '0x405c16b9': 'ConflictingMetaTxPermissions',
+      '0xee809d50': 'CannotModifyProtected',
+    };
+
+    return errorMap[errorSelector.toLowerCase()] || `Unknown(${errorSelector})`;
+  }
 }

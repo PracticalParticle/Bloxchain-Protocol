@@ -670,7 +670,7 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       '0xf438c55f': 'InvalidOperation',
       '0xa0387940': 'NotSupported',
       '0x405c16b9': 'ConflictingMetaTxPermissions',
-      '0x889a922b': 'CannotRemoveProtected',
+      '0xee809d50': 'CannotModifyProtected',
     };
 
     return errorMap[errorSelector.toLowerCase()] || `Unknown(${errorSelector})`;
