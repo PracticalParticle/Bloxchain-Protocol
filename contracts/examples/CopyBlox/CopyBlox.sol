@@ -90,19 +90,46 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         address broadcaster,
         address recovery,
         uint256 timeLockPeriodSec
-    ) external returns (address cloneAddress) {
+    ) external nonReentrant returns (address cloneAddress) {
+        // Validate addresses
+        SharedValidation.validateNotZeroAddress(bloxAddress);
+        SharedValidation.validateNotZeroAddress(initialOwner);
+        SharedValidation.validateNotZeroAddress(broadcaster);
+        SharedValidation.validateNotZeroAddress(recovery);
+        
+        // Prevent cloning self
+        if (bloxAddress == address(this)) {
+            revert SharedValidation.InvalidAddress(bloxAddress);
+        }
+        
         // Validate that bloxAddress is a contract
-        require(bloxAddress.code.length > 0, "CopyBlox: Invalid blox address");
+        if (bloxAddress.code.length == 0) {
+            revert SharedValidation.InvalidAddress(bloxAddress);
+        }
         
         // Verify that the blox contract implements IBaseStateMachine interface
-        require(
-            bloxAddress.supportsInterface(type(IBaseStateMachine).interfaceId),
-            "CopyBlox: Blox must implement IBaseStateMachine"
-        );
+        if (!bloxAddress.supportsInterface(type(IBaseStateMachine).interfaceId)) {
+            revert SharedValidation.InvalidOperation(bloxAddress);
+        }
+        
+        // Check for overflow on clone count
+        if (_cloneCount == type(uint256).max) {
+            revert SharedValidation.OperationFailed();
+        }
+        
+        // CHECKS: All validations complete
+        
+        // EFFECTS: Update state before external calls (CEI pattern)
+        uint256 newCloneCount = _cloneCount + 1;
+        _cloneCount = newCloneCount;
         
         // Clone the blox contract using EIP-1167 minimal proxy pattern
         cloneAddress = Clones.clone(bloxAddress);
         
+        // Add clone to the set (before initialization call)
+        _clones.add(cloneAddress);
+        
+        // INTERACTIONS: External calls after state updates
         // Set eventForwarder to CopyBlox address to centralize events from clones
         address eventForwarder = address(this);
         
@@ -119,15 +146,14 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
             )
         );
         
-        require(success, "CopyBlox: Initialization failed");
+        if (!success) {
+            // Revert state changes on failure
+            _clones.remove(cloneAddress);
+            _cloneCount = newCloneCount - 1;
+            revert SharedValidation.OperationFailed();
+        }
         
-        // Add clone to the set
-        _clones.add(cloneAddress);
-        
-        // Increment clone counter
-        _cloneCount++;
-        
-        emit BloxCloned(bloxAddress, cloneAddress, initialOwner, _cloneCount);
+        emit BloxCloned(bloxAddress, cloneAddress, initialOwner, newCloneCount);
         
         return cloneAddress;
     }
@@ -260,4 +286,11 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
     receive() external payable {
         revert SharedValidation.NotSupported();
     }
+    
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 }
