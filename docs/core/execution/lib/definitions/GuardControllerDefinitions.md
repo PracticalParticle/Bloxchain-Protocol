@@ -13,7 +13,7 @@ Key Features:
 - Registers all 6 GuardController public execution functions
 - Defines role permissions for OWNER_ROLE, BROADCASTER_ROLE, and RECOVERY_ROLE
 - Supports time-delay and meta-transaction workflows
-- Matches StateAbstractionDefinitions pattern for consistency
+- Matches EngineBloxDefinitions pattern for consistency
 
 Role Permissions:
 - OWNER_ROLE: Can sign/request time-delay and meta-transaction operations (6 permissions)
@@ -22,7 +22,7 @@ Role Permissions:
 
 
 **Notice:** This definition provides complete initialization data including both function schemas
-and role permissions, matching the StateAbstractionDefinitions pattern.
+and role permissions, matching the EngineBloxDefinitions pattern.
 
 **Security Contact:** security@particlecrypto.com
 
@@ -31,7 +31,7 @@ and role permissions, matching the StateAbstractionDefinitions pattern.
 ### getFunctionSchemas
 
 ```solidity
-function getFunctionSchemas() public pure returns (struct StateAbstraction.FunctionSchema[])
+function getFunctionSchemas() public pure returns (struct EngineBlox.FunctionSchema[])
 ```
 
 Returns predefined function schemas for GuardController execution functions
@@ -47,9 +47,9 @@ Function schemas define:
 - Whether they are protected
 
 Permission System:
-- These schemas enable StateAbstraction._checkExecutionPermissions to validate
+- These schemas enable EngineBlox._checkExecutionPermissions to validate
   if callers have permission to call these GuardController functions
-- Role permissions are defined in getRolePermissions() matching StateAbstractionDefinitions pattern
+- Role permissions are defined in getRolePermissions() matching EngineBloxDefinitions pattern
 
 
 ---
@@ -71,7 +71,7 @@ Role Permissions:
 - BROADCASTER_ROLE: Can execute meta-transaction operations (5 permissions)
 - RECOVERY_ROLE: Can execute time-delay operations for recovery scenarios (3 permissions)
 
-Total: 16 role permission entries matching StateAbstractionDefinitions pattern
+Total: 16 role permission entries matching EngineBloxDefinitions pattern
 
 
 ---

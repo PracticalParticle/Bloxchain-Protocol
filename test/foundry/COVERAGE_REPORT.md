@@ -65,7 +65,7 @@ Based on test execution and analysis:
 - ✅ RuntimeRBAC: Comprehensive  
 - ✅ GuardController: Good (some meta-transaction workflows pending)
 - ✅ BaseStateMachine: Good
-- ✅ StateAbstraction: Good
+- ✅ EngineBlox: Good
 
 ### Security Tests: ~90% Coverage
 - ✅ Reentrancy: Complete

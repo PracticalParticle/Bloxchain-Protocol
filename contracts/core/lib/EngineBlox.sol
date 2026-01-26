@@ -11,7 +11,7 @@ import "../../utils/SharedValidation.sol";
 import "../../interfaces/IEventForwarder.sol";
 
 /**
- * @title StateAbstraction
+ * @title EngineBlox
  * @dev A library for implementing secure state abstraction with time-locks and meta-transactions
  * 
  * This library provides a comprehensive framework for creating secure operations that require
@@ -30,9 +30,9 @@ import "../../interfaces/IEventForwarder.sol";
  * The library is designed to be used as a building block for secure smart contract systems
  * that require high levels of security and flexibility through state abstraction.
  */
-library StateAbstraction {
+library EngineBlox {
     // ============ VERSION INFORMATION ============
-    bytes32 public constant LIBRARY_NAME_HASH = keccak256("StateAbstraction");
+    bytes32 public constant PROTOCOL_NAME_HASH = keccak256("Bloxchain");
     uint8 public constant VERSION_MAJOR = 1;
     uint8 public constant VERSION_MINOR = 0;
     uint8 public constant VERSION_PATCH = 0;
@@ -1532,7 +1532,7 @@ library StateAbstraction {
     function generateMessageHash(MetaTransaction memory metaTx) private view returns (bytes32) {
         bytes32 domainSeparator = keccak256(abi.encode(
             DOMAIN_SEPARATOR_TYPE_HASH,
-            LIBRARY_NAME_HASH,
+            PROTOCOL_NAME_HASH,
             keccak256(abi.encodePacked(VERSION_MAJOR, ".", VERSION_MINOR, ".", VERSION_PATCH)),
             block.chainid,
             address(this)

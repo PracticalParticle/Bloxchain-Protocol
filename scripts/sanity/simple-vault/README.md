@@ -9,7 +9,7 @@ SimpleVault is an example contract that demonstrates:
 - Meta-transaction support for approvals
 - Role-based access control (Owner, Broadcaster, Recovery)
 - Integration with the Bloxchain protocol and BaseStateMachine
-- Centralized state management through StateAbstraction library
+- Centralized state management through EngineBlox library
 
 ## Test Structure
 
@@ -139,7 +139,7 @@ RECOVERY_PRIVATE_KEY=0x...
 ### Integration Features
 - ✅ Bloxchain protocol integration
 - ✅ BaseStateMachine centralized helpers
-- ✅ StateAbstraction library usage
+- ✅ EngineBlox library usage
 - ✅ SimpleVaultDefinitions as source of truth
 - ✅ EIP-712 signing with computed selectors
 - ✅ Event emission
@@ -174,7 +174,7 @@ await contract.methods.getPendingTransactions().call()
 ## Architecture Notes
 
 ### Recent Updates
-- **BaseStateMachine Integration**: SimpleVault now uses centralized helpers from BaseStateMachine instead of direct StateAbstraction calls
+- **BaseStateMachine Integration**: SimpleVault now uses centralized helpers from BaseStateMachine instead of direct EngineBlox calls
 - **Definitions as Source of Truth**: Function selectors are computed from SimpleVaultDefinitions library rather than hardcoded
 - **Clean Test Output**: Removed diagnostic debugging code for cleaner test execution
 - **Proper Error Handling**: Enhanced error messages for better debugging

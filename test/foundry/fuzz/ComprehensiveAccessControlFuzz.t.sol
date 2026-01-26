@@ -62,16 +62,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
         );
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.CannotModifyProtected.selector,
             protectedRoleHash
@@ -106,16 +106,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
                 });
 
                 bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-                StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+                EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                     owner,
                     executionParams,
                     block.timestamp + 1 hours
                 );
 
                 vm.prank(broadcaster);
-                StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+                EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
                 
-                assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+                assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
             }
         } else if (protectedRoleHash == RECOVERY_ROLE) {
             walletToRevoke = recovery;
@@ -126,16 +126,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             });
 
             bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-            StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+            EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
                 block.timestamp + 1 hours
             );
 
             vm.prank(broadcaster);
-            StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
             
-            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+            assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         }
     }
 
@@ -155,16 +155,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
 
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
         );
 
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.CannotModifyProtected.selector,
             protectedRoleHash
@@ -280,7 +280,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](2);
         
         // Action 1: Create valid role (should succeed)
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(validRoleName, 10, permissions)
@@ -293,17 +293,17 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // CRITICAL: Verify batch is atomic - Action 1 should NOT succeed if Action 2 fails
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Batch with invalid action should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Batch with invalid action should fail");
         
         // Verify Action 1 was NOT executed (role should not exist)
         // This tests atomicity - getSupportedRoles requires permissions
@@ -352,17 +352,17 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         
         bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-        StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // All should fail
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
     }
 
     // ============ ROLE MANAGEMENT ATTACKS ============
@@ -385,14 +385,14 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Create role with maxWallets limit
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, maxWallets, permissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -411,7 +411,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             });
             
             bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
-            StateAbstraction.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
+            EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
                 block.timestamp + 1 hours
@@ -430,16 +430,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         
         bytes memory extraParams = roleBlox.roleConfigBatchExecutionParams(extraActions);
-        StateAbstraction.MetaTransaction memory extraMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory extraMetaTx = _createMetaTxForRoleConfig(
             owner,
             extraParams,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
         
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.RoleWalletLimitReached.selector,
             maxWallets,
@@ -464,14 +464,14 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Create role
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -488,7 +488,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         
         bytes memory addParams1 = roleBlox.roleConfigBatchExecutionParams(addActions1);
-        StateAbstraction.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
             block.timestamp + 1 hours
@@ -505,16 +505,16 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         
         bytes memory addParams2 = roleBlox.roleConfigBatchExecutionParams(addActions2);
-        StateAbstraction.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
         
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.ItemAlreadyExists.selector,
             wallet
@@ -537,24 +537,24 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         // (protected roles already exist)
         if (roleHash == OWNER_ROLE || roleHash == BROADCASTER_ROLE || roleHash == RECOVERY_ROLE) {
             RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-            StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+            EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
             actions[0] = RuntimeRBAC.RoleConfigAction({
                 actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, permissions)
             });
             
             bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
-            StateAbstraction.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
+            EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
                 block.timestamp + 1 hours
             );
             
             vm.prank(broadcaster);
-            StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
             
             // Should fail - role already exists
-            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED));
+            assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         }
     }
 
@@ -576,14 +576,14 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Create role first
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory emptyPermissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -614,14 +614,14 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Create role
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory emptyPermissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -641,17 +641,17 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         address signer,
         bytes memory executionParams,
         uint256 deadline
-    ) internal returns (StateAbstraction.MetaTransaction memory) {
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+    ) internal returns (EngineBlox.MetaTransaction memory) {
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
             0,
             signer
         );
 
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             signer,
             address(roleBlox),
             0,

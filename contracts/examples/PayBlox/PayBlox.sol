@@ -30,10 +30,10 @@ contract PayBlox is SecureOwnable {
      * @param description Optional description/memo for accounting purposes
      */
     struct PaymentRecord {
-        StateAbstraction.PaymentDetails paymentDetails;
+        EngineBlox.PaymentDetails paymentDetails;
         uint256 timestamp;
         address requester;
-        StateAbstraction.TxStatus status;
+        EngineBlox.TxStatus status;
         string description;
     }
     
@@ -114,9 +114,9 @@ contract PayBlox is SecureOwnable {
      *         using _updatePaymentForTransaction. All information is logged in the payment table.
      */
     function requestWithPayment(
-        StateAbstraction.PaymentDetails memory paymentDetails,
+        EngineBlox.PaymentDetails memory paymentDetails,
         string memory description
-    ) public returns (StateAbstraction.TxRecord memory) {
+    ) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
         if (paymentDetails.nativeTokenAmount == 0 && paymentDetails.erc20TokenAmount == 0) {
@@ -129,13 +129,13 @@ contract PayBlox is SecureOwnable {
         
         // Create transaction request using NATIVE_TRANSFER_SELECTOR
         // For native transfers with attached payment, we use value=0 and target=address(this)
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this), // target is this contract (no-op transaction)
             0,            // value is 0 (payment will be attached separately)
             0,            // gas limit (0 means use gasleft())
             PayBloxDefinitions.NATIVE_PAYMENT,
-            StateAbstraction.NATIVE_TRANSFER_SELECTOR,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
             ""            // empty params for native transfers
         );
         
@@ -167,9 +167,9 @@ contract PayBlox is SecureOwnable {
      * @param txId The ID of the payment transaction to approve
      * @return The updated transaction record
      */
-    function approvePaymentAfterDelay(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function approvePaymentAfterDelay(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updated = _approveTransaction(txId);
+        EngineBlox.TxRecord memory updated = _approveTransaction(txId);
         
         // Update payment record status in the accounting table
         if (_paymentTable[txId].timestamp != 0) {
@@ -177,8 +177,8 @@ contract PayBlox is SecureOwnable {
         }
         
         // When transaction is approved and executed, payment will be automatically sent
-        // via executeAttachedPayment in StateAbstraction
-        if (updated.status == StateAbstraction.TxStatus.COMPLETED) {
+        // via executeAttachedPayment in EngineBlox
+        if (updated.status == EngineBlox.TxStatus.COMPLETED) {
             PaymentRecord storage record = _paymentTable[txId];
             emit PaymentExecuted(
                 txId,
@@ -196,9 +196,9 @@ contract PayBlox is SecureOwnable {
      * @param txId The ID of the payment transaction to cancel
      * @return The updated transaction record
      */
-    function cancelPayment(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function cancelPayment(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId);
+        EngineBlox.TxRecord memory updated = _cancelTransaction(txId);
         
         // Update payment record status in the accounting table
         if (_paymentTable[txId].timestamp != 0) {

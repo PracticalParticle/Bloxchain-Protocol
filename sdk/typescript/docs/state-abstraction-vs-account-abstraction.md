@@ -139,9 +139,9 @@ struct SecureOperationState {
 
 ```typescript
 class SecureSmartWallet {
-    constructor(accountAbstraction: AccountAbstraction, stateAbstraction: StateAbstraction) {
+    constructor(accountAbstraction: AccountAbstraction, EngineBlox: EngineBlox) {
         this.accountAbstraction = accountAbstraction;
-        this.stateAbstraction = stateAbstraction;
+        this.EngineBlox = EngineBlox;
     }
     
     // Use Account Abstraction for user experience
@@ -151,7 +151,7 @@ class SecureSmartWallet {
     
     // Use State Abstraction for critical operations
     async requestOwnershipTransfer(newOwner: string) {
-        return await this.stateAbstraction.requestOperation(
+        return await this.EngineBlox.requestOperation(
             "TRANSFER_OWNERSHIP",
             { newOwner },
             { timeLockPeriod: 86400 } // 24 hours
@@ -175,7 +175,7 @@ class DeFiProtocol {
     
     // State Abstraction for protocol management
     async requestTreasuryWithdrawal(amount: BigNumber, recipient: string) {
-        return await this.stateAbstraction.requestOperation(
+        return await this.EngineBlox.requestOperation(
             "TREASURY_WITHDRAWAL",
             { amount, recipient },
             { timeLockPeriod: 3600 } // 1 hour
@@ -231,7 +231,7 @@ class HybridProtocol {
     
     // State Abstraction for protocol operations
     async protocolOperation(operationType: string, params: any) {
-        const txId = await this.stateAbstraction.requestOperation(
+        const txId = await this.EngineBlox.requestOperation(
             operationType,
             params,
             { timeLockPeriod: this.getTimeLockPeriod(operationType) }

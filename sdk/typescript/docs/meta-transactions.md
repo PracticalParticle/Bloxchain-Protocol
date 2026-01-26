@@ -429,7 +429,7 @@ constructor(
 
 ## Contract Integration Points
 
-### **StateAbstraction.sol Functions Used**
+### **EngineBlox.sol Functions Used**
 1. `generateUnsignedForNewMetaTx()` - Creates unsigned meta-transaction for new operations
 2. `generateUnsignedForExistingMetaTx()` - Creates unsigned meta-transaction for existing operations
 3. `generateMessageHash()` - Generates EIP-712 message hash (called internally by above functions)
@@ -437,7 +437,7 @@ constructor(
 
 ### **EIP-712 Implementation**
 The contract implements EIP-712 with:
-- **Domain**: `StateAbstraction`, version `1`
+- **Domain**: `EngineBlox`, version `1`
 - **Chain ID**: Current blockchain chain ID
 - **Verifying Contract**: The contract address
 - **Type Hash**: Complex nested structure for MetaTransaction
@@ -589,7 +589,7 @@ console.log('✅ Signature verified successfully');
 The utility integrates with the Guardian system through:
 
 1. **SecureOwnable Contract**: Uses the contract's meta-transaction functions
-2. **StateAbstraction Library**: Leverages the library's EIP-712 implementation
+2. **EngineBlox Library**: Leverages the library's EIP-712 implementation
 3. **Dynamic RBAC**: Integrates with the role-based access control system
 
 ### Workflow Integration

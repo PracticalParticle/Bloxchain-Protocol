@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../core/base/BaseStateMachine.sol";
 import "../../core/base/interface/IBaseStateMachine.sol";
-import "../../core/lib/StateAbstraction.sol";
+import "../../core/lib/EngineBlox.sol";
 import "../../interfaces/IEventForwarder.sol";
 import "../../utils/SharedValidation.sol";
 
@@ -217,7 +217,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         address indexed cloneAddress,
         uint256 indexed txId,
         bytes4 indexed functionSelector,
-        StateAbstraction.TxStatus status,
+        EngineBlox.TxStatus status,
         address requester,
         address target,
         bytes32 operationType
@@ -237,7 +237,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
     function forwardTxEvent(
         uint256 txId,
         bytes4 functionSelector,
-        StateAbstraction.TxStatus status,
+        EngineBlox.TxStatus status,
         address requester,
         address target,
         bytes32 operationType

@@ -10,10 +10,10 @@ import "./interface/IGuardController.sol";
 
 /**
  * @title GuardController
- * @dev Lightweight controller for generic contract delegation with full StateAbstraction workflows
+ * @dev Lightweight controller for generic contract delegation with full EngineBlox workflows
  * 
  * This contract provides a complete solution for delegating control to external addresses.
- * It extends BaseStateMachine for core state machine functionality and supports all StateAbstraction
+ * It extends BaseStateMachine for core state machine functionality and supports all EngineBlox
  * execution patterns including time-locked transactions, meta-transactions, and payment management.
  * 
  * Key Features:
@@ -52,11 +52,11 @@ import "./interface/IGuardController.sol";
  * - getAllowedTargets: Query whitelisted targets for a function selector
  * 
  * @notice This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
- * @notice Target whitelist is a GuardController-specific security feature, not part of StateAbstraction library
+ * @notice Target whitelist is a GuardController-specific security feature, not part of EngineBlox library
  * @custom:security-contact security@particlecrypto.com
  */
 abstract contract GuardController is BaseStateMachine {
-    using StateAbstraction for StateAbstraction.SecureOperationState;
+    using EngineBlox for EngineBlox.SecureOperationState;
 
     /**
      * @dev Action types for batched Guard configuration
@@ -135,7 +135,7 @@ abstract contract GuardController is BaseStateMachine {
     // ============ EXECUTION FUNCTIONS ============
     
     /**
-     * @dev Requests a time-locked execution via StateAbstraction workflow
+     * @dev Requests a time-locked execution via EngineBlox workflow
      * @param target The address of the target contract
      * @param value The ETH value to send (0 for standard function calls)
      * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
@@ -155,15 +155,15 @@ abstract contract GuardController is BaseStateMachine {
         bytes memory params,
         uint256 gasLimit,
         bytes32 operationType
-    ) public returns (StateAbstraction.TxRecord memory) {
+    ) public returns (EngineBlox.TxRecord memory) {
         // Validate inputs
         SharedValidation.validateNotZeroAddress(target);
         
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
-        // Request via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        // Request via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             target,
             value,
@@ -183,12 +183,12 @@ abstract contract GuardController is BaseStateMachine {
      */
     function approveTimeLockExecution(
         uint256 txId
-    ) public returns (StateAbstraction.TxRecord memory) {
+    ) public returns (EngineBlox.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
-        StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
+        EngineBlox.TxRecord memory txRecord = _getSecureState().txRecords[txId];
         _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
-        // Approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
+        // Approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
         return _approveTransaction(txId);  
     }
     
@@ -200,12 +200,12 @@ abstract contract GuardController is BaseStateMachine {
      */
     function cancelTimeLockExecution(
         uint256 txId
-    ) public returns (StateAbstraction.TxRecord memory) {
+    ) public returns (EngineBlox.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
-        StateAbstraction.TxRecord memory txRecord = _getSecureState().txRecords[txId];
+        EngineBlox.TxRecord memory txRecord = _getSecureState().txRecords[txId];
         _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
-        // Cancel via BaseStateMachine helper (validates permissions in StateAbstraction)
+        // Cancel via BaseStateMachine helper (validates permissions in EngineBlox)
         return _cancelTransaction(txId);
     }
     
@@ -216,12 +216,12 @@ abstract contract GuardController is BaseStateMachine {
      * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // Approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
+        // Approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
         return _approveTransactionWithMetaTx(metaTx);
     }
     
@@ -232,12 +232,12 @@ abstract contract GuardController is BaseStateMachine {
      * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // Cancel via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
+        // Cancel via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
         return _cancelTransactionWithMetaTx(metaTx);
     }
     
@@ -250,12 +250,12 @@ abstract contract GuardController is BaseStateMachine {
      * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
      */
     function requestAndApproveExecution(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
-        // Request and approve via BaseStateMachine helper (validates permissions and whitelist in StateAbstraction)
+        // Request and approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
         return _requestAndApproveTransaction(metaTx);
     }
     
@@ -263,7 +263,7 @@ abstract contract GuardController is BaseStateMachine {
     // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
     // are already available through inheritance from BaseStateMachine
     // 
-    // Note: Permission validation is handled by StateAbstraction library functions
+    // Note: Permission validation is handled by EngineBlox library functions
     // which validate both function schema existence and RBAC permissions for execution selectors
 
     // ============ INTERNAL VALIDATION HELPERS ============
@@ -278,8 +278,8 @@ abstract contract GuardController is BaseStateMachine {
      *         - NATIVE_TRANSFER_SELECTOR: For native token transfers
      */
     function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
-        return functionSelector == StateAbstraction.NATIVE_TRANSFER_SELECTOR
-            || functionSelector == StateAbstraction.UPDATE_PAYMENT_SELECTOR;
+        return functionSelector == EngineBlox.NATIVE_TRANSFER_SELECTOR
+            || functionSelector == EngineBlox.UPDATE_PAYMENT_SELECTOR;
     }
 
     /**
@@ -318,7 +318,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Creates execution params for a Guard configuration batch
      * @param actions Encoded guard configuration actions
-     * @return The execution params for StateAbstraction
+     * @return The execution params for EngineBlox
      */
     function guardConfigBatchExecutionParams(
         GuardConfigAction[] memory actions
@@ -333,8 +333,8 @@ abstract contract GuardController is BaseStateMachine {
      * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
      */
     function guardConfigBatchRequestAndApprove(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
@@ -392,8 +392,8 @@ abstract contract GuardController is BaseStateMachine {
                 (
                     string memory functionSignature,
                     string memory operationName,
-                    StateAbstraction.TxAction[] memory supportedActions
-                ) = abi.decode(action.data, (string, string, StateAbstraction.TxAction[]));
+                    EngineBlox.TxAction[] memory supportedActions
+                ) = abi.decode(action.data, (string, string, EngineBlox.TxAction[]));
 
                 bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
 
@@ -434,7 +434,7 @@ abstract contract GuardController is BaseStateMachine {
     function _registerFunction(
         string memory functionSignature,
         string memory operationName,
-        StateAbstraction.TxAction[] memory supportedActions
+        EngineBlox.TxAction[] memory supportedActions
     ) internal returns (bytes4 functionSelector) {
         // Derive function selector from signature
         functionSelector = bytes4(keccak256(bytes(functionSignature)));
@@ -468,7 +468,7 @@ abstract contract GuardController is BaseStateMachine {
      */
     function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
         // Load schema and validate it exists
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        EngineBlox.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.functionSelector != functionSelector) {
             revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
@@ -478,7 +478,7 @@ abstract contract GuardController is BaseStateMachine {
             revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
         }
 
-        // The safeRemoval check is now handled within StateAbstraction.removeFunctionSchema
+        // The safeRemoval check is now handled within EngineBlox.removeFunctionSchema
         // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
         // during meta-tx execution msg.sender is the contract, causing NoPermission)
         _removeFunctionSchema(functionSelector, safeRemoval);

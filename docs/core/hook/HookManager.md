@@ -5,9 +5,9 @@
 Simple hook manager component for BaseStateMachine workflows
 
 This component allows attaching external hook contracts per function selector.
-It uses StateAbstraction's functionTargetHooks for storage, keeping the contract minimal:
+It uses EngineBlox's functionTargetHooks for storage, keeping the contract minimal:
 
-- Multiple hooks per function selector (via StateAbstraction.functionTargetHooks)
+- Multiple hooks per function selector (via EngineBlox.functionTargetHooks)
 - OWNER role can set/clear hooks
 - Hooks are executed AFTER the core state machine operation completes
 - Hooks are best-effort: if no hook is configured, nothing happens
@@ -21,7 +21,7 @@ Supported hook points (via IOnActionHook):
 - onRequestAndApprove  : after _requestAndApproveTransaction
 
 Security model:
-- Core state transitions and permissions are enforced by StateAbstraction
+- Core state transitions and permissions are enforced by EngineBlox
 - Overrides call super first (Checks/Effects) then invoke external hooks (Interactions)
 - Approve/meta-approve overrides remain protected by ReentrancyGuard via BaseStateMachine
 
@@ -82,7 +82,7 @@ Returns all configured hooks for a function selector
 ### _executeOnRequestHooks
 
 ```solidity
-function _executeOnRequestHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, address caller) internal nonpayable
+function _executeOnRequestHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onRequest callback
@@ -95,7 +95,7 @@ Executes all hooks for a function selector with onRequest callback
 ### _executeOnApproveHooks
 
 ```solidity
-function _executeOnApproveHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, address caller) internal nonpayable
+function _executeOnApproveHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onApprove callback
@@ -108,7 +108,7 @@ Executes all hooks for a function selector with onApprove callback
 ### _executeOnCancelHooks
 
 ```solidity
-function _executeOnCancelHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, address caller) internal nonpayable
+function _executeOnCancelHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onCancel callback
@@ -121,7 +121,7 @@ Executes all hooks for a function selector with onCancel callback
 ### _executeOnMetaApproveHooks
 
 ```solidity
-function _executeOnMetaApproveHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) internal nonpayable
+function _executeOnMetaApproveHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onMetaApprove callback
@@ -134,7 +134,7 @@ Executes all hooks for a function selector with onMetaApprove callback
 ### _executeOnMetaCancelHooks
 
 ```solidity
-function _executeOnMetaCancelHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) internal nonpayable
+function _executeOnMetaCancelHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onMetaCancel callback
@@ -147,7 +147,7 @@ Executes all hooks for a function selector with onMetaCancel callback
 ### _executeOnRequestAndApproveHooks
 
 ```solidity
-function _executeOnRequestAndApproveHooks(bytes4 functionSelector, struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) internal nonpayable
+function _executeOnRequestAndApproveHooks(bytes4 functionSelector, struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) internal nonpayable
 ```
 
 Executes all hooks for a function selector with onRequestAndApprove callback
@@ -160,7 +160,7 @@ Executes all hooks for a function selector with onRequestAndApprove callback
 ### _requestTransaction
 
 ```solidity
-function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onRequest hook execution
@@ -173,7 +173,7 @@ Override to add onRequest hook execution
 ### _approveTransaction
 
 ```solidity
-function _approveTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onApprove hook execution
@@ -186,7 +186,7 @@ Override to add onApprove hook execution
 ### _approveTransactionWithMetaTx
 
 ```solidity
-function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onMetaApprove hook execution
@@ -199,7 +199,7 @@ Override to add onMetaApprove hook execution
 ### _cancelTransaction
 
 ```solidity
-function _cancelTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onCancel hook execution
@@ -212,7 +212,7 @@ Override to add onCancel hook execution
 ### _cancelTransactionWithMetaTx
 
 ```solidity
-function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onMetaCancel hook execution
@@ -225,7 +225,7 @@ Override to add onMetaCancel hook execution
 ### _requestAndApproveTransaction
 
 ```solidity
-function _requestAndApproveTransaction(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestAndApproveTransaction(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Override to add onRequestAndApprove hook execution

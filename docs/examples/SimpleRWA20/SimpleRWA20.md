@@ -3,7 +3,7 @@
 # SimpleRWA20
 
 A secure ERC20 token for real-world assets with enhanced security via Guardian.
-Uses StateAbstraction for mint and burn operations, restricted to broadcaster.
+Uses EngineBlox for mint and burn operations, restricted to broadcaster.
 Implements ERC20Burnable for secure burn operations with allowance checks.
 
 
@@ -34,7 +34,7 @@ function initialize(string name, string symbol, address initialOwner, address br
 ### mintWithMetaTx
 
 ```solidity
-function mintWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function mintWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -51,7 +51,7 @@ function mintWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public n
 ### burnWithMetaTx
 
 ```solidity
-function burnWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function burnWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -68,7 +68,7 @@ function burnWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public n
 ### generateUnsignedMintMetaTx
 
 ```solidity
-function generateUnsignedMintMetaTx(address to, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMintMetaTx(address to, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 
@@ -87,7 +87,7 @@ function generateUnsignedMintMetaTx(address to, uint256 amount, struct SimpleRWA
 ### generateUnsignedBurnMetaTx
 
 ```solidity
-function generateUnsignedBurnMetaTx(address from, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedBurnMetaTx(address from, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 
@@ -138,7 +138,7 @@ External function that can only be called by the contract itself to execute burn
 ### _handleTokenMetaTx
 
 ```solidity
-function _handleTokenMetaTx(struct StateAbstraction.MetaTransaction metaTx, bytes4 expectedSelector, bytes32 expectedOperationType) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _handleTokenMetaTx(struct EngineBlox.MetaTransaction metaTx, bytes4 expectedSelector, bytes32 expectedOperationType) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Internal helper function to handle token meta transactions
@@ -157,7 +157,7 @@ Internal helper function to handle token meta transactions
 ### _generateUnsignedTokenMetaTx
 
 ```solidity
-function _generateUnsignedTokenMetaTx(address account, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params, bytes32 operationType, bytes4 functionSelector, bytes4 metaTxSelector) internal view returns (struct StateAbstraction.MetaTransaction)
+function _generateUnsignedTokenMetaTx(address account, uint256 amount, struct SimpleRWA20.TokenMetaTxParams params, bytes32 operationType, bytes4 functionSelector, bytes4 metaTxSelector) internal view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Internal helper function to generate unsigned token meta transactions

@@ -97,7 +97,7 @@ struct SecureOperationState {
 ### Layer 1: Core Libraries
 **Purpose**: Provide foundational security and state management
 
-- **`StateAbstraction.sol`**: Core state machine implementation
+- **`EngineBlox.sol`**: Core state machine implementation
 - **`SharedValidation.sol`**: Common validation functions
 - **`BaseDefinitionLoader.sol`**: Base functionality for definition loading
 

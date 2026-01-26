@@ -19,12 +19,12 @@ contract BaseStateMachineTest is CommonBase {
     function test_CreateMetaTxParams_ValidParams() public {
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds
         uint256 maxGasPrice = 100 gwei;
         address signer = owner;
 
-        StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -50,13 +50,13 @@ contract BaseStateMachineTest is CommonBase {
     function test_GetTransaction_ReturnsCorrectTransaction() public {
         // Create a transaction first
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         vm.prank(owner);
-        StateAbstraction.TxRecord memory retrievedTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory retrievedTx = secureBlox.getTransaction(txId);
         assertEq(retrievedTx.txId, txId);
-        assertEq(uint8(retrievedTx.status), uint8(StateAbstraction.TxStatus.PENDING));
+        assertEq(uint8(retrievedTx.status), uint8(EngineBlox.TxStatus.PENDING));
     }
 
     function test_GetTransactionHistory_ReturnsRange() public {
@@ -69,7 +69,7 @@ contract BaseStateMachineTest is CommonBase {
 
         // getTransactionHistory requires fromTxId < toTxId (strictly less than)
         vm.prank(owner);
-        StateAbstraction.TxRecord[] memory history = secureBlox.getTransactionHistory(1, 2);
+        EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, 2);
         assertGe(history.length, 2);
     }
 
@@ -140,7 +140,7 @@ contract BaseStateMachineTest is CommonBase {
 
     function test_IsActionSupportedByFunction_ValidatesActions() public {
         bytes4 selector = bytes4(keccak256("transferOwnershipRequest()"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
         // This may or may not be supported depending on function registration
         // We test the function exists and returns a boolean value
@@ -157,7 +157,7 @@ contract BaseStateMachineTest is CommonBase {
 
     function test_GetActiveRolePermissions_ReturnsPermissions() public {
         vm.prank(owner);
-        StateAbstraction.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(OWNER_ROLE);
+        EngineBlox.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(OWNER_ROLE);
         
         // Permissions may be empty or populated depending on initialization
         // We verify the function executes successfully and returns a valid array

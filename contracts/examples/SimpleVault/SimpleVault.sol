@@ -88,12 +88,12 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of ETH to withdraw
      */
-    function withdrawEthRequest(address to, uint256 amount) public returns (StateAbstraction.TxRecord memory) {
+    function withdrawEthRequest(address to, uint256 amount) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getEthBalance()) revert SharedValidation.NotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
             0, // value
@@ -111,13 +111,13 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of tokens to withdraw
      */
-    function withdrawTokenRequest(address token, address to, uint256 amount) public returns (StateAbstraction.TxRecord memory) {
+    function withdrawTokenRequest(address token, address to, uint256 amount) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(token);
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getTokenBalance(token)) revert SharedValidation.NotSupported();
 
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
             0, // value
@@ -133,9 +133,9 @@ contract SimpleVault is SecureOwnable {
      * @notice Approve a withdrawal after the time delay has passed
      * @param txId The ID of the withdrawal transaction to approve
      */
-    function approveWithdrawalAfterDelay(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalAfterDelay(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updated = _approveTransaction(txId);
+        EngineBlox.TxRecord memory updated = _approveTransaction(txId);
         return updated;
     }
 
@@ -143,7 +143,7 @@ contract SimpleVault is SecureOwnable {
      * @notice Approve withdrawal with meta transaction
      * @param metaTx Meta transaction data
      */
-    function approveWithdrawalWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) public returns (StateAbstraction.TxRecord memory) {
+    function approveWithdrawalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         return _approveTransactionWithMetaTx(metaTx);
     }
@@ -152,9 +152,9 @@ contract SimpleVault is SecureOwnable {
      * @notice Cancel a pending withdrawal request
      * @param txId The ID of the withdrawal transaction to cancel
      */
-    function cancelWithdrawal(uint256 txId) public returns (StateAbstraction.TxRecord memory) {
+    function cancelWithdrawal(uint256 txId) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updated = _cancelTransaction(txId);
+        EngineBlox.TxRecord memory updated = _cancelTransaction(txId);
         return updated;
     }
 
@@ -207,12 +207,12 @@ contract SimpleVault is SecureOwnable {
      * @param metaTxParams Parameters for the meta-transaction
      * @return MetaTransaction The unsigned meta-transaction ready for signing
      */
-    function generateUnsignedWithdrawalMetaTxApproval(uint256 txId, VaultMetaTxParams memory metaTxParams) public view returns (StateAbstraction.MetaTransaction memory) {
+    function generateUnsignedWithdrawalMetaTxApproval(uint256 txId, VaultMetaTxParams memory metaTxParams) public view returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters using the correct selector from definitions
-        StateAbstraction.MetaTxParams memory params = createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = createMetaTxParams(
             address(this),
             SimpleVaultDefinitions.APPROVE_WITHDRAWAL_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_APPROVE,
+            EngineBlox.TxAction.SIGN_META_APPROVE,
             metaTxParams.deadline,
             metaTxParams.maxGasPrice,
             owner()

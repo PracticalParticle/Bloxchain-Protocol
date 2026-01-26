@@ -1,6 +1,6 @@
 # Solidity API
 
-# StateAbstraction
+# EngineBlox
 
 A library for implementing secure state abstraction with time-locks and meta-transactions
 
@@ -28,7 +28,7 @@ that require high levels of security and flexibility through state abstraction.
 ### initialize
 
 ```solidity
-function initialize(struct StateAbstraction.SecureOperationState self, address _owner, address _broadcaster, address _recovery, uint256 _timeLockPeriodSec) public nonpayable
+function initialize(struct EngineBlox.SecureOperationState self, address _owner, address _broadcaster, address _recovery, uint256 _timeLockPeriodSec) public nonpayable
 ```
 
 Initializes the SecureOperationState with the specified time lock period and roles.
@@ -47,7 +47,7 @@ Initializes the SecureOperationState with the specified time lock period and rol
 ### updateTimeLockPeriod
 
 ```solidity
-function updateTimeLockPeriod(struct StateAbstraction.SecureOperationState self, uint256 _newTimeLockPeriodSec) public nonpayable
+function updateTimeLockPeriod(struct EngineBlox.SecureOperationState self, uint256 _newTimeLockPeriodSec) public nonpayable
 ```
 
 Updates the time lock period for the SecureOperationState.
@@ -63,7 +63,7 @@ Updates the time lock period for the SecureOperationState.
 ### getTxRecord
 
 ```solidity
-function getTxRecord(struct StateAbstraction.SecureOperationState self, uint256 txId) public view returns (struct StateAbstraction.TxRecord)
+function getTxRecord(struct EngineBlox.SecureOperationState self, uint256 txId) public view returns (struct EngineBlox.TxRecord)
 ```
 
 Gets the transaction record by its ID.
@@ -81,7 +81,7 @@ Gets the transaction record by its ID.
 ### txRequest
 
 ```solidity
-function txRequest(struct StateAbstraction.SecureOperationState self, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams) public nonpayable returns (struct StateAbstraction.TxRecord)
+function txRequest(struct EngineBlox.SecureOperationState self, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests a transaction with the specified parameters.
@@ -106,7 +106,7 @@ Requests a transaction with the specified parameters.
 ### txDelayedApproval
 
 ```solidity
-function txDelayedApproval(struct StateAbstraction.SecureOperationState self, uint256 txId, bytes4 handlerSelector) public nonpayable returns (struct StateAbstraction.TxRecord)
+function txDelayedApproval(struct EngineBlox.SecureOperationState self, uint256 txId, bytes4 handlerSelector) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending transaction after the release time.
@@ -125,7 +125,7 @@ Approves a pending transaction after the release time.
 ### txCancellation
 
 ```solidity
-function txCancellation(struct StateAbstraction.SecureOperationState self, uint256 txId, bytes4 handlerSelector) public nonpayable returns (struct StateAbstraction.TxRecord)
+function txCancellation(struct EngineBlox.SecureOperationState self, uint256 txId, bytes4 handlerSelector) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending transaction.
@@ -144,7 +144,7 @@ Cancels a pending transaction.
 ### txCancellationWithMetaTx
 
 ```solidity
-function txCancellationWithMetaTx(struct StateAbstraction.SecureOperationState self, struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function txCancellationWithMetaTx(struct EngineBlox.SecureOperationState self, struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Cancels a pending transaction using a meta-transaction.
@@ -162,7 +162,7 @@ Cancels a pending transaction using a meta-transaction.
 ### txApprovalWithMetaTx
 
 ```solidity
-function txApprovalWithMetaTx(struct StateAbstraction.SecureOperationState self, struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function txApprovalWithMetaTx(struct EngineBlox.SecureOperationState self, struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Approves a pending transaction immediately using a meta-transaction.
@@ -180,7 +180,7 @@ Approves a pending transaction immediately using a meta-transaction.
 ### requestAndApprove
 
 ```solidity
-function requestAndApprove(struct StateAbstraction.SecureOperationState self, struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function requestAndApprove(struct EngineBlox.SecureOperationState self, struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Requests and immediately approves a transaction.
@@ -198,7 +198,7 @@ Requests and immediately approves a transaction.
 ### updatePaymentForTransaction
 
 ```solidity
-function updatePaymentForTransaction(struct StateAbstraction.SecureOperationState self, uint256 txId, struct StateAbstraction.PaymentDetails paymentDetails) public nonpayable
+function updatePaymentForTransaction(struct EngineBlox.SecureOperationState self, uint256 txId, struct EngineBlox.PaymentDetails paymentDetails) public nonpayable
 ```
 
 Updates payment details for a pending transaction
@@ -215,7 +215,7 @@ Updates payment details for a pending transaction
 ### getRole
 
 ```solidity
-function getRole(struct StateAbstraction.SecureOperationState self, bytes32 role) public view returns (struct StateAbstraction.Role)
+function getRole(struct EngineBlox.SecureOperationState self, bytes32 role) public view returns (struct EngineBlox.Role)
 ```
 
 Gets the role by its hash.
@@ -233,7 +233,7 @@ Gets the role by its hash.
 ### createRole
 
 ```solidity
-function createRole(struct StateAbstraction.SecureOperationState self, string roleName, uint256 maxWallets, bool isProtected) public nonpayable
+function createRole(struct EngineBlox.SecureOperationState self, string roleName, uint256 maxWallets, bool isProtected) public nonpayable
 ```
 
 Creates a role with specified function permissions.
@@ -251,7 +251,7 @@ Creates a role with specified function permissions.
 ### removeRole
 
 ```solidity
-function removeRole(struct StateAbstraction.SecureOperationState self, bytes32 roleHash) public nonpayable
+function removeRole(struct EngineBlox.SecureOperationState self, bytes32 roleHash) public nonpayable
 ```
 
 Removes a role from the system.
@@ -267,7 +267,7 @@ Removes a role from the system.
 ### hasRole
 
 ```solidity
-function hasRole(struct StateAbstraction.SecureOperationState self, bytes32 roleHash, address wallet) public view returns (bool)
+function hasRole(struct EngineBlox.SecureOperationState self, bytes32 roleHash, address wallet) public view returns (bool)
 ```
 
 Checks if a wallet is authorized for a role.
@@ -286,7 +286,7 @@ Checks if a wallet is authorized for a role.
 ### assignWallet
 
 ```solidity
-function assignWallet(struct StateAbstraction.SecureOperationState self, bytes32 role, address wallet) public nonpayable
+function assignWallet(struct EngineBlox.SecureOperationState self, bytes32 role, address wallet) public nonpayable
 ```
 
 Adds a wallet address to a role in the roles mapping.
@@ -303,7 +303,7 @@ Adds a wallet address to a role in the roles mapping.
 ### updateAssignedWallet
 
 ```solidity
-function updateAssignedWallet(struct StateAbstraction.SecureOperationState self, bytes32 role, address newWallet, address oldWallet) public nonpayable
+function updateAssignedWallet(struct EngineBlox.SecureOperationState self, bytes32 role, address newWallet, address oldWallet) public nonpayable
 ```
 
 Updates a role from an old address to a new address.
@@ -321,7 +321,7 @@ Updates a role from an old address to a new address.
 ### revokeWallet
 
 ```solidity
-function revokeWallet(struct StateAbstraction.SecureOperationState self, bytes32 role, address wallet) public nonpayable
+function revokeWallet(struct EngineBlox.SecureOperationState self, bytes32 role, address wallet) public nonpayable
 ```
 
 Removes a wallet from a role.
@@ -338,7 +338,7 @@ Removes a wallet from a role.
 ### addFunctionToRole
 
 ```solidity
-function addFunctionToRole(struct StateAbstraction.SecureOperationState self, bytes32 roleHash, struct StateAbstraction.FunctionPermission functionPermission) public nonpayable
+function addFunctionToRole(struct EngineBlox.SecureOperationState self, bytes32 roleHash, struct EngineBlox.FunctionPermission functionPermission) public nonpayable
 ```
 
 Adds a function permission to an existing role.
@@ -355,7 +355,7 @@ Adds a function permission to an existing role.
 ### removeFunctionFromRole
 
 ```solidity
-function removeFunctionFromRole(struct StateAbstraction.SecureOperationState self, bytes32 roleHash, bytes4 functionSelector) public nonpayable
+function removeFunctionFromRole(struct EngineBlox.SecureOperationState self, bytes32 roleHash, bytes4 functionSelector) public nonpayable
 ```
 
 Removes a function permission from an existing role.
@@ -372,7 +372,7 @@ Removes a function permission from an existing role.
 ### hasActionPermission
 
 ```solidity
-function hasActionPermission(struct StateAbstraction.SecureOperationState self, address wallet, bytes4 functionSelector, enum StateAbstraction.TxAction requestedAction) public view returns (bool)
+function hasActionPermission(struct EngineBlox.SecureOperationState self, address wallet, bytes4 functionSelector, enum EngineBlox.TxAction requestedAction) public view returns (bool)
 ```
 
 Checks if a wallet has permission for a specific function and action.
@@ -392,7 +392,7 @@ Checks if a wallet has permission for a specific function and action.
 ### hasAnyRole
 
 ```solidity
-function hasAnyRole(struct StateAbstraction.SecureOperationState self, address wallet) public view returns (bool)
+function hasAnyRole(struct EngineBlox.SecureOperationState self, address wallet) public view returns (bool)
 ```
 
 Checks if a wallet has view permission for any role (privacy function access)
@@ -410,7 +410,7 @@ Checks if a wallet has view permission for any role (privacy function access)
 ### roleHasActionPermission
 
 ```solidity
-function roleHasActionPermission(struct StateAbstraction.SecureOperationState self, bytes32 roleHash, bytes4 functionSelector, enum StateAbstraction.TxAction requestedAction) public view returns (bool)
+function roleHasActionPermission(struct EngineBlox.SecureOperationState self, bytes32 roleHash, bytes4 functionSelector, enum EngineBlox.TxAction requestedAction) public view returns (bool)
 ```
 
 Checks if a specific role has permission for a function and action.
@@ -430,7 +430,7 @@ Checks if a specific role has permission for a function and action.
 ### createFunctionSchema
 
 ```solidity
-function createFunctionSchema(struct StateAbstraction.SecureOperationState self, string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool isProtected, bytes4[] handlerForSelectors) public nonpayable
+function createFunctionSchema(struct EngineBlox.SecureOperationState self, string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool isProtected, bytes4[] handlerForSelectors) public nonpayable
 ```
 
 Creates a function access control with specified permissions.
@@ -451,7 +451,7 @@ Creates a function access control with specified permissions.
 ### removeFunctionSchema
 
 ```solidity
-function removeFunctionSchema(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, bool safeRemoval) public nonpayable
+function removeFunctionSchema(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, bool safeRemoval) public nonpayable
 ```
 
 Removes a function schema from the system.
@@ -471,7 +471,7 @@ Removes a function schema from the system.
 ### isActionSupportedByFunction
 
 ```solidity
-function isActionSupportedByFunction(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, enum StateAbstraction.TxAction action) public view returns (bool)
+function isActionSupportedByFunction(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, enum EngineBlox.TxAction action) public view returns (bool)
 ```
 
 Checks if a specific action is supported by a function.
@@ -490,7 +490,7 @@ Checks if a specific action is supported by a function.
 ### addTargetToFunctionWhitelist
 
 ```solidity
-function addTargetToFunctionWhitelist(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function addTargetToFunctionWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Adds a target address to the whitelist for a function selector.
@@ -507,7 +507,7 @@ Adds a target address to the whitelist for a function selector.
 ### removeTargetFromFunctionWhitelist
 
 ```solidity
-function removeTargetFromFunctionWhitelist(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function removeTargetFromFunctionWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Removes a target address from the whitelist for a function selector.
@@ -524,7 +524,7 @@ Removes a target address from the whitelist for a function selector.
 ### _validateFunctionTargetWhitelist
 
 ```solidity
-function _validateFunctionTargetWhitelist(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, address target) internal view
+function _validateFunctionTargetWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) internal view
 ```
 
 Validates that the target address is whitelisted for the given function selector.
@@ -542,7 +542,7 @@ Validates that the target address is whitelisted for the given function selector
 ### getFunctionWhitelistTargets
 
 ```solidity
-function getFunctionWhitelistTargets(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
+function getFunctionWhitelistTargets(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
 ```
 
 Returns all whitelisted target addresses for a function selector.
@@ -560,7 +560,7 @@ Returns all whitelisted target addresses for a function selector.
 ### addTargetToFunctionHooks
 
 ```solidity
-function addTargetToFunctionHooks(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function addTargetToFunctionHooks(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Adds a target address to the hooks for a function selector.
@@ -577,7 +577,7 @@ Adds a target address to the hooks for a function selector.
 ### removeTargetFromFunctionHooks
 
 ```solidity
-function removeTargetFromFunctionHooks(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function removeTargetFromFunctionHooks(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Removes a target address from the hooks for a function selector.
@@ -594,7 +594,7 @@ Removes a target address from the hooks for a function selector.
 ### getFunctionHookTargets
 
 ```solidity
-function getFunctionHookTargets(struct StateAbstraction.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
+function getFunctionHookTargets(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
 ```
 
 Returns all hook target addresses for a function selector.
@@ -612,7 +612,7 @@ Returns all hook target addresses for a function selector.
 ### getFunctionsByOperationType
 
 ```solidity
-function getFunctionsByOperationType(struct StateAbstraction.SecureOperationState self, bytes32 operationType) public view returns (bytes4[])
+function getFunctionsByOperationType(struct EngineBlox.SecureOperationState self, bytes32 operationType) public view returns (bytes4[])
 ```
 
 Returns all function schemas that use a specific operation type.
@@ -630,7 +630,7 @@ Returns all function schemas that use a specific operation type.
 ### _getFunctionsByOperationType
 
 ```solidity
-function _getFunctionsByOperationType(struct StateAbstraction.SecureOperationState self, bytes32 operationType) internal view returns (bytes4[])
+function _getFunctionsByOperationType(struct EngineBlox.SecureOperationState self, bytes32 operationType) internal view returns (bytes4[])
 ```
 
 Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
@@ -646,7 +646,7 @@ Also used by getFunctionsByOperationType after role validation.
 ### getPendingTransactionsList
 
 ```solidity
-function getPendingTransactionsList(struct StateAbstraction.SecureOperationState self) public view returns (uint256[])
+function getPendingTransactionsList(struct EngineBlox.SecureOperationState self) public view returns (uint256[])
 ```
 
 Gets all pending transaction IDs as an array for backward compatibility
@@ -663,7 +663,7 @@ Gets all pending transaction IDs as an array for backward compatibility
 ### getSupportedRolesList
 
 ```solidity
-function getSupportedRolesList(struct StateAbstraction.SecureOperationState self) public view returns (bytes32[])
+function getSupportedRolesList(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
 Gets all supported roles as an array for backward compatibility
@@ -680,7 +680,7 @@ Gets all supported roles as an array for backward compatibility
 ### getSupportedFunctionsList
 
 ```solidity
-function getSupportedFunctionsList(struct StateAbstraction.SecureOperationState self) public view returns (bytes4[])
+function getSupportedFunctionsList(struct EngineBlox.SecureOperationState self) public view returns (bytes4[])
 ```
 
 Gets all supported function selectors as an array for backward compatibility
@@ -697,7 +697,7 @@ Gets all supported function selectors as an array for backward compatibility
 ### getSupportedOperationTypesList
 
 ```solidity
-function getSupportedOperationTypesList(struct StateAbstraction.SecureOperationState self) public view returns (bytes32[])
+function getSupportedOperationTypesList(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
 Gets all supported operation types as an array for backward compatibility
@@ -714,7 +714,7 @@ Gets all supported operation types as an array for backward compatibility
 ### getAuthorizedWalletAt
 
 ```solidity
-function getAuthorizedWalletAt(struct StateAbstraction.SecureOperationState self, bytes32 roleHash, uint256 index) public view returns (address)
+function getAuthorizedWalletAt(struct EngineBlox.SecureOperationState self, bytes32 roleHash, uint256 index) public view returns (address)
 ```
 
 Gets the authorized wallet at a specific index from a role
@@ -733,7 +733,7 @@ Gets the authorized wallet at a specific index from a role
 ### getRoleFunctionPermissions
 
 ```solidity
-function getRoleFunctionPermissions(struct StateAbstraction.SecureOperationState self, bytes32 roleHash) public view returns (struct StateAbstraction.FunctionPermission[])
+function getRoleFunctionPermissions(struct EngineBlox.SecureOperationState self, bytes32 roleHash) public view returns (struct EngineBlox.FunctionPermission[])
 ```
 
 Gets all function permissions for a role as an array for backward compatibility
@@ -751,7 +751,7 @@ Gets all function permissions for a role as an array for backward compatibility
 ### getSignerNonce
 
 ```solidity
-function getSignerNonce(struct StateAbstraction.SecureOperationState self, address signer) public view returns (uint256)
+function getSignerNonce(struct EngineBlox.SecureOperationState self, address signer) public view returns (uint256)
 ```
 
 Gets the current nonce for a specific signer.
@@ -787,7 +787,7 @@ Recovers the signer address from a message hash and signature.
 ### generateUnsignedForNewMetaTx
 
 ```solidity
-function generateUnsignedForNewMetaTx(struct StateAbstraction.SecureOperationState self, struct StateAbstraction.TxParams txParams, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedForNewMetaTx(struct EngineBlox.SecureOperationState self, struct EngineBlox.TxParams txParams, struct EngineBlox.MetaTxParams metaTxParams) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Creates a meta-transaction for a new operation
@@ -800,7 +800,7 @@ Creates a meta-transaction for a new operation
 ### generateUnsignedForExistingMetaTx
 
 ```solidity
-function generateUnsignedForExistingMetaTx(struct StateAbstraction.SecureOperationState self, uint256 txId, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedForExistingMetaTx(struct EngineBlox.SecureOperationState self, uint256 txId, struct EngineBlox.MetaTxParams metaTxParams) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Creates a meta-transaction for an existing transaction
@@ -813,7 +813,7 @@ Creates a meta-transaction for an existing transaction
 ### createMetaTxParams
 
 ```solidity
-function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum StateAbstraction.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) public view returns (struct StateAbstraction.MetaTxParams)
+function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum EngineBlox.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) public view returns (struct EngineBlox.MetaTxParams)
 ```
 
 Helper function to create properly formatted MetaTxParams
@@ -835,7 +835,7 @@ Helper function to create properly formatted MetaTxParams
 ### logTxEvent
 
 ```solidity
-function logTxEvent(struct StateAbstraction.SecureOperationState self, uint256 txId, bytes4 functionSelector) public nonpayable
+function logTxEvent(struct EngineBlox.SecureOperationState self, uint256 txId, bytes4 functionSelector) public nonpayable
 ```
 
 Logs an event by emitting TransactionEvent and forwarding to event forwarder
@@ -862,7 +862,7 @@ Logs an event by emitting TransactionEvent and forwarding to event forwarder
 ### setEventForwarder
 
 ```solidity
-function setEventForwarder(struct StateAbstraction.SecureOperationState self, address forwarder) public nonpayable
+function setEventForwarder(struct EngineBlox.SecureOperationState self, address forwarder) public nonpayable
 ```
 
 Set the event forwarder for this specific instance
@@ -878,7 +878,7 @@ Set the event forwarder for this specific instance
 ### hasActionInBitmap
 
 ```solidity
-function hasActionInBitmap(uint16 bitmap, enum StateAbstraction.TxAction action) internal pure returns (bool)
+function hasActionInBitmap(uint16 bitmap, enum EngineBlox.TxAction action) internal pure returns (bool)
 ```
 
 Checks if a TxAction is present in a bitmap
@@ -896,7 +896,7 @@ Checks if a TxAction is present in a bitmap
 ### addActionToBitmap
 
 ```solidity
-function addActionToBitmap(uint16 bitmap, enum StateAbstraction.TxAction action) internal pure returns (uint16)
+function addActionToBitmap(uint16 bitmap, enum EngineBlox.TxAction action) internal pure returns (uint16)
 ```
 
 Adds a TxAction to a bitmap
@@ -914,7 +914,7 @@ Adds a TxAction to a bitmap
 ### createBitmapFromActions
 
 ```solidity
-function createBitmapFromActions(enum StateAbstraction.TxAction[] actions) internal pure returns (uint16)
+function createBitmapFromActions(enum EngineBlox.TxAction[] actions) internal pure returns (uint16)
 ```
 
 Creates a bitmap from an array of TxActions
@@ -931,7 +931,7 @@ Creates a bitmap from an array of TxActions
 ### convertBitmapToActions
 
 ```solidity
-function convertBitmapToActions(uint16 bitmap) internal pure returns (enum StateAbstraction.TxAction[])
+function convertBitmapToActions(uint16 bitmap) internal pure returns (enum EngineBlox.TxAction[])
 ```
 
 Converts a bitmap to an array of TxActions
@@ -948,7 +948,7 @@ Converts a bitmap to an array of TxActions
 ### _validateAnyRole
 
 ```solidity
-function _validateAnyRole(struct StateAbstraction.SecureOperationState self) internal view
+function _validateAnyRole(struct EngineBlox.SecureOperationState self) internal view
 ```
 
 Validates that the caller has any role permission
@@ -963,7 +963,7 @@ Validates that the caller has any role permission
 ### _validateRoleExists
 
 ```solidity
-function _validateRoleExists(struct StateAbstraction.SecureOperationState self, bytes32 roleHash) internal view
+function _validateRoleExists(struct EngineBlox.SecureOperationState self, bytes32 roleHash) internal view
 ```
 
 Validates that a role exists by checking if its hash is not zero
@@ -979,7 +979,7 @@ Validates that a role exists by checking if its hash is not zero
 ### _validateTxStatus
 
 ```solidity
-function _validateTxStatus(struct StateAbstraction.SecureOperationState self, uint256 txId, enum StateAbstraction.TxStatus expectedStatus) internal view
+function _validateTxStatus(struct EngineBlox.SecureOperationState self, uint256 txId, enum EngineBlox.TxStatus expectedStatus) internal view
 ```
 
 Validates that a transaction is in the expected status
@@ -996,7 +996,7 @@ Validates that a transaction is in the expected status
 ### _validateExecutionAndHandlerPermissions
 
 ```solidity
-function _validateExecutionAndHandlerPermissions(struct StateAbstraction.SecureOperationState self, address wallet, bytes4 executionSelector, bytes4 handlerSelector, enum StateAbstraction.TxAction action) internal view
+function _validateExecutionAndHandlerPermissions(struct EngineBlox.SecureOperationState self, address wallet, bytes4 executionSelector, bytes4 handlerSelector, enum EngineBlox.TxAction action) internal view
 ```
 
 Validates that a wallet has permission for both execution selector and handler selector for a given action
@@ -1015,7 +1015,7 @@ Validates that a wallet has permission for both execution selector and handler s
 ### _validateMetaTxPermissions
 
 ```solidity
-function _validateMetaTxPermissions(struct StateAbstraction.SecureOperationState self, struct StateAbstraction.FunctionPermission functionPermission) internal view
+function _validateMetaTxPermissions(struct EngineBlox.SecureOperationState self, struct EngineBlox.FunctionPermission functionPermission) internal view
 ```
 
 Validates meta-transaction permissions for a function permission
@@ -1103,7 +1103,7 @@ Generic helper to convert Bytes32Set (containing bytes4 selectors) to bytes4 arr
 ### TransactionEvent
 
 ```solidity
-event TransactionEvent(uint256 txId, bytes4 functionHash, enum StateAbstraction.TxStatus status, address requester, address target, bytes32 operationType)
+event TransactionEvent(uint256 txId, bytes4 functionHash, enum EngineBlox.TxStatus status, address requester, address target, bytes32 operationType)
 ```
 
 

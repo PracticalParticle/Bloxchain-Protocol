@@ -90,7 +90,7 @@ contract RoleInvariantsTest is CommonBase {
         
         for (uint256 i = 0; i < roles.length; i++) {
             vm.prank(owner);
-            StateAbstraction.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(roles[i]);
+            EngineBlox.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(roles[i]);
             
             // Verify permissions are valid
             for (uint256 j = 0; j < permissions.length; j++) {

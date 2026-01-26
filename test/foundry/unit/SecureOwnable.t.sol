@@ -112,10 +112,10 @@ contract SecureOwnableTest is CommonBase {
 
     function test_TransferOwnershipRequest_RecoveryCanRequest() public {
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory txRecord = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory txRecord = secureBlox.transferOwnershipRequest();
 
         assertGt(txRecord.txId, 0);
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         assertEq(txRecord.params.operationType, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
     }
 
@@ -136,22 +136,22 @@ contract SecureOwnableTest is CommonBase {
 
     function test_TransferOwnershipDelayedApproval_AfterTimelock() public {
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Advance time past timelock
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
 
-        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
         assertEq(secureBlox.owner(), recovery);
     }
 
     function test_TransferOwnershipDelayedApproval_Revert_BeforeTimelock() public {
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Don't advance time
@@ -162,26 +162,26 @@ contract SecureOwnableTest is CommonBase {
 
     function test_TransferOwnershipDelayedApproval_OwnerCanApprove() public {
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         vm.prank(owner);
-        StateAbstraction.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
 
-        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
     }
 
     function test_TransferOwnershipCancellation_RecoveryCanCancel() public {
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory cancelTx = secureBlox.transferOwnershipCancellation(txId);
+        EngineBlox.TxRecord memory cancelTx = secureBlox.transferOwnershipCancellation(txId);
 
-        assertEq(uint8(cancelTx.status), uint8(StateAbstraction.TxStatus.CANCELLED));
+        assertEq(uint8(cancelTx.status), uint8(EngineBlox.TxStatus.CANCELLED));
         assertEq(secureBlox.owner(), owner); // Owner unchanged
     }
 
@@ -190,10 +190,10 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_OwnerCanRequest() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        StateAbstraction.TxRecord memory txRecord = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory txRecord = secureBlox.updateBroadcasterRequest(newBroadcaster);
 
         assertGt(txRecord.txId, 0);
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         assertEq(txRecord.params.operationType, SecureOwnableDefinitions.BROADCASTER_UPDATE);
     }
 
@@ -206,15 +206,15 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterDelayedApproval_AfterTimelock() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         vm.prank(owner);
-        StateAbstraction.TxRecord memory approvalTx = secureBlox.updateBroadcasterDelayedApproval(txId);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.updateBroadcasterDelayedApproval(txId);
 
-        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
         address[] memory broadcasters = secureBlox.getBroadcasters();
         assertEq(broadcasters[0], newBroadcaster);
     }
@@ -222,13 +222,13 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterCancellation_OwnerCanCancel() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
         uint256 txId = requestTx.txId;
 
         vm.prank(owner);
-        StateAbstraction.TxRecord memory cancelTx = secureBlox.updateBroadcasterCancellation(txId);
+        EngineBlox.TxRecord memory cancelTx = secureBlox.updateBroadcasterCancellation(txId);
 
-        assertEq(uint8(cancelTx.status), uint8(StateAbstraction.TxStatus.CANCELLED));
+        assertEq(uint8(cancelTx.status), uint8(EngineBlox.TxStatus.CANCELLED));
     }
 
     // ============ RECOVERY UPDATE TESTS ============
@@ -276,7 +276,7 @@ contract SecureOwnableTest is CommonBase {
         
         // Create a transaction that will call executeTransferOwnership
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -317,17 +317,17 @@ contract SecureOwnableTest is CommonBase {
 
         // Step 1: Create ownership transfer request
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Step 2: Create meta-transaction parameters
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("transferOwnershipDelayedApproval(uint256)"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds
         uint256 maxGasPrice = 100 gwei;
 
-        StateAbstraction.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -338,7 +338,7 @@ contract SecureOwnableTest is CommonBase {
 
         // Step 3: Generate unsigned meta-transaction
         vm.prank(recovery);
-        StateAbstraction.MetaTransaction memory unsignedMetaTx = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory unsignedMetaTx = secureBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             metaTxParams
         );
@@ -382,23 +382,23 @@ contract SecureOwnableTest is CommonBase {
 
         // Step 1: Request
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Verify pending
         vm.prank(owner);
-        StateAbstraction.TxRecord memory pendingTx = secureBlox.getTransaction(txId);
-        assertEq(uint8(pendingTx.status), uint8(StateAbstraction.TxStatus.PENDING));
+        EngineBlox.TxRecord memory pendingTx = secureBlox.getTransaction(txId);
+        assertEq(uint8(pendingTx.status), uint8(EngineBlox.TxStatus.PENDING));
 
         // Step 2: Advance time
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         // Step 3: Approve
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
 
         // Step 4: Verify completion
-        assertEq(uint8(approvalTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
         assertEq(secureBlox.owner(), recovery);
     }
 }

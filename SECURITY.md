@@ -79,7 +79,7 @@ Our State Abstraction framework implements multiple layers of security:
 
 #### For Auditors
 - Review our security architecture documentation
-- Focus on the StateAbstraction library core functions
+- Focus on the EngineBlox library core functions
 - Verify multi-signature workflow implementations
 - Check meta-transaction signature validation
 

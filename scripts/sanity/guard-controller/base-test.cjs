@@ -784,7 +784,7 @@ class BaseGuardControllerTest {
             // - target: Where ETH will be sent (recipient wallet)
             // This creates a conflict: we can't have handlerContract (contract) == target (wallet)
             //
-            // The validation in StateAbstraction.sol line 1311 requires:
+            // The validation in EngineBlox.sol line 1311 requires:
             //   handlerContract == target
             // This prevents native transfers to external addresses via meta-tx
             //
@@ -843,7 +843,7 @@ class BaseGuardControllerTest {
             const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
             
             // For native transfers via meta-tx, there's a validation issue:
-            // - handlerContract must equal target (StateAbstraction validation)
+            // - handlerContract must equal target (EngineBlox validation)
             // - handlerContract should be ControlBlox (has requestAndApproveExecution)
             // - target should be recipient (where ETH is sent)
             // This creates a conflict: handlerContract (contract) != target (recipient wallet)

@@ -59,37 +59,37 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
         bytes32 operationType,
         bytes4 functionSelector,
         bytes memory params
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._requestTransaction(requester, target, value, gasLimit, operationType, functionSelector, params);
     }
 
     function _approveTransaction(
         uint256 txId
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._approveTransaction(txId);
     }
 
     function _approveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._approveTransactionWithMetaTx(metaTx);
     }
 
     function _cancelTransaction(
         uint256 txId
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._cancelTransaction(txId);
     }
 
     function _cancelTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._cancelTransactionWithMetaTx(metaTx);
     }
 
     function _requestAndApproveTransaction(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
         return HookManager._requestAndApproveTransaction(metaTx);
     }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../../../lib/StateAbstraction.sol";
+import "../../../lib/EngineBlox.sol";
 import "../../../../interfaces/IDefinition.sol";
 
 /**
@@ -17,14 +17,14 @@ import "../../../../interfaces/IDefinition.sol";
  * - Registers all 6 GuardController public execution functions
  * - Defines role permissions for OWNER_ROLE and BROADCASTER_ROLE
  * - Supports time-delay and meta-transaction workflows
- * - Matches StateAbstractionDefinitions pattern for consistency
+ * - Matches EngineBloxDefinitions pattern for consistency
  * 
  * Role Permissions:
  * - OWNER_ROLE: Can sign/request time-delay and meta-transaction operations (8 permissions)
  * - BROADCASTER_ROLE: Can execute meta-transaction operations (5 permissions)
  * 
  * @notice This definition provides complete initialization data including both function schemas
- * and role permissions, matching the StateAbstractionDefinitions pattern.
+ * and role permissions, matching the EngineBloxDefinitions pattern.
  * @custom:security-contact security@particlecrypto.com
  */
 library GuardControllerDefinitions {
@@ -73,41 +73,41 @@ library GuardControllerDefinitions {
      * - Whether they are protected
      * 
      * Permission System:
-     * - These schemas enable StateAbstraction._checkExecutionPermissions to validate
+     * - These schemas enable EngineBlox._checkExecutionPermissions to validate
      *   if callers have permission to call these GuardController functions
-     * - Role permissions are defined in getRolePermissions() matching StateAbstractionDefinitions pattern
+     * - Role permissions are defined in getRolePermissions() matching EngineBloxDefinitions pattern
      */
-    function getFunctionSchemas() public pure returns (StateAbstraction.FunctionSchema[] memory) {
-        StateAbstraction.FunctionSchema[] memory schemas = new StateAbstraction.FunctionSchema[](8);
+    function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](8);
         
         // ============ TIME-DELAY WORKFLOW ACTIONS ============
         // Request action for executeWithTimeLock
-        StateAbstraction.TxAction[] memory timeDelayRequestActions = new StateAbstraction.TxAction[](1);
-        timeDelayRequestActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        EngineBlox.TxAction[] memory timeDelayRequestActions = new EngineBlox.TxAction[](1);
+        timeDelayRequestActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
         // Approve action for approveTimeLockExecution
-        StateAbstraction.TxAction[] memory timeDelayApproveActions = new StateAbstraction.TxAction[](1);
-        timeDelayApproveActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        EngineBlox.TxAction[] memory timeDelayApproveActions = new EngineBlox.TxAction[](1);
+        timeDelayApproveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         
         // Cancel action for cancelTimeLockExecution
-        StateAbstraction.TxAction[] memory timeDelayCancelActions = new StateAbstraction.TxAction[](1);
-        timeDelayCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        EngineBlox.TxAction[] memory timeDelayCancelActions = new EngineBlox.TxAction[](1);
+        timeDelayCancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         
         // ============ META-TRANSACTION WORKFLOW ACTIONS ============
         // Approve action for approveTimeLockExecutionWithMetaTx
-        StateAbstraction.TxAction[] memory metaTxApproveActions = new StateAbstraction.TxAction[](2);
-        metaTxApproveActions[0] = StateAbstraction.TxAction.SIGN_META_APPROVE;
-        metaTxApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory metaTxApproveActions = new EngineBlox.TxAction[](2);
+        metaTxApproveActions[0] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        metaTxApproveActions[1] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
         // Cancel action for cancelTimeLockExecutionWithMetaTx
-        StateAbstraction.TxAction[] memory metaTxCancelActions = new StateAbstraction.TxAction[](2);
-        metaTxCancelActions[0] = StateAbstraction.TxAction.SIGN_META_CANCEL;
-        metaTxCancelActions[1] = StateAbstraction.TxAction.EXECUTE_META_CANCEL;
+        EngineBlox.TxAction[] memory metaTxCancelActions = new EngineBlox.TxAction[](2);
+        metaTxCancelActions[0] = EngineBlox.TxAction.SIGN_META_CANCEL;
+        metaTxCancelActions[1] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
         
         // Request and approve action for requestAndApproveExecution
-        StateAbstraction.TxAction[] memory metaTxRequestApproveActions = new StateAbstraction.TxAction[](2);
-        metaTxRequestApproveActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
-        metaTxRequestApproveActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        EngineBlox.TxAction[] memory metaTxRequestApproveActions = new EngineBlox.TxAction[](2);
+        metaTxRequestApproveActions[0] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        metaTxRequestApproveActions[1] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
         // ============ GUARDCONTROLLER FUNCTION SCHEMAS ============
         
@@ -132,93 +132,93 @@ library GuardControllerDefinitions {
         guardConfigHandlerForSelectors[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
         
         // Schema 0: GuardController.executeWithTimeLock
-        schemas[0] = StateAbstraction.FunctionSchema({
+        schemas[0] = EngineBlox.FunctionSchema({
             functionSignature: "executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)",
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayRequestActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             isProtected: true,
             handlerForSelectors: executeWithTimeLockHandlerForSelectors
         });
         
         // Schema 1: GuardController.approveTimeLockExecution
-        schemas[1] = StateAbstraction.FunctionSchema({
+        schemas[1] = EngineBlox.FunctionSchema({
             functionSignature: "approveTimeLockExecution(uint256)",
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             isProtected: true,
             handlerForSelectors: approveTimeLockExecutionHandlerForSelectors
         });
         
         // Schema 2: GuardController.cancelTimeLockExecution
-        schemas[2] = StateAbstraction.FunctionSchema({
+        schemas[2] = EngineBlox.FunctionSchema({
             functionSignature: "cancelTimeLockExecution(uint256)",
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(timeDelayCancelActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             isProtected: true,
             handlerForSelectors: cancelTimeLockExecutionHandlerForSelectors
         });
         
         // Schema 3: GuardController.approveTimeLockExecutionWithMetaTx
-        schemas[3] = StateAbstraction.FunctionSchema({
+        schemas[3] = EngineBlox.FunctionSchema({
             functionSignature: "approveTimeLockExecutionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             isProtected: true,
             handlerForSelectors: approveTimeLockExecutionMetaHandlerForSelectors
         });
         
         // Schema 4: GuardController.cancelTimeLockExecutionWithMetaTx
-        schemas[4] = StateAbstraction.FunctionSchema({
+        schemas[4] = EngineBlox.FunctionSchema({
             functionSignature: "cancelTimeLockExecutionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxCancelActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxCancelActions),
             isProtected: true,
             handlerForSelectors: cancelTimeLockExecutionMetaHandlerForSelectors
         });
         
         // Schema 5: GuardController.requestAndApproveExecution
-        schemas[5] = StateAbstraction.FunctionSchema({
+        schemas[5] = EngineBlox.FunctionSchema({
             functionSignature: "requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             isProtected: true,
             handlerForSelectors: requestAndApproveExecutionHandlerForSelectors
         });
 
         // Schema 6: GuardController.guardConfigBatchRequestAndApprove
-        schemas[6] = StateAbstraction.FunctionSchema({
+        schemas[6] = EngineBlox.FunctionSchema({
             functionSignature: "guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(metaTxRequestApproveActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             isProtected: true,
             handlerForSelectors: guardConfigHandlerForSelectors
         });
 
         // Schema 7: GuardController.executeGuardConfigBatch
-        StateAbstraction.TxAction[] memory guardConfigExecutionActions = new StateAbstraction.TxAction[](2);
-        guardConfigExecutionActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
-        guardConfigExecutionActions[1] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        EngineBlox.TxAction[] memory guardConfigExecutionActions = new EngineBlox.TxAction[](2);
+        guardConfigExecutionActions[0] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        guardConfigExecutionActions[1] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
 
-        schemas[7] = StateAbstraction.FunctionSchema({
+        schemas[7] = EngineBlox.FunctionSchema({
             functionSignature: "executeGuardConfigBatch((uint8,bytes)[])",
             functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
-            supportedActionsBitmap: StateAbstraction.createBitmapFromActions(guardConfigExecutionActions),
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(guardConfigExecutionActions),
             isProtected: true,
             handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
         });
@@ -234,162 +234,162 @@ library GuardControllerDefinitions {
      * - OWNER_ROLE: Can sign/request time-delay and meta-transaction operations (8 permissions)
      * - BROADCASTER_ROLE: Can execute meta-transaction operations (5 permissions)
      * 
-     * Total: 13 role permission entries matching StateAbstractionDefinitions pattern
+     * Total: 13 role permission entries matching EngineBloxDefinitions pattern
      */
     function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
         bytes32[] memory roleHashes;
-        StateAbstraction.FunctionPermission[] memory functionPermissions;
+        EngineBlox.FunctionPermission[] memory functionPermissions;
         roleHashes = new bytes32[](13);
-        functionPermissions = new StateAbstraction.FunctionPermission[](13);
+        functionPermissions = new EngineBlox.FunctionPermission[](13);
         
         // Owner role permissions (8 entries)
-        StateAbstraction.TxAction[] memory ownerTimeLockRequestActions = new StateAbstraction.TxAction[](1);
-        ownerTimeLockRequestActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        EngineBlox.TxAction[] memory ownerTimeLockRequestActions = new EngineBlox.TxAction[](1);
+        ownerTimeLockRequestActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
-        StateAbstraction.TxAction[] memory ownerTimeLockApproveActions = new StateAbstraction.TxAction[](1);
-        ownerTimeLockApproveActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        EngineBlox.TxAction[] memory ownerTimeLockApproveActions = new EngineBlox.TxAction[](1);
+        ownerTimeLockApproveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         
-        StateAbstraction.TxAction[] memory ownerTimeLockCancelActions = new StateAbstraction.TxAction[](1);
-        ownerTimeLockCancelActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        EngineBlox.TxAction[] memory ownerTimeLockCancelActions = new EngineBlox.TxAction[](1);
+        ownerTimeLockCancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         
-        StateAbstraction.TxAction[] memory ownerMetaTxRequestApproveActions = new StateAbstraction.TxAction[](1);
-        ownerMetaTxRequestApproveActions[0] = StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        EngineBlox.TxAction[] memory ownerMetaTxRequestApproveActions = new EngineBlox.TxAction[](1);
+        ownerMetaTxRequestApproveActions[0] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         
-        StateAbstraction.TxAction[] memory ownerMetaTxApproveActions = new StateAbstraction.TxAction[](1);
-        ownerMetaTxApproveActions[0] = StateAbstraction.TxAction.SIGN_META_APPROVE;
+        EngineBlox.TxAction[] memory ownerMetaTxApproveActions = new EngineBlox.TxAction[](1);
+        ownerMetaTxApproveActions[0] = EngineBlox.TxAction.SIGN_META_APPROVE;
         
-        StateAbstraction.TxAction[] memory ownerMetaTxCancelActions = new StateAbstraction.TxAction[](1);
-        ownerMetaTxCancelActions[0] = StateAbstraction.TxAction.SIGN_META_CANCEL;
+        EngineBlox.TxAction[] memory ownerMetaTxCancelActions = new EngineBlox.TxAction[](1);
+        ownerMetaTxCancelActions[0] = EngineBlox.TxAction.SIGN_META_CANCEL;
         
         // Owner: Execute With TimeLock
-        roleHashes[0] = StateAbstraction.OWNER_ROLE;
+        roleHashes[0] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors0 = new bytes4[](1);
         handlerForSelectors0[0] = EXECUTE_WITH_TIMELOCK_SELECTOR;
-        functionPermissions[0] = StateAbstraction.FunctionPermission({
+        functionPermissions[0] = EngineBlox.FunctionPermission({
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockRequestActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeLockRequestActions),
             handlerForSelectors: handlerForSelectors0 // Self-reference indicates execution selector
         });
         
         // Owner: Approve TimeLock Execution
-        roleHashes[1] = StateAbstraction.OWNER_ROLE;
+        roleHashes[1] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors1 = new bytes4[](1);
         handlerForSelectors1[0] = APPROVE_TIMELOCK_EXECUTION_SELECTOR;
-        functionPermissions[1] = StateAbstraction.FunctionPermission({
+        functionPermissions[1] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeLockApproveActions),
             handlerForSelectors: handlerForSelectors1 // Self-reference indicates execution selector
         });
         
         // Owner: Cancel TimeLock Execution
-        roleHashes[2] = StateAbstraction.OWNER_ROLE;
+        roleHashes[2] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors2 = new bytes4[](1);
         handlerForSelectors2[0] = CANCEL_TIMELOCK_EXECUTION_SELECTOR;
-        functionPermissions[2] = StateAbstraction.FunctionPermission({
+        functionPermissions[2] = EngineBlox.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerTimeLockCancelActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeLockCancelActions),
             handlerForSelectors: handlerForSelectors2 // Self-reference indicates execution selector
         });
         
         // Owner: Request And Approve Execution (Meta-Tx)
-        roleHashes[3] = StateAbstraction.OWNER_ROLE;
+        roleHashes[3] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors3 = new bytes4[](1);
         handlerForSelectors3[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
-        functionPermissions[3] = StateAbstraction.FunctionPermission({
+        functionPermissions[3] = EngineBlox.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors3 // Self-reference indicates execution selector
         });
         
         // Owner: Approve TimeLock Execution With MetaTx
-        roleHashes[4] = StateAbstraction.OWNER_ROLE;
+        roleHashes[4] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors4 = new bytes4[](1);
         handlerForSelectors4[0] = APPROVE_TIMELOCK_EXECUTION_META_SELECTOR;
-        functionPermissions[4] = StateAbstraction.FunctionPermission({
+        functionPermissions[4] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaTxApproveActions),
             handlerForSelectors: handlerForSelectors4 // Self-reference indicates execution selector
         });
         
         // Owner: Cancel TimeLock Execution With MetaTx
-        roleHashes[5] = StateAbstraction.OWNER_ROLE;
+        roleHashes[5] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors5 = new bytes4[](1);
         handlerForSelectors5[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
-        functionPermissions[5] = StateAbstraction.FunctionPermission({
+        functionPermissions[5] = EngineBlox.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxCancelActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaTxCancelActions),
             handlerForSelectors: handlerForSelectors5 // Self-reference indicates execution selector
         });
 
         // Owner: Guard Config Batch (Meta-Tx handler)
-        roleHashes[6] = StateAbstraction.OWNER_ROLE;
+        roleHashes[6] = EngineBlox.OWNER_ROLE;
         bytes4[] memory handlerForSelectors6 = new bytes4[](1);
         handlerForSelectors6[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
-        functionPermissions[6] = StateAbstraction.FunctionPermission({
+        functionPermissions[6] = EngineBlox.FunctionPermission({
             functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6
         });
 
         // Owner: Guard Config Batch (Execution selector)
-        roleHashes[7] = StateAbstraction.OWNER_ROLE;
-        functionPermissions[7] = StateAbstraction.FunctionPermission({
+        roleHashes[7] = EngineBlox.OWNER_ROLE;
+        functionPermissions[7] = EngineBlox.FunctionPermission({
             functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(ownerMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });
         
         // Broadcaster role permissions (5 entries)
-        StateAbstraction.TxAction[] memory broadcasterMetaTxRequestApproveActions = new StateAbstraction.TxAction[](1);
-        broadcasterMetaTxRequestApproveActions[0] = StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        EngineBlox.TxAction[] memory broadcasterMetaTxRequestApproveActions = new EngineBlox.TxAction[](1);
+        broadcasterMetaTxRequestApproveActions[0] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
-        StateAbstraction.TxAction[] memory broadcasterMetaTxApproveActions = new StateAbstraction.TxAction[](1);
-        broadcasterMetaTxApproveActions[0] = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction[] memory broadcasterMetaTxApproveActions = new EngineBlox.TxAction[](1);
+        broadcasterMetaTxApproveActions[0] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
-        StateAbstraction.TxAction[] memory broadcasterMetaTxCancelActions = new StateAbstraction.TxAction[](1);
-        broadcasterMetaTxCancelActions[0] = StateAbstraction.TxAction.EXECUTE_META_CANCEL;
+        EngineBlox.TxAction[] memory broadcasterMetaTxCancelActions = new EngineBlox.TxAction[](1);
+        broadcasterMetaTxCancelActions[0] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
         
         // Broadcaster: Request And Approve Execution (Meta-Tx)
-        roleHashes[8] = StateAbstraction.BROADCASTER_ROLE;
+        roleHashes[8] = EngineBlox.BROADCASTER_ROLE;
         bytes4[] memory handlerForSelectors8 = new bytes4[](1);
         handlerForSelectors8[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
-        functionPermissions[8] = StateAbstraction.FunctionPermission({
+        functionPermissions[8] = EngineBlox.FunctionPermission({
             functionSelector: REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors8 // Self-reference indicates execution selector
         });
         
         // Broadcaster: Approve TimeLock Execution With MetaTx
-        roleHashes[9] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[9] = StateAbstraction.FunctionPermission({
+        roleHashes[9] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[9] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaTxApproveActions),
             handlerForSelectors: handlerForSelectors4 // Self-reference indicates execution selector
         });
         
         // Broadcaster: Cancel TimeLock Execution With MetaTx
-        roleHashes[10] = StateAbstraction.BROADCASTER_ROLE;
+        roleHashes[10] = EngineBlox.BROADCASTER_ROLE;
         bytes4[] memory handlerForSelectors10 = new bytes4[](1);
         handlerForSelectors10[0] = CANCEL_TIMELOCK_EXECUTION_META_SELECTOR;
-        functionPermissions[10] = StateAbstraction.FunctionPermission({
+        functionPermissions[10] = EngineBlox.FunctionPermission({
             functionSelector: CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxCancelActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaTxCancelActions),
             handlerForSelectors: handlerForSelectors10 // Self-reference indicates execution selector
         });
 
         // Broadcaster: Guard Config Batch (Meta-Tx handler)
-        roleHashes[11] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[11] = StateAbstraction.FunctionPermission({
+        roleHashes[11] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[11] = EngineBlox.FunctionPermission({
             functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6
         });
 
         // Broadcaster: Guard Config Batch (Execution selector)
-        roleHashes[12] = StateAbstraction.BROADCASTER_ROLE;
-        functionPermissions[12] = StateAbstraction.FunctionPermission({
+        roleHashes[12] = EngineBlox.BROADCASTER_ROLE;
+        functionPermissions[12] = EngineBlox.FunctionPermission({
             functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
-            grantedActionsBitmap: StateAbstraction.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaTxRequestApproveActions),
             handlerForSelectors: handlerForSelectors6 // Self-reference indicates execution selector
         });
         

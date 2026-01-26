@@ -15,7 +15,7 @@ import "./SimpleRWA20Definitions.sol";
 /**
  * @title SimpleRWA20
  * @dev A secure ERC20 token for real-world assets with enhanced security via Guardian.
- * Uses StateAbstraction for mint and burn operations, restricted to broadcaster.
+ * Uses EngineBlox for mint and burn operations, restricted to broadcaster.
  * Implements ERC20Burnable for secure burn operations with allowance checks.
  */
 contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnable {
@@ -72,10 +72,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      * @param metaTx Meta transaction data containing mint parameters
      * @return The transaction record
      */
-    function mintWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
+    function mintWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (StateAbstraction.TxRecord memory) 
+        returns (EngineBlox.TxRecord memory) 
     {
         _validateBroadcaster(msg.sender);
         return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
@@ -86,10 +86,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      * @param metaTx Meta transaction data containing burn parameters
      * @return The transaction record
      */
-    function burnWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
+    function burnWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (StateAbstraction.TxRecord memory) 
+        returns (EngineBlox.TxRecord memory) 
     {
         _validateBroadcaster(msg.sender);
         return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
@@ -106,7 +106,7 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         address to,
         uint256 amount,
         TokenMetaTxParams memory params
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
+    ) public view returns (EngineBlox.MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(to);
         
         return _generateUnsignedTokenMetaTx(
@@ -130,7 +130,7 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         address from,
         uint256 amount,
         TokenMetaTxParams memory params
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
+    ) public view returns (EngineBlox.MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(from);
         if (balanceOf(from) < amount) revert SharedValidation.NotSupported();
         
@@ -175,19 +175,19 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      * @return The transaction record
      */
     function _handleTokenMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.MetaTransaction memory metaTx,
         bytes4 expectedSelector,
         bytes32 expectedOperationType
-    ) internal returns (StateAbstraction.TxRecord memory) {
-        if (!_hasActionPermission(msg.sender, expectedSelector, StateAbstraction.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
+    ) internal returns (EngineBlox.TxRecord memory) {
+        if (!_hasActionPermission(msg.sender, expectedSelector, EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
             revert SharedValidation.NoPermission(msg.sender);
         }
         SharedValidation.validateHandlerSelectorMatch(metaTx.params.handlerSelector, expectedSelector);
         
-        StateAbstraction.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
         
         SharedValidation.validateOperationType(txRecord.params.operationType, expectedOperationType);
-        // Operation is automatically handled by StateAbstraction
+        // Operation is automatically handled by EngineBlox
         return txRecord;
     }
 
@@ -208,15 +208,15 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         bytes32 operationType,
         bytes4 functionSelector,
         bytes4 metaTxSelector
-    ) internal view returns (StateAbstraction.MetaTransaction memory) {
+    ) internal view returns (EngineBlox.MetaTransaction memory) {
         // Create execution params
         bytes memory executionParams = abi.encode(account, amount);
         
         // Create meta-transaction parameters
-        StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = createMetaTxParams(
             address(this),
             metaTxSelector,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             params.deadline,
             params.maxGasPrice,
             owner()

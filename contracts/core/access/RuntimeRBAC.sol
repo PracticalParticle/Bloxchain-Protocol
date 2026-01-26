@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 // Contract imports
 import "../base/BaseStateMachine.sol";
-import "../lib/StateAbstraction.sol";
+import "../lib/EngineBlox.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../interfaces/IDefinition.sol";
@@ -11,13 +11,13 @@ import "./interface/IRuntimeRBAC.sol";
 
 /**
  * @title RuntimeRBAC
- * @dev Minimal Runtime Role-Based Access Control system based on StateAbstraction
+ * @dev Minimal Runtime Role-Based Access Control system based on EngineBlox
  * 
  * This contract provides essential runtime RBAC functionality:
  * - Creation of non-protected roles
  * - Basic wallet assignment to roles
  * - Function permission management per role
- * - Integration with StateAbstraction for secure operations
+ * - Integration with EngineBlox for secure operations
  * 
  * Key Features:
  * - Only non-protected roles can be created dynamically
@@ -26,7 +26,7 @@ import "./interface/IRuntimeRBAC.sol";
  * - Essential role management functions only
  */
 abstract contract RuntimeRBAC is BaseStateMachine {
-    using StateAbstraction for StateAbstraction.SecureOperationState;
+    using EngineBlox for EngineBlox.SecureOperationState;
     using SharedValidation for *;
     
     /**
@@ -108,7 +108,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     /**
      * @dev Creates execution params for a RBAC configuration batch
      * @param actions Encoded role configuration actions
-     * @return The execution params for StateAbstraction
+     * @return The execution params for EngineBlox
      */
     function roleConfigBatchExecutionParams(
         RoleConfigAction[] memory actions
@@ -123,8 +123,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @notice OWNER signs, BROADCASTER executes according to RuntimeRBACDefinitions
      */
     function roleConfigBatchRequestAndApprove(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         return _requestAndApproveTransaction(metaTx);
     }
@@ -155,10 +155,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         bytes4 functionSelectorReturn,
         bytes32 operationType,
         string memory operationName,
-        StateAbstraction.TxAction[] memory supportedActions,
+        EngineBlox.TxAction[] memory supportedActions,
         bool isProtected
     ) {
-        StateAbstraction.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        EngineBlox.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
         if (schema.functionSelector != functionSelector) {
             revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
@@ -187,7 +187,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         _validateRoleExists(roleHash);
         
         // Get role info to determine wallet count
-        StateAbstraction.Role storage role = _getSecureState().getRole(roleHash);
+        EngineBlox.Role storage role = _getSecureState().getRole(roleHash);
         uint256 walletCount = role.walletCount;
         
         // Build array by iterating through wallets using _getAuthorizedWalletAt
@@ -218,8 +218,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 (
                     string memory roleName,
                     uint256 maxWallets,
-                    StateAbstraction.FunctionPermission[] memory functionPermissions
-                ) = abi.decode(action.data, (string, uint256, StateAbstraction.FunctionPermission[]));
+                    EngineBlox.FunctionPermission[] memory functionPermissions
+                ) = abi.decode(action.data, (string, uint256, EngineBlox.FunctionPermission[]));
 
                 bytes32 roleHash = _createNewRole(roleName, maxWallets, functionPermissions);
 
@@ -274,8 +274,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
             } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
                 (
                     bytes32 roleHash,
-                    StateAbstraction.FunctionPermission memory functionPermission
-                ) = abi.decode(action.data, (bytes32, StateAbstraction.FunctionPermission));
+                    EngineBlox.FunctionPermission memory functionPermission
+                ) = abi.decode(action.data, (bytes32, EngineBlox.FunctionPermission));
 
                 _addFunctionToRole(roleHash, functionPermission);
 
@@ -306,7 +306,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     function _createNewRole(
         string memory roleName,
         uint256 maxWallets,
-        StateAbstraction.FunctionPermission[] memory functionPermissions
+        EngineBlox.FunctionPermission[] memory functionPermissions
     ) internal returns (bytes32 roleHash) {
         SharedValidation.validateRoleNameNotEmpty(roleName);
         SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);

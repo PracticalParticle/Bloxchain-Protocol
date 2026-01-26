@@ -12,9 +12,9 @@ import "../../interfaces/IOnActionHook.sol";
  * @dev Simple hook manager component for BaseStateMachine workflows
  *
  * This component allows attaching external hook contracts per function selector.
- * It uses StateAbstraction's functionTargetHooks for storage, keeping the contract minimal:
+ * It uses EngineBlox's functionTargetHooks for storage, keeping the contract minimal:
  *
- * - Multiple hooks per function selector (via StateAbstraction.functionTargetHooks)
+ * - Multiple hooks per function selector (via EngineBlox.functionTargetHooks)
  * - OWNER role can set/clear hooks
  * - Hooks are executed AFTER the core state machine operation completes
  * - Hooks are best-effort: if no hook is configured, nothing happens
@@ -28,7 +28,7 @@ import "../../interfaces/IOnActionHook.sol";
  * - onRequestAndApprove  : after _requestAndApproveTransaction
  *
  * Security model:
- * - Core state transitions and permissions are enforced by StateAbstraction
+ * - Core state transitions and permissions are enforced by EngineBlox
  * - Overrides call super first (Checks/Effects) then invoke external hooks (Interactions)
  * - Approve/meta-approve overrides remain protected by ReentrancyGuard via BaseStateMachine
  */
@@ -60,7 +60,7 @@ abstract contract HookManager is BaseStateMachine {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(hook);
 
-        StateAbstraction.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
         emit HookSet(functionSelector, hook);
     }
 
@@ -75,7 +75,7 @@ abstract contract HookManager is BaseStateMachine {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(hook);
 
-        StateAbstraction.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
         emit HookCleared(functionSelector, hook);
     }
 
@@ -87,7 +87,7 @@ abstract contract HookManager is BaseStateMachine {
     function getHook(
         bytes4 functionSelector
     ) external view returns (address[] memory hooks) {
-        return StateAbstraction.getFunctionHookTargets(_getSecureState(), functionSelector);
+        return EngineBlox.getFunctionHookTargets(_getSecureState(), functionSelector);
     }
 
     // ============ INTERNAL HELPERS ============
@@ -97,10 +97,10 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnRequestHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -115,10 +115,10 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnApproveHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -133,10 +133,10 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnCancelHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
+        EngineBlox.TxRecord memory txRecord,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -151,11 +151,11 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnMetaApproveHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -170,11 +170,11 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnMetaCancelHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -189,11 +189,11 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _executeOnRequestAndApproveHooks(
         bytes4 functionSelector,
-        StateAbstraction.TxRecord memory txRecord,
-        StateAbstraction.MetaTransaction memory metaTx,
+        EngineBlox.TxRecord memory txRecord,
+        EngineBlox.MetaTransaction memory metaTx,
         address caller
     ) internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
+        EngineBlox.SecureOperationState storage state = _getSecureState();
         EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
         uint256 length = hooks.length();
         
@@ -217,9 +217,9 @@ abstract contract HookManager is BaseStateMachine {
         bytes32 operationType,
         bytes4 functionSelector,
         bytes memory params
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first (Checks/Effects)
-        StateAbstraction.TxRecord memory txRecord = super._requestTransaction(
+        EngineBlox.TxRecord memory txRecord = super._requestTransaction(
             requester,
             target,
             value,
@@ -240,9 +240,9 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _approveTransaction(
         uint256 txId
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first (includes state machine reentrancy guard)
-        StateAbstraction.TxRecord memory txRecord = super._approveTransaction(txId);
+        EngineBlox.TxRecord memory txRecord = super._approveTransaction(txId);
 
         // Hook execution for the execution selector tied to this tx
         bytes4 executionSelector = txRecord.params.executionSelector;
@@ -255,10 +255,10 @@ abstract contract HookManager is BaseStateMachine {
      * @dev Override to add onMetaApprove hook execution
      */
     function _approveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first
-        StateAbstraction.TxRecord memory txRecord = super._approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = super._approveTransactionWithMetaTx(metaTx);
 
         // Hook execution based on signer role and execution selector
         bytes4 executionSelector = txRecord.params.executionSelector;
@@ -273,9 +273,9 @@ abstract contract HookManager is BaseStateMachine {
      */
     function _cancelTransaction(
         uint256 txId
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first
-        StateAbstraction.TxRecord memory txRecord = super._cancelTransaction(txId);
+        EngineBlox.TxRecord memory txRecord = super._cancelTransaction(txId);
 
         // Hook execution
         bytes4 executionSelector = txRecord.params.executionSelector;
@@ -289,10 +289,10 @@ abstract contract HookManager is BaseStateMachine {
      * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
      */
     function _cancelTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first
-        StateAbstraction.TxRecord memory txRecord = super._cancelTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = super._cancelTransactionWithMetaTx(metaTx);
 
         // Hook execution based on signer role and execution selector
         bytes4 executionSelector = txRecord.params.executionSelector;
@@ -305,10 +305,10 @@ abstract contract HookManager is BaseStateMachine {
      * @dev Override to add onRequestAndApprove hook execution
      */
     function _requestAndApproveTransaction(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
         // Core behavior first
-        StateAbstraction.TxRecord memory txRecord = super._requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = super._requestAndApproveTransaction(metaTx);
 
         // Hook execution based on signer role and execution selector
         bytes4 executionSelector = txRecord.params.executionSelector;

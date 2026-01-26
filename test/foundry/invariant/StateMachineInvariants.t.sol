@@ -37,9 +37,9 @@ contract StateMachineInvariantsTest is CommonBase {
         
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            StateAbstraction.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
             // Pending transactions should have PENDING status
-            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+            assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         }
     }
 
@@ -55,15 +55,15 @@ contract StateMachineInvariantsTest is CommonBase {
         // Verify all pending transactions are actually pending
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            StateAbstraction.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
-            assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.PENDING));
+            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         }
     }
 
     function invariant_TransactionCounterMonotonic() public {
         // Create a transaction to increment counter
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory tx1 = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory tx1 = secureBlox.transferOwnershipRequest();
         uint256 txId1 = tx1.txId;
 
         // Cancel it
@@ -72,7 +72,7 @@ contract StateMachineInvariantsTest is CommonBase {
 
         // Create another transaction
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory tx2 = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory tx2 = secureBlox.transferOwnershipRequest();
         uint256 txId2 = tx2.txId;
 
         // Counter should be monotonic

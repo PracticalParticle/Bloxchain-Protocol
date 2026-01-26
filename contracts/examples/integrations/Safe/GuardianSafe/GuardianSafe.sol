@@ -146,13 +146,13 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function requestTransaction(SafeTx calldata safeTx) 
         external 
-        returns (StateAbstraction.TxRecord memory) 
+        returns (EngineBlox.TxRecord memory) 
     {
         SharedValidation.validateOwner(owner());
         // Use helper function to encode parameters and avoid stack too deep
         bytes memory params = _encodeSafeTxParams(safeTx);
         
-        StateAbstraction.TxRecord memory txRecord = _requestTransaction(
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
             0, // value
@@ -191,7 +191,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Approve a pending transaction after timelock period
      * @param txId The transaction ID to approve
      */
-    function approveTransactionAfterDelay(uint256 txId) external returns (StateAbstraction.TxRecord memory) {
+    function approveTransactionAfterDelay(uint256 txId) external returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         return _approveTransaction(txId);
     }
@@ -200,9 +200,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Approve a pending transaction with meta transaction
      * @param metaTx Meta transaction data
      */
-    function approveTransactionWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
+    function approveTransactionWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         external 
-        returns (StateAbstraction.TxRecord memory) 
+        returns (EngineBlox.TxRecord memory) 
     {
         _validateBroadcaster(msg.sender);
         return _approveTransactionWithMetaTx(metaTx);
@@ -212,9 +212,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Cancel a pending transaction
      * @param txId The transaction ID to cancel
      */
-    function cancelTransaction(uint256 txId) external returns (StateAbstraction.TxRecord memory) {
+    function cancelTransaction(uint256 txId) external returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransaction(txId);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         emit TransactionCancelled(txId);
         return updatedRecord;
     }
@@ -223,12 +223,12 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Cancel a pending transaction with meta transaction
      * @param metaTx Meta transaction data
      */
-    function cancelTransactionWithMetaTx(StateAbstraction.MetaTransaction memory metaTx) 
+    function cancelTransactionWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         external 
-        returns (StateAbstraction.TxRecord memory) 
+        returns (EngineBlox.TxRecord memory) 
     {
         _validateBroadcaster(msg.sender);
-        StateAbstraction.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         emit TransactionCancelled(updatedRecord.txId);
         return updatedRecord;
     }
@@ -239,8 +239,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @return The transaction record
      */
     function requestAndApproveTransactionWithMetaTx(
-        StateAbstraction.MetaTransaction memory metaTx
-    ) public returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.MetaTransaction memory metaTx
+    ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
         return _requestAndApproveTransaction(metaTx);
     }
@@ -301,17 +301,17 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     function generateUnsignedSafeMetaTxForNew(
         SafeTx memory safeTx,
         SafeMetaTxParams memory params
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
+    ) public view returns (EngineBlox.MetaTransaction memory) {
         // Validate that operation is Call (0)
         if (safeTx.operation != 0) revert SharedValidation.NotSupported();
 
         bytes memory executionParams = createTransactionExecutionParams(safeTx);
 
         // Create meta-transaction parameters
-        StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = createMetaTxParams(
             address(this),
             GuardianSafeDefinitions.REQUEST_AND_APPROVE_TX_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             params.deadline,
             params.maxGasPrice,
             owner()
@@ -341,12 +341,12 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         uint256 txId,
         SafeMetaTxParams memory params,
         bool isApproval
-    ) public view returns (StateAbstraction.MetaTransaction memory) {
+    ) public view returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters with appropriate selector
-        StateAbstraction.MetaTxParams memory metaTxParams = createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = createMetaTxParams(
             address(this),
             isApproval ? GuardianSafeDefinitions.APPROVE_TX_META_SELECTOR : GuardianSafeDefinitions.CANCEL_TX_META_SELECTOR,
-            isApproval ? StateAbstraction.TxAction.SIGN_META_APPROVE : StateAbstraction.TxAction.SIGN_META_CANCEL,
+            isApproval ? EngineBlox.TxAction.SIGN_META_APPROVE : EngineBlox.TxAction.SIGN_META_CANCEL,
             params.deadline,
             params.maxGasPrice,
             owner()

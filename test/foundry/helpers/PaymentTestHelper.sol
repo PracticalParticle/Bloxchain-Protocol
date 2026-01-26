@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
-import "../../../contracts/core/lib/StateAbstraction.sol";
+import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 
 /**
@@ -55,38 +55,38 @@ contract PaymentTestHelper is BaseStateMachine {
      * @dev Registers NATIVE_TRANSFER_SELECTOR and requestTransaction function, grants owner permissions
      */
     function _setupPaymentPermissions() internal {
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
-        bytes4 nativeTransferSelector = StateAbstraction.NATIVE_TRANSFER_SELECTOR;
+        EngineBlox.SecureOperationState storage state = _getSecureState();
+        bytes4 nativeTransferSelector = EngineBlox.NATIVE_TRANSFER_SELECTOR;
         bytes4 requestTxSelector = this.requestTransaction.selector;
         
         // Note: OWNER_ROLE has maxWallets=1, so we can't add the contract address
         // The owner address is already in OWNER_ROLE from initialization
         // When tests call with vm.prank(owner), msg.sender will be owner, so permissions should work
-        bytes32 ownerRoleHash = StateAbstraction.OWNER_ROLE;
-        StateAbstraction.Role storage ownerRole = state.roles[ownerRoleHash];
+        bytes32 ownerRoleHash = EngineBlox.OWNER_ROLE;
+        EngineBlox.Role storage ownerRole = state.roles[ownerRoleHash];
         
         // Create bitmap for EXECUTE_TIME_DELAY_REQUEST action
-        StateAbstraction.TxAction[] memory requestActions = new StateAbstraction.TxAction[](1);
-        requestActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        uint16 requestActionsBitmap = StateAbstraction.createBitmapFromActions(requestActions);
+        EngineBlox.TxAction[] memory requestActions = new EngineBlox.TxAction[](1);
+        requestActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        uint16 requestActionsBitmap = EngineBlox.createBitmapFromActions(requestActions);
         
         // Create bitmap for EXECUTE_TIME_DELAY_APPROVE action (for approveTransaction)
-        StateAbstraction.TxAction[] memory approveActions = new StateAbstraction.TxAction[](1);
-        approveActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
-        uint16 approveActionsBitmap = StateAbstraction.createBitmapFromActions(approveActions);
+        EngineBlox.TxAction[] memory approveActions = new EngineBlox.TxAction[](1);
+        approveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        uint16 approveActionsBitmap = EngineBlox.createBitmapFromActions(approveActions);
         
         // Create bitmap for both REQUEST and APPROVE actions (NATIVE_TRANSFER needs both)
-        StateAbstraction.TxAction[] memory bothActions = new StateAbstraction.TxAction[](2);
-        bothActions[0] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        bothActions[1] = StateAbstraction.TxAction.EXECUTE_TIME_DELAY_APPROVE;
-        uint16 bothActionsBitmap = StateAbstraction.createBitmapFromActions(bothActions);
+        EngineBlox.TxAction[] memory bothActions = new EngineBlox.TxAction[](2);
+        bothActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        bothActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        uint16 bothActionsBitmap = EngineBlox.createBitmapFromActions(bothActions);
         
         // Register NATIVE_TRANSFER_SELECTOR function schema if not already registered
         bytes4[] memory nativeTransferHandlers = new bytes4[](1);
         nativeTransferHandlers[0] = nativeTransferSelector; // Self-reference
         
         if (!state.supportedFunctionsSet.contains(bytes32(nativeTransferSelector))) {
-            StateAbstraction.createFunctionSchema(
+            EngineBlox.createFunctionSchema(
                 state,
                 "__bloxchain_native_transfer__()",
                 nativeTransferSelector,
@@ -100,19 +100,19 @@ contract PaymentTestHelper is BaseStateMachine {
         // Ensure permissions are granted even if schema already exists
         // Check if permission already exists to avoid duplicates
         if (!ownerRole.functionSelectorsSet.contains(bytes32(nativeTransferSelector))) {
-            StateAbstraction.FunctionPermission memory nativeTransferPermission = StateAbstraction.FunctionPermission({
+            EngineBlox.FunctionPermission memory nativeTransferPermission = EngineBlox.FunctionPermission({
                 functionSelector: nativeTransferSelector,
                 grantedActionsBitmap: bothActionsBitmap, // Both REQUEST and APPROVE
                 handlerForSelectors: nativeTransferHandlers
             });
-            StateAbstraction.addFunctionToRole(state, ownerRoleHash, nativeTransferPermission);
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, nativeTransferPermission);
         }
         
         // Ensure whitelist entry exists even if schema already exists
         // Note: address(this) is always allowed, but we add it explicitly for clarity
         EnumerableSet.AddressSet storage whitelist = state.functionTargetWhitelist[nativeTransferSelector];
         if (!whitelist.contains(address(this))) {
-            StateAbstraction.addTargetToFunctionWhitelist(state, nativeTransferSelector, address(this));
+            EngineBlox.addTargetToFunctionWhitelist(state, nativeTransferSelector, address(this));
         }
         
         // Register requestTransaction function schema if not already registered
@@ -123,7 +123,7 @@ contract PaymentTestHelper is BaseStateMachine {
         requestTxHandlers[1] = nativeTransferSelector; // Points to NATIVE_TRANSFER_SELECTOR
         
         if (!state.supportedFunctionsSet.contains(bytes32(requestTxSelector))) {
-            StateAbstraction.createFunctionSchema(
+            EngineBlox.createFunctionSchema(
                 state,
                 "requestTransaction(address,address,uint256,uint256,bytes32,bytes4,bytes)",
                 requestTxSelector,
@@ -142,12 +142,12 @@ contract PaymentTestHelper is BaseStateMachine {
             requestTxPermissionHandlers[0] = requestTxSelector; // Self-reference (allows it to be used as handler)
             requestTxPermissionHandlers[1] = nativeTransferSelector; // Can handle NATIVE_TRANSFER_SELECTOR
             
-            StateAbstraction.FunctionPermission memory requestTxPermission = StateAbstraction.FunctionPermission({
+            EngineBlox.FunctionPermission memory requestTxPermission = EngineBlox.FunctionPermission({
                 functionSelector: requestTxSelector,
                 grantedActionsBitmap: requestActionsBitmap,
                 handlerForSelectors: requestTxPermissionHandlers
             });
-            StateAbstraction.addFunctionToRole(state, ownerRoleHash, requestTxPermission);
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, requestTxPermission);
         }
         
         // Register approveTransaction function schema if not already registered
@@ -156,7 +156,7 @@ contract PaymentTestHelper is BaseStateMachine {
         approveTxHandlers[0] = approveTxSelector; // Self-reference
         
         if (!state.supportedFunctionsSet.contains(bytes32(approveTxSelector))) {
-            StateAbstraction.createFunctionSchema(
+            EngineBlox.createFunctionSchema(
                 state,
                 "approveTransaction(uint256)",
                 approveTxSelector,
@@ -169,21 +169,21 @@ contract PaymentTestHelper is BaseStateMachine {
         
         // Ensure permissions are granted even if schema already exists
         if (!ownerRole.functionSelectorsSet.contains(bytes32(approveTxSelector))) {
-            StateAbstraction.FunctionPermission memory approveTxPermission = StateAbstraction.FunctionPermission({
+            EngineBlox.FunctionPermission memory approveTxPermission = EngineBlox.FunctionPermission({
                 functionSelector: approveTxSelector,
                 grantedActionsBitmap: approveActionsBitmap,
                 handlerForSelectors: approveTxHandlers
             });
-            StateAbstraction.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
         
         // Register UPDATE_PAYMENT_SELECTOR function schema if not already registered
-        bytes4 updatePaymentSelector = StateAbstraction.UPDATE_PAYMENT_SELECTOR;
+        bytes4 updatePaymentSelector = EngineBlox.UPDATE_PAYMENT_SELECTOR;
         bytes4[] memory updatePaymentHandlers = new bytes4[](1);
         updatePaymentHandlers[0] = updatePaymentSelector; // Self-reference
         
         if (!state.supportedFunctionsSet.contains(bytes32(updatePaymentSelector))) {
-            StateAbstraction.createFunctionSchema(
+            EngineBlox.createFunctionSchema(
                 state,
                 "__bloxchain_update_payment__()",
                 updatePaymentSelector,
@@ -196,12 +196,12 @@ contract PaymentTestHelper is BaseStateMachine {
         
         // Ensure permissions are granted even if schema already exists
         if (!ownerRole.functionSelectorsSet.contains(bytes32(updatePaymentSelector))) {
-            StateAbstraction.FunctionPermission memory updatePaymentPermission = StateAbstraction.FunctionPermission({
+            EngineBlox.FunctionPermission memory updatePaymentPermission = EngineBlox.FunctionPermission({
                 functionSelector: updatePaymentSelector,
                 grantedActionsBitmap: requestActionsBitmap, // REQUEST action
                 handlerForSelectors: updatePaymentHandlers
             });
-            StateAbstraction.addFunctionToRole(state, ownerRoleHash, updatePaymentPermission);
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, updatePaymentPermission);
         }
     }
     
@@ -217,8 +217,8 @@ contract PaymentTestHelper is BaseStateMachine {
      */
     function updatePaymentForTransaction(
         uint256 txId,
-        StateAbstraction.PaymentDetails memory paymentDetails
-    ) external returns (StateAbstraction.TxRecord memory) {
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) external returns (EngineBlox.TxRecord memory) {
         return _updatePaymentForTransaction(txId, paymentDetails);
     }
     
@@ -241,7 +241,7 @@ contract PaymentTestHelper is BaseStateMachine {
         bytes32 operationType,
         bytes4 executionSelector,
         bytes memory executionParams
-    ) external returns (StateAbstraction.TxRecord memory) {
+    ) external returns (EngineBlox.TxRecord memory) {
         return _requestTransaction(
             requester,
             target,
@@ -258,7 +258,7 @@ contract PaymentTestHelper is BaseStateMachine {
      * @param txId The transaction ID to approve
      * @return The updated transaction record
      */
-    function approveTransaction(uint256 txId) external returns (StateAbstraction.TxRecord memory) {
+    function approveTransaction(uint256 txId) external returns (EngineBlox.TxRecord memory) {
         return _approveTransaction(txId);
     }
     
@@ -276,7 +276,7 @@ contract PaymentTestHelper is BaseStateMachine {
     
     /**
      * @notice Helper function to whitelist target for testing  
-     * @dev Whitelists a target using StateAbstraction library
+     * @dev Whitelists a target using EngineBlox library
      * @param target The target address to whitelist
      * @param selector The function selector
      */
@@ -288,9 +288,9 @@ contract PaymentTestHelper is BaseStateMachine {
         SharedValidation.validateNotZeroAddress(target);
         require(selector != bytes4(0), "Selector cannot be zero");
         
-        // Add target to whitelist using StateAbstraction library function
-        StateAbstraction.SecureOperationState storage state = _getSecureState();
-        StateAbstraction.addTargetToFunctionWhitelist(state, selector, target);
+        // Add target to whitelist using EngineBlox library function
+        EngineBlox.SecureOperationState storage state = _getSecureState();
+        EngineBlox.addTargetToFunctionWhitelist(state, selector, target);
     }
     
     /**

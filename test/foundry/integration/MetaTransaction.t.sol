@@ -28,11 +28,11 @@ contract MetaTransactionTest is CommonBase {
         // Step 1: Create meta-transaction parameters
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("transferOwnershipDelayedApproval(uint256)"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds (not absolute timestamp)
         uint256 maxGasPrice = 100 gwei;
 
-        StateAbstraction.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -43,13 +43,13 @@ contract MetaTransactionTest is CommonBase {
 
         // Step 2: Create the transaction request first
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Step 3: Generate unsigned meta-transaction for existing transaction
         // Note: We use generateUnsignedMetaTransactionForExisting since we already created the request
         vm.prank(recovery);
-        StateAbstraction.MetaTransaction memory unsignedMetaTx = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory unsignedMetaTx = secureBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             metaTxParams
         );
@@ -70,7 +70,7 @@ contract MetaTransactionTest is CommonBase {
         assertEq(signature.length, 65);
 
         // Step 5: Create signed meta-transaction
-        StateAbstraction.MetaTransaction memory signedMetaTx = unsignedMetaTx;
+        EngineBlox.MetaTransaction memory signedMetaTx = unsignedMetaTx;
         signedMetaTx.signature = signature;
 
         // Step 6: Advance time past timelock
@@ -87,7 +87,7 @@ contract MetaTransactionTest is CommonBase {
             signedMetaTx,
             address(secureBlox)
         );
-        // Note: The message hash in the meta-transaction is set by StateAbstraction
+        // Note: The message hash in the meta-transaction is set by EngineBlox
         // We verify our signer generates the same hash
         assertEq(signedMetaTx.message, expectedMessageHash);
     }
@@ -98,11 +98,11 @@ contract MetaTransactionTest is CommonBase {
     function test_MetaTransaction_CreateParams() public {
         address handlerContract = address(secureBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
-        StateAbstraction.TxAction action = StateAbstraction.TxAction.EXECUTE_META_APPROVE;
+        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds
         uint256 maxGasPrice = 100 gwei;
 
-        StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -130,17 +130,17 @@ contract MetaTransactionTest is CommonBase {
     function test_MetaTransaction_MessageHashConsistency() public {
         // Create a transaction first to get a valid txId
         vm.prank(recovery);
-        StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
         uint256 txId = requestTx.txId;
 
         // Create meta-tx params - need to get nonce first
         vm.prank(owner);
         uint256 currentNonce = secureBlox.getSignerNonce(owner);
         
-        StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
             address(secureBlox),
             bytes4(keccak256("testHandler()")),
-            StateAbstraction.TxAction.EXECUTE_META_APPROVE,
+            EngineBlox.TxAction.EXECUTE_META_APPROVE,
             3600, // Duration in seconds
             100 gwei,
             owner
@@ -148,13 +148,13 @@ contract MetaTransactionTest is CommonBase {
 
         // Generate meta-transactions for existing transaction
         vm.prank(owner);
-        StateAbstraction.MetaTransaction memory metaTx1 = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory metaTx1 = secureBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             params
         );
 
         vm.prank(owner);
-        StateAbstraction.MetaTransaction memory metaTx2 = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory metaTx2 = secureBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             params
         );

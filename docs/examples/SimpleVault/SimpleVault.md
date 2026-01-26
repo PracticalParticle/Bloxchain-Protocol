@@ -71,7 +71,7 @@ function getTokenBalance(address token) public view returns (uint256)
 ### withdrawEthRequest
 
 ```solidity
-function withdrawEthRequest(address to, uint256 amount) public nonpayable returns (struct StateAbstraction.TxRecord)
+function withdrawEthRequest(address to, uint256 amount) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -87,7 +87,7 @@ function withdrawEthRequest(address to, uint256 amount) public nonpayable return
 ### withdrawTokenRequest
 
 ```solidity
-function withdrawTokenRequest(address token, address to, uint256 amount) public nonpayable returns (struct StateAbstraction.TxRecord)
+function withdrawTokenRequest(address token, address to, uint256 amount) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -104,7 +104,7 @@ function withdrawTokenRequest(address token, address to, uint256 amount) public 
 ### approveWithdrawalAfterDelay
 
 ```solidity
-function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -119,7 +119,7 @@ function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (st
 ### approveWithdrawalWithMetaTx
 
 ```solidity
-function approveWithdrawalWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) public nonpayable returns (struct StateAbstraction.TxRecord)
+function approveWithdrawalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -134,7 +134,7 @@ function approveWithdrawalWithMetaTx(struct StateAbstraction.MetaTransaction met
 ### cancelWithdrawal
 
 ```solidity
-function cancelWithdrawal(uint256 txId) public nonpayable returns (struct StateAbstraction.TxRecord)
+function cancelWithdrawal(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 
@@ -215,7 +215,7 @@ Internal function to withdraw tokens
 ### generateUnsignedWithdrawalMetaTxApproval
 
 ```solidity
-function generateUnsignedWithdrawalMetaTxApproval(uint256 txId, struct SimpleVault.VaultMetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedWithdrawalMetaTxApproval(uint256 txId, struct SimpleVault.VaultMetaTxParams metaTxParams) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 

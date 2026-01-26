@@ -6,7 +6,7 @@ Library containing predefined definitions for SimpleRWA20 initialization
 This library holds static data that can be used to initialize SimpleRWA20 contracts
 without increasing the main contract size
 
-This library implements the IDefinition interface from StateAbstraction
+This library implements the IDefinition interface from EngineBlox
 and provides a direct initialization function for SimpleRWA20 contracts
 
 
@@ -17,7 +17,7 @@ and provides a direct initialization function for SimpleRWA20 contracts
 ### getFunctionSchemas
 
 ```solidity
-function getFunctionSchemas() public pure returns (struct StateAbstraction.FunctionSchema[])
+function getFunctionSchemas() public pure returns (struct EngineBlox.FunctionSchema[])
 ```
 
 Returns predefined function schemas

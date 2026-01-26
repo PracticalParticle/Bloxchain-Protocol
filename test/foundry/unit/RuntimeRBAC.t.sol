@@ -24,7 +24,7 @@ contract RuntimeRBACTest is CommonBase {
     function test_ExecuteRoleConfigBatch_CreateRole() public {
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
         
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(TEST_ROLE_NAME, 10, permissions)
@@ -59,7 +59,7 @@ contract RuntimeRBACTest is CommonBase {
             bytes4 functionSelector,
             bytes32 operationType,
             string memory operationName,
-            StateAbstraction.TxAction[] memory supportedActions,
+            EngineBlox.TxAction[] memory supportedActions,
             bool isProtected
         ) {
             // Function schema exists - verify it's valid
@@ -119,7 +119,7 @@ contract RuntimeRBACTest is CommonBase {
     function test_CannotModifyProtectedRoles() public {
         // Protected roles (OWNER, BROADCASTER, RECOVERY) cannot be removed
         // This is tested through the state machine's role management
-        // The actual protection is in StateAbstraction library
+        // The actual protection is in EngineBlox library
         vm.prank(owner);
         assertTrue(roleBlox.hasRole(OWNER_ROLE, owner));
         

@@ -12,7 +12,7 @@ Interface for BaseStateMachine functionality
 ### createMetaTxParams
 
 ```solidity
-function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum StateAbstraction.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) external view returns (struct StateAbstraction.MetaTxParams)
+function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum EngineBlox.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) external view returns (struct EngineBlox.MetaTxParams)
 ```
 
 Creates meta-transaction parameters with specified values
@@ -34,7 +34,7 @@ Creates meta-transaction parameters with specified values
 ### generateUnsignedMetaTransactionForNew
 
 ```solidity
-function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct StateAbstraction.MetaTxParams metaTxParams) external view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct EngineBlox.MetaTxParams metaTxParams) external view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for a new operation
@@ -58,7 +58,7 @@ Generates an unsigned meta-transaction for a new operation
 ### generateUnsignedMetaTransactionForExisting
 
 ```solidity
-function generateUnsignedMetaTransactionForExisting(uint256 txId, struct StateAbstraction.MetaTxParams metaTxParams) external view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForExisting(uint256 txId, struct EngineBlox.MetaTxParams metaTxParams) external view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for an existing transaction
@@ -76,7 +76,7 @@ Generates an unsigned meta-transaction for an existing transaction
 ### getTransactionHistory
 
 ```solidity
-function getTransactionHistory(uint256 fromTxId, uint256 toTxId) external view returns (struct StateAbstraction.TxRecord[])
+function getTransactionHistory(uint256 fromTxId, uint256 toTxId) external view returns (struct EngineBlox.TxRecord[])
 ```
 
 Gets transaction history within a specified range
@@ -94,7 +94,7 @@ Gets transaction history within a specified range
 ### getTransaction
 
 ```solidity
-function getTransaction(uint256 txId) external view returns (struct StateAbstraction.TxRecord)
+function getTransaction(uint256 txId) external view returns (struct EngineBlox.TxRecord)
 ```
 
 Gets a transaction by ID
@@ -144,7 +144,7 @@ Returns if a wallet is authorized for a role
 ### isActionSupportedByFunction
 
 ```solidity
-function isActionSupportedByFunction(bytes4 functionSelector, enum StateAbstraction.TxAction action) external view returns (bool)
+function isActionSupportedByFunction(bytes4 functionSelector, enum EngineBlox.TxAction action) external view returns (bool)
 ```
 
 Returns if an action is supported by a function
@@ -162,7 +162,7 @@ Returns if an action is supported by a function
 ### getActiveRolePermissions
 
 ```solidity
-function getActiveRolePermissions(bytes32 roleHash) external view returns (struct StateAbstraction.FunctionPermission[])
+function getActiveRolePermissions(bytes32 roleHash) external view returns (struct EngineBlox.FunctionPermission[])
 ```
 
 Gets the function permissions for a specific role

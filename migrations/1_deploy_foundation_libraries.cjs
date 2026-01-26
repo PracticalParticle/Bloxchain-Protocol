@@ -1,5 +1,5 @@
 // Migration 1: Deploy Core Libraries and Definition Libraries (Foundation)
-const SA = artifacts.require("StateAbstraction");
+const SA = artifacts.require("EngineBlox");
 const SOD = artifacts.require("SecureOwnableDefinitions");
 const DRD = artifacts.require("RuntimeRBACDefinitions");
 const GCD = artifacts.require("GuardControllerDefinitions");
@@ -12,10 +12,10 @@ module.exports = async function(deployer, network, accounts) {
     // Step 1: Deploy core libraries (no dependencies)
     console.log("\n📦 Step 1: Deploying Core Libraries...");
     
-    // Deploy StateAbstraction (core library)
+    // Deploy EngineBlox (core library)
     await deployer.deploy(SA);
     const sa = await SA.deployed();
-    console.log("✅ StateAbstraction deployed at:", sa.address);
+    console.log("✅ EngineBlox deployed at:", sa.address);
     
     // Get web3 instance from deployed contract (Truffle makes it available via constructor)
     const web3 = sa.constructor.web3 || global.web3;
@@ -45,7 +45,7 @@ module.exports = async function(deployer, network, accounts) {
     
     console.log("\n🎉 Migration 1 completed successfully!");
     console.log("📋 Foundation Libraries Deployed:");
-    console.log(`   StateAbstraction: ${sa.address}`);
+    console.log(`   EngineBlox: ${sa.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
     console.log(`   GuardControllerDefinitions: ${gcd.address}`);
@@ -64,7 +64,7 @@ module.exports = async function(deployer, network, accounts) {
         addresses[network] = {};
     }
     
-    addresses[network].StateAbstraction = {
+    addresses[network].EngineBlox = {
         address: sa.address,
         deployedAt: new Date().toISOString()
     };

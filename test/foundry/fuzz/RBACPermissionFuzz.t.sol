@@ -91,14 +91,14 @@ contract RBACPermissionFuzzTest is CommonBase {
         
         // Create role with maxWallets limit
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, maxWallets, permissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -116,7 +116,7 @@ contract RBACPermissionFuzzTest is CommonBase {
             });
             
             bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
-            StateAbstraction.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
+            EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
                 block.timestamp + 1 hours
@@ -134,17 +134,17 @@ contract RBACPermissionFuzzTest is CommonBase {
         });
         
         bytes memory overflowParams = roleBlox.roleConfigBatchExecutionParams(overflowActions);
-        StateAbstraction.MetaTransaction memory overflowMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory overflowMetaTx = _createMetaTxForRoleConfig(
             owner,
             overflowParams,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
         
         // Transaction should fail with RoleWalletLimitReached error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.RoleWalletLimitReached.selector,
@@ -176,14 +176,14 @@ contract RBACPermissionFuzzTest is CommonBase {
         
         // Create role
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
-        StateAbstraction.FunctionPermission[] memory permissions = new StateAbstraction.FunctionPermission[](0);
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
         createActions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
         bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
-        StateAbstraction.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
             block.timestamp + 1 hours
@@ -200,7 +200,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         });
         
         bytes memory addParams1 = roleBlox.roleConfigBatchExecutionParams(addActions1);
-        StateAbstraction.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
             block.timestamp + 1 hours
@@ -217,17 +217,17 @@ contract RBACPermissionFuzzTest is CommonBase {
         });
         
         bytes memory addParams2 = roleBlox.roleConfigBatchExecutionParams(addActions2);
-        StateAbstraction.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
+        EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
             block.timestamp + 1 hours
         );
         
         vm.prank(broadcaster);
-        StateAbstraction.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
         
         // Transaction should fail with ItemAlreadyExists error
-        assertEq(uint8(txRecord.status), uint8(StateAbstraction.TxStatus.FAILED), "Transaction should fail");
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
         
         bytes memory expectedError = abi.encodeWithSelector(
             SharedValidation.ItemAlreadyExists.selector,
@@ -243,19 +243,19 @@ contract RBACPermissionFuzzTest is CommonBase {
         address signer,
         bytes memory executionParams,
         uint256 deadline
-    ) internal returns (StateAbstraction.MetaTransaction memory) {
+    ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        StateAbstraction.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
-            StateAbstraction.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
             0, // maxGasPrice
             signer
         );
 
         // Generate unsigned meta-transaction
-        StateAbstraction.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
             signer,
             address(roleBlox),
             0, // value

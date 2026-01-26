@@ -14,7 +14,7 @@ by security-specific contracts. It handles:
 
 The contract is designed to be inherited by security-specific contracts that implement
 their own operation types and business logic while leveraging the core state machine.
-Implementing contracts can call StateAbstraction library functions directly for
+Implementing contracts can call EngineBlox library functions directly for
 transaction management operations.
 
 Key Features:
@@ -110,7 +110,7 @@ See {IERC165-supportsInterface}.
 ### _requestTransaction
 
 ```solidity
-function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestTransaction(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to request a transaction with common validation
@@ -133,7 +133,7 @@ Centralized function to request a transaction with common validation
 ### _approveTransaction
 
 ```solidity
-function _approveTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to approve a pending transaction after release time
@@ -150,7 +150,7 @@ Centralized function to approve a pending transaction after release time
 ### _approveTransactionWithMetaTx
 
 ```solidity
-function _approveTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to approve a transaction using meta-transaction
@@ -167,7 +167,7 @@ Centralized function to approve a transaction using meta-transaction
 ### _cancelTransaction
 
 ```solidity
-function _cancelTransaction(uint256 txId) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransaction(uint256 txId) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to cancel a pending transaction
@@ -184,7 +184,7 @@ Centralized function to cancel a pending transaction
 ### _cancelTransactionWithMetaTx
 
 ```solidity
-function _cancelTransactionWithMetaTx(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to cancel a transaction using meta-transaction
@@ -201,7 +201,7 @@ Centralized function to cancel a transaction using meta-transaction
 ### _requestAndApproveTransaction
 
 ```solidity
-function _requestAndApproveTransaction(struct StateAbstraction.MetaTransaction metaTx) internal nonpayable returns (struct StateAbstraction.TxRecord)
+function _requestAndApproveTransaction(struct EngineBlox.MetaTransaction metaTx) internal nonpayable returns (struct EngineBlox.TxRecord)
 ```
 
 Centralized function to request and approve a transaction using meta-transaction
@@ -218,7 +218,7 @@ Centralized function to request and approve a transaction using meta-transaction
 ### createMetaTxParams
 
 ```solidity
-function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum StateAbstraction.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) public view returns (struct StateAbstraction.MetaTxParams)
+function createMetaTxParams(address handlerContract, bytes4 handlerSelector, enum EngineBlox.TxAction action, uint256 deadline, uint256 maxGasPrice, address signer) public view returns (struct EngineBlox.MetaTxParams)
 ```
 
 Creates meta-transaction parameters with specified values
@@ -240,7 +240,7 @@ Creates meta-transaction parameters with specified values
 ### generateUnsignedMetaTransactionForNew
 
 ```solidity
-function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForNew(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, struct EngineBlox.MetaTxParams metaTxParams) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for a new operation
@@ -264,7 +264,7 @@ Generates an unsigned meta-transaction for a new operation
 ### generateUnsignedMetaTransactionForExisting
 
 ```solidity
-function generateUnsignedMetaTransactionForExisting(uint256 txId, struct StateAbstraction.MetaTxParams metaTxParams) public view returns (struct StateAbstraction.MetaTransaction)
+function generateUnsignedMetaTransactionForExisting(uint256 txId, struct EngineBlox.MetaTxParams metaTxParams) public view returns (struct EngineBlox.MetaTransaction)
 ```
 
 Generates an unsigned meta-transaction for an existing transaction
@@ -282,7 +282,7 @@ Generates an unsigned meta-transaction for an existing transaction
 ### getTransactionHistory
 
 ```solidity
-function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (struct StateAbstraction.TxRecord[])
+function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (struct EngineBlox.TxRecord[])
 ```
 
 Gets transaction history within a specified range
@@ -300,7 +300,7 @@ Gets transaction history within a specified range
 ### getTransaction
 
 ```solidity
-function getTransaction(uint256 txId) public view returns (struct StateAbstraction.TxRecord)
+function getTransaction(uint256 txId) public view returns (struct EngineBlox.TxRecord)
 ```
 
 Gets a transaction by ID
@@ -388,7 +388,7 @@ Checks if a function schema exists
 ### isActionSupportedByFunction
 
 ```solidity
-function isActionSupportedByFunction(bytes4 functionSelector, enum StateAbstraction.TxAction action) public view returns (bool)
+function isActionSupportedByFunction(bytes4 functionSelector, enum EngineBlox.TxAction action) public view returns (bool)
 ```
 
 Returns if an action is supported by a function
@@ -406,7 +406,7 @@ Returns if an action is supported by a function
 ### getActiveRolePermissions
 
 ```solidity
-function getActiveRolePermissions(bytes32 roleHash) public view returns (struct StateAbstraction.FunctionPermission[])
+function getActiveRolePermissions(bytes32 roleHash) public view returns (struct EngineBlox.FunctionPermission[])
 ```
 
 Gets the function permissions for a specific role
@@ -567,7 +567,7 @@ Centralized function to update assigned wallet for a role
 ### _loadDefinitions
 
 ```solidity
-function _loadDefinitions(struct StateAbstraction.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct StateAbstraction.FunctionPermission[] functionPermissions) internal nonpayable
+function _loadDefinitions(struct EngineBlox.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct EngineBlox.FunctionPermission[] functionPermissions) internal nonpayable
 ```
 
 Loads definitions directly into the secure state
@@ -585,7 +585,7 @@ This function initializes the secure state with all predefined definitions
 ### _getSecureState
 
 ```solidity
-function _getSecureState() internal view returns (struct StateAbstraction.SecureOperationState)
+function _getSecureState() internal view returns (struct EngineBlox.SecureOperationState)
 ```
 
 Internal function to get the secure state
@@ -600,7 +600,7 @@ Internal function to get the secure state
 ### _hasActionPermission
 
 ```solidity
-function _hasActionPermission(address caller, bytes4 functionSelector, enum StateAbstraction.TxAction action) internal view returns (bool)
+function _hasActionPermission(address caller, bytes4 functionSelector, enum EngineBlox.TxAction action) internal view returns (bool)
 ```
 
 Internal function to check if an address has action permission

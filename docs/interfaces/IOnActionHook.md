@@ -14,7 +14,7 @@ Implementations can choose which functions to support; unneeded ones can revert.
 ### onRequest
 
 ```solidity
-function onRequest(struct StateAbstraction.TxRecord txRecord, address caller) external nonpayable
+function onRequest(struct EngineBlox.TxRecord txRecord, address caller) external nonpayable
 ```
 
 Called after a transaction request is created
@@ -30,7 +30,7 @@ Called after a transaction request is created
 ### onApprove
 
 ```solidity
-function onApprove(struct StateAbstraction.TxRecord txRecord, address caller) external nonpayable
+function onApprove(struct EngineBlox.TxRecord txRecord, address caller) external nonpayable
 ```
 
 Called after a pending transaction is approved (time-lock flow)
@@ -46,7 +46,7 @@ Called after a pending transaction is approved (time-lock flow)
 ### onCancel
 
 ```solidity
-function onCancel(struct StateAbstraction.TxRecord txRecord, address caller) external nonpayable
+function onCancel(struct EngineBlox.TxRecord txRecord, address caller) external nonpayable
 ```
 
 Called after a pending transaction is cancelled
@@ -62,7 +62,7 @@ Called after a pending transaction is cancelled
 ### onMetaApprove
 
 ```solidity
-function onMetaApprove(struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) external nonpayable
+function onMetaApprove(struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) external nonpayable
 ```
 
 Called after a transaction is approved via meta-transaction
@@ -79,7 +79,7 @@ Called after a transaction is approved via meta-transaction
 ### onMetaCancel
 
 ```solidity
-function onMetaCancel(struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) external nonpayable
+function onMetaCancel(struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) external nonpayable
 ```
 
 Called after a transaction is cancelled via meta-transaction
@@ -96,7 +96,7 @@ Called after a transaction is cancelled via meta-transaction
 ### onRequestAndApprove
 
 ```solidity
-function onRequestAndApprove(struct StateAbstraction.TxRecord txRecord, struct StateAbstraction.MetaTransaction metaTx, address caller) external nonpayable
+function onRequestAndApprove(struct EngineBlox.TxRecord txRecord, struct EngineBlox.MetaTransaction metaTx, address caller) external nonpayable
 ```
 
 Called after a transaction is requested and approved in one step via meta-transaction

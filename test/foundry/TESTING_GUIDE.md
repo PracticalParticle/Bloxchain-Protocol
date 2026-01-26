@@ -11,7 +11,7 @@ Many query functions require the caller to have any role (privacy protection). A
 ```solidity
 // ✅ CORRECT
 vm.prank(owner);
-StateAbstraction.TxRecord memory tx = secureBlox.getTransaction(txId);
+EngineBlox.TxRecord memory tx = secureBlox.getTransaction(txId);
 
 vm.prank(owner);
 bytes32[] memory roles = secureBlox.getSupportedRoles();
@@ -22,7 +22,7 @@ uint256[] memory pending = secureBlox.getPendingTransactions();
 
 ```solidity
 // ❌ WRONG - Will fail with NoPermission
-StateAbstraction.TxRecord memory tx = secureBlox.getTransaction(txId);
+EngineBlox.TxRecord memory tx = secureBlox.getTransaction(txId);
 ```
 
 **Functions requiring roles:**
@@ -56,13 +56,13 @@ secureBlox.transferOwnershipRequest();
 ```solidity
 // Request
 vm.prank(recovery);
-StateAbstraction.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
+EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
 uint256 txId = requestTx.txId;
 
 // Verify pending status
 vm.prank(owner);
-StateAbstraction.TxRecord memory pendingTx = secureBlox.getTransaction(txId);
-assertEq(uint8(pendingTx.status), uint8(StateAbstraction.TxStatus.PENDING));
+EngineBlox.TxRecord memory pendingTx = secureBlox.getTransaction(txId);
+assertEq(uint8(pendingTx.status), uint8(EngineBlox.TxStatus.PENDING));
 
 // Advance time
 advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -73,8 +73,8 @@ secureBlox.transferOwnershipDelayedApproval(txId);
 
 // Verify completion
 vm.prank(owner);
-StateAbstraction.TxRecord memory completedTx = secureBlox.getTransaction(txId);
-assertEq(uint8(completedTx.status), uint8(StateAbstraction.TxStatus.COMPLETED));
+EngineBlox.TxRecord memory completedTx = secureBlox.getTransaction(txId);
+assertEq(uint8(completedTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
 ```
 
 #### 4. Invariant Tests
@@ -115,7 +115,7 @@ function testFuzz_SomeFunction(uint256 value) public {
 
 ```solidity
 // Create meta-transaction params (deadline is duration in seconds, not absolute timestamp)
-StateAbstraction.MetaTxParams memory params = secureBlox.createMetaTxParams(
+EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
     handlerContract,
     handlerSelector,
     action,
@@ -183,7 +183,7 @@ Available in `CommonBase`:
    - Check if transactions exist before querying
 
 4. **Meta-transaction nonce assumptions**
-   - Nonce is set automatically by `StateAbstraction`
+   - Nonce is set automatically by `EngineBlox`
    - Don't assume nonce value, query it from contract
 
 5. **Empty array encoding**

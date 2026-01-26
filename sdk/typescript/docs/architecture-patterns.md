@@ -13,7 +13,7 @@ The Bloxchain protocol is built around a centralized state machine that manages 
 #### Implementation
 ```solidity
 contract GuardianContract {
-    StateAbstraction.SecureOperationState private _secureState;
+    EngineBlox.SecureOperationState private _secureState;
     
     function _executeOperation(bytes32 operationType, bytes calldata data) internal {
         // All operations flow through the state machine
@@ -74,12 +74,12 @@ Guardian contracts use a clear inheritance hierarchy that provides layered secur
 #### Implementation
 ```solidity
 // Base security functionality
-contract StateAbstraction {
+contract EngineBlox {
     // Core state machine implementation
 }
 
 // Enhanced security with ownership
-contract SecureOwnable is StateAbstraction {
+contract SecureOwnable is EngineBlox {
     // Ownership-specific functionality
 }
 
