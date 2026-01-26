@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../../core/execution/GuardController.sol";
 import "../../core/access/RuntimeRBAC.sol";
 import "../../core/security/SecureOwnable.sol";
-import "../../core/hook/HookManager.sol";
+import "../../experimental/hook/HookManager.sol";
 import "../../core/base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 

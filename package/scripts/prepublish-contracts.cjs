@@ -46,9 +46,10 @@ if (fs.existsSync(destContractsDir)) {
   fs.rmSync(destContractsDir, { recursive: true, force: true });
 }
 
-// Copy contracts
-copyDir(sourceContractsDir, destContractsDir);
-console.log('✅ Contracts copied\n');
+// Copy contracts (excluding examples and experimental)
+const excludedDirs = ['examples', 'experimental'];
+copyDir(sourceContractsDir, destContractsDir, excludedDirs);
+console.log('✅ Contracts copied (excluding examples and experimental)\n');
 
 // Step 3: Copy abi directory
 console.log('📋 Step 3: Copying ABIs...');
@@ -62,14 +63,15 @@ if (fs.existsSync(destAbiDir)) {
   fs.rmSync(destAbiDir, { recursive: true, force: true });
 }
 
-// Copy ABIs
-copyDir(sourceAbiDir, destAbiDir);
-console.log('✅ ABIs copied\n');
+// Copy ABIs (excluding examples and experimental)
+copyDir(sourceAbiDir, destAbiDir, excludedDirs);
+console.log('✅ ABIs copied (excluding examples and experimental)\n');
 
 console.log('✅ Package ready for publishing!\n');
 
 // Helper function to copy directory recursively
-function copyDir(src, dest) {
+// excludedDirs: array of directory names to skip (e.g., ['examples', 'experimental'])
+function copyDir(src, dest, excludedDirs = []) {
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
   }
@@ -77,11 +79,17 @@ function copyDir(src, dest) {
   const entries = fs.readdirSync(src, { withFileTypes: true });
   
   for (const entry of entries) {
+    // Skip excluded directories
+    if (entry.isDirectory() && excludedDirs.includes(entry.name)) {
+      console.log(`⏭️  Skipping excluded directory: ${entry.name}`);
+      continue;
+    }
+    
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     
     if (entry.isDirectory()) {
-      copyDir(srcPath, destPath);
+      copyDir(srcPath, destPath, excludedDirs);
     } else {
       fs.copyFileSync(srcPath, destPath);
     }
