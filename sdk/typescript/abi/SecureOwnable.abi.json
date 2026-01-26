@@ -463,7 +463,7 @@
         "type": "bytes4"
       },
       {
-        "internalType": "enum StateAbstraction.TxAction",
+        "internalType": "enum EngineBlox.TxAction",
         "name": "action",
         "type": "uint8"
       },
@@ -508,7 +508,7 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction",
+            "internalType": "enum EngineBlox.TxAction",
             "name": "action",
             "type": "uint8"
           },
@@ -528,7 +528,7 @@
             "type": "address"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTxParams",
+        "internalType": "struct EngineBlox.MetaTxParams",
         "name": "",
         "type": "tuple"
       }
@@ -585,7 +585,7 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction",
+            "internalType": "enum EngineBlox.TxAction",
             "name": "action",
             "type": "uint8"
           },
@@ -605,7 +605,7 @@
             "type": "address"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTxParams",
+        "internalType": "struct EngineBlox.MetaTxParams",
         "name": "metaTxParams",
         "type": "tuple"
       }
@@ -627,7 +627,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -669,7 +669,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -706,12 +706,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -738,7 +738,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -758,7 +758,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -778,7 +778,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "",
         "type": "tuple"
       }
@@ -846,7 +846,7 @@
             "type": "bytes4"
           },
           {
-            "internalType": "enum StateAbstraction.TxAction",
+            "internalType": "enum EngineBlox.TxAction",
             "name": "action",
             "type": "uint8"
           },
@@ -866,7 +866,7 @@
             "type": "address"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTxParams",
+        "internalType": "struct EngineBlox.MetaTxParams",
         "name": "metaTxParams",
         "type": "tuple"
       }
@@ -888,7 +888,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -930,7 +930,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -967,12 +967,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -999,7 +999,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -1019,7 +1019,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1039,7 +1039,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "",
         "type": "tuple"
       }
@@ -1075,7 +1075,7 @@
             "type": "bytes4[]"
           }
         ],
-        "internalType": "struct StateAbstraction.FunctionPermission[]",
+        "internalType": "struct EngineBlox.FunctionPermission[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -1255,7 +1255,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -1297,7 +1297,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1334,12 +1334,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -1375,7 +1375,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -1417,7 +1417,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1454,12 +1454,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord[]",
+        "internalType": "struct EngineBlox.TxRecord[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -1512,7 +1512,7 @@
         "type": "bytes4"
       },
       {
-        "internalType": "enum StateAbstraction.TxAction",
+        "internalType": "enum EngineBlox.TxAction",
         "name": "action",
         "type": "uint8"
       }
@@ -1610,7 +1610,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -1652,7 +1652,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1689,12 +1689,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -1725,7 +1725,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -1767,7 +1767,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1804,12 +1804,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -1834,7 +1834,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -1876,7 +1876,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -1913,12 +1913,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -1945,7 +1945,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -1965,7 +1965,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -1985,7 +1985,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -2005,7 +2005,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2047,7 +2047,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2084,12 +2084,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -2120,7 +2120,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2162,7 +2162,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2199,12 +2199,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -2229,7 +2229,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -2271,7 +2271,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -2308,12 +2308,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -2340,7 +2340,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -2360,7 +2360,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2380,7 +2380,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -2400,7 +2400,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2442,7 +2442,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2479,12 +2479,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -2515,7 +2515,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2557,7 +2557,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2594,12 +2594,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -2630,7 +2630,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2672,7 +2672,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2709,12 +2709,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -2739,7 +2739,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -2781,7 +2781,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -2818,12 +2818,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -2850,7 +2850,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -2870,7 +2870,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2890,7 +2890,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -2910,7 +2910,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -2952,7 +2952,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -2989,12 +2989,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -3025,7 +3025,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -3067,7 +3067,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3104,12 +3104,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -3134,7 +3134,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -3176,7 +3176,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -3213,12 +3213,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -3245,7 +3245,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -3265,7 +3265,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3285,7 +3285,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -3305,7 +3305,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -3347,7 +3347,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3384,12 +3384,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -3433,7 +3433,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -3475,7 +3475,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -3512,12 +3512,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -3544,7 +3544,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -3564,7 +3564,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3584,7 +3584,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -3604,7 +3604,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -3646,7 +3646,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3683,12 +3683,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
@@ -3732,7 +3732,7 @@
                 "type": "uint256"
               },
               {
-                "internalType": "enum StateAbstraction.TxStatus",
+                "internalType": "enum EngineBlox.TxStatus",
                 "name": "status",
                 "type": "uint8"
               },
@@ -3774,7 +3774,7 @@
                     "type": "bytes"
                   }
                 ],
-                "internalType": "struct StateAbstraction.TxParams",
+                "internalType": "struct EngineBlox.TxParams",
                 "name": "params",
                 "type": "tuple"
               },
@@ -3811,12 +3811,12 @@
                     "type": "uint256"
                   }
                 ],
-                "internalType": "struct StateAbstraction.PaymentDetails",
+                "internalType": "struct EngineBlox.PaymentDetails",
                 "name": "payment",
                 "type": "tuple"
               }
             ],
-            "internalType": "struct StateAbstraction.TxRecord",
+            "internalType": "struct EngineBlox.TxRecord",
             "name": "txRecord",
             "type": "tuple"
           },
@@ -3843,7 +3843,7 @@
                 "type": "bytes4"
               },
               {
-                "internalType": "enum StateAbstraction.TxAction",
+                "internalType": "enum EngineBlox.TxAction",
                 "name": "action",
                 "type": "uint8"
               },
@@ -3863,7 +3863,7 @@
                 "type": "address"
               }
             ],
-            "internalType": "struct StateAbstraction.MetaTxParams",
+            "internalType": "struct EngineBlox.MetaTxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3883,7 +3883,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct StateAbstraction.MetaTransaction",
+        "internalType": "struct EngineBlox.MetaTransaction",
         "name": "metaTx",
         "type": "tuple"
       }
@@ -3903,7 +3903,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "enum StateAbstraction.TxStatus",
+            "internalType": "enum EngineBlox.TxStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -3945,7 +3945,7 @@
                 "type": "bytes"
               }
             ],
-            "internalType": "struct StateAbstraction.TxParams",
+            "internalType": "struct EngineBlox.TxParams",
             "name": "params",
             "type": "tuple"
           },
@@ -3982,12 +3982,12 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct StateAbstraction.PaymentDetails",
+            "internalType": "struct EngineBlox.PaymentDetails",
             "name": "payment",
             "type": "tuple"
           }
         ],
-        "internalType": "struct StateAbstraction.TxRecord",
+        "internalType": "struct EngineBlox.TxRecord",
         "name": "",
         "type": "tuple"
       }
