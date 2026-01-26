@@ -3,8 +3,11 @@ pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../core/base/BaseStateMachine.sol";
 import "../../core/base/interface/IBaseStateMachine.sol";
+import "../../core/lib/StateAbstraction.sol";
+import "../../interfaces/IEventForwarder.sol";
 import "../../utils/SharedValidation.sol";
 
 /**
@@ -15,16 +18,23 @@ import "../../utils/SharedValidation.sol";
  * - Clone any blox contract using EIP-1167 minimal proxy pattern
  * - Initialize the cloned contract with user-provided values
  * - Centralize events from clones by setting eventForwarder to CopyBlox address
+ * - Implement IEventForwarder to receive and forward events from all clones
  * - Ensure all clones implement at least IBaseStateMachine interface
  */
-contract CopyBlox is BaseStateMachine {
+contract CopyBlox is BaseStateMachine, IEventForwarder {
     using Clones for address;
     using ERC165Checker for address;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
      * @dev Counter to track the total number of clones created
      */
     uint256 private _cloneCount;
+
+    /**
+     * @dev Set to store all created clone addresses
+     */
+    EnumerableSet.AddressSet private _clones;
 
     /**
      * @dev Event emitted when a blox is cloned
@@ -111,6 +121,9 @@ contract CopyBlox is BaseStateMachine {
         
         require(success, "CopyBlox: Initialization failed");
         
+        // Add clone to the set
+        _clones.add(cloneAddress);
+        
         // Increment clone counter
         _cloneCount++;
         
@@ -125,6 +138,115 @@ contract CopyBlox is BaseStateMachine {
      */
     function getCloneCount() external view returns (uint256) {
         return _cloneCount;
+    }
+
+    /**
+     * @notice Get all clone addresses
+     * @return An array of all clone addresses created by this CopyBlox instance
+     */
+    function getAllClones() external view returns (address[] memory) {
+        return _clones.values();
+    }
+
+    /**
+     * @notice Get a clone address at a specific index
+     * @param index The index of the clone to retrieve
+     * @return The clone address at the specified index
+     */
+    function getCloneAtIndex(uint256 index) external view returns (address) {
+        return _clones.at(index);
+    }
+
+    /**
+     * @notice Check if an address is a clone created by this CopyBlox
+     * @param cloneAddress The address to check
+     * @return True if the address is a clone, false otherwise
+     */
+    function isClone(address cloneAddress) external view returns (bool) {
+        return _clones.contains(cloneAddress);
+    }
+
+    /**
+     * @notice Get the total number of clones in the set
+     * @return The number of clones in the enumerable set
+     * @dev This should match getCloneCount() but uses the set length
+     */
+    function getClonesLength() external view returns (uint256) {
+        return _clones.length();
+    }
+
+    // ============ IEventForwarder IMPLEMENTATION ============
+
+    /**
+     * @dev Event emitted when a transaction event is forwarded from a clone
+     * @param cloneAddress The address of the clone that emitted the event
+     * @param txId The transaction ID
+     * @param functionSelector The function selector for the event
+     * @param status The transaction status
+     * @param requester The address of the requester
+     * @param target The target contract address
+     * @param operationType The type of operation
+     */
+    event CloneEventForwarded(
+        address indexed cloneAddress,
+        uint256 indexed txId,
+        bytes4 indexed functionSelector,
+        StateAbstraction.TxStatus status,
+        address requester,
+        address target,
+        bytes32 operationType
+    );
+
+    /**
+     * @notice Forward a transaction event from a deployed clone instance
+     * @param txId The transaction ID
+     * @param functionSelector The function selector for the event (bytes4)
+     * @param status The transaction status
+     * @param requester The address of the requester
+     * @param target The target contract address
+     * @param operationType The type of operation
+     * @dev This function is called by clones to forward their events to CopyBlox
+     * @dev Only clones created by this CopyBlox can forward events
+     */
+    function forwardTxEvent(
+        uint256 txId,
+        bytes4 functionSelector,
+        StateAbstraction.TxStatus status,
+        address requester,
+        address target,
+        bytes32 operationType
+    ) external override {
+        // Verify that the caller is a clone created by this CopyBlox
+        require(_clones.contains(msg.sender), "CopyBlox: Only clones can forward events");
+        
+        // Emit event with clone address for tracking
+        emit CloneEventForwarded(
+            msg.sender,
+            txId,
+            functionSelector,
+            status,
+            requester,
+            target,
+            operationType
+        );
+        
+        // If CopyBlox itself has an eventForwarder, forward the event further
+        // This allows chaining event forwarders
+        address eventForwarder = _secureState.eventForwarder;
+        if (eventForwarder != address(0) && eventForwarder != address(this)) {
+            try IEventForwarder(eventForwarder).forwardTxEvent(
+                txId,
+                functionSelector,
+                status,
+                requester,
+                target,
+                operationType
+            ) {
+                // Event forwarded successfully
+            } catch {
+                // Forwarding failed, continue execution (non-critical operation)
+            }
+        }
     }
 
     /**
