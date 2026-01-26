@@ -463,6 +463,11 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         
         uint256 totalPaid = 0;
         for (uint256 i = 0; i < numberOfTransactions; i++) {
+            // Skip invalid transaction IDs (marked as 0 when requestTransaction failed)
+            if (txIds[i] == 0) {
+                continue;
+            }
+            
             vm.prank(owner);
             StateAbstraction.TxRecord memory result = paymentHelper.approveTransaction(txIds[i]);
             

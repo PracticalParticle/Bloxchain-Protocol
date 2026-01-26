@@ -32,6 +32,12 @@ contract PaymentTestHelper is BaseStateMachine {
         uint256 timeLockPeriodSec,
         address eventForwarder
     ) public initializer {
+        // Input validation
+        SharedValidation.validateNotZeroAddress(initialOwner);
+        SharedValidation.validateNotZeroAddress(broadcaster);
+        SharedValidation.validateNotZeroAddress(recovery);
+        SharedValidation.validateTimeLockPeriod(timeLockPeriodSec);
+        
         _initializeBaseStateMachine(
             initialOwner,
             broadcaster,
@@ -57,6 +63,7 @@ contract PaymentTestHelper is BaseStateMachine {
         // The owner address is already in OWNER_ROLE from initialization
         // When tests call with vm.prank(owner), msg.sender will be owner, so permissions should work
         bytes32 ownerRoleHash = StateAbstraction.OWNER_ROLE;
+        StateAbstraction.Role storage ownerRole = state.roles[ownerRoleHash];
         
         // Create bitmap for EXECUTE_TIME_DELAY_REQUEST action
         StateAbstraction.TxAction[] memory requestActions = new StateAbstraction.TxAction[](1);
@@ -75,10 +82,10 @@ contract PaymentTestHelper is BaseStateMachine {
         uint16 bothActionsBitmap = StateAbstraction.createBitmapFromActions(bothActions);
         
         // Register NATIVE_TRANSFER_SELECTOR function schema if not already registered
+        bytes4[] memory nativeTransferHandlers = new bytes4[](1);
+        nativeTransferHandlers[0] = nativeTransferSelector; // Self-reference
+        
         if (!state.supportedFunctionsSet.contains(bytes32(nativeTransferSelector))) {
-            bytes4[] memory nativeTransferHandlers = new bytes4[](1);
-            nativeTransferHandlers[0] = nativeTransferSelector; // Self-reference
-            
             StateAbstraction.createFunctionSchema(
                 state,
                 "__bloxchain_native_transfer__(address,uint256)",
@@ -88,27 +95,34 @@ contract PaymentTestHelper is BaseStateMachine {
                 false,
                 nativeTransferHandlers
             );
-            
-            // Grant owner permission for NATIVE_TRANSFER_SELECTOR with both actions
+        }
+        
+        // Ensure permissions are granted even if schema already exists
+        // Check if permission already exists to avoid duplicates
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(nativeTransferSelector))) {
             StateAbstraction.FunctionPermission memory nativeTransferPermission = StateAbstraction.FunctionPermission({
                 functionSelector: nativeTransferSelector,
                 grantedActionsBitmap: bothActionsBitmap, // Both REQUEST and APPROVE
                 handlerForSelectors: nativeTransferHandlers
             });
             StateAbstraction.addFunctionToRole(state, ownerRoleHash, nativeTransferPermission);
-            
-            // Whitelist this contract for NATIVE_TRANSFER_SELECTOR
+        }
+        
+        // Ensure whitelist entry exists even if schema already exists
+        // Note: address(this) is always allowed, but we add it explicitly for clarity
+        EnumerableSet.AddressSet storage whitelist = state.functionTargetWhitelist[nativeTransferSelector];
+        if (!whitelist.contains(address(this))) {
             StateAbstraction.addTargetToFunctionWhitelist(state, nativeTransferSelector, address(this));
         }
         
         // Register requestTransaction function schema if not already registered
+        // Handler selectors must include self-reference (requestTransaction.selector) 
+        // and can also include the execution selector (NATIVE_TRANSFER_SELECTOR)
+        bytes4[] memory requestTxHandlers = new bytes4[](2);
+        requestTxHandlers[0] = requestTxSelector; // Self-reference (required)
+        requestTxHandlers[1] = nativeTransferSelector; // Points to NATIVE_TRANSFER_SELECTOR
+        
         if (!state.supportedFunctionsSet.contains(bytes32(requestTxSelector))) {
-            // Handler selectors must include self-reference (requestTransaction.selector) 
-            // and can also include the execution selector (NATIVE_TRANSFER_SELECTOR)
-            bytes4[] memory requestTxHandlers = new bytes4[](2);
-            requestTxHandlers[0] = requestTxSelector; // Self-reference (required)
-            requestTxHandlers[1] = nativeTransferSelector; // Points to NATIVE_TRANSFER_SELECTOR
-            
             StateAbstraction.createFunctionSchema(
                 state,
                 "requestTransaction(address,address,uint256,uint256,bytes32,bytes4,bytes)",
@@ -118,8 +132,10 @@ contract PaymentTestHelper is BaseStateMachine {
                 false,
                 requestTxHandlers
             );
-            
-            // Grant owner permission for requestTransaction
+        }
+        
+        // Ensure permissions are granted even if schema already exists
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(requestTxSelector))) {
             // handlerForSelectors in permission should include requestTransaction.selector itself (self-reference)
             // so it can be used as a handler, and also NATIVE_TRANSFER_SELECTOR
             bytes4[] memory requestTxPermissionHandlers = new bytes4[](2);
@@ -136,10 +152,10 @@ contract PaymentTestHelper is BaseStateMachine {
         
         // Register approveTransaction function schema if not already registered
         bytes4 approveTxSelector = this.approveTransaction.selector;
+        bytes4[] memory approveTxHandlers = new bytes4[](1);
+        approveTxHandlers[0] = approveTxSelector; // Self-reference
+        
         if (!state.supportedFunctionsSet.contains(bytes32(approveTxSelector))) {
-            bytes4[] memory approveTxHandlers = new bytes4[](1);
-            approveTxHandlers[0] = approveTxSelector; // Self-reference
-            
             StateAbstraction.createFunctionSchema(
                 state,
                 "approveTransaction(uint256)",
@@ -149,8 +165,10 @@ contract PaymentTestHelper is BaseStateMachine {
                 false,
                 approveTxHandlers
             );
-            
-            // Grant owner permission for approveTransaction
+        }
+        
+        // Ensure permissions are granted even if schema already exists
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(approveTxSelector))) {
             StateAbstraction.FunctionPermission memory approveTxPermission = StateAbstraction.FunctionPermission({
                 functionSelector: approveTxSelector,
                 grantedActionsBitmap: approveActionsBitmap,
@@ -238,6 +256,10 @@ contract PaymentTestHelper is BaseStateMachine {
     function whitelistTargetForTesting(address target, bytes4 selector) external {
         // Only owner can whitelist for testing
         require(msg.sender == owner(), "Only owner can whitelist for testing");
+        
+        // Input validation
+        SharedValidation.validateNotZeroAddress(target);
+        require(selector != bytes4(0), "Selector cannot be zero");
         
         // Add target to whitelist using StateAbstraction library function
         StateAbstraction.SecureOperationState storage state = _getSecureState();
