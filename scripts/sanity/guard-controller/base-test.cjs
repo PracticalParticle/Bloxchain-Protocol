@@ -100,9 +100,10 @@ class BaseGuardControllerTest {
         };
         
         // GuardController constants
-        // NATIVE_TRANSFER uses a reserved signature: __bloxchain_native_transfer__(address,uint256)
+        // NATIVE_TRANSFER uses a reserved signature: __bloxchain_native_transfer__()
+        // This matches EngineBlox.NATIVE_TRANSFER_SELECTOR constant
         this.NATIVE_TRANSFER_OPERATION_TYPE = this.web3.utils.keccak256('NATIVE_TRANSFER');
-        this.NATIVE_TRANSFER_SELECTOR = '0x58e2cfdb'; // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
+        this.NATIVE_TRANSFER_SELECTOR = '0xd8cb519d'; // bytes4(keccak256("__bloxchain_native_transfer__()")) - matches EngineBlox.NATIVE_TRANSFER_SELECTOR
         this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR = this.web3.utils.keccak256(
             'requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
@@ -288,7 +289,44 @@ class BaseGuardControllerTest {
         // Verify RuntimeRBAC function schema is registered
         await this.verifyRuntimeRBACInitialized();
         
+        // Verify GuardController function schema is registered
+        await this.verifyGuardControllerInitialized();
+        
         console.log(`✅ ${this.testName} initialized successfully\n`);
+    }
+
+    async verifyGuardControllerInitialized() {
+        try {
+            console.log('🔍 Verifying GuardController initialization...');
+            
+            // Check if guardConfigBatchRequestAndApprove function schema exists
+            const handlerSchema = await this.callContractMethod(
+                this.contract.methods.getFunctionSchema(this.GUARD_CONFIG_BATCH_META_SELECTOR)
+            );
+            
+            if (handlerSchema.functionSelectorReturn !== this.GUARD_CONFIG_BATCH_META_SELECTOR) {
+                throw new Error('GuardController handler function schema not found. Contract may not be initialized with GuardController.initialize()');
+            }
+            
+            console.log('  ✅ GuardController handler function schema verified');
+            console.log(`  📋 Operation: ${handlerSchema.operationName}`);
+            
+            // Also verify execution function schema exists
+            const executionSchema = await this.callContractMethod(
+                this.contract.methods.getFunctionSchema(this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR)
+            );
+            
+            if (executionSchema.functionSelectorReturn !== this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR) {
+                throw new Error('GuardController execution function schema not found. Contract may not be initialized with GuardController.initialize()');
+            }
+            
+            console.log('  ✅ GuardController execution function schema verified');
+            console.log(`  📋 Execution operation: ${executionSchema.operationName}`);
+            
+        } catch (error) {
+            console.error('❌ GuardController initialization verification failed:', error.message);
+            throw error;
+        }
     }
 
     async verifyRuntimeRBACInitialized() {
@@ -384,6 +422,16 @@ class BaseGuardControllerTest {
             const from = wallet.address;
             const gas = await method.estimateGas({ from, value });
             const result = await method.send({ from, gas, value });
+            
+            // Check if transaction actually succeeded by examining the receipt
+            if (result && result.receipt) {
+                console.log(`  🔍 Transaction receipt status: ${result.receipt.status}`);
+                console.log(`  🔍 Transaction receipt logs: ${result.receipt.logs ? result.receipt.logs.length : 0}`);
+                if (result.receipt.status === false || result.receipt.status === '0x0') {
+                    throw new Error(`Transaction reverted. Receipt status: ${result.receipt.status}`);
+                }
+            }
+            
             return result;
         } catch (error) {
             let errorMessage = error.message;
@@ -901,26 +949,52 @@ class BaseGuardControllerTest {
         try {
             const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
             
+            console.log(`  🔍 Creating meta-transaction for guard config batch...`);
+            console.log(`     Signer: ${signerAddress}`);
+            console.log(`     Broadcaster: ${broadcasterWallet.address}`);
+            console.log(`     Actions count: ${actions.length}`);
+            
             // Create unsigned meta-transaction
             const unsignedMetaTx = await this.createGuardConfigBatchMetaTx(actions, signerAddress);
+            console.log(`  ✅ Meta-transaction created`);
+            console.log(`     Execution selector: ${unsignedMetaTx.txRecord.params.executionSelector}`);
+            console.log(`     Handler selector: ${unsignedMetaTx.params.handlerSelector}`);
+            console.log(`     Operation type: ${unsignedMetaTx.txRecord.params.operationType}`);
             
             // Sign meta-transaction
+            console.log(`  🔐 Signing meta-transaction...`);
             const signedMetaTx = await this.eip712Signer.signMetaTransaction(
                 unsignedMetaTx,
                 signerPrivateKey,
                 this.contract
             );
+            console.log(`  ✅ Meta-transaction signed`);
             
             // Execute meta-transaction via broadcaster
+            console.log(`  📤 Executing meta-transaction via broadcaster...`);
             const receipt = await this.sendTransaction(
                 this.contract.methods.guardConfigBatchRequestAndApprove(signedMetaTx),
                 broadcasterWallet
             );
             
+            console.log(`  ✅ Transaction sent`);
+            console.log(`     Receipt status: ${receipt.status}`);
+            console.log(`     Receipt logs: ${receipt.logs ? receipt.logs.length : 0}`);
+            
             return receipt;
             
         } catch (error) {
             console.error('❌ Failed to execute guard config batch:', error.message);
+            if (error.receipt) {
+                console.error(`  📋 Error receipt status: ${error.receipt.status}`);
+                console.error(`  📋 Error receipt logs: ${error.receipt.logs ? error.receipt.logs.length : 0}`);
+            }
+            if (error.data) {
+                console.error(`  📋 Error data: ${JSON.stringify(error.data, null, 2)}`);
+            }
+            if (error.stack) {
+                console.error(`  📋 Stack trace: ${error.stack}`);
+            }
             throw error;
         }
     }

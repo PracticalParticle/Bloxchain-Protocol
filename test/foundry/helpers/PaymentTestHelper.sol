@@ -92,7 +92,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 nativeTransferSelector,
                 "NATIVE_TRANSFER",
                 bothActionsBitmap, // Support both REQUEST and APPROVE
-                false,
+                true, // isProtected = true (required for functions starting with '_')
                 nativeTransferHandlers
             );
         }
@@ -189,7 +189,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 updatePaymentSelector,
                 "UPDATE_PAYMENT",
                 requestActionsBitmap, // Use REQUEST action for payment updates
-                false,
+                true, // isProtected = true (required for functions starting with '_')
                 updatePaymentHandlers
             );
         }

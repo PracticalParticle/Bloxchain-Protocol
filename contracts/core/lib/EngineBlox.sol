@@ -1063,6 +1063,11 @@ library EngineBlox {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
         }
 
+        // SECURITY: Validate that functions existing in contract bytecode must be protected
+        // This checks if the function selector exists in the contract's bytecode
+        // If it exists, it must be protected to prevent accidental removal of system-critical functions
+        _validateContractFunctionProtection(functionSignature, functionSelector, isProtected);
+
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
 
@@ -2134,6 +2139,75 @@ library EngineBlox {
             result[i] = bytes4(set.at(i));
         }
         return result;
+    }
+
+    /**
+     * @dev Validates that if a function exists in contract bytecode, it must be protected
+     * @param functionSignature The function signature to check
+     * @param functionSelector The function selector
+     * @param isProtected Whether the function is marked as protected
+     * @notice Checks if the function selector exists in the contract's bytecode function selector table
+     * @notice If the selector exists in the contract, it must be protected to prevent accidental removal
+     * @notice This uses low-level bytecode inspection instead of relying on naming conventions
+     * @notice Since we're called via delegatecall, address(this) refers to the calling contract
+     */
+    function _validateContractFunctionProtection(
+        string memory functionSignature,
+        bytes4 functionSelector,
+        bool isProtected
+    ) private view {
+        // Check if the function selector exists in the contract's bytecode
+        // Since we're called via delegatecall, address(this) refers to the calling contract
+        if (selectorExistsInContract(address(this), functionSelector)) {
+            if (!isProtected) {
+                revert SharedValidation.ContractFunctionMustBeProtected(functionSelector, functionSignature);
+            }
+        }
+    }
+
+    /**
+     * @dev Checks if a function selector exists in a contract's bytecode
+     * @param contractAddress The address of the contract to check
+     * @param selector The 4-byte function selector to search for
+     * @return true if the selector is found in the contract's function selector dispatch table area
+     * @notice Searches the first 2KB where function selectors are stored in the dispatch table
+     * @notice This is a heuristic check - false positives are possible but unlikely
+     * @notice Uses loop unrolling for gas efficiency
+     * @notice Can be used to query any contract's function selector table
+     */
+    function selectorExistsInContract(address contractAddress, bytes4 selector) public view returns (bool) {
+        // Get the contract's bytecode
+        bytes memory code = contractAddress.code;
+        
+        if (code.length < 5) { // Need at least PUSH4 (1 byte) + selector (4 bytes)
+            return false;
+        }
+        
+        // Function selectors are in the dispatch table at the beginning
+        // Typical dispatch tables are < 2KB even for large contracts
+        // Searching only this area reduces gas cost and false positives from metadata/data
+        uint256 searchLength = code.length < 2048 ? code.length : 2048;
+        
+        // Scan for PUSH4 opcode (0x63) with 1-byte sliding window
+        // PUSH4 opcode is followed by 4 bytes which is the function selector
+        // Function selectors in EVM bytecode are emitted as PUSH4 <selector> instructions
+        // These can start at any byte offset, not just 4-byte-aligned positions
+        for (uint256 i = 0; i + 4 < searchLength; i++) {
+            // Check if current byte is PUSH4 opcode (0x63)
+            if (uint8(code[i]) == 0x63) {
+                // Extract the 4-byte selector following the PUSH4 opcode
+                bytes4 candidate;
+                assembly {
+                    let codePtr := add(add(code, 0x20), add(i, 1))
+                    candidate := mload(codePtr)
+                }
+                if (candidate == selector) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 
 }

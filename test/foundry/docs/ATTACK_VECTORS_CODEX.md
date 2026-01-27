@@ -10,10 +10,10 @@
 
 This codex serves as a comprehensive knowledge base of attack vectors identified in the Bloxchain Protocol. Each entry includes attack descriptions, current protections, severity classifications, and verification requirements. This document consolidates information from security analysis documents and serves as the authoritative reference for security threats.
 
-**Total Attack Vectors**: 150+  
-**Critical Severity**: 12  
-**High Severity**: 28  
-**Medium Severity**: 45  
+**Total Attack Vectors**: 164+  
+**Critical Severity**: 14  
+**High Severity**: 32  
+**Medium Severity**: 51  
 **Low Severity**: 35  
 **Informational**: 30+
 
@@ -35,6 +35,7 @@ This codex serves as a comprehensive knowledge base of attack vectors identified
 12. [Initialization & Upgrade](#12-initialization--upgrade)
 13. [Hook System](#13-hook-system)
 14. [Event Forwarding & Monitoring](#14-event-forwarding--monitoring)
+15. [Definition Contracts & Schema Security](#15-definition-contracts--schema-security)
 
 ---
 
@@ -2383,6 +2384,468 @@ contract GasIntensiveForwarder {
 - Test with gas-intensive forwarder
 - Verify graceful failure handling
 - Test gas limits
+
+---
+
+## 15. Definition Contracts & Schema Security
+
+### 15.1 Schema Definition Attacks
+
+#### CRITICAL: Missing Protected Flag for System Functions
+- **ID**: `DEF-001`
+- **Location**: `EngineBlox.sol:1066-1069`, `BaseStateMachine.sol:756-783`
+- **Severity**: CRITICAL
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition contract omits `isProtected: true` for functions that exist in contract bytecode, allowing removal of critical system functions.
+
+**Attack Scenario**:
+```solidity
+// Malicious definition contract
+function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
+    // Missing isProtected: true for transferOwnership() which exists in bytecode
+    schemas[0] = EngineBlox.FunctionSchema({
+        functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
+        isProtected: false, // ❌ Should be true - function exists in contract
+        // ...
+    });
+}
+```
+
+**Current Protection**:
+- ✅ `_validateContractFunctionProtection` checks bytecode and requires protection
+- ✅ `selectorExistsInContract` validates function exists in contract
+- ✅ Reverts with `ContractFunctionMustBeProtected` if function exists but not protected
+
+**Verification**:
+- Test definition contracts with missing protected flags
+- Verify `ContractFunctionMustBeProtected` error is raised
+- Test with system functions that exist in bytecode
+
+**Related Tests**:
+- `testFuzz_DefinitionWithMissingProtectedFlagRejected`
+
+---
+
+#### HIGH: Incorrect Function Signature/Selector Mismatch
+- **ID**: `DEF-002`
+- **Location**: `EngineBlox.sol:1058-1064`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides function signature that doesn't match the selector, causing initialization failure or bypass validation.
+
+**Attack Scenario**:
+```solidity
+// Definition with mismatched signature
+schemas[0] = EngineBlox.FunctionSchema({
+    functionSignature: "wrongSignature()", // Doesn't match selector
+    functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ Signature validation at line 1061-1064
+- ✅ `FunctionSelectorMismatch` error if mismatch detected
+
+**Verification**:
+- Test with mismatched signatures
+- Verify `FunctionSelectorMismatch` error
+
+**Related Tests**:
+- `testFuzz_DefinitionWithMismatchedSignatureRejected`
+
+---
+
+#### HIGH: Invalid Handler Selector Relationships
+- **ID**: `DEF-003`
+- **Location**: `EngineBlox.sol:1999-2036`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides handler selectors that don't exist in schema's `handlerForSelectors` array, or creates circular/invalid dependencies.
+
+**Attack Scenario**:
+```solidity
+// Definition with invalid handler relationship
+schemas[0] = EngineBlox.FunctionSchema({
+    functionSelector: HANDLER_SELECTOR,
+    handlerForSelectors: [INVALID_EXECUTION_SELECTOR], // Not in execution schema
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ `_validateHandlerForSelectors` validates relationships
+- ✅ Handler selectors must exist in schema's `handlerForSelectors` array
+- ✅ `HandlerForSelectorMismatch` error if invalid
+
+**Verification**:
+- Test with invalid handler relationships
+- Verify validation prevents invalid handlers
+
+**Related Tests**:
+- `testFuzz_DefinitionWithInvalidHandlerSelectorsRejected`
+
+---
+
+#### MEDIUM: Duplicate Function Schema Definitions
+- **ID**: `DEF-004`
+- **Location**: `EngineBlox.sol:1096-1098`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition attempts to register the same function selector multiple times.
+
+**Attack Scenario**:
+```solidity
+// Definition with duplicate schemas
+schemas[0] = EngineBlox.FunctionSchema({...functionSelector: SELECTOR_A...});
+schemas[1] = EngineBlox.FunctionSchema({...functionSelector: SELECTOR_A...}); // Duplicate
+```
+
+**Current Protection**:
+- ✅ `ResourceAlreadyExists` check at line 1096-1098
+- ✅ Duplicate selectors are rejected
+
+**Verification**:
+- Test with duplicate schemas
+- Verify `ResourceAlreadyExists` error
+
+**Related Tests**:
+- `testFuzz_DefinitionWithDuplicateSchemasRejected`
+
+---
+
+#### MEDIUM: Empty HandlerForSelectors Array
+- **ID**: `DEF-005`
+- **Location**: `EngineBlox.sol:1080-1082`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides empty `handlerForSelectors` array, which is no longer allowed.
+
+**Attack Scenario**:
+```solidity
+// Definition with empty handlerForSelectors
+schemas[0] = EngineBlox.FunctionSchema({
+    handlerForSelectors: [], // ❌ Empty array not allowed
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ Empty array check at line 1080-1082
+- ✅ `OperationFailed` error if empty
+
+**Verification**:
+- Test with empty arrays
+- Verify `OperationFailed` error
+
+**Related Tests**:
+- `testFuzz_DefinitionWithEmptyHandlerArrayRejected`
+
+---
+
+### 15.2 Role Permission Attacks
+
+#### HIGH: Permission for Non-Existent Function Schema
+- **ID**: `DEF-006`
+- **Location**: `BaseStateMachine.sol:777-781`, `EngineBlox.sol:2007-2009`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides role permissions for function selectors that haven't been registered in schemas yet.
+
+**Attack Scenario**:
+```solidity
+// Definition loads permissions before schemas, or references non-existent function
+rolePermissions[0] = FunctionPermission({
+    functionSelector: NON_EXISTENT_SELECTOR, // Schema not registered
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ `_loadDefinitions` loads schemas first, then permissions
+- ✅ `addFunctionToRole` checks function exists in `supportedFunctionsSet`
+- ✅ `ResourceNotFound` error if function doesn't exist
+
+**Verification**:
+- Test permissions for non-existent functions
+- Verify `ResourceNotFound` error
+
+**Related Tests**:
+- `testFuzz_PermissionForNonExistentFunctionRejected`
+
+---
+
+#### MEDIUM: Array Length Mismatch in Role Permissions
+- **ID**: `DEF-007`
+- **Location**: `BaseStateMachine.sol:775`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides mismatched array lengths between `roleHashes` and `functionPermissions`.
+
+**Attack Scenario**:
+```solidity
+// Definition with mismatched arrays
+IDefinition.RolePermission memory permissions = IDefinition.RolePermission({
+    roleHashes: [ROLE_A, ROLE_B], // 2 roles
+    functionPermissions: [PERM_1] // Only 1 permission - mismatch!
+});
+```
+
+**Current Protection**:
+- ✅ `validateArrayLengthMatch` at line 775
+- ✅ `ArrayLengthMismatch` error if lengths don't match
+
+**Verification**:
+- Test with mismatched arrays
+- Verify `ArrayLengthMismatch` error
+
+**Related Tests**:
+- `testFuzz_DefinitionWithMismatchedPermissionArraysRejected`
+
+---
+
+#### MEDIUM: Invalid Action Bitmap in Permissions
+- **ID**: `DEF-008`
+- **Location**: `EngineBlox.sol:2044-2053`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides empty or invalid action bitmaps that don't match the function schema's supported actions.
+
+**Attack Scenario**:
+```solidity
+// Definition with empty bitmap
+functionPermissions[0] = FunctionPermission({
+    grantedActionsBitmap: 0, // ❌ Empty bitmap not allowed
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ Empty bitmap check at line 2051-2053
+- ✅ `NotSupported` error if bitmap is empty
+
+**Verification**:
+- Test with empty/invalid bitmaps
+- Verify `NotSupported` error
+
+**Related Tests**:
+- `testFuzz_DefinitionWithEmptyBitmapRejected`
+
+---
+
+#### HIGH: Handler Selector Self-Reference Violation
+- **ID**: `DEF-009`
+- **Location**: `EngineBlox.sol:2017-2020`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides self-reference in `handlerForSelectors` for non-execution selectors (only execution selectors can self-reference).
+
+**Attack Scenario**:
+```solidity
+// Definition with invalid self-reference
+functionPermissions[0] = FunctionPermission({
+    functionSelector: HANDLER_SELECTOR, // Not execution
+    handlerForSelectors: [HANDLER_SELECTOR], // ❌ Self-reference not allowed for handlers
+    // ...
+});
+```
+
+**Current Protection**:
+- ✅ Self-reference validation at line 2017-2020
+- ✅ Self-reference only allowed for execution selectors
+- ✅ Handler validation prevents invalid self-references
+
+**Verification**:
+- Test with invalid self-references
+- Verify validation prevents handler self-reference
+
+**Related Tests**:
+- `testFuzz_DefinitionWithInvalidSelfReferenceRejected`
+
+---
+
+### 15.3 Definition Contract Integrity Attacks
+
+#### CRITICAL: Malicious Definition Contract Deployment
+- **ID**: `DEF-010`
+- **Location**: `BaseStateMachine.sol:756-783`
+- **Severity**: CRITICAL
+- **Status**: ⚠️ **REQUIRES USER VIGILANCE**
+
+**Description**:  
+Attacker deploys malicious definition contract that provides incorrect schemas/permissions to compromise system security.
+
+**Attack Scenario**:
+```solidity
+// Attacker deploys malicious definition
+contract MaliciousDefinitions {
+    function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
+        // Provides schemas that bypass security checks
+        // Or grants excessive permissions
+    }
+}
+// Attacker tricks user into using malicious definition during initialization
+```
+
+**Current Protection**:
+- ⚠️ Relies on users using trusted definition contracts
+- ✅ Validation checks prevent many malicious patterns
+- ✅ System definition contracts are protected
+
+**Verification**:
+- Test with malicious definition patterns
+- Verify system rejects malicious patterns
+- Test system definition contracts are valid
+
+**Related Tests**:
+- `test_SystemDefinitionContractsValid`
+- `testFuzz_MaliciousDefinitionPatternsRejected`
+
+---
+
+#### MEDIUM: Definition Contract State Manipulation
+- **ID**: `DEF-011`
+- **Location**: `IDefinition.sol` (pure functions)
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition contract uses state variables instead of pure functions, allowing manipulation.
+
+**Attack Scenario**:
+```solidity
+// Malicious definition with state
+contract MaliciousDefinitions {
+    EngineBlox.FunctionSchema[] private schemas;
+    
+    function getFunctionSchemas() public returns (EngineBlox.FunctionSchema[] memory) {
+        // Can modify schemas after deployment
+        schemas[0].isProtected = false; // Change protection
+        return schemas;
+    }
+}
+```
+
+**Current Protection**:
+- ✅ Interface requires `pure` functions (compile-time check)
+- ✅ Pure functions cannot access state
+- ✅ Definition contracts should be libraries (no state)
+
+**Verification**:
+- Verify only pure definition contracts are used
+- Test that state-based definitions are rejected
+
+**Related Tests**:
+- `testFuzz_DefinitionMustUsePureFunctions`
+
+---
+
+#### HIGH: Definition Contract Bytecode Tampering
+- **ID**: `DEF-012`
+- **Location**: `EngineBlox.sol:2144-2166`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition contract bytecode is modified after deployment, but the protection check only runs during schema creation.
+
+**Attack Scenario**:
+```solidity
+// Definition contract upgraded/changed after initial use
+// New version has different function selectors
+// Protection validation only runs during _loadDefinitions
+```
+
+**Current Protection**:
+- ✅ Protection check runs during `createFunctionSchema`
+- ✅ `selectorExistsInContract` validates bytecode at creation time
+- ✅ System definitions are immutable libraries
+
+**Verification**:
+- Verify protection validation catches bytecode changes
+- Test with upgraded definition contracts
+
+**Related Tests**:
+- `test_SystemDefinitionsProtectSystemFunctions`
+
+---
+
+### 15.4 Initialization Order Attacks
+
+#### MEDIUM: Schema Registration Order Dependency
+- **ID**: `DEF-013`
+- **Location**: `BaseStateMachine.sol:761-782`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Definition provides permissions before corresponding schemas are registered, causing initialization failure.
+
+**Attack Scenario**:
+```solidity
+// Definition with wrong order (if possible)
+// Permissions reference schemas that aren't registered yet
+```
+
+**Current Protection**:
+- ✅ `_loadDefinitions` enforces schema-first order
+- ✅ Schemas loaded before permissions
+- ✅ `ResourceNotFound` error if permission references non-existent schema
+
+**Verification**:
+- Test initialization order is enforced
+- Verify schemas must be registered before permissions
+
+**Related Tests**:
+- `testFuzz_SchemaRegistrationOrderEnforced`
+
+---
+
+#### MEDIUM: Multiple Definition Loading
+- **ID**: `DEF-014`
+- **Location**: `BaseStateMachine.sol:756-783`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Attempting to load definitions multiple times or from multiple sources causes conflicts.
+
+**Attack Scenario**:
+```solidity
+// Load definitions from multiple sources
+_loadDefinitions(definitions1.getFunctionSchemas(), ...);
+_loadDefinitions(definitions2.getFunctionSchemas(), ...); // Conflicts?
+```
+
+**Current Protection**:
+- ✅ Duplicate schema check prevents re-registration
+- ✅ `ResourceAlreadyExists` error for duplicates
+- ✅ Multiple definitions with different selectors allowed
+
+**Verification**:
+- Test multiple definition loading
+- Verify conflicts are handled correctly
+
+**Related Tests**:
+- `testFuzz_MultipleDefinitionLoadingHandled`
 
 ---
 
