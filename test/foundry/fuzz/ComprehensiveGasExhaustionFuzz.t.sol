@@ -122,10 +122,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * Measures gas consumption to verify the optimization works correctly.
      */
     function testFuzz_PermissionCheckGasConsumptionWithManyRoles(
-        uint8 numberOfRoles
+        uint16 numberOfRoles
     ) public {
-        // Bound to test up to MAX_ROLES (500)
-        numberOfRoles = uint8(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
+        // Bound to test up to MAX_ROLES (1000)
+        numberOfRoles = uint16(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
         
         // Create many roles and assign owner to each
         bytes32[] memory createdRoles = new bytes32[](numberOfRoles);
@@ -193,10 +193,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * This is now O(1) - just checks if walletRoles set has any items.
      */
     function testFuzz_HasAnyRoleGasConsumptionWithManyRoles(
-        uint8 numberOfRoles
+        uint16 numberOfRoles
     ) public {
         // Bound to test up to MAX_ROLES
-        numberOfRoles = uint8(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
+        numberOfRoles = uint16(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
         
         // Create many roles and assign owner to each
         // Use unique offset to avoid conflicts with existing roles
@@ -363,10 +363,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * Tests removeFunctionSchema with safeRemoval=true when many roles exist.
      */
     function testFuzz_FunctionRemovalGasExhaustionWithManyRoles(
-        uint8 numberOfRoles
+        uint16 numberOfRoles
     ) public {
         // Bound to test up to MAX_ROLES
-        numberOfRoles = uint8(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
+        numberOfRoles = uint16(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
         
         // Register a function
         bytes4 testSelector = bytes4(keccak256("testFunction()"));
@@ -1054,11 +1054,11 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * cumulative gas consumption patterns.
      */
     function testFuzz_CompositeGasExhaustionScenario(
-        uint8 numberOfRoles,
+        uint16 numberOfRoles,
         uint8 batchSize
     ) public {
         // Bound parameters
-        numberOfRoles = uint8(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
+        numberOfRoles = uint16(bound(numberOfRoles, 1, EngineBlox.MAX_ROLES));
         batchSize = uint8(bound(batchSize, 1, EngineBlox.MAX_BATCH_SIZE));
         
         // Create many roles via batch
