@@ -37,6 +37,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "rangeSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRangeSize",
+        "type": "uint256"
+      }
+    ],
+    "name": "RangeSizeExceeded",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
@@ -1172,6 +1188,25 @@
         "internalType": "struct EngineBlox.TxRecord[]",
         "name": "",
         "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "getWalletRoles",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
       }
     ],
     "stateMutability": "view",

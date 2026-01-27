@@ -139,7 +139,7 @@ library MaliciousDefinitions_EmptyHandlerArray {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
-            isProtected: false,
+            isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
         
@@ -211,7 +211,7 @@ library MaliciousDefinitions_MismatchedArrays {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
-            isProtected: false,
+            isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
         
@@ -266,7 +266,7 @@ library MaliciousDefinitions_EmptyBitmap {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
-            isProtected: false,
+            isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
         
@@ -316,7 +316,7 @@ library MaliciousDefinitions_InvalidSelfReference {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
-            isProtected: false,
+            isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
         
@@ -370,7 +370,7 @@ library MaliciousDefinitions_DuplicateSchemas {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
-            isProtected: false,
+            isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
         

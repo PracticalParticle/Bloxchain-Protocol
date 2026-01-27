@@ -355,6 +355,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         SharedValidation.validateLessThan(fromTxId, toTxId);
 
         uint256 rangeSize = toTxId - fromTxId + 1;
+        
+        // For larger ranges, use paginated version
+        SharedValidation.validateRangeSize(rangeSize, 1000);
+        
         EngineBlox.TxRecord[] memory history = new EngineBlox.TxRecord[](rangeSize);
         
         for (uint256 i = 0; i < rangeSize; i++) {
@@ -423,6 +427,18 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function hasRole(bytes32 roleHash, address wallet) public view returns (bool) {
         return _secureState.hasRole(roleHash, wallet);
+    }
+
+    /**
+     * @dev Gets all roles assigned to a wallet
+     * @param wallet The wallet address to get roles for
+     * @return Array of role hashes assigned to the wallet
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     * @notice This function uses the reverse index for efficient lookup
+     */
+    function getWalletRoles(address wallet) public view returns (bytes32[] memory) {
+        _validateAnyRole();
+        return EngineBlox.getWalletRoles(_getSecureState(), wallet);
     }
 
     /**
@@ -678,7 +694,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
 
     /**
      * @dev Centralized function to validate that the caller has any role
-     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateAnyRole() internal view {
         EngineBlox._validateAnyRole(_getSecureState());
@@ -687,7 +702,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Centralized function to validate that a role exists
      * @param roleHash The role hash to validate
-     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateRoleExists(bytes32 roleHash) internal view {
         EngineBlox._validateRoleExists(_getSecureState(), roleHash);

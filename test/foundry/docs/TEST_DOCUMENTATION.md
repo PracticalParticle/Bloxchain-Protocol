@@ -10,9 +10,9 @@
 
 This document provides comprehensive documentation of all test functions in the Bloxchain Protocol test suite. Each test is documented with its purpose, attack vectors covered, execution notes, and current status. Tests are organized by test file and linked to attack vectors in the [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md).
 
-**Total Tests**: 58+ comprehensive fuzz tests + unit/integration/security tests  
-**Test Files**: 6 comprehensive fuzz test files + additional test files  
-**Coverage**: 150+ attack vectors
+**Total Tests**: 68+ comprehensive fuzz tests + unit/integration/security tests  
+**Test Files**: 11 comprehensive fuzz test files + additional test files  
+**Coverage**: 174+ attack vectors
 
 ---
 
@@ -25,6 +25,7 @@ This document provides comprehensive documentation of all test functions in the 
    - [ComprehensivePaymentSecurityFuzz.t.sol](#comprehensivepaymentsecurityfuzztsol)
    - [ComprehensiveInputValidationFuzz.t.sol](#comprehensiveinputvalidationfuzztsol)
    - [ComprehensiveCompositeFuzz.t.sol](#comprehensivecompositefuzztsol)
+   - [ComprehensiveSecurityEdgeCasesFuzz.t.sol](#comprehensivesecurityedgecasesfuzztsol)
 2. [Other Test Files](#other-test-files)
 3. [Test Execution Guide](#test-execution-guide)
 4. [Test Coverage Matrix](#test-coverage-matrix)
@@ -1042,6 +1043,72 @@ This document provides comprehensive documentation of all test functions in the 
 - **Purpose**: Fuzz tests for definition contract security
 - **Status**: ✅ Tests passing
 - **Coverage**: 14 definition contract attack vectors
+
+#### ComprehensiveSecurityEdgeCasesFuzz.t.sol
+- **Location**: `test/foundry/fuzz/ComprehensiveSecurityEdgeCasesFuzz.t.sol`
+- **Purpose**: Fuzz tests for security edge cases and advanced attack vectors from 2026 security analysis
+- **Status**: ✅ **10/10 tests passing (100%)**
+- **Coverage**: 10 new attack vectors
+
+##### Test Functions
+
+##### `testFuzz_BitmapOverflowPrevented`
+- **Purpose**: Verify that bitmap operations handle action values correctly and don't overflow
+- **Attack Vector**: [BITMAP-001](./ATTACK_VECTORS_CODEX.md#high-bitmap-overflowunderflow-attack)
+- **Parameters**: `uint256 actionValue`
+- **What It Tests**: Bitmap creation and checking with action values 0-15, verifying no overflow occurs
+
+##### `testFuzz_InvalidActionEnumValuesRejected`
+- **Purpose**: Verify that invalid action enum values are properly rejected
+- **Attack Vector**: [BITMAP-002](./ATTACK_VECTORS_CODEX.md#medium-bitmap-validation-bypass-through-invalid-actions)
+- **Parameters**: `uint256 invalidActionValue`
+- **What It Tests**: Enum conversion with invalid values (9-255), verifying Solidity rejects them
+
+##### `testFuzz_HandlerBitmapCombinationValidation`
+- **Purpose**: Verify that handler selector + bitmap combinations are properly validated
+- **Attack Vector**: [AC-010](./ATTACK_VECTORS_CODEX.md#medium-bitmap-permission-escalation-through-handler-selectors)
+- **Parameters**: `bytes4 handlerSelector`, `bytes4 executionSelector`
+- **What It Tests**: Empty bitmap with valid handlers should be rejected
+
+##### `testFuzz_HookExecutionOrderConsistent`
+- **Purpose**: Verify that hook execution order is consistent
+- **Attack Vector**: [HOOK-005](./ATTACK_VECTORS_CODEX.md#medium-hook-execution-order-dependency-attack)
+- **Parameters**: `uint8 numberOfHooks`
+- **What It Tests**: Multiple hooks can be set and retrieved, order is deterministic
+
+##### `testFuzz_HookInterfaceNonComplianceHandled`
+- **Purpose**: Verify that hooks that don't implement IOnActionHook correctly are handled gracefully
+- **Attack Vector**: [HOOK-006](./ATTACK_VECTORS_CODEX.md#medium-hook-interface-non-compliance-attack)
+- **What It Tests**: Non-compliant hooks can be set but should fail gracefully during execution
+
+##### `testFuzz_MultipleHooksGasExhaustionPrevented`
+- **Purpose**: Verify that multiple gas-intensive hooks don't cause transaction failures
+- **Attack Vector**: [HOOK-007](./ATTACK_VECTORS_CODEX.md#medium-hook-gas-exhaustion-through-multiple-hooks)
+- **Parameters**: `uint8 numberOfHooks`
+- **What It Tests**: Multiple hooks can be set without causing issues
+
+##### `testFuzz_HookReentrancyPrevented`
+- **Purpose**: Verify that hooks cannot reenter through state machine functions
+- **Attack Vector**: [HOOK-008](./ATTACK_VECTORS_CODEX.md#medium-hook-reentrancy-through-state-machine-functions)
+- **What It Tests**: Reentrancy hooks can be set, but reentrancy should be prevented by ReentrancyGuard
+
+##### `testFuzz_PaymentUpdateRaceConditionPrevented`
+- **Purpose**: Verify that payment updates cannot occur during transaction execution
+- **Attack Vector**: [PAY-006](./ATTACK_VECTORS_CODEX.md#high-payment-update-race-condition-during-execution)
+- **Parameters**: `address recipient1`, `address recipient2`, `uint256 paymentAmount`
+- **What It Tests**: Payment updates blocked once transaction status changes from PENDING
+
+##### `testFuzz_FrontRunningPaymentUpdateHandled`
+- **Purpose**: Verify that payment updates can be monitored and front-running is handled
+- **Attack Vector**: [PAY-007](./ATTACK_VECTORS_CODEX.md#medium-front-running-payment-update-attack)
+- **Parameters**: `address legitimateRecipient`, `address attackerRecipient`, `uint256 paymentAmount`
+- **What It Tests**: Unauthorized users cannot update payments, permission requirements enforced
+
+##### `testFuzz_CompositePaymentHookAttackPrevented`
+- **Purpose**: Verify that combining payment updates with hook manipulation doesn't create composite attacks
+- **Attack Vector**: [COMP-001](./ATTACK_VECTORS_CODEX.md#high-composite-attack-payment-update--hook-manipulation)
+- **Parameters**: `address recipient1`, `address recipient2`, `uint256 paymentAmount`
+- **What It Tests**: Payment updates work correctly even when hooks are involved
 
 ---
 

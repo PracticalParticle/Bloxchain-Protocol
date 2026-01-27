@@ -209,6 +209,7 @@ const roles = await runtimeRBAC.getSupportedRoles()
 const roleInfo = await runtimeRBAC.getRole(roleHash)
 const hasRole = await runtimeRBAC.hasRole(roleHash, walletAddress)
 const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+const walletRoles = await runtimeRBAC.getWalletRoles(walletAddress) // Get all roles for a wallet
 
 // Access function schema information
 const schema = await runtimeRBAC.getFunctionSchema(functionSelector)

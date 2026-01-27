@@ -5,6 +5,7 @@
 
 import { Address, Hex } from 'viem';
 import { BaseGuardControllerTest } from './base-test.ts';
+import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 
 export class WhitelistTests extends BaseGuardControllerTest {
   private testTarget: Address | null = null;
@@ -40,11 +41,93 @@ export class WhitelistTests extends BaseGuardControllerTest {
     this.testTarget = this.wallets[availableWallets[0]].address;
     console.log(`📋 Test Target Address: ${this.testTarget}`);
 
+    // First, register the function selector (required before adding targets to whitelist)
+    await this.testStep0RegisterFunction();
     await this.testStep1AddTargetToWhitelist();
     await this.testStep2VerifyTargetWhitelisted();
     await this.testStep3QueryAllowedTargets();
     await this.testStep4RemoveTargetFromWhitelist();
     await this.testStep5VerifyTargetRemoved();
+  }
+
+  async testStep0RegisterFunction(): Promise<void> {
+    console.log('\n🧪 Test: Register Function Selector');
+    console.log('─'.repeat(60));
+
+    try {
+      if (!this.guardController) {
+        throw new Error('GuardController not initialized');
+      }
+
+      console.log('📋 Step 0: Register function selector before adding targets to whitelist');
+      console.log(`   Function Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
+      console.log(`   Function Signature: __bloxchain_native_transfer__()`);
+      console.log(`   Operation Name: NATIVE_TRANSFER`);
+
+      // Check if function is already registered
+      const alreadyRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+      if (alreadyRegistered) {
+        console.log('  ℹ️  Function selector already registered, skipping registration');
+        this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered`);
+        return;
+      }
+
+      // Get owner and broadcaster wallets
+      const ownerWallet = this.getRoleWallet('owner');
+      const broadcasterWallet = this.getRoleWallet('broadcaster');
+      
+      const ownerWalletName = Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+
+      // Create signed meta-transaction for function registration
+      console.log('  📝 Creating signed meta-transaction for function registration...');
+      const signedMetaTx = await this.createSignedMetaTxForFunctionRegistration(
+        '__bloxchain_native_transfer__()',
+        'NATIVE_TRANSFER',
+        [TxAction.EXECUTE_META_REQUEST_AND_APPROVE], // Supported actions
+        ownerWalletName
+      );
+
+      console.log('  ✅ Meta-transaction created and signed');
+      console.log(`     Signer: ${signedMetaTx.params.signer}`);
+      console.log(`     Message Hash: ${signedMetaTx.message}`);
+
+      // Execute via broadcaster
+      console.log('  📝 Executing meta-transaction via broadcaster...');
+      const broadcasterGuardController = this.createGuardControllerWithWallet(
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === broadcasterWallet.address.toLowerCase()
+        ) || 'wallet2'
+      );
+
+      const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
+        signedMetaTx,
+        { from: broadcasterWallet.address }
+      );
+
+      const receipt = await result.wait();
+
+      console.log('  ✅ Function selector registered successfully');
+      console.log(`     Transaction Hash: ${result.hash}`);
+      console.log(`     Transaction Status: ${receipt.status === 'success' ? 'SUCCESS' : 'FAILED'}`);
+
+      // Wait for state to update
+      console.log('  ⏳ Waiting for state to update...');
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Verify function is actually registered
+      const isRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+      if (!isRegistered) {
+        throw new Error(`Function selector ${this.NATIVE_TRANSFER_SELECTOR} registration did not persist - transaction may have reverted`);
+      }
+      console.log(`  ✅ Verified function selector is registered: ${isRegistered}`);
+
+      this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} registered successfully`);
+    } catch (error: any) {
+      this.handleTestError('Register function selector', error);
+      throw error;
+    }
   }
 
   async testStep1AddTargetToWhitelist(): Promise<void> {
@@ -95,10 +178,20 @@ export class WhitelistTests extends BaseGuardControllerTest {
         { from: broadcasterWallet.address }
       );
 
-      await result.wait();
+      const receipt = await result.wait();
 
       console.log('  ✅ Target added to whitelist successfully');
       console.log(`     Transaction Hash: ${result.hash}`);
+      console.log(`     Transaction Status: ${receipt.status === 'success' ? 'SUCCESS' : 'FAILED'}`);
+      
+      // Check for GuardConfigApplied event
+      if (receipt.logs && receipt.logs.length > 0) {
+        console.log(`     Events emitted: ${receipt.logs.length}`);
+      }
+
+      // Wait a bit for state to update
+      console.log('  ⏳ Waiting for state to update...');
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       this.assertTest(true, `Target ${this.testTarget} added to whitelist successfully`);
     } catch (error: any) {
@@ -118,8 +211,23 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       console.log('📋 Step 2: Verify target is in whitelist');
 
-      // Query allowed targets
-      const allowedTargets = await this.guardController.getAllowedTargets(
+      // First verify function is registered
+      const isFunctionRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+      console.log(`  📋 Function selector registered: ${isFunctionRegistered}`);
+      if (!isFunctionRegistered) {
+        throw new Error(`Function selector ${this.NATIVE_TRANSFER_SELECTOR} is not registered`);
+      }
+
+      // Use owner wallet for query (needed for _validateAnyRole check)
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName = Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+      
+      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
+
+      // Query allowed targets using owner's GuardController instance
+      const allowedTargets = await ownerGuardController.getAllowedTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -159,7 +267,15 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       console.log('📋 Step 3: Query all allowed targets for function selector');
 
-      const allowedTargets = await this.guardController.getAllowedTargets(
+      // Use owner wallet for query (needed for _validateAnyRole check)
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName = Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+      
+      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
+
+      const allowedTargets = await ownerGuardController.getAllowedTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -235,6 +351,10 @@ export class WhitelistTests extends BaseGuardControllerTest {
       console.log('  ✅ Target removed from whitelist successfully');
       console.log(`     Transaction Hash: ${result.hash}`);
 
+      // Wait a bit for state to update
+      console.log('  ⏳ Waiting for state to update...');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       this.assertTest(true, `Target ${this.testTarget} removed from whitelist successfully`);
     } catch (error: any) {
       this.handleTestError('Remove target from whitelist', error);
@@ -253,8 +373,16 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       console.log('📋 Step 5: Verify target is no longer in whitelist');
 
-      // Query allowed targets
-      const allowedTargets = await this.guardController.getAllowedTargets(
+      // Use owner wallet for query (needed for _validateAnyRole check)
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName = Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+      
+      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
+
+      // Query allowed targets using owner's GuardController instance
+      const allowedTargets = await ownerGuardController.getAllowedTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 

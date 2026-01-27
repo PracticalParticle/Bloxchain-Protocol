@@ -129,7 +129,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 requestTxSelector,
                 "TEST_OPERATION",
                 requestActionsBitmap,
-                false,
+                true, // isProtected = true (required because function exists in contract bytecode)
                 requestTxHandlers
             );
         }
@@ -162,7 +162,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 approveTxSelector,
                 "TEST_APPROVAL",
                 approveActionsBitmap,
-                false,
+                true, // isProtected = true (required because function exists in contract bytecode)
                 approveTxHandlers
             );
         }

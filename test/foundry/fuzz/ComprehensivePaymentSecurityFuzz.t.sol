@@ -286,10 +286,19 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
-            paymentHelper.approveTransaction(txId);
-            
-            // Verify payment was sent
-            assertEq(recipient.balance, initialBalance + paymentAmount, "Payment should be sent once");
+            try paymentHelper.approveTransaction(txId) {
+                // Payment succeeded - verify it was sent
+                assertEq(recipient.balance, initialBalance + paymentAmount, "Payment should be sent once");
+            } catch (bytes memory reason) {
+                // Payment failed - recipient might reject payments (e.g., contracts)
+                bytes4 errorSelector = bytes4(reason);
+                if (errorSelector == SharedValidation.PaymentFailed.selector) {
+                    return; // Skip test if recipient rejects payments
+                }
+                assembly {
+                    revert(add(reason, 0x20), mload(reason))
+                }
+            }
             
             // Get transaction status after first execution (requires role)
             vm.prank(owner);

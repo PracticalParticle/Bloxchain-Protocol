@@ -38,7 +38,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected readonly GUARD_CONFIG_BATCH_EXECUTE_SELECTOR: Hex = keccak256(
     new TextEncoder().encode('executeGuardConfigBatch((uint8,bytes)[])')
   ).slice(0, 10) as Hex;
-  protected readonly NATIVE_TRANSFER_SELECTOR: Hex = '0x58e2cfdb' as Hex; // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
+  protected readonly NATIVE_TRANSFER_SELECTOR: Hex = '0xd8cb519d' as Hex; // bytes4(keccak256("__bloxchain_native_transfer__()")) - matches EngineBlox.NATIVE_TRANSFER_SELECTOR
 
   constructor(testName: string) {
     super(testName);
@@ -301,6 +301,89 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
     // Get execution params using the new batch method
     console.log(`    📋 Getting execution params for guard config batch...`);
+    const executionParams = await this.guardController.guardConfigBatchExecutionParams(actions);
+    console.log(`    ✅ Execution params obtained`);
+
+    // Create meta-tx params
+    console.log(`    📋 Creating meta-transaction parameters...`);
+    console.log(`       Handler Selector: ${this.GUARD_CONFIG_BATCH_META_SELECTOR}`);
+    console.log(`       Action: ${TxAction.SIGN_META_REQUEST_AND_APPROVE}`);
+    console.log(`       Signer: ${signerWallet.address}`);
+    
+    const metaTxParams = await this.createMetaTxParams(
+      this.GUARD_CONFIG_BATCH_META_SELECTOR,
+      TxAction.SIGN_META_REQUEST_AND_APPROVE,
+      signerWallet.address
+    );
+    
+    console.log(`    ✅ Meta-transaction parameters created:`);
+    console.log(`       Nonce: ${metaTxParams.nonce}`);
+    console.log(`       Chain ID: ${metaTxParams.chainId}`);
+    console.log(`       Deadline: ${metaTxParams.deadline}`);
+
+    // Create TxParams for the new transaction
+    const txParams = {
+      requester: signerWallet.address,
+      target: this.contractAddress!,
+      value: BigInt(0),
+      gasLimit: BigInt(200000),
+      operationType: this.CONTROLLER_OPERATION_TYPE,
+      executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
+      executionParams: executionParams
+    };
+
+    // Generate unsigned meta-transaction
+    console.log(`    📋 Generating unsigned meta-transaction for guard config batch...`);
+    const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
+      txParams,
+      metaTxParams
+    );
+    console.log(`    ✅ Unsigned meta-transaction generated`);
+
+    // Sign the meta-transaction
+    const signedMetaTx = await this.metaTxSigner.signMetaTransaction(
+      unsignedMetaTx,
+      signerWallet.address,
+      signerWallet.privateKey
+    );
+
+    return signedMetaTx;
+  }
+
+  /**
+   * Create and sign a meta-transaction for guard config batch (function registration)
+   */
+  protected async createSignedMetaTxForFunctionRegistration(
+    functionSignature: string,
+    operationName: string,
+    supportedActions: number[],
+    signerWalletName: string
+  ): Promise<MetaTransaction> {
+    if (!this.metaTxSigner || !this.guardController) {
+      throw new Error('MetaTransactionSigner or GuardController not initialized');
+    }
+
+    const signerWallet = this.wallets[signerWalletName];
+    if (!signerWallet) {
+      throw new Error(`Wallet not found: ${signerWalletName}`);
+    }
+
+    // Create guard config action for function registration
+    const actionData = this.encodeGuardConfigAction(GuardConfigActionType.REGISTER_FUNCTION, {
+      functionSignature,
+      operationName,
+      supportedActions,
+    });
+
+    const actions: GuardConfigAction[] = [
+      {
+        actionType: GuardConfigActionType.REGISTER_FUNCTION,
+        data: actionData,
+      },
+    ];
+
+    // Get execution params using the new batch method
+    console.log(`    📋 Getting execution params for guard config batch (function registration)...`);
     const executionParams = await this.guardController.guardConfigBatchExecutionParams(actions);
     console.log(`    ✅ Execution params obtained`);
 

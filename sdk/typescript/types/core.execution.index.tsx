@@ -27,7 +27,7 @@ export const GUARD_CONTROLLER_FUNCTION_SELECTORS = {
       "requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
     )
   ).slice(0, 10) as Hex,
-  NATIVE_TRANSFER_SELECTOR: "0x58e2cfdb" as Hex // bytes4(keccak256("__bloxchain_native_transfer__(address,uint256)"))
+  NATIVE_TRANSFER_SELECTOR: "0xd8cb519d" as Hex // bytes4(keccak256("__bloxchain_native_transfer__()")) - matches EngineBlox.NATIVE_TRANSFER_SELECTOR
 } as const;
 
 /**
