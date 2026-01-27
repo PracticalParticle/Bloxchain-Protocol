@@ -208,7 +208,7 @@ export class EngineBlox {
       // PUSH4 opcode is followed by 4 bytes (8 hex chars) which is the function selector
       // Function selectors in EVM bytecode are emitted as PUSH4 <selector> instructions
       // These can start at any byte offset, not just 4-byte-aligned positions
-      for (let i = 0; i + 8 < searchLength; i += 2) { // i += 2 because each byte is 2 hex chars
+      for (let i = 0; i + 10 <= searchLength; i += 2) { // i += 2 because each byte is 2 hex chars
         // Check if current byte is PUSH4 opcode (0x63 = "63" in hex)
         if (codeBytes.slice(i, i + 2) === '63') {
           // Check if the next 8 hex chars (4 bytes) match the selector

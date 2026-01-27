@@ -33,13 +33,85 @@ class GuardControllerTests extends BaseGuardControllerTest {
         try {
             console.log('📋 Step 1: Register NATIVE_TRANSFER_SELECTOR function with NATIVE_TRANSFER operation');
             console.log(`   Function Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
-            console.log('   Function Signature: __bloxchain_native_transfer__(address,uint256)');
+            console.log('   Function Signature: __bloxchain_native_transfer__()');
             console.log('   Operation Name: NATIVE_TRANSFER');
             console.log('   Supported Actions: SIGN_META_REQUEST_AND_APPROVE, EXECUTE_META_REQUEST_AND_APPROVE');
             
-            // Check if function already exists
-            const alreadyExists = await this.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
-            if (alreadyExists) {
+            // Verify the selector matches the signature (matches EngineBlox.NATIVE_TRANSFER_SELECTOR)
+            const expectedSelector = this.web3.utils.keccak256('__bloxchain_native_transfer__()').slice(0, 10);
+            if (expectedSelector.toLowerCase() !== this.NATIVE_TRANSFER_SELECTOR.toLowerCase()) {
+                throw new Error(`Selector mismatch: expected ${expectedSelector} but test uses ${this.NATIVE_TRANSFER_SELECTOR}`);
+            }
+            console.log(`  ✅ Selector verification: ${this.NATIVE_TRANSFER_SELECTOR} matches signature __bloxchain_native_transfer__()`);
+            console.log(`  ✅ This matches EngineBlox.NATIVE_TRANSFER_SELECTOR constant`);
+            
+            // Check if function already exists - do a thorough check
+            console.log('  🔍 Checking if function already exists...');
+            let alreadyExists = false;
+            try {
+                const existingSchema = await this.callContractMethod(
+                    this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
+                );
+                if (existingSchema && existingSchema.functionSelectorReturn === this.NATIVE_TRANSFER_SELECTOR) {
+                    alreadyExists = true;
+                    console.log('  ✅ Function already registered!');
+                    console.log(`     Signature: ${existingSchema.functionSignature}`);
+                    console.log(`     Operation: ${existingSchema.operationName}`);
+                    console.log(`     isProtected: ${existingSchema.isProtected}`);
+                    console.log('  ⚠️  Function already registered, skipping registration');
+                    await this.passTest('Function already registered');
+                    return;
+                } else {
+                    console.log('  📋 Function schema check returned but selector does not match');
+                    console.log(`     Expected: ${this.NATIVE_TRANSFER_SELECTOR}`);
+                    console.log(`     Got: ${existingSchema ? existingSchema.functionSelectorReturn : 'undefined'}`);
+                }
+            } catch (schemaError) {
+                console.log('  📋 Function does not exist (expected for new registration)');
+                console.log(`     Error: ${schemaError.message}`);
+                alreadyExists = false;
+            }
+            
+            // Also check using functionSchemaExists helper
+            const existsCheck = await this.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+            if (existsCheck && !alreadyExists) {
+                console.log('  ⚠️  WARNING: functionSchemaExists returned true but getFunctionSchema failed or returned different selector');
+            }
+            
+            // Verify we're using the correct selector that matches EngineBlox constant
+            const engineBloxSelector = this.web3.utils.keccak256('__bloxchain_native_transfer__()').slice(0, 10);
+            if (engineBloxSelector.toLowerCase() !== this.NATIVE_TRANSFER_SELECTOR.toLowerCase()) {
+                throw new Error(`Selector mismatch: test uses ${this.NATIVE_TRANSFER_SELECTOR} but EngineBlox constant is ${engineBloxSelector}`);
+            }
+            console.log(`  ✅ Selector matches EngineBlox.NATIVE_TRANSFER_SELECTOR constant`);
+            
+            // Check if our selector is in supportedFunctionsSet (even if not in mapping)
+            console.log(`  🔍 Checking if selector ${this.NATIVE_TRANSFER_SELECTOR} is in supportedFunctionsSet...`);
+            try {
+                const supportedFunctions = await this.callContractMethod(
+                    this.contract.methods.getSupportedFunctions()
+                );
+                console.log(`  📋 Total supported functions: ${supportedFunctions ? supportedFunctions.length : 0}`);
+                if (supportedFunctions && Array.isArray(supportedFunctions)) {
+                    const selectorInSet = supportedFunctions.some(f => 
+                        f && (typeof f === 'string' ? f.toLowerCase() : f.toString().toLowerCase()) === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
+                    );
+                    console.log(`  📋 Selector ${this.NATIVE_TRANSFER_SELECTOR} in supportedFunctionsSet: ${selectorInSet ? '✅ YES' : '❌ NO'}`);
+                    if (selectorInSet) {
+                        console.log(`  ⚠️  WARNING: Selector is in supportedFunctionsSet but functionSchemaExists returned false!`);
+                        console.log(`     This indicates an inconsistent state - function is in set but not in mapping.`);
+                        console.log(`     This would cause OperationFailed when trying to add it again.`);
+                        throw new Error(`Function selector ${this.NATIVE_TRANSFER_SELECTOR} is already in supportedFunctionsSet but not in functions mapping. This is an inconsistent state that will cause registration to fail.`);
+                    }
+                }
+            } catch (setError) {
+                if (setError.message.includes('inconsistent state')) {
+                    throw setError; // Re-throw our custom error
+                }
+                console.log(`  ⚠️  Could not check supportedFunctionsSet: ${setError.message}`);
+            }
+            
+            if (alreadyExists || existsCheck) {
                 console.log('  ⚠️  Function already registered, skipping registration');
                 await this.passTest('Function already registered');
                 return;
@@ -49,32 +121,504 @@ class GuardControllerTests extends BaseGuardControllerTest {
             const ownerPrivateKey = this.getRoleWallet('owner');
             const broadcasterWallet = this.getRoleWalletObject('broadcaster');
             
+            // Verify permissions before attempting registration
+            console.log('  🔒 Validating permissions before function registration...');
+            try {
+                const ownerAddress = this.web3.eth.accounts.privateKeyToAccount(ownerPrivateKey).address;
+                const broadcasterAddress = broadcasterWallet.address;
+                
+                // Check owner permissions for handler selector (GUARD_CONFIG_BATCH_META_SELECTOR)
+                console.log(`  📋 Checking owner permissions for handler selector: ${this.GUARD_CONFIG_BATCH_META_SELECTOR}`);
+                const ownerHandlerPermissions = await this.callContractMethod(
+                    this.contract.methods.getActiveRolePermissions(this.getRoleHash('OWNER_ROLE'))
+                );
+                let ownerHasHandlerPermission = false;
+                if (ownerHandlerPermissions && Array.isArray(ownerHandlerPermissions)) {
+                    for (const perm of ownerHandlerPermissions) {
+                        if (perm.functionSelector && perm.functionSelector.toLowerCase() === this.GUARD_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                            const bitmapValue = typeof perm.grantedActionsBitmap === 'string' 
+                                ? parseInt(perm.grantedActionsBitmap) 
+                                : perm.grantedActionsBitmap;
+                            ownerHasHandlerPermission = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            console.log(`  📋 Owner handler permission bitmap: ${bitmapValue} (binary: ${bitmapValue.toString(2)})`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Check broadcaster permissions for handler selector
+                console.log(`  📋 Checking broadcaster permissions for handler selector: ${this.GUARD_CONFIG_BATCH_META_SELECTOR}`);
+                const broadcasterHandlerPermissions = await this.callContractMethod(
+                    this.contract.methods.getActiveRolePermissions(this.getRoleHash('BROADCASTER_ROLE'))
+                );
+                let broadcasterHasHandlerPermission = false;
+                if (broadcasterHandlerPermissions && Array.isArray(broadcasterHandlerPermissions)) {
+                    for (const perm of broadcasterHandlerPermissions) {
+                        if (perm.functionSelector && perm.functionSelector.toLowerCase() === this.GUARD_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {
+                            const bitmapValue = typeof perm.grantedActionsBitmap === 'string' 
+                                ? parseInt(perm.grantedActionsBitmap) 
+                                : perm.grantedActionsBitmap;
+                            broadcasterHasHandlerPermission = (bitmapValue & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
+                            console.log(`  📋 Broadcaster handler permission bitmap: ${bitmapValue} (binary: ${bitmapValue.toString(2)})`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Check owner permissions for execution selector (GUARD_CONFIG_BATCH_EXECUTE_SELECTOR)
+                console.log(`  📋 Checking owner permissions for execution selector: ${this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR}`);
+                let ownerHasExecutionPermission = false;
+                if (ownerHandlerPermissions && Array.isArray(ownerHandlerPermissions)) {
+                    for (const perm of ownerHandlerPermissions) {
+                        if (perm.functionSelector && perm.functionSelector.toLowerCase() === this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                            const bitmapValue = typeof perm.grantedActionsBitmap === 'string' 
+                                ? parseInt(perm.grantedActionsBitmap) 
+                                : perm.grantedActionsBitmap;
+                            ownerHasExecutionPermission = (bitmapValue & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+                            console.log(`  📋 Owner execution permission bitmap: ${bitmapValue} (binary: ${bitmapValue.toString(2)})`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Check broadcaster permissions for execution selector
+                console.log(`  📋 Checking broadcaster permissions for execution selector: ${this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR}`);
+                let broadcasterHasExecutionPermission = false;
+                if (broadcasterHandlerPermissions && Array.isArray(broadcasterHandlerPermissions)) {
+                    for (const perm of broadcasterHandlerPermissions) {
+                        if (perm.functionSelector && perm.functionSelector.toLowerCase() === this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase()) {
+                            const bitmapValue = typeof perm.grantedActionsBitmap === 'string' 
+                                ? parseInt(perm.grantedActionsBitmap) 
+                                : perm.grantedActionsBitmap;
+                            broadcasterHasExecutionPermission = (bitmapValue & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
+                            console.log(`  📋 Broadcaster execution permission bitmap: ${bitmapValue} (binary: ${bitmapValue.toString(2)})`);
+                            break;
+                        }
+                    }
+                }
+                
+                console.log(`  📊 Permission Summary:`);
+                console.log(`     Owner handler permission (${this.GUARD_CONFIG_BATCH_META_SELECTOR}): ${ownerHasHandlerPermission ? '✅' : '❌'}`);
+                console.log(`     Broadcaster handler permission (${this.GUARD_CONFIG_BATCH_META_SELECTOR}): ${broadcasterHasHandlerPermission ? '✅' : '❌'}`);
+                console.log(`     Owner execution permission (${this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR}): ${ownerHasExecutionPermission ? '✅' : '❌'}`);
+                console.log(`     Broadcaster execution permission (${this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR}): ${broadcasterHasExecutionPermission ? '✅' : '❌'}`);
+                
+                if (!ownerHasHandlerPermission || !broadcasterHasHandlerPermission || !ownerHasExecutionPermission || !broadcasterHasExecutionPermission) {
+                    throw new Error(`Missing required permissions for guard config batch. Please ensure GuardController is properly initialized.`);
+                }
+                
+                console.log(`  ✅ All required permissions verified`);
+            } catch (permError) {
+                console.error(`  ❌ Permission verification failed: ${permError.message}`);
+                throw permError;
+            }
+            
             // Register function with SIGN and EXECUTE permissions for REQUEST_AND_APPROVE
             const supportedActions = [
                 this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                 this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
             ];
             
-            console.log('  📝 Registering function via RuntimeRBAC batch operation...');
-            const receipt = await this.registerFunction(
-                this.NATIVE_TRANSFER_SELECTOR,
-                '__bloxchain_native_transfer__(address,uint256)', // function signature
-                'NATIVE_TRANSFER',
-                supportedActions,
-                ownerPrivateKey,
-                broadcasterWallet
-            );
+            // Check if selector exists in contract bytecode (this would require isProtected=true)
+            console.log('  🔍 Checking if selector exists in contract bytecode...');
+            let selectorExistsInBytecode = false;
+            try {
+                // selectorExistsInContract is a public view function in EngineBlox
+                selectorExistsInBytecode = await this.callContractMethod(
+                    this.contract.methods.selectorExistsInContract(this.contractAddress, this.NATIVE_TRANSFER_SELECTOR)
+                );
+                console.log(`  📋 Selector ${this.NATIVE_TRANSFER_SELECTOR} exists in bytecode: ${selectorExistsInBytecode}`);
+                if (selectorExistsInBytecode) {
+                    console.log(`  ⚠️  WARNING: Selector exists in contract bytecode!`);
+                    console.log(`     Registration with isProtected=false will fail with ContractFunctionMustBeProtected.`);
+                    console.log(`     GuardController._registerFunction always uses isProtected=false, so this registration will fail.`);
+                    console.log(`     The function may already be registered or may need to be registered with isProtected=true.`);
+                    throw new Error(`Cannot register function: selector ${this.NATIVE_TRANSFER_SELECTOR} exists in contract bytecode and requires isProtected=true, but GuardController._registerFunction uses isProtected=false`);
+                }
+            } catch (checkError) {
+                if (checkError.message.includes('Cannot register function')) {
+                    throw checkError; // Re-throw our custom error
+                }
+                console.log(`  ⚠️  Could not check if selector exists in bytecode: ${checkError.message}`);
+                console.log(`     This might mean selectorExistsInContract is not exposed or there's an ABI issue`);
+            }
+            
+            console.log('  🔍 Preparing to register function...');
+            console.log(`     Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
+            console.log(`     Signature: __bloxchain_native_transfer__()`);
+            console.log(`     isProtected: false (set by GuardController._registerFunction)`);
+            
+            console.log('  📝 Registering function via GuardController batch operation...');
+            
+            // First, try to manually test the registration by calling executeGuardConfigBatch directly
+            // This will help us see the exact error
+            console.log('  🔍 Testing direct call to executeGuardConfigBatch (read-only)...');
+            try {
+                const action = this.encodeGuardConfigAction(
+                    this.GuardConfigActionType.REGISTER_FUNCTION,
+                    {
+                                                        functionSignature: '__bloxchain_native_transfer__()',
+                        operationName: 'NATIVE_TRANSFER',
+                        supportedActions: supportedActions
+                    }
+                );
+                const actionsArray = [[action.actionType, action.data]];
+                const executionParams = this.web3.eth.abi.encodeParameter('tuple(uint8,bytes)[]', actionsArray);
+                
+                // Try to estimate gas for the direct call
+                const directCallData = this.contract.methods.executeGuardConfigBatch(actionsArray).encodeABI();
+                console.log(`  📋 Direct call data length: ${directCallData.length}`);
+                console.log(`  📋 Direct call data (first 100 chars): ${directCallData.slice(0, 100)}`);
+                
+                // Try to call it (this will fail because it requires internal call, but we'll see the error)
+                try {
+                    await this.contract.methods.executeGuardConfigBatch(actionsArray).call({ from: this.contractAddress });
+                } catch (directError) {
+                    console.log(`  ⚠️  Direct call failed (expected): ${directError.message}`);
+                    if (directError.data) {
+                        const errorData = directError.data.result || directError.data;
+                        if (errorData && typeof errorData === 'string' && errorData.length >= 10) {
+                            const errorSelector = errorData.slice(0, 10);
+                            console.log(`  📋 Error selector from direct call: ${errorSelector}`);
+                        }
+                    }
+                }
+            } catch (testError) {
+                console.log(`  ⚠️  Could not test direct call: ${testError.message}`);
+            }
+            
+            let receipt;
+            try {
+                receipt = await this.registerFunction(
+                    this.NATIVE_TRANSFER_SELECTOR,
+                    '__bloxchain_native_transfer__()', // function signature (matches EngineBlox.NATIVE_TRANSFER_SELECTOR)
+                    'NATIVE_TRANSFER',
+                    supportedActions,
+                    ownerPrivateKey,
+                    broadcasterWallet
+                );
+            } catch (registerError) {
+                console.error(`  ❌ Function registration failed: ${registerError.message}`);
+                if (registerError.receipt) {
+                    console.error(`  📋 Error receipt status: ${registerError.receipt.status}`);
+                    console.error(`  📋 Error receipt logs: ${registerError.receipt.logs ? registerError.receipt.logs.length : 0}`);
+                }
+                if (registerError.data) {
+                    console.error(`  📋 Error data: ${registerError.data}`);
+                }
+                throw registerError;
+            }
             
             // Validate transaction succeeded
             const expectedTxStatus = true;
             const actualTxStatus = receipt.status === true || receipt.status === 1;
+            
+            // Detailed receipt analysis
+            console.log(`  🔍 Analyzing transaction receipt...`);
+            console.log(`  📋 Receipt status: ${receipt.status}`);
+            console.log(`  📋 Receipt transaction hash: ${receipt.transactionHash || receipt.tx || 'N/A'}`);
+            console.log(`  📋 Receipt to address: ${receipt.to || 'N/A'}`);
+            console.log(`  📋 Receipt from address: ${receipt.from || 'N/A'}`);
+            console.log(`  📋 Receipt logs count: ${receipt.logs ? receipt.logs.length : 0}`);
+            if (receipt.logs && receipt.logs.length > 0) {
+                console.log(`  📋 Receipt log topics:`);
+                receipt.logs.forEach((log, idx) => {
+                    console.log(`     Log ${idx}: ${log.topics ? log.topics.length : 0} topics`);
+                    if (log.topics && log.topics.length > 0) {
+                        console.log(`       Topic[0]: ${log.topics[0]}`);
+                    }
+                });
+            }
+            console.log(`  📋 Receipt gas used: ${receipt.gasUsed || 'N/A'}`);
+            
             this.assertTest(
                 actualTxStatus === expectedTxStatus,
                 `Function registration transaction succeeded (expected: ${expectedTxStatus}, actual: ${actualTxStatus})`
             );
             
+            // Check transaction record status to verify internal execution
+            console.log(`  🔍 Checking transaction record status...`);
+            const txId = this.extractTxIdFromReceipt(receipt);
+            console.log(`  📋 Extracted Transaction ID: ${txId || 'null'}`);
+            if (txId) {
+                console.log(`  📋 Transaction ID: ${txId}`);
+                try {
+                    const txRecord = await this.callContractMethod(
+                        this.contract.methods.getTransaction(txId)
+                    );
+                    
+                    if (txRecord) {
+                        const status = txRecord.status || txRecord[6];
+                        console.log(`  📋 Transaction status: ${status} (0=UNDEFINED, 1=PENDING, 2=EXECUTING, 5=COMPLETED, 6=FAILED)`);
+                        
+                        if (status === 6 || status === '6') {
+                            // Transaction failed internally
+                            const result = txRecord.result || txRecord[6] || '0x';
+                            let resultStr = '';
+                            if (typeof result === 'string') {
+                                resultStr = result;
+                            } else if (Buffer.isBuffer(result)) {
+                                resultStr = '0x' + result.toString('hex');
+                            } else if (Array.isArray(result)) {
+                                resultStr = '0x' + Buffer.from(result).toString('hex');
+                            }
+                            
+                            if (resultStr && resultStr.length > 10) {
+                                const errorSelector = resultStr.slice(0, 10);
+                                console.log(`  📋 Error selector: ${errorSelector}`);
+                                
+                                // Check for common errors
+                                const resourceAlreadyExists = '0x430fab94';
+                                const resourceNotFound = '0x474d3baf';
+                                
+                                if (errorSelector.toLowerCase() === resourceAlreadyExists.toLowerCase()) {
+                                    console.log(`  ⚠️  ResourceAlreadyExists error - function may already be registered`);
+                                    // Continue to verification - function might exist
+                                } else if (errorSelector.toLowerCase() === resourceNotFound.toLowerCase()) {
+                                    throw new Error(`Function registration failed: ResourceNotFound. Error selector: ${errorSelector}`);
+                                } else {
+                                    throw new Error(`Function registration failed internally (status 6). Error selector: ${errorSelector}`);
+                                }
+                            } else {
+                                throw new Error(`Function registration failed internally (status 6) without error data`);
+                            }
+                        } else if (status === 5 || status === '5') {
+                            console.log(`  ✅ Transaction completed successfully (status 5)`);
+                        } else {
+                            console.log(`  ⏳ Transaction status: ${status} - waiting for completion...`);
+                            // Wait a bit for transaction to complete
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        }
+                    }
+                } catch (txError) {
+                    console.log(`  ⚠️  Could not check transaction record: ${txError.message}`);
+                    // Continue anyway - might be a timing issue
+                }
+            }
+            
+            // Wait a bit for state to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Try to find transaction by checking pending transactions and recent transaction IDs
+            if (!txId) {
+                console.log('  🔍 No txId from receipt, checking for any transactions...');
+                try {
+                    // Check pending transactions
+                    const pendingTxs = await this.callContractMethod(
+                        this.contract.methods.getPendingTransactions()
+                    );
+                    console.log(`  📋 Pending transactions count: ${pendingTxs ? pendingTxs.length : 0}`);
+                    
+                    // Try to find transaction by checking transaction history
+                    // We'll try to get recent transactions by checking a range
+                    try {
+                        // Try to get transaction history for recent transactions
+                        // Start from a high number and work backwards
+                        const testTxIds = [100, 50, 20, 10, 5, 1];
+                        for (const testTxId of testTxIds) {
+                            try {
+                                const txRecord = await this.callContractMethod(
+                                    this.contract.methods.getTransaction(testTxId)
+                                );
+                                if (txRecord && txRecord.txId && parseInt(txRecord.txId) > 0) {
+                                    console.log(`  📋 Found transaction ID: ${txRecord.txId}`);
+                                    console.log(`     Status: ${txRecord.status} (0=UNDEFINED, 1=PENDING, 2=EXECUTING, 5=COMPLETED, 6=FAILED)`);
+                                    console.log(`     Execution selector: ${txRecord.params ? txRecord.params.executionSelector : 'N/A'}`);
+                                    console.log(`     Target: ${txRecord.params ? txRecord.params.target : 'N/A'}`);
+                                    
+                                    // Check if this matches our execution selector or if status is FAILED
+                                    const isOurTransaction = txRecord.params && txRecord.params.executionSelector && 
+                                        txRecord.params.executionSelector.toLowerCase() === this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR.toLowerCase();
+                                    const isFailed = txRecord.status === 6 || txRecord.status === '6';
+                                    
+                                    if (isOurTransaction || (isFailed && txRecord.params && txRecord.params.target && 
+                                        txRecord.params.target.toLowerCase() === this.contractAddress.toLowerCase())) {
+                                        if (isOurTransaction) {
+                                            console.log(`  🎯 This appears to be our guard config batch transaction!`);
+                                        } else {
+                                            console.log(`  🎯 This appears to be a recent failed transaction targeting our contract!`);
+                                        }
+                                        
+                                        if (txRecord.status === 5 || txRecord.status === '5') {
+                                            console.log(`  ✅ Transaction completed successfully`);
+                                        } else                                         if (isFailed) {
+                                            console.log(`  ❌ Transaction failed internally (status 6)`);
+                                            const result = txRecord.result || '0x';
+                                            console.log(`  📋 Result field type: ${typeof result}`);
+                                            console.log(`  📋 Result field length: ${result ? (typeof result === 'string' ? result.length : result.length || 0) : 0}`);
+                                            
+                                            let resultStr = '';
+                                            if (typeof result === 'string') {
+                                                resultStr = result;
+                                            } else if (Buffer.isBuffer(result)) {
+                                                resultStr = '0x' + result.toString('hex');
+                                            } else if (Array.isArray(result)) {
+                                                resultStr = '0x' + Buffer.from(result).toString('hex');
+                                            } else if (result && result.toString) {
+                                                resultStr = result.toString();
+                                            }
+                                            
+                                            console.log(`  📋 Result as string: ${resultStr}`);
+                                            
+                                            // Check execution params to see what was attempted
+                                            if (txRecord.params && txRecord.params.executionParams) {
+                                                console.log(`  📋 Execution params length: ${txRecord.params.executionParams.length}`);
+                                                console.log(`  📋 Execution params (first 200 chars): ${typeof txRecord.params.executionParams === 'string' ? txRecord.params.executionParams.slice(0, 200) : 'N/A'}`);
+                                                
+                                                // Try to decode the execution params to see the action
+                                                try {
+                                                    const decoded = this.web3.eth.abi.decodeParameter(
+                                                        'tuple(uint8,bytes)[]',
+                                                        txRecord.params.executionParams
+                                                    );
+                                                    if (decoded && decoded.length > 0) {
+                                                        console.log(`  📋 Decoded action type: ${decoded[0].actionType || decoded[0][0]}`);
+                                                        console.log(`  📋 Action type 2 = REGISTER_FUNCTION`);
+                                                    }
+                                                } catch (decodeError) {
+                                                    console.log(`  ⚠️  Could not decode execution params: ${decodeError.message}`);
+                                                }
+                                            }
+                                            
+                                            if (resultStr && resultStr.length > 10 && resultStr.startsWith('0x')) {
+                                                const errorSelector = resultStr.slice(0, 10);
+                                                console.log(`  📋 Error selector: ${errorSelector}`);
+                                                
+                                                // Try to decode common errors
+                                                const resourceNotFound = '0x474d3baf';
+                                                const resourceAlreadyExists = '0x430fab94';
+                                                const noPermission = '0xf37a3442';
+                                                const notSupported = '0xa0387940';
+                                                const invalidOperation = '0xc26028e0';
+                                                const contractFunctionMustBeProtected = '0x'; // Need to find this selector
+                                                const functionSelectorMismatch = '0x'; // Need to find this selector
+                                                
+                                                if (errorSelector.toLowerCase() === resourceNotFound.toLowerCase()) {
+                                                    console.log(`  ❌ ResourceNotFound error - function schema or permission not found`);
+                                                    console.log(`     This usually means the function schema for ${this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR} doesn't exist or permissions are missing`);
+                                                } else if (errorSelector.toLowerCase() === resourceAlreadyExists.toLowerCase()) {
+                                                    console.log(`  ⚠️  ResourceAlreadyExists error - function may already be registered`);
+                                                } else if (errorSelector.toLowerCase() === noPermission.toLowerCase()) {
+                                                    console.log(`  ❌ NoPermission error - permission check failed during execution`);
+                                                } else if (errorSelector.toLowerCase() === notSupported.toLowerCase()) {
+                                                    console.log(`  ❌ NotSupported error - action type or operation not supported`);
+                                                } else if (errorSelector.toLowerCase() === invalidOperation.toLowerCase()) {
+                                                    console.log(`  ❌ InvalidOperation error - operation type mismatch`);
+                                                } else {
+                                                    console.log(`  ❌ Unknown error selector: ${errorSelector}`);
+                                                }
+                                            } else {
+                                                console.log(`  📋 No error data in result field - this indicates OperationFailed() error (custom error with no parameters)`);
+                                                console.log(`     OperationFailed occurs when:`);
+                                                console.log(`     1. handlerForSelectors.length == 0 (line 1081)`);
+                                                console.log(`     2. supportedFunctionsSet.add() returns false (line 1110) - function already in set`);
+                                                console.log(`     3. supportedOperationTypesSet.remove() fails (line 1166) - during cleanup`);
+                                                console.log(`     Since we verified the selector is NOT in the set, this is unexpected.`);
+                                                console.log(`     Possible causes:`);
+                                                console.log(`     - Function was added to set between our check and registration attempt`);
+                                                console.log(`     - handlerForSelectors array is empty (should have at least one entry)`);
+                                                console.log(`     - Signature encoding issue causing selector mismatch`);
+                                                console.log(`     Result: ${JSON.stringify(result)}`);
+                                                
+                                                // Try to provide more diagnostic info
+                                                if (txRecord.params && txRecord.params.executionParams) {
+                                                    try {
+                                                        const decodedActions = this.web3.eth.abi.decodeParameter(
+                                                            'tuple(uint8,bytes)[]',
+                                                            txRecord.params.executionParams
+                                                        );
+                                                        if (decodedActions && decodedActions.length > 0) {
+                                                            const actionData = decodedActions[0].data || decodedActions[0][1];
+                                                            const decodedAction = this.web3.eth.abi.decodeParameters(
+                                                                ['string', 'string', 'uint8[]'],
+                                                                actionData
+                                                            );
+                                                            console.log(`  📋 Decoded action data:`);
+                                                            console.log(`     Function signature: ${decodedAction[0] || decodedAction.functionSignature}`);
+                                                            console.log(`     Operation name: ${decodedAction[1] || decodedAction.operationName}`);
+                                                            console.log(`     Supported actions: ${JSON.stringify(decodedAction[2] || decodedAction.supportedActions)}`);
+                                                            
+                                                            // Verify the signature produces the expected selector
+                                                            const derivedSelector = this.web3.utils.keccak256(decodedAction[0] || decodedAction.functionSignature).slice(0, 10);
+                                                            console.log(`     Derived selector from signature: ${derivedSelector}`);
+                                                            console.log(`     Expected selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
+                                                            if (derivedSelector.toLowerCase() !== this.NATIVE_TRANSFER_SELECTOR.toLowerCase()) {
+                                                                console.log(`  ❌ SELECTOR MISMATCH! Signature produces different selector!`);
+                                                                throw new Error(`FunctionSelectorMismatch: Signature "${decodedAction[0] || decodedAction.functionSignature}" produces selector ${derivedSelector}, but expected ${this.NATIVE_TRANSFER_SELECTOR}`);
+                                                            }
+                                                        }
+                                                    } catch (decodeError) {
+                                                        console.log(`  ⚠️  Could not decode action data for diagnostics: ${decodeError.message}`);
+                                                    }
+                                                }
+                                            }
+                                        } else if (txRecord.status === 1 || txRecord.status === '1') {
+                                            console.log(`  ⏳ Transaction is still pending`);
+                                        }
+                                        
+                                        if (isOurTransaction) {
+                                            break; // Found our transaction, stop searching
+                                        }
+                                    }
+                                }
+                            } catch (txError) {
+                                // Transaction doesn't exist, continue
+                                continue;
+                            }
+                        }
+                    } catch (historyError) {
+                        console.log(`  ⚠️  Could not check transaction history: ${historyError.message}`);
+                    }
+                    
+                    if (pendingTxs && pendingTxs.length > 0) {
+                        // Get the most recent transaction
+                        const lastTxId = pendingTxs[pendingTxs.length - 1];
+                        console.log(`  📋 Most recent pending transaction ID: ${lastTxId}`);
+                        const txRecord = await this.callContractMethod(
+                            this.contract.methods.getTransaction(lastTxId)
+                        );
+                        console.log(`  📋 Transaction status: ${txRecord.status}`);
+                        console.log(`  📋 Transaction execution selector: ${txRecord.params.executionSelector}`);
+                        if (txRecord.status === 5 || txRecord.status === '5') {
+                            console.log(`  ✅ Transaction completed successfully`);
+                        } else if (txRecord.status === 6 || txRecord.status === '6') {
+                            console.log(`  ❌ Transaction failed internally`);
+                            const result = txRecord.result || '0x';
+                            if (result && result.length > 10) {
+                                const errorSelector = result.slice(0, 10);
+                                console.log(`  📋 Error selector: ${errorSelector}`);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log(`  ⚠️  Could not check transactions: ${error.message}`);
+                }
+            }
+            
             // Verify function was registered
             console.log('  🔍 Verifying function registration...');
+            
+            // Try to get function schema directly to see what error we get
+            let functionSchema = null;
+            try {
+                functionSchema = await this.callContractMethod(
+                    this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
+                );
+                console.log(`  📋 Function schema retrieved: ${JSON.stringify(functionSchema, null, 2)}`);
+                if (functionSchema && functionSchema.functionSelectorReturn === this.NATIVE_TRANSFER_SELECTOR) {
+                    console.log(`  ✅ Function schema exists!`);
+                } else {
+                    console.log(`  ⚠️  Function schema returned but selector doesn't match`);
+                    console.log(`     Expected: ${this.NATIVE_TRANSFER_SELECTOR}`);
+                    console.log(`     Got: ${functionSchema ? functionSchema.functionSelectorReturn : 'undefined'}`);
+                }
+            } catch (schemaError) {
+                console.log(`  ❌ Error getting function schema: ${schemaError.message}`);
+                if (schemaError.data) {
+                    console.log(`  📋 Error data: ${schemaError.data}`);
+                }
+            }
+            
             const functionExists = await this.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
             const expectedFunctionExists = true;
             this.assertTest(
@@ -82,10 +626,12 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 `Function schema exists (expected: ${expectedFunctionExists}, actual: ${functionExists})`
             );
             
-            // Get function schema details
-            const functionSchema = await this.callContractMethod(
-                this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
-            );
+            // If we didn't get the schema above, try again
+            if (!functionSchema) {
+                functionSchema = await this.callContractMethod(
+                    this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
+                );
+            }
             
             console.log(`  📋 Function schema result: ${JSON.stringify(functionSchema, null, 2)}`);
             
