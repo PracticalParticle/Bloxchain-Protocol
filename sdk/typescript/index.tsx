@@ -7,6 +7,7 @@ export { default as SecureOwnable } from './contracts/SecureOwnable';
 export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
 export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
+export { EngineBlox } from './lib/EngineBlox';
 
 // Interfaces
 export * from './interfaces/base.index';
