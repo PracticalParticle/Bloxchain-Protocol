@@ -694,7 +694,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
 
     /**
      * @dev Centralized function to validate that the caller has any role
-     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateAnyRole() internal view {
         EngineBlox._validateAnyRole(_getSecureState());
@@ -703,7 +702,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Centralized function to validate that a role exists
      * @param roleHash The role hash to validate
-     * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _validateRoleExists(bytes32 roleHash) internal view {
         EngineBlox._validateRoleExists(_getSecureState(), roleHash);
