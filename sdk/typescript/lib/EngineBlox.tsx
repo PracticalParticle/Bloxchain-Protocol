@@ -142,7 +142,7 @@ export class EngineBlox {
       const eip191MessageBytes = new Uint8Array(eip191Message);
       
       // Hash the EIP-191 formatted message
-      const eip191Hash = toHex(await k256(eip191MessageBytes)) as Hex;
+      const eip191Hash = (await k256(eip191MessageBytes)) as Hex;
 
       // Recover address from the EIP-191 formatted hash
       // Note: recoverAddress is async in viem
@@ -187,7 +187,7 @@ export class EngineBlox {
       // Get the contract's bytecode
       const code = await client.getCode({ address: contractAddress });
       
-      if (!code || code.length < 10) { // Need at least '0x' + 4 bytes (8 hex chars) = 10 chars
+      if (!code || code.length < 12) { // Need at least '0x' + PUSH4 (1 byte = 2 hex chars) + selector (4 bytes = 8 hex chars) = 12 chars
         return false;
       }
 
@@ -204,12 +204,18 @@ export class EngineBlox {
       const codeBytes = code.slice(2).toLowerCase(); // Remove '0x' prefix and normalize
       const selectorBytes = selector.slice(2).toLowerCase(); // Remove '0x' and normalize
 
-      // Search every 4-byte aligned position (8 hex chars) in the first 2KB
-      for (let i = 0; i <= searchLength - 8; i += 8) {
-        const candidate = codeBytes.slice(i, i + 8);
-        
-        if (candidate === selectorBytes) {
-          return true;
+      // Scan for PUSH4 opcode (0x63 = "63" in hex) with 1-byte sliding window
+      // PUSH4 opcode is followed by 4 bytes (8 hex chars) which is the function selector
+      // Function selectors in EVM bytecode are emitted as PUSH4 <selector> instructions
+      // These can start at any byte offset, not just 4-byte-aligned positions
+      for (let i = 0; i + 8 < searchLength; i += 2) { // i += 2 because each byte is 2 hex chars
+        // Check if current byte is PUSH4 opcode (0x63 = "63" in hex)
+        if (codeBytes.slice(i, i + 2) === '63') {
+          // Check if the next 8 hex chars (4 bytes) match the selector
+          const candidate = codeBytes.slice(i + 2, i + 10);
+          if (candidate === selectorBytes) {
+            return true;
+          }
         }
       }
 

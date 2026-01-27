@@ -2179,7 +2179,7 @@ library EngineBlox {
         // Get the contract's bytecode
         bytes memory code = contractAddress.code;
         
-        if (code.length < 4) {
+        if (code.length < 5) { // Need at least PUSH4 (1 byte) + selector (4 bytes)
             return false;
         }
         
@@ -2188,48 +2188,23 @@ library EngineBlox {
         // Searching only this area reduces gas cost and false positives from metadata/data
         uint256 searchLength = code.length < 2048 ? code.length : 2048;
         
-        // Unroll loop for efficiency - check 8 positions at once (32 bytes = one word)
-        // This reduces loop overhead while checking every 4-byte aligned position
-        uint256 i = 0;
-        while (i + 32 <= searchLength) {
-            bytes32 word;
-            
-            assembly {
-                let codePtr := add(add(code, 0x20), i)
-                word := mload(codePtr)
+        // Scan for PUSH4 opcode (0x63) with 1-byte sliding window
+        // PUSH4 opcode is followed by 4 bytes which is the function selector
+        // Function selectors in EVM bytecode are emitted as PUSH4 <selector> instructions
+        // These can start at any byte offset, not just 4-byte-aligned positions
+        for (uint256 i = 0; i + 4 < searchLength; i++) {
+            // Check if current byte is PUSH4 opcode (0x63)
+            if (uint8(code[i]) == 0x63) {
+                // Extract the 4-byte selector following the PUSH4 opcode
+                bytes4 candidate;
+                assembly {
+                    let codePtr := add(add(code, 0x20), add(i, 1))
+                    candidate := mload(codePtr)
+                }
+                if (candidate == selector) {
+                    return true;
+                }
             }
-            
-            // Check all 8 possible 4-byte positions in this 32-byte word
-            // bytes4(word) extracts bytes 0-3, bytes4(word << 32) extracts bytes 4-7, etc.
-            // We use bit shifting to extract each 4-byte chunk
-            uint256 wordUint = uint256(word);
-            if (
-                bytes4(uint32(wordUint >> 224)) == selector ||
-                bytes4(uint32(wordUint >> 192)) == selector ||
-                bytes4(uint32(wordUint >> 160)) == selector ||
-                bytes4(uint32(wordUint >> 128)) == selector ||
-                bytes4(uint32(wordUint >> 96)) == selector ||
-                bytes4(uint32(wordUint >> 64)) == selector ||
-                bytes4(uint32(wordUint >> 32)) == selector ||
-                bytes4(uint32(wordUint)) == selector
-            ) {
-                return true;
-            }
-            
-            i += 32; // Process 32 bytes at a time (one word)
-        }
-        
-        // Handle remaining bytes (less than 32 bytes left)
-        // Check every 4-byte aligned position
-        while (i + 4 <= searchLength) {
-            bytes4 word;
-            assembly {
-                word := mload(add(add(code, 0x20), i))
-            }
-            if (word == selector) {
-                return true;
-            }
-            i += 4;
         }
         
         return false;

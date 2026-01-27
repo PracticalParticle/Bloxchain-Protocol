@@ -291,6 +291,19 @@ Note: To save output to file, you can also redirect:
     
     if (solFiles.length === 0) {
         console.log('No Solidity files found.');
+        // Write output file even when no files found
+        if (outputFile) {
+            try {
+                fs.writeFileSync(outputFile, output, 'utf8');
+                originalLog(`\n✅ Report saved to: ${outputFile}`);
+            } catch (error) {
+                originalError(`Error writing to file ${outputFile}:`, error.message);
+                process.exit(1);
+            }
+            // Restore original console functions
+            console.log = originalLog;
+            console.error = originalError;
+        }
         return;
     }
     
