@@ -342,6 +342,11 @@ export interface ConflictingMetaTxPermissionsError extends ContractError {
   params: { functionSelector: string }
 }
 
+export interface InternalFunctionMustBeProtectedError extends ContractError {
+  name: 'InternalFunctionMustBeProtected'
+  params: { functionSelector: string; functionSignature: string }
+}
+
 export interface InvalidRangeError extends ContractError {
   name: 'InvalidRange'
   params: { from: string; to: string }
@@ -460,6 +465,7 @@ export type GuardianContractError =
   | FunctionPermissionExistsError
   | ActionNotSupportedError
   | ConflictingMetaTxPermissionsError
+  | InternalFunctionMustBeProtectedError
   | InvalidRangeError
   | HandlerForSelectorMismatchError
   | InsufficientBalanceError
@@ -631,6 +637,11 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'HandlerForSelectorMismatch',
     params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
     userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema handler: ${params.schemaHandlerForSelector}, permission handler: ${params.permissionHandlerForSelector}`
+  },
+  '0x8c5be1ef': { // InternalFunctionMustBeProtected(bytes4,string) - placeholder signature
+    name: 'InternalFunctionMustBeProtected',
+    params: ['functionSelector', 'functionSignature'],
+    userMessage: (params) => `InternalFunctionMustBeProtected: Internal function ${params.functionSignature} (selector: ${params.functionSelector}) must be protected`
   },
 
   // Array errors
@@ -820,6 +831,8 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return `ResourceNotFound: Resource ${error.params.resource} not found`
     case 'HandlerForSelectorMismatch':
       return `HandlerForSelectorMismatch: Handler selector mismatch - schema handler: ${error.params.schemaHandlerForSelector}, permission handler: ${error.params.permissionHandlerForSelector}`
+    case 'InternalFunctionMustBeProtected':
+      return `InternalFunctionMustBeProtected: Internal function ${error.params.functionSignature} (selector: ${error.params.functionSelector}) must be protected`
     case 'PatternMatch':
       // For pattern matches, return a more descriptive message
       if (error.params.pattern === 'OWNER_ROLE') {

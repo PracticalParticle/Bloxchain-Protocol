@@ -1063,6 +1063,11 @@ library EngineBlox {
             revert SharedValidation.FunctionSelectorMismatch(functionSelector, derivedSelector);
         }
 
+        // SECURITY: Validate that functions existing in contract bytecode must be protected
+        // This checks if the function selector exists in the contract's bytecode
+        // If it exists, it must be protected to prevent accidental removal of system-critical functions
+        _validateContractFunctionProtection(functionSignature, functionSelector, isProtected);
+
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
 
@@ -2134,6 +2139,98 @@ library EngineBlox {
             result[i] = bytes4(set.at(i));
         }
         return result;
+    }
+
+    /**
+     * @dev Validates that if a function exists in contract bytecode, it must be protected
+     * @param functionSignature The function signature to check
+     * @param functionSelector The function selector
+     * @param isProtected Whether the function is marked as protected
+     * @notice Checks if the function selector exists in the contract's bytecode function selector table
+     * @notice If the selector exists in the contract, it must be protected to prevent accidental removal
+     * @notice This uses low-level bytecode inspection instead of relying on naming conventions
+     * @notice Since we're called via delegatecall, address(this) refers to the calling contract
+     */
+    function _validateContractFunctionProtection(
+        string memory functionSignature,
+        bytes4 functionSelector,
+        bool isProtected
+    ) private view {
+        // Check if the function selector exists in the contract's bytecode
+        // Since we're called via delegatecall, address(this) refers to the calling contract
+        if (selectorExistsInContract(address(this), functionSelector)) {
+            if (!isProtected) {
+                revert SharedValidation.InternalFunctionMustBeProtected(functionSelector, functionSignature);
+            }
+        }
+    }
+
+    /**
+     * @dev Checks if a function selector exists in a contract's bytecode
+     * @param contractAddress The address of the contract to check
+     * @param selector The 4-byte function selector to search for
+     * @return true if the selector is found in the contract's function selector dispatch table area
+     * @notice Searches the first 2KB where function selectors are stored in the dispatch table
+     * @notice This is a heuristic check - false positives are possible but unlikely
+     * @notice Uses loop unrolling for gas efficiency
+     * @notice Can be used to query any contract's function selector table
+     */
+    function selectorExistsInContract(address contractAddress, bytes4 selector) public view returns (bool) {
+        // Get the contract's bytecode
+        bytes memory code = contractAddress.code;
+        
+        if (code.length < 4) {
+            return false;
+        }
+        
+        // Function selectors are in the dispatch table at the beginning
+        // Typical dispatch tables are < 2KB even for large contracts
+        // Searching only this area reduces gas cost and false positives from metadata/data
+        uint256 searchLength = code.length < 2048 ? code.length : 2048;
+        
+        // Unroll loop for efficiency - check 8 positions at once (32 bytes = one word)
+        // This reduces loop overhead while checking every 4-byte aligned position
+        uint256 i = 0;
+        while (i <= searchLength - 32) {
+            bytes32 word;
+            
+            assembly {
+                let codePtr := add(add(code, 0x20), i)
+                word := mload(codePtr)
+            }
+            
+            // Check all 8 possible 4-byte positions in this 32-byte word
+            // bytes4(word) extracts bytes 0-3, bytes4(word << 32) extracts bytes 4-7, etc.
+            // We use bit shifting to extract each 4-byte chunk
+            uint256 wordUint = uint256(word);
+            if (bytes4(word) == selector || 
+                bytes4(uint32(wordUint >> 32)) == selector ||
+                bytes4(uint32(wordUint >> 64)) == selector ||
+                bytes4(uint32(wordUint >> 96)) == selector ||
+                bytes4(uint32(wordUint >> 128)) == selector ||
+                bytes4(uint32(wordUint >> 160)) == selector ||
+                bytes4(uint32(wordUint >> 192)) == selector ||
+                bytes4(uint32(wordUint >> 224)) == selector) {
+                return true;
+            }
+            
+            i += 32; // Process 32 bytes at a time (one word)
+        }
+        
+        // Handle remaining bytes (less than 32 bytes left)
+        // Check every 4-byte aligned position
+        while (i <= searchLength - 4) {
+            bytes4 word;
+            assembly {
+                word := mload(add(add(code, 0x20), i))
+            }
+            if (word == selector) {
+                return true;
+            }
+            i += 4;
+        }
+        
+        return false;
     }
 
 }
