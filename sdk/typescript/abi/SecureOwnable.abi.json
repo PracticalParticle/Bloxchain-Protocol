@@ -112,6 +112,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "rangeSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRangeSize",
+        "type": "uint256"
+      }
+    ],
+    "name": "RangeSizeExceeded",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
