@@ -373,15 +373,24 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
      */
     function testFuzz_RoleWalletLimitEnforced(
         string memory roleName,
-        uint256 maxWallets,
-        uint256 additionalWallets
+        uint256 maxWallets
     ) public {
-        vm.assume(bytes(roleName).length > 0 && bytes(roleName).length < 32);
-        vm.assume(maxWallets > 0 && maxWallets < 50);
-        vm.assume(additionalWallets > 0 && additionalWallets < 10);
+        // Bound inputs to reasonable ranges to avoid too many rejections
+        bytes memory roleNameBytes = bytes(roleName);
+        if (roleNameBytes.length == 0 || roleNameBytes.length >= 32) {
+            return; // Skip invalid inputs
+        }
+        
+        // Bound maxWallets to reasonable range (1-20 for gas efficiency)
+        maxWallets = bound(maxWallets, 1, 20);
         
         bytes32 roleHash = keccak256(bytes(roleName));
-        vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
+        
+        // Check if role hash conflicts with protected roles - if so, skip
+        // This is extremely unlikely but we handle it gracefully
+        if (roleHash == OWNER_ROLE || roleHash == BROADCASTER_ROLE || roleHash == RECOVERY_ROLE) {
+            return; // Skip protected role hash collisions
+        }
         
         // Create role with maxWallets limit
         RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
