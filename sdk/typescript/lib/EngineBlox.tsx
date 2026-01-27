@@ -185,7 +185,7 @@ export class EngineBlox {
   ): Promise<boolean> {
     try {
       // Get the contract's bytecode
-      const code = await client.getBytecode({ address: contractAddress });
+      const code = await client.getCode({ address: contractAddress });
       
       if (!code || code.length < 10) { // Need at least '0x' + 4 bytes (8 hex chars) = 10 chars
         return false;

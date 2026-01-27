@@ -773,7 +773,7 @@ console.log('UI Configuration:', JSON.stringify(uiConfig, null, 2));
 ```typescript
 // Error: Contract not found at address
 // Solution: Verify contract address and network
-const isValidAddress = await publicClient.getBytecode({
+const isValidAddress = await publicClient.getCode({
   address: contractAddress
 });
 
