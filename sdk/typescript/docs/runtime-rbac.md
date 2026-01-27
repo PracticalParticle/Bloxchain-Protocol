@@ -71,6 +71,14 @@ const wallets = await runtimeRBAC.getWalletsInRole('0x...') // role hash
 console.log('Wallets in role:', wallets)
 ```
 
+#### **Get Roles for Wallet**
+```typescript
+const roles = await runtimeRBAC.getWalletRoles('0x...') // wallet address
+console.log('Roles for wallet:', roles)
+// Returns array of role hashes assigned to the wallet
+// Uses reverse index for efficient O(n) lookup where n = wallet's role count
+```
+
 #### **Get Supported Roles**
 ```typescript
 const roles = await runtimeRBAC.getSupportedRoles()
@@ -432,6 +440,11 @@ describe('RuntimeRBAC', () => {
   it('should check role membership', async () => {
     const hasRole = await runtimeRBAC.hasRole(roleHash, account)
     expect(typeof hasRole).toBe('boolean')
+  })
+
+  it('should get roles for wallet', async () => {
+    const walletRoles = await runtimeRBAC.getWalletRoles(account)
+    expect(Array.isArray(walletRoles)).toBe(true)
   })
 
   it('should get wallets in role', async () => {

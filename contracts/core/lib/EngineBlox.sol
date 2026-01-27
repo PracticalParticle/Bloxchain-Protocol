@@ -37,6 +37,22 @@ library EngineBlox {
     uint8 public constant VERSION_MINOR = 0;
     uint8 public constant VERSION_PATCH = 0;
     
+    // ============ SYSTEM SAFETY LIMITS ============
+    // These constants define the safety range limits for system operations
+    // to prevent gas exhaustion attacks. These are immutable system-wide limits.
+    
+    /// @dev Maximum number of items allowed in batch operations (prevents gas exhaustion)
+    uint256 public constant MAX_BATCH_SIZE = 200;
+    
+    /// @dev Maximum total number of roles allowed in the system (prevents gas exhaustion in permission checks)
+    uint256 public constant MAX_ROLES = 1000;
+    
+    /// @dev Maximum number of hooks allowed per function selector (prevents gas exhaustion in hook execution)
+    uint256 public constant MAX_HOOKS_PER_SELECTOR = 100;
+    
+    /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
+    uint256 public constant MAX_FUNCTIONS = 2000;
+    
     using MessageHashUtils for bytes32;
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -155,6 +171,8 @@ library EngineBlox {
         // ============ ROLE-BASED ACCESS CONTROL ============
         mapping(bytes32 => Role) roles;
         EnumerableSet.Bytes32Set supportedRolesSet;
+        // Reverse index for O(1) wallet-to-role lookup (optimization for gas efficiency)
+        mapping(address => EnumerableSet.Bytes32Set) walletRoles; // wallet => roles set
         
         // ============ FUNCTION MANAGEMENT ============
         mapping(bytes4 => FunctionSchema) functions;
@@ -756,6 +774,12 @@ library EngineBlox {
     ) public {
         bytes32 roleHash = keccak256(bytes(roleName));
         
+        // Validate role count limit
+        SharedValidation.validateRoleCount(
+            self.supportedRolesSet.length(),
+            MAX_ROLES
+        );
+        
         // Check if role already exists in mapping - if so, revert
         if (self.roles[roleHash].roleHash == roleHash) {
             revert SharedValidation.ResourceAlreadyExists(roleHash);
@@ -794,13 +818,31 @@ library EngineBlox {
             revert SharedValidation.CannotModifyProtected(roleHash);
         }
         
+        Role storage roleData = self.roles[roleHash];
+        
+        // Clean up reverse index for all wallets in this role
+        // Collect all wallets first (to avoid modifying set during iteration)
+        uint256 walletCount = roleData.authorizedWallets.length();
+        address[] memory wallets = new address[](walletCount);
+        
+        for (uint256 i = 0; i < walletCount; i++) {
+            wallets[i] = roleData.authorizedWallets.at(i);
+        }
+        
+        // Remove role from each wallet's reverse index
+        // This ensures the wallet-to-role index remains consistent for O(1) permission checks
+        for (uint256 i = 0; i < walletCount; i++) {
+            self.walletRoles[wallets[i]].remove(roleHash);
+        }
+        
         // Clear the role data from roles mapping
         // Remove the role from the supported roles set (O(1) operation)
         // NOTE: Mappings (functionPermissions, authorizedWallets, functionSelectorsSet)
         // are not deleted by Solidity's delete operator. This is acceptable because:
-        // 1. Role is removed from supportedRolesSet, making it inaccessible
-        // 2. All access checks iterate supportedRolesSet, so orphaned data is unreachable
-        // 3. Role recreation with same name would pass roleHash check but mappings
+        // 1. Role is removed from supportedRolesSet, making it inaccessible via role queries
+        // 2. Reverse index (walletRoles) is cleaned up above, so permission checks won't find this role
+        // 3. All access checks use the reverse index (walletRoles) for O(1) lookups, so orphaned data is unreachable
+        // 4. Role recreation with same name would pass roleHash check but mappings
         //    would be effectively reset since role is reinitialized from scratch
         delete self.roles[roleHash];  
         if (!self.supportedRolesSet.remove(roleHash)) {
@@ -840,6 +882,9 @@ library EngineBlox {
             revert SharedValidation.ItemAlreadyExists(wallet);
         }
         roleData.walletCount = roleData.authorizedWallets.length();
+        
+        // Update reverse index for O(1) permission checks
+        self.walletRoles[wallet].add(role);
     }
 
     /**
@@ -865,7 +910,11 @@ library EngineBlox {
         // Add new wallet (should always succeed since we verified it doesn't exist)
         if (!roleData.authorizedWallets.add(newWallet)) {
             revert SharedValidation.OperationFailed();
-        }  
+        }
+        
+        // Update reverse indices for O(1) permission checks
+        self.walletRoles[oldWallet].remove(role);
+        self.walletRoles[newWallet].add(role);
     }
 
     /**
@@ -890,6 +939,9 @@ library EngineBlox {
             revert SharedValidation.ItemNotFound(wallet);
         }
         roleData.walletCount = roleData.authorizedWallets.length();
+        
+        // Update reverse index for O(1) permission checks
+        self.walletRoles[wallet].remove(role);
     }
 
     /**
@@ -969,17 +1021,17 @@ library EngineBlox {
         bytes4 functionSelector,
         TxAction requestedAction
     ) public view returns (bool) {
-        // Check if wallet has any role that grants permission for this function and action
-        uint256 rolesLength = self.supportedRolesSet.length();
+        // OPTIMIZED: Use reverse index instead of iterating all roles (O(n) -> O(1) lookup)
+        // This provides significant gas savings when there are many roles
+        EnumerableSet.Bytes32Set storage walletRolesSet = self.walletRoles[wallet];
+        uint256 rolesLength = walletRolesSet.length();
+        
         for (uint i = 0; i < rolesLength; i++) {
-            bytes32 roleHash = self.supportedRolesSet.at(i);
-            Role storage role = self.roles[roleHash];
+            bytes32 roleHash = walletRolesSet.at(i);
             
-            if (role.authorizedWallets.contains(wallet)) {
-                // Use the dedicated role permission check function
-                if (roleHasActionPermission(self, roleHash, functionSelector, requestedAction)) {
-                    return true;
-                }
+            // Use the dedicated role permission check function
+            if (roleHasActionPermission(self, roleHash, functionSelector, requestedAction)) {
+                return true;
             }
         }
         return false;
@@ -995,17 +1047,9 @@ library EngineBlox {
         SecureOperationState storage self,
         address wallet
     ) public view returns (bool) {
-        // Check if wallet has any role that grants view permission
-        uint256 rolesLength = self.supportedRolesSet.length();
-        for (uint i = 0; i < rolesLength; i++) {
-            bytes32 roleHash = self.supportedRolesSet.at(i);
-            Role storage role = self.roles[roleHash];
-            
-            if (role.authorizedWallets.contains(wallet)) {
-                return true;
-            }
-        }
-        return false;
+        // OPTIMIZED: Use reverse index - O(1) check instead of O(n) iteration
+        // This provides significant gas savings when there are many roles
+        return self.walletRoles[wallet].length() > 0;
     }
 
     /**
@@ -1091,6 +1135,12 @@ library EngineBlox {
         if (self.supportedOperationTypesSet.add(derivedOperationType)) {
             // do nothing
         }
+        
+        // Validate function count limit
+        SharedValidation.validateFunctionCount(
+            self.supportedFunctionsSet.length(),
+            MAX_FUNCTIONS
+        );
         
         // Check if function already exists in the set
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
@@ -1302,6 +1352,13 @@ library EngineBlox {
         }
 
         EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
+        
+        // Validate hook count limit
+        SharedValidation.validateHookCount(
+            set.length(),
+            MAX_HOOKS_PER_SELECTOR
+        );
+        
         if (!set.add(target)) {
             revert SharedValidation.ItemAlreadyExists(target);
         }
@@ -1457,6 +1514,19 @@ library EngineBlox {
         }
         
         return result;
+    }
+
+    /**
+     * @dev Gets all roles assigned to a wallet using the reverse index
+     * @param self The SecureOperationState to check
+     * @param wallet The wallet address to get roles for
+     * @return Array of role hashes assigned to the wallet
+     * @notice Access control should be enforced by the calling contract.
+     * @notice This function uses the reverse index (walletRoles) for efficient O(n) lookup where n = wallet's role count
+     */
+    function getWalletRoles(SecureOperationState storage self, address wallet) public view returns (bytes32[] memory) {
+        EnumerableSet.Bytes32Set storage walletRolesSet = self.walletRoles[wallet];
+        return _convertBytes32SetToArray(walletRolesSet);
     }
 
     // ============ META-TRANSACTION SUPPORT FUNCTIONS ============

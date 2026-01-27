@@ -239,6 +239,17 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<boolean>('hasRole', [roleHash, wallet]);
   }
 
+  /**
+   * Gets all roles assigned to a wallet
+   * @param wallet The wallet address to get roles for
+   * @returns Array of role hashes assigned to the wallet
+   * @notice Requires caller to have any role for privacy protection
+   * @notice This function uses the reverse index for efficient lookup
+   */
+  async getWalletRoles(wallet: Address): Promise<Hex[]> {
+    return this.executeReadContract<Hex[]>('getWalletRoles', [wallet]);
+  }
+
   async isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean> {
     return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
   }

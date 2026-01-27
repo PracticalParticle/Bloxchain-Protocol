@@ -357,6 +357,12 @@ abstract contract GuardController is BaseStateMachine {
      * @param actions Encoded guard configuration actions
      */
     function _executeGuardConfigBatch(GuardConfigAction[] calldata actions) internal {
+        // Validate batch size limit
+        SharedValidation.validateBatchSize(
+            actions.length,
+            EngineBlox.MAX_BATCH_SIZE
+        );
+        
         for (uint256 i = 0; i < actions.length; i++) {
             GuardConfigAction calldata action = actions[i];
 

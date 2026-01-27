@@ -102,6 +102,13 @@ library SharedValidation {
     error ArrayLengthMismatch(uint256 array1Length, uint256 array2Length);
     error IndexOutOfBounds(uint256 index, uint256 arrayLength);
     
+    // System limit errors
+    error BatchSizeExceeded(uint256 currentSize, uint256 maxSize);
+    error MaxRolesExceeded(uint256 currentCount, uint256 maxRoles);
+    error MaxHooksExceeded(uint256 currentCount, uint256 maxHooks);
+    error MaxFunctionsExceeded(uint256 currentCount, uint256 maxFunctions);
+    error RangeSizeExceeded(uint256 rangeSize, uint256 maxRangeSize);
+    
     // ============ ADDRESS VALIDATION FUNCTIONS ============
     
     /**
@@ -409,6 +416,63 @@ library SharedValidation {
      */
     function validateArrayLengthMatch(uint256 array1Length, uint256 array2Length) internal pure {
         if (array1Length != array2Length) revert ArrayLengthMismatch(array1Length, array2Length);
+    }
+    
+    // ============ SYSTEM LIMIT VALIDATION FUNCTIONS ============
+    
+    /**
+     * @dev Validates that batch size doesn't exceed limit
+     * @param batchSize The current batch size
+     * @param maxBatchSize The maximum allowed batch size (0 = unlimited)
+     */
+    function validateBatchSize(uint256 batchSize, uint256 maxBatchSize) internal pure {
+        if (maxBatchSize > 0 && batchSize > maxBatchSize) {
+            revert BatchSizeExceeded(batchSize, maxBatchSize);
+        }
+    }
+    
+    /**
+     * @dev Validates that role count doesn't exceed limit
+     * @param currentCount The current role count
+     * @param maxRoles The maximum allowed roles (0 = unlimited)
+     */
+    function validateRoleCount(uint256 currentCount, uint256 maxRoles) internal pure {
+        if (maxRoles > 0 && currentCount >= maxRoles) {
+            revert MaxRolesExceeded(currentCount, maxRoles);
+        }
+    }
+    
+    /**
+     * @dev Validates that hook count doesn't exceed limit
+     * @param currentCount The current hook count
+     * @param maxHooks The maximum allowed hooks (0 = unlimited)
+     */
+    function validateHookCount(uint256 currentCount, uint256 maxHooks) internal pure {
+        if (maxHooks > 0 && currentCount >= maxHooks) {
+            revert MaxHooksExceeded(currentCount, maxHooks);
+        }
+    }
+    
+    /**
+     * @dev Validates that function count doesn't exceed limit
+     * @param currentCount The current function count
+     * @param maxFunctions The maximum allowed functions (0 = unlimited)
+     */
+    function validateFunctionCount(uint256 currentCount, uint256 maxFunctions) internal pure {
+        if (maxFunctions > 0 && currentCount >= maxFunctions) {
+            revert MaxFunctionsExceeded(currentCount, maxFunctions);
+        }
+    }
+    
+    /**
+     * @dev Validates that range size doesn't exceed limit
+     * @param rangeSize The range size
+     * @param maxRangeSize The maximum allowed range size (0 = unlimited)
+     */
+    function validateRangeSize(uint256 rangeSize, uint256 maxRangeSize) internal pure {
+        if (maxRangeSize > 0 && rangeSize > maxRangeSize) {
+            revert RangeSizeExceeded(rangeSize, maxRangeSize);
+        }
     }
      
     /**
