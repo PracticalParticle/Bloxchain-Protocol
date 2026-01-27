@@ -774,7 +774,7 @@ This document provides comprehensive documentation of all test functions in the 
 - **Parameters**: `bytes4 functionSelector`, `string memory functionSignature`
 - **What It Tests**:
   - Attempts to load definition that omits protected flag for function in bytecode
-  - Verifies `InternalFunctionMustBeProtected` error
+  - Verifies `ContractFunctionMustBeProtected` error
 - **Expected Behavior**: Definition with missing protected flag is rejected
 - **Status**: ✅ Passing
 

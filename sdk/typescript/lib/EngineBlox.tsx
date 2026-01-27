@@ -6,7 +6,7 @@ import { Uint16Bitmap, createUint16Bitmap } from '../utils/bitmap';
  * Helper function to compute keccak256 of a string
  */
 const keccak256 = (str: string): Hex => {
-  return toHex(k256(new TextEncoder().encode(str))) as Hex;
+  return k256(new TextEncoder().encode(str)) as Hex;
 };
 
 /**

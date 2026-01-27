@@ -68,7 +68,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             // Attempt to load malicious definitions - should fail
             vm.expectRevert(
                 abi.encodeWithSelector(
-                    SharedValidation.InternalFunctionMustBeProtected.selector,
+                    SharedValidation.ContractFunctionMustBeProtected.selector,
                     testFunctionSelector,
                     "testFunction()"
                 )

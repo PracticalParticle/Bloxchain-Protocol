@@ -2160,7 +2160,7 @@ library EngineBlox {
         // Since we're called via delegatecall, address(this) refers to the calling contract
         if (selectorExistsInContract(address(this), functionSelector)) {
             if (!isProtected) {
-                revert SharedValidation.InternalFunctionMustBeProtected(functionSelector, functionSignature);
+                revert SharedValidation.ContractFunctionMustBeProtected(functionSelector, functionSignature);
             }
         }
     }
@@ -2191,7 +2191,7 @@ library EngineBlox {
         // Unroll loop for efficiency - check 8 positions at once (32 bytes = one word)
         // This reduces loop overhead while checking every 4-byte aligned position
         uint256 i = 0;
-        while (i <= searchLength - 32) {
+        while (i + 32 <= searchLength) {
             bytes32 word;
             
             assembly {
@@ -2203,14 +2203,16 @@ library EngineBlox {
             // bytes4(word) extracts bytes 0-3, bytes4(word << 32) extracts bytes 4-7, etc.
             // We use bit shifting to extract each 4-byte chunk
             uint256 wordUint = uint256(word);
-            if (bytes4(word) == selector || 
-                bytes4(uint32(wordUint >> 32)) == selector ||
-                bytes4(uint32(wordUint >> 64)) == selector ||
-                bytes4(uint32(wordUint >> 96)) == selector ||
-                bytes4(uint32(wordUint >> 128)) == selector ||
-                bytes4(uint32(wordUint >> 160)) == selector ||
+            if (
+                bytes4(uint32(wordUint >> 224)) == selector ||
                 bytes4(uint32(wordUint >> 192)) == selector ||
-                bytes4(uint32(wordUint >> 224)) == selector) {
+                bytes4(uint32(wordUint >> 160)) == selector ||
+                bytes4(uint32(wordUint >> 128)) == selector ||
+                bytes4(uint32(wordUint >> 96)) == selector ||
+                bytes4(uint32(wordUint >> 64)) == selector ||
+                bytes4(uint32(wordUint >> 32)) == selector ||
+                bytes4(uint32(wordUint)) == selector
+            ) {
                 return true;
             }
             
@@ -2219,7 +2221,7 @@ library EngineBlox {
         
         // Handle remaining bytes (less than 32 bytes left)
         // Check every 4-byte aligned position
-        while (i <= searchLength - 4) {
+        while (i + 4 <= searchLength) {
             bytes4 word;
             assembly {
                 word := mload(add(add(code, 0x20), i))

@@ -21,16 +21,29 @@ library DefinitionValidator {
     function validateDefinition(
         IDefinition definition
     ) public view returns (bool isValid, string[] memory errors) {
-        string[] memory errorList = new string[](20); // Pre-allocate
-        uint256 errorCount = 0;
-        
-        // Get schemas and permissions
+        // Get schemas and permissions first to calculate max errors
         EngineBlox.FunctionSchema[] memory schemas = definition.getFunctionSchemas();
         IDefinition.RolePermission memory permissions = definition.getRolePermissions();
         
+        // Calculate maximum possible errors to prevent overflow
+        // Each schema can generate multiple errors, plus permission errors
+        // Estimate max errors: schemas * 3 (signature mismatch, empty handler, zero selector per handler)
+        // + permissions * 2 (non-existent function, empty bitmap) + array mismatch + duplicates
+        uint256 maxErrors = (schemas.length * 3) + (permissions.functionPermissions.length * 2) + 
+                           (schemas.length * (schemas.length > 0 ? schemas.length - 1 : 0) / 2) + 1;
+        // Cap at reasonable limit to prevent excessive gas
+        if (maxErrors > 100) {
+            maxErrors = 100;
+        }
+        
+        string[] memory errorList = new string[](maxErrors);
+        uint256 errorCount = 0;
+        
         // Validate array lengths match
         if (permissions.roleHashes.length != permissions.functionPermissions.length) {
-            errorList[errorCount++] = "Array length mismatch: roleHashes and functionPermissions";
+            if (errorCount < maxErrors) {
+                errorList[errorCount++] = "Array length mismatch: roleHashes and functionPermissions";
+            }
         }
         
         // Validate schemas
@@ -38,24 +51,30 @@ library DefinitionValidator {
             // Check signature matches selector
             bytes4 derivedSelector = bytes4(keccak256(bytes(schemas[i].functionSignature)));
             if (derivedSelector != schemas[i].functionSelector) {
-                errorList[errorCount++] = string(abi.encodePacked(
-                    "Schema ", _uint2str(i), ": signature/selector mismatch"
-                ));
+                if (errorCount < maxErrors) {
+                    errorList[errorCount++] = string(abi.encodePacked(
+                        "Schema ", _uint2str(i), ": signature/selector mismatch"
+                    ));
+                }
             }
             
             // Check handlerForSelectors is not empty
             if (schemas[i].handlerForSelectors.length == 0) {
-                errorList[errorCount++] = string(abi.encodePacked(
-                    "Schema ", _uint2str(i), ": empty handlerForSelectors"
-                ));
+                if (errorCount < maxErrors) {
+                    errorList[errorCount++] = string(abi.encodePacked(
+                        "Schema ", _uint2str(i), ": empty handlerForSelectors"
+                    ));
+                }
             }
             
             // Check for zero selectors in handlerForSelectors
             for (uint256 j = 0; j < schemas[i].handlerForSelectors.length; j++) {
                 if (schemas[i].handlerForSelectors[j] == bytes4(0)) {
-                    errorList[errorCount++] = string(abi.encodePacked(
-                        "Schema ", _uint2str(i), ": zero selector in handlerForSelectors"
-                    ));
+                    if (errorCount < maxErrors) {
+                        errorList[errorCount++] = string(abi.encodePacked(
+                            "Schema ", _uint2str(i), ": zero selector in handlerForSelectors"
+                        ));
+                    }
                 }
             }
         }
@@ -64,9 +83,11 @@ library DefinitionValidator {
         for (uint256 i = 0; i < schemas.length; i++) {
             for (uint256 j = i + 1; j < schemas.length; j++) {
                 if (schemas[i].functionSelector == schemas[j].functionSelector) {
-                    errorList[errorCount++] = string(abi.encodePacked(
-                        "Duplicate schema: selector ", _bytes4ToHex(schemas[i].functionSelector)
-                    ));
+                    if (errorCount < maxErrors) {
+                        errorList[errorCount++] = string(abi.encodePacked(
+                            "Duplicate schema: selector ", _bytes4ToHex(schemas[i].functionSelector)
+                        ));
+                    }
                 }
             }
         }
@@ -84,16 +105,20 @@ library DefinitionValidator {
             }
             
             if (!found) {
-                errorList[errorCount++] = string(abi.encodePacked(
-                    "Permission ", _uint2str(i), ": references non-existent function"
-                ));
+                if (errorCount < maxErrors) {
+                    errorList[errorCount++] = string(abi.encodePacked(
+                        "Permission ", _uint2str(i), ": references non-existent function"
+                    ));
+                }
             }
             
             // Check for empty bitmap
             if (permissions.functionPermissions[i].grantedActionsBitmap == 0) {
-                errorList[errorCount++] = string(abi.encodePacked(
-                    "Permission ", _uint2str(i), ": empty action bitmap"
-                ));
+                if (errorCount < maxErrors) {
+                    errorList[errorCount++] = string(abi.encodePacked(
+                        "Permission ", _uint2str(i), ": empty action bitmap"
+                    ));
+                }
             }
         }
         

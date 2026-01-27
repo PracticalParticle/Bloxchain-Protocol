@@ -2416,11 +2416,11 @@ function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] m
 **Current Protection**:
 - ✅ `_validateContractFunctionProtection` checks bytecode and requires protection
 - ✅ `selectorExistsInContract` validates function exists in contract
-- ✅ Reverts with `InternalFunctionMustBeProtected` if function exists but not protected
+- ✅ Reverts with `ContractFunctionMustBeProtected` if function exists but not protected
 
 **Verification**:
 - Test definition contracts with missing protected flags
-- Verify `InternalFunctionMustBeProtected` error is raised
+- Verify `ContractFunctionMustBeProtected` error is raised
 - Test with system functions that exist in bytecode
 
 **Related Tests**:

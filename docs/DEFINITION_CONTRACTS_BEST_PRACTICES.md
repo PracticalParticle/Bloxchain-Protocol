@@ -53,7 +53,7 @@ schemas[0] = EngineBlox.FunctionSchema({
 schemas[0] = EngineBlox.FunctionSchema({
     functionSignature: "transferOwnership(address)",
     functionSelector: TRANSFER_OWNERSHIP_SELECTOR,
-    isProtected: false, // Will revert with InternalFunctionMustBeProtected
+    isProtected: false, // Will revert with ContractFunctionMustBeProtected
     // ...
 });
 ```

@@ -245,12 +245,38 @@ Note: To save output to file, you can also redirect:
     }
     
     let contractsDir = path.join(process.cwd(), 'contracts');
+    let outputFile = null;
     
-    // Simple argument parsing
+    // Parse arguments
     for (let i = 0; i < args.length; i++) {
-        if (!args[i].startsWith('-') && !args[i - 1]?.includes('output')) {
+        if (args[i] === '--output' || args[i] === '-o') {
+            if (i + 1 < args.length) {
+                outputFile = args[i + 1];
+                i++; // Skip next argument as it's the filename
+            } else {
+                console.error('Error: --output requires a filename');
+                process.exit(1);
+            }
+        } else if (!args[i].startsWith('-')) {
             contractsDir = args[i];
         }
+    }
+    
+    // Capture console output if output file is specified
+    let output = '';
+    const originalLog = console.log;
+    const originalError = console.error;
+    if (outputFile) {
+        console.log = (...args) => {
+            const message = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ') + '\n';
+            output += message;
+            originalLog(...args); // Still show in console
+        };
+        console.error = (...args) => {
+            const message = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ') + '\n';
+            output += message;
+            originalError(...args); // Still show in console
+        };
     }
     
     if (!fs.existsSync(contractsDir)) {
@@ -380,6 +406,20 @@ Note: To save output to file, you can also redirect:
     
     console.log(`💡 Tip: To save full report to file, redirect output:`);
     console.log(`   node scripts/count-loc.cjs > loc-report.txt\n`);
+    
+    // Write to file if specified
+    if (outputFile) {
+        try {
+            fs.writeFileSync(outputFile, output, 'utf8');
+            originalLog(`\n✅ Report saved to: ${outputFile}`);
+        } catch (error) {
+            originalError(`Error writing to file ${outputFile}:`, error.message);
+            process.exit(1);
+        }
+        // Restore original console functions
+        console.log = originalLog;
+        console.error = originalError;
+    }
 }
 
 // Run the script

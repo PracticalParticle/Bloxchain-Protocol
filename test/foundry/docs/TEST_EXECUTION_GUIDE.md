@@ -380,34 +380,34 @@ Most tests should **PASS** as the codebase has strong security protections:
 
 ### Common Issues
 
-**1. Compilation Errors**
+#### 1. Compilation Errors
 - Check imports are correct
 - Verify helper contracts exist
 - Ensure all dependencies available
 - Run `forge build` first to see all errors
 
-**2. Test Timeouts**
+#### 2. Test Timeouts
 - Reduce fuzz-runs for large test suites
 - Run tests individually
 - Check for infinite loops
 
-**3. Unexpected Failures**
+#### 3. Unexpected Failures
 - Review test assumptions
 - Check `vm.assume` statements
 - Verify test setup
 - Check if failure is expected (security working)
 
-**4. Missing Helper Functions**
+#### 4. Missing Helper Functions
 - Check `CommonBase` for base helpers
 - Verify test-specific helpers exist
 - Review `MockContracts` for mocks
 
-**5. Permission Errors**
+#### 5. Permission Errors
 - Add `vm.prank(owner)` before calling permissioned functions
 - Check if function requires specific roles
 - Verify permissions are set up in `setUp()`
 
-**6. Revert Errors in Tests**
+#### 6. Revert Errors in Tests
 - Use `vm.expectRevert()` for expected reverts
 - Check error selector matches expected error
 - Verify error is expected (security protection working)
