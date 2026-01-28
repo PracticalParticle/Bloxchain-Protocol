@@ -79,7 +79,7 @@ npm install viem
 ### **Basic Setup**
 
 ```typescript
-import { Definitions } from '@guardian/sdk/typescript';
+import { Definitions } from '@bloxchain/sdk';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 

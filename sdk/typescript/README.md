@@ -15,7 +15,7 @@ Bloxchain Protocol implements a **state machine architecture** with `SecureOpera
 ## Features
 
 - **SecureOwnable**: Multi-phase ownership management with time-locked operations
-- **DynamicRBAC**: Dynamic role-based access control system
+- **RuntimeRBAC**: Runtime role-based access control system with batch configuration
 - **Definitions**: Dynamic interaction with any definition library implementing IDefinition
 - **Guardian**: State abstraction with secure operations
 - **Type Safety**: Full TypeScript support with comprehensive type definitions
@@ -34,7 +34,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - **[Getting Started](./docs/getting-started.md)** - Quick setup and basic usage
 - **[API Reference](./docs/api-reference.md)** - Complete API documentation
 - **[SecureOwnable Guide](./docs/secure-ownable.md)** - Ownership management
-- **[DynamicRBAC Guide](./docs/dynamic-rbac.md)** - Role-based access control
+- **[RuntimeRBAC Guide](./docs/runtime-rbac.md)** - Role-based access control
 
 ### **🔍 Development Tools**
 - **[Best Practices](./docs/best-practices.md)** - Development guidelines
@@ -83,7 +83,7 @@ const secureOwnable = new SecureOwnable(
   chain
 );
 
-const dynamicRBAC = new DynamicRBAC(
+const runtimeRBAC = new RuntimeRBAC(
   publicClient,
   walletClient,
   contractAddress,
@@ -146,97 +146,36 @@ const metaTx = await secureOwnable.generateUnsignedMetaTransactionForNew(
 );
 ```
 
-## DynamicRBAC Usage
+## RuntimeRBAC Usage
 
-### Role Management
-
-```typescript
-// Create a new role
-const createResult = await dynamicRBAC.createRole(
-  "ADMIN_ROLE",
-  5n, // max 5 wallets
-  { from: ownerAddress }
-);
-
-// Update role properties
-const updateResult = await dynamicRBAC.updateRole(
-  roleHash,
-  "UPDATED_ADMIN_ROLE",
-  10n, // new max wallets
-  { from: ownerAddress }
-);
-
-// Delete a role
-const deleteResult = await dynamicRBAC.deleteRole(
-  roleHash,
-  { from: ownerAddress }
-);
-```
-
-### Wallet Management
-
-```typescript
-// Add wallet to role
-const addResult = await dynamicRBAC.addWalletToRole(
-  roleHash,
-  walletAddress,
-  { from: ownerAddress }
-);
-
-// Remove wallet from role
-const revokeResult = await dynamicRBAC.revokeWallet(
-  roleHash,
-  walletAddress,
-  { from: ownerAddress }
-);
-
-// Replace wallet in role
-const replaceResult = await dynamicRBAC.replaceWalletInRole(
-  roleHash,
-  newWalletAddress,
-  oldWalletAddress,
-  { from: ownerAddress }
-);
-```
-
-### Permission Management
-
-```typescript
-// Add function permission to role
-const addPermissionResult = await dynamicRBAC.addFunctionPermissionToRole(
-  roleHash,
-  functionSelector,
-  TxAction.EXECUTE_TIME_DELAY_APPROVE,
-  { from: ownerAddress }
-);
-
-// Remove function permission from role
-const removePermissionResult = await dynamicRBAC.removeFunctionPermissionFromRole(
-  roleHash,
-  functionSelector,
-  { from: ownerAddress }
-);
-```
+RuntimeRBAC uses batch-based configuration for all role management operations. See the [RuntimeRBAC Guide](./docs/runtime-rbac.md) for complete examples.
 
 ### Query Functions
 
 ```typescript
-// Get all dynamic roles
-const dynamicRoles = await dynamicRBAC.getDynamicRoles();
-
 // Get role information
-const roleInfo = await dynamicRBAC.getRoleInfo(roleHash);
-console.log(roleInfo.roleName, roleInfo.maxWallets, roleInfo.isProtected);
+const role = await runtimeRBAC.getRole(roleHash);
+console.log(role.roleName, role.maxWallets, role.isProtected);
 
 // Check if wallet has role
-const hasRole = await dynamicRBAC.hasRole(roleHash, walletAddress);
+const hasRole = await runtimeRBAC.hasRole(roleHash, walletAddress);
 
 // Get wallets in role
-const wallets = await dynamicRBAC.getWalletsInRole(roleHash);
+const wallets = await runtimeRBAC.getWalletsInRole(roleHash);
 
-// Get role permissions
-const permissions = await dynamicRBAC.getRolePermissions(roleHash);
+// Get roles for a wallet
+const walletRoles = await runtimeRBAC.getWalletRoles(walletAddress);
+
+// Get supported roles
+const supportedRoles = await runtimeRBAC.getSupportedRoles();
+
+// Get active role permissions
+const permissions = await runtimeRBAC.getActiveRolePermissions(roleHash);
 ```
+
+### Batch Configuration
+
+All role management (create role, add wallet, add permissions, etc.) is done via batch operations. See the [RuntimeRBAC Guide](./docs/runtime-rbac.md) for detailed batch configuration examples.
 
 ## Definitions Usage
 
@@ -380,7 +319,7 @@ try {
 
 - Always validate addresses and parameters before making transactions
 - Use proper time-lock periods for critical operations
-- Implement proper access control using DynamicRBAC
+- Implement proper access control using RuntimeRBAC
 - Monitor transaction status and handle failures appropriately
 - Keep private keys secure and never expose them in client-side code
 

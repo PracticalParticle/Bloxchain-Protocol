@@ -68,12 +68,6 @@ export class ContractValidations {
       throw new Error("Invalid transaction ID");
     }
 
-    // Validate release time
-    //const currentTimestamp = Math.floor(Date.now() / 1000);
-    //if (txRecord.releaseTime <= currentTimestamp) {
-      //throw new Error(`Release time must be in the future: ${txRecord.releaseTime} <= ${currentTimestamp}`);
-    //}
-
     // Validate status (must be PENDING for meta transactions)
     if (txRecord.status !== TxStatus.PENDING) {
       throw new Error(`Transaction must be in pending state: ${txRecord.status}`);

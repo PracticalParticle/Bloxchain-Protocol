@@ -35,7 +35,7 @@ const testnetClient = createPublicClient({
 ### **Contract Instance Creation**
 
 ```typescript
-import { SecureOwnable, DynamicRBAC } from '@guardian/sdk/typescript'
+import { SecureOwnable, RuntimeRBAC } from '@bloxchain/sdk/typescript'
 
 // SecureOwnable contract
 const secureOwnable = new SecureOwnable(
@@ -45,8 +45,8 @@ const secureOwnable = new SecureOwnable(
   mainnet
 )
 
-// DynamicRBAC contract
-const dynamicRBAC = new DynamicRBAC(
+// RuntimeRBAC contract
+const runtimeRBAC = new RuntimeRBAC(
   publicClient,
   walletClient,
   '0x...', // contract address
@@ -234,47 +234,20 @@ await updateRecovery('0x...')     // new recovery
 await updateTimeLock(7200n)       // 2 hours
 ```
 
-## 🔐 **DynamicRBAC Examples**
+## 🔐 **RuntimeRBAC Examples**
 
 ### **Role Management**
 
 ```typescript
-// Check role editing status
-async function checkRoleEditing() {
-  const enabled = await dynamicRBAC.roleEditingEnabled()
-  console.log('Role editing enabled:', enabled)
-  return enabled
-}
-
-// Toggle role editing
-async function toggleRoleEditing(enabled: boolean) {
-  try {
-    console.log(`${enabled ? 'Enabling' : 'Disabling'} role editing...`)
-    
-    const txHash = await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(
-      enabled,
-      { from: account.address }
-    )
-    
-    console.log('Role editing toggle completed:', txHash)
-    
-    // Verify change
-    const newStatus = await dynamicRBAC.roleEditingEnabled()
-    console.log('New role editing status:', newStatus)
-    
-  } catch (error) {
-    console.error('Role editing toggle failed:', error.message)
-  }
-}
-
 // Get role information
 async function getRoleInfo(roleHash: string) {
   try {
-    const role = await dynamicRBAC.getRole(roleHash)
+    const role = await runtimeRBAC.getRole(roleHash)
     console.log('Role information:', {
-      name: role.name,
-      hash: role.hash,
+      name: role.roleName,
+      hash: role.roleHashReturn,
       maxWallets: role.maxWallets,
+      walletCount: role.walletCount,
       isProtected: role.isProtected
     })
     return role
@@ -284,9 +257,9 @@ async function getRoleInfo(roleHash: string) {
 }
 
 // Check role membership
-async function checkRoleMembership(account: Address, roleHash: string) {
+async function checkRoleMembership(roleHash: string, account: Address) {
   try {
-    const hasRole = await dynamicRBAC.hasRole(account, roleHash)
+    const hasRole = await runtimeRBAC.hasRole(roleHash, account)
     console.log(`Account ${account} has role ${roleHash}:`, hasRole)
     return hasRole
   } catch (error) {
@@ -294,23 +267,45 @@ async function checkRoleMembership(account: Address, roleHash: string) {
   }
 }
 
-// Get role count
-async function getRoleCount() {
+// Get wallets in a role
+async function getWalletsInRole(roleHash: string) {
   try {
-    const count = await dynamicRBAC.getRoleCount()
-    console.log('Total roles:', count)
-    return count
+    const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+    console.log(`Wallets in role ${roleHash}:`, wallets)
+    return wallets
   } catch (error) {
-    console.error('Failed to get role count:', error.message)
+    console.error('Failed to get wallets in role:', error.message)
+  }
+}
+
+// Get roles for a wallet
+async function getWalletRoles(wallet: Address) {
+  try {
+    const roles = await runtimeRBAC.getWalletRoles(wallet)
+    console.log(`Roles for wallet ${wallet}:`, roles)
+    return roles
+  } catch (error) {
+    console.error('Failed to get wallet roles:', error.message)
+  }
+}
+
+// Get supported roles
+async function getSupportedRoles() {
+  try {
+    const roles = await runtimeRBAC.getSupportedRoles()
+    console.log('Supported roles:', roles)
+    return roles
+  } catch (error) {
+    console.error('Failed to get supported roles:', error.message)
   }
 }
 
 // Usage
-await checkRoleEditing()
-await toggleRoleEditing(true)
 await getRoleInfo('0x...') // role hash
-await checkRoleMembership('0x...', '0x...') // account, role hash
-await getRoleCount()
+await checkRoleMembership('0x...', '0x...') // role hash, account
+await getWalletsInRole('0x...') // role hash
+await getWalletRoles('0x...') // wallet address
+await getSupportedRoles()
 ```
 
 
@@ -323,7 +318,7 @@ await getRoleCount()
 ### **Basic Setup**
 
 ```typescript
-import { Definitions } from '@guardian/sdk/typescript'
+import { Definitions } from '@bloxchain/sdk/typescript'
 
 // Initialize Definitions
 const definitions = new Definitions(
@@ -781,65 +776,32 @@ setTimeout(() => {
 }, 5 * 60 * 1000)
 ```
 
-### **DynamicRBAC Events**
+### **RuntimeRBAC Events**
 
 ```typescript
-// Monitor role events
+// Monitor role configuration events
 async function monitorRoleEvents(contractAddress: Address) {
-  console.log('Monitoring role events...')
+  console.log('Monitoring role configuration events...')
   
-  // Role created
-  const unwatchRoleCreated = publicClient.watchContractEvent({
+  // Role configuration applied (unified event for all RBAC changes)
+  const unwatchRoleConfig = publicClient.watchContractEvent({
     address: contractAddress,
-    abi: dynamicRBAC.abi,
-    eventName: 'RoleCreated',
+    abi: runtimeRBAC.abi,
+    eventName: 'RoleConfigApplied',
     onLogs: (logs) => {
       logs.forEach(log => {
-        console.log('Role Created:', {
+        console.log('Role Config Applied:', {
+          actionType: log.args.actionType,
           roleHash: log.args.roleHash,
-          roleName: log.args.roleName,
-          maxWallets: log.args.maxWallets
-        })
-      })
-    }
-  })
-  
-  // Role granted
-  const unwatchRoleGranted = publicClient.watchContractEvent({
-    address: contractAddress,
-    abi: dynamicRBAC.abi,
-    eventName: 'RoleGranted',
-    onLogs: (logs) => {
-      logs.forEach(log => {
-        console.log('Role Granted:', {
-          roleHash: log.args.roleHash,
-          account: log.args.account,
-          granter: log.args.granter
-        })
-      })
-    }
-  })
-  
-  // Role revoked
-  const unwatchRoleRevoked = publicClient.watchContractEvent({
-    address: contractAddress,
-    abi: dynamicRBAC.abi,
-    eventName: 'RoleRevoked',
-    onLogs: (logs) => {
-      logs.forEach(log => {
-        console.log('Role Revoked:', {
-          roleHash: log.args.roleHash,
-          account: log.args.account,
-          revoker: log.args.revoker
+          functionSelector: log.args.functionSelector,
+          data: log.args.data
         })
       })
     }
   })
   
   return () => {
-    unwatchRoleCreated()
-    unwatchRoleGranted()
-    unwatchRoleRevoked()
+    unwatchRoleConfig()
   }
 }
 
@@ -852,13 +814,13 @@ const stopRoleMonitoring = await monitorRoleEvents('0x...')
 ```typescript
 class GuardianContractManager {
   private secureOwnable: SecureOwnable
-  private dynamicRBAC: DynamicRBAC
+  private runtimeRBAC: RuntimeRBAC
 
   constructor(
     publicClient: PublicClient,
     walletClient: WalletClient | undefined,
     secureOwnableAddress: Address,
-    dynamicRBACAddress: Address,
+    runtimeRBACAddress: Address,
     chain: Chain
   ) {
     this.secureOwnable = new SecureOwnable(
@@ -868,10 +830,10 @@ class GuardianContractManager {
       chain
     )
     
-    this.dynamicRBAC = new DynamicRBAC(
+    this.runtimeRBAC = new RuntimeRBAC(
       publicClient,
       walletClient,
-      dynamicRBACAddress,
+      runtimeRBACAddress,
       chain
     )
     
@@ -879,16 +841,16 @@ class GuardianContractManager {
 
   // Get contract status
   async getStatus() {
-    const [owner, timeLock, roleEditing] = await Promise.all([
+    const [owner, timeLock, supportedRoles] = await Promise.all([
       this.secureOwnable.owner(),
       this.secureOwnable.getTimeLockPeriodSec(),
-      this.dynamicRBAC.roleEditingEnabled()
+      this.runtimeRBAC.getSupportedRoles()
     ])
 
     return {
       owner,
       timeLockPeriod: timeLock,
-      roleEditingEnabled: roleEditing
+      supportedRolesCount: supportedRoles.length
     }
   }
 
@@ -909,7 +871,7 @@ const manager = new GuardianContractManager(
   publicClient,
   walletClient,
   '0x...', // SecureOwnable address
-  '0x...', // DynamicRBAC address
+  '0x...', // RuntimeRBAC address
   mainnet
 )
 

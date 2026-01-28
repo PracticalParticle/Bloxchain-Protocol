@@ -269,11 +269,13 @@ class GuardianManager {
 
 ✅ **Do:**
 ```typescript
+import { encodeAbiParameters, parseAbiParameters } from 'viem'
+
 // Modular architecture
 class GuardianManager {
   constructor(
     private secureOwnable: SecureOwnable,
-    private dynamicRBAC: DynamicRBAC,
+    private runtimeRBAC: RuntimeRBAC,
   ) {}
 
   // Delegate to specific modules
@@ -281,8 +283,18 @@ class GuardianManager {
     return await this.secureOwnable.transferOwnershipRequest(newOwner)
   }
 
-  async manageRoles(roleHash: string, account: Address) {
-    return await this.dynamicRBAC.grantRole(roleHash, account)
+  async manageRoles(roleHash: Hex, account: Address) {
+    // Role management is done via batch operations
+    // See runtime-rbac.md for batch configuration examples
+    const actions = [{
+      actionType: 2, // ADD_WALLET
+      data: encodeAbiParameters(
+        parseAbiParameters('bytes32, address'),
+        [roleHash, account]
+      )
+    }]
+    const executionParams = await this.runtimeRBAC.roleConfigBatchExecutionParams(actions)
+    // Then use meta-transaction to execute
   }
 
 }
@@ -301,7 +313,7 @@ function processContract(address: string) {
 ✅ **Do:**
 ```typescript
 // Strong typing
-import { Address } from '@guardian/sdk/typescript'
+import { Address } from '@bloxchain/sdk/typescript'
 
 function processContract(address: Address) {
   // address is guaranteed to be a valid Ethereum address
@@ -719,13 +731,13 @@ A comprehensive integration with Guardian protocol contracts.
 
 ## Features
 - ✅ SecureOwnable contract integration
-- ✅ DynamicRBAC role management
+- ✅ RuntimeRBAC role management
 - ✅ Workflow analysis and validation
 - ✅ Protocol compliance checking
 
 ## Quick Start
 ```typescript
-import { SecureOwnable } from '@guardian/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk/typescript'
 
 const secureOwnable = new SecureOwnable(client, walletClient, address, chain)
 const owner = await secureOwnable.owner()

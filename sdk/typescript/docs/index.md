@@ -143,7 +143,7 @@ Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. Thi
 
 ### **Basic Setup**
 ```typescript
-import { SecureOwnable } from '@guardian/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk/typescript'
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 

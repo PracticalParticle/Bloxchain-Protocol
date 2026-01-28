@@ -84,7 +84,7 @@ contract SecureOwnable is EngineBlox {
 }
 
 // Role-based access control
-contract DynamicRBAC is SecureOwnable {
+contract RuntimeRBAC is SecureOwnable {
     // RBAC-specific functionality
 }
 

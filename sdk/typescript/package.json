@@ -1,6 +1,6 @@
 {
   "name": "@bloxchain/sdk",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -45,6 +45,9 @@
   "bugs": {
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol/issues",
     "email": "security@particlecs.com"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "viem": "^2.23.7"

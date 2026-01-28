@@ -114,16 +114,29 @@ await secureOwnable.executeTransferOwnership(txId);
 
 ### 2. Dynamic Role Management
 
-```typescript
-// Create a new role with specific permissions
-await dynamicRBAC.createRole(
-    "TreasuryManager",
-    ["transfer", "withdraw", "approve"],
-    { maxWallets: 5 }
-);
+> **Note**: The examples below show action definitions for batch role configuration. For complete execution code including meta-transaction construction and `roleConfigBatchRequestAndApprove` calls, see [runtime-rbac.md](./runtime-rbac.md) for detailed batch configuration examples.
 
-// Assign role to wallet
-await dynamicRBAC.assignRole("TreasuryManager", walletAddress);
+```typescript
+// Create a new role with specific permissions via batch
+// Note: Role management uses batch operations for atomic execution
+const createRoleAction = {
+  actionType: 0, // CREATE_ROLE
+  data: encodeAbiParameters(
+    ['string', 'uint256', 'tuple[]'],
+    ['TreasuryManager', 5, functionPermissions]
+  )
+}
+// Execute via roleConfigBatchRequestAndApprove with meta-transaction
+
+// Add wallet to role via batch
+const addWalletAction = {
+  actionType: 2, // ADD_WALLET
+  data: encodeAbiParameters(
+    ['bytes32', 'address'],
+    [roleHash, walletAddress]
+  )
+}
+// Execute via roleConfigBatchRequestAndApprove with meta-transaction
 ```
 
 ### 3. Multi-Signature Operations
@@ -284,19 +297,17 @@ class DeFiProtocol {
 
 ```typescript
 class DAOGovernance {
-    constructor(dynamicRBAC: DynamicRBAC) {
-        this.dynamicRBAC = dynamicRBAC;
+    constructor(runtimeRBAC: RuntimeRBAC) {
+        this.runtimeRBAC = runtimeRBAC;
     }
     
     async createProposal(
         description: string,
         actions: any[]
     ): Promise<number> {
-        // Create proposal role
-        await this.dynamicRBAC.createRole(
-            "PROPOSAL_CREATOR",
-            ["createProposal", "vote"],
-            { maxWallets: 100 }
+        // Create proposal role via batch operation
+        // Note: Use roleConfigBatchRequestAndApprove with CREATE_ROLE action
+        // See runtime-rbac.md for complete batch configuration examples
         );
         
         // Submit proposal
