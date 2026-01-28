@@ -53,3 +53,11 @@ ENV/
 ### Local Deployment Addresses ###
 deployed-addresses.json
 
+### Package Build Artifacts ###
+# Generated during prepublish for @bloxchain/contracts
+package/abi/
+package/contracts/
+
+# Build output for @bloxchain/sdk
+sdk/typescript/dist/
+sdk/typescript/package-lock.json
