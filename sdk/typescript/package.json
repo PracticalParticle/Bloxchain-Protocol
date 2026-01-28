@@ -46,6 +46,9 @@
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol/issues",
     "email": "security@particlecs.com"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "viem": "^2.23.7"
   },

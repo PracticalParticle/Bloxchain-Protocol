@@ -34,6 +34,9 @@
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol/issues",
     "email": "security@particlecs.com"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0"
