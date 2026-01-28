@@ -1,5 +1,4 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-// import BaseStateMachineABIJson from '../../../abi/BaseStateMachine.abi.json';
 import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
