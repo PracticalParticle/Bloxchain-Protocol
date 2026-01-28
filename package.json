@@ -5,6 +5,7 @@
   "type": "module",
   "main": "truffle-config.cjs",
   "scripts": {
+    "prepare": "husky",
     "test:hardhat": "hardhat test",
     "compile:truffle": "truffle compile --config truffle-config.cjs",
     "compile:truffle:size": "npm run compile:truffle && npx truffle run contract-size --config truffle-config.cjs",
@@ -28,17 +29,20 @@
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
     "test:e2e": "npm run deploy:truffle && npm run test:sanity:core && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
-    "sync:versions": "node scripts/sync-versions.cjs",
+    "release:sync-versions": "node scripts/sync-versions.cjs",
+    "release:sync-versions:tag:alpha": "node scripts/sync-versions.cjs --tag alpha",
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
-    "prepublish:sdk": "npm run sync:versions && npm run extract-abi && npm run build:sdk",
-    "prepublish:contracts": "npm run sync:versions",
+    "prepublish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk",
+    "prepublish:contracts": "npm run release:sync-versions",
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
     "publish:contracts": "npm run prepublish:contracts && cd package && npm publish",
     "publish:sdk": "npm run prepublish:sdk && cd sdk/typescript && npm publish",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
-    "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\""
+    "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\"",
+    "commitlint": "commitlint --edit",
+    "release:check": "release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol"
   },
   "keywords": [
     "solidity",
@@ -52,10 +56,14 @@
     "@openzeppelin/contracts-upgradeable": "^5.4.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
     "dotenv": "^17.2.3",
+    "husky": "^9.1.7",
     "hardhat": "^3.1.5",
     "prettier": "^3.8.1",
     "prettier-plugin-solidity": "^2.1.0",
+    "release-please": "^17.1.3",
     "viem": "^2.44.4"
   }
 }

@@ -318,7 +318,7 @@ Report security issues to: security@particlecs.com
 2. **Update documentation** as needed
 3. **Follow code standards**
 4. **Check contract sizes**
-5. **Update CHANGELOG.md** (if applicable)
+5. **Use conventional commit messages** (changelog is auto-generated)
 
 ### Pull Request Template
 
@@ -541,6 +541,87 @@ git push origin main
 - **Significant contributions** may be highlighted
 - **Security researchers** will be acknowledged in advisories
 
+## Commit Message Guidelines
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation and version management. All commit messages must follow this format:
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Commit Types
+
+- **`feat`**: A new feature
+- **`fix`**: A bug fix
+- **`docs`**: Documentation only changes
+- **`style`**: Code style changes (formatting, missing semicolons, etc.)
+- **`refactor`**: Code refactoring without feature changes or bug fixes
+- **`perf`**: Performance improvements
+- **`test`**: Adding or updating tests
+- **`chore`**: Maintenance tasks, dependency updates
+- **`ci`**: CI/CD configuration changes
+- **`build`**: Build system or external dependencies changes
+- **`revert`**: Revert a previous commit
+
+### Scope (Optional)
+
+The scope should be the name of the package or area affected:
+- `contracts`: Smart contract changes
+- `sdk`: TypeScript SDK changes
+- `docs`: Documentation changes
+- `ci`: CI/CD changes
+- `scripts`: Script changes
+
+### Examples
+
+```bash
+# Feature in contracts
+git commit -m "feat(contracts): add PayBlox contract implementation"
+
+# Bug fix in SDK
+git commit -m "fix(sdk): correct transaction receipt parsing"
+
+# Documentation update
+git commit -m "docs: update installation instructions"
+
+# Breaking change (use ! after type)
+git commit -m "feat(contracts)!: change SecureOwnable interface"
+
+# Multiple changes
+git commit -m "feat(contracts): add new role management
+
+- Add createRole function
+- Add removeRole function
+- Update access control logic"
+```
+
+### Breaking Changes
+
+To indicate a breaking change, add a `!` after the type/scope:
+```
+feat(contracts)!: change API signature
+```
+
+Or include `BREAKING CHANGE:` in the footer:
+```
+feat(contracts): update interface
+
+BREAKING CHANGE: The transferOwnership function now requires an additional parameter
+```
+
+### Benefits
+
+- **Automatic changelog generation**: Your commits automatically populate the CHANGELOG.md
+- **Semantic versioning**: Version bumps are determined by commit types
+- **Better git history**: Clear, searchable commit history
+- **Automated releases**: Release PRs are created automatically
+
 ## Development Workflow
 
 ### Daily Development
@@ -563,13 +644,40 @@ git push origin feature/new-feature
 ```
 
 ### Release Process
-1. **Feature freeze** period
-2. **Comprehensive testing**
-3. **Security review**
-4. **Documentation updates**
-5. **Version bump**
-6. **Release notes**
-7. **Deployment**
+
+Releases are **automated** using Release Please. The process works as follows:
+
+1. **Merge PRs to main**: All PRs merged to `main` are analyzed for conventional commits
+2. **Automatic release PR**: Release Please creates a release PR with:
+   - Updated version numbers (semantic versioning based on commit types)
+   - Generated changelog entries
+   - All package versions synchronized
+3. **Review and merge**: Review the release PR, ensure changelog is accurate
+4. **Automatic tag and release**: When the release PR is merged:
+   - A git tag is created
+   - GitHub release is created
+   - Package versions are synced across monorepo
+
+#### Manual Release (if needed)
+
+If you need to create a release manually:
+
+```bash
+# Ensure all changes are committed
+git checkout main
+git pull
+
+# Run release-please locally (requires token)
+npx release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol --token=YOUR_TOKEN
+```
+
+#### Version Bumping Rules
+
+- **Major** (x.0.0): Breaking changes (`feat!`, `fix!`, or `BREAKING CHANGE:`)
+- **Minor** (x.y.0): New features (`feat:`)
+- **Patch** (x.y.z): Bug fixes (`fix:`)
+
+Other commit types (docs, style, refactor, etc.) don't trigger version bumps but are included in changelog.
 
 ## License
 

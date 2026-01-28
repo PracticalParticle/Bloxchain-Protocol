@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "cd ../.. && npm run sync:versions && cd sdk/typescript && npm run build",
+    "prepublishOnly": "cd ../.. && npm run release:sync-versions && cd sdk/typescript && npm run build",
     "clean": "rm -rf dist"
   },
   "keywords": [

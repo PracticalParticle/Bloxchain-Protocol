@@ -17,7 +17,7 @@ console.log('📦 Preparing @bloxchain/contracts for publishing...\n');
 // Step 0: Sync versions from root
 console.log('📋 Step 0: Syncing versions from root...');
 try {
-  execSync('npm run sync:versions', { cwd: rootDir, stdio: 'inherit' });
+  execSync('npm run release:sync-versions', { cwd: rootDir, stdio: 'inherit' });
   console.log('✅ Versions synced\n');
 } catch (error) {
   console.error('❌ Failed to sync versions:', error.message);
