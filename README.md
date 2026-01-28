@@ -1,9 +1,9 @@
-# Bloxchain Protocol: State Abstraction for Blockchain Security
+# Bloxchain Protocol: Enterprise-Grade Blockchain Security Framework
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.33-blue.svg)](https://soliditylang.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-green.svg)](./sdk/typescript/)
-[![Truffle](https://img.shields.io/badge/Truffle-Development-orange.svg)](https://trufflesuite.com/)
+[![Hardhat](https://img.shields.io/badge/Hardhat-v3-yellow.svg)](https://hardhat.org/)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
 [![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
 
@@ -14,15 +14,16 @@
 
 Bloxchain Protocol is a **revolutionary blockchain security architecture** that eliminates single-point failures through **mandatory multi-signature workflows** and **atomic transaction breakdown**. Unlike traditional smart contracts that execute immediately, Bloxchain implements **time-locked operations** and **meta-transactions** with **role separation** to provide enterprise-grade security.
 
-### 🎯 Core Innovation: State Abstraction
+### 🎯 Core Innovation: EngineBlox Multi-Phase Workflows
 
-**State Abstraction** breaks traditional atomic blockchain transactions into **multi-phase workflows** where:
+**EngineBlox** is the core library that powers Bloxchain Protocol's enterprise-grade security architecture. It breaks traditional atomic blockchain transactions into **multi-phase workflows** where:
 
 - **Smart contracts control storage access** (not individual wallets)
-- **Every transaction requires minimum 2 signatures** from different roles
+- **Every transaction requires minimum 2 signatures** (optional: multi-role setup)
 - **Time-locked operations** provide intervention windows
 - **Meta-transactions** enable gasless, delegated execution
 - **Dynamic role-based access control** adapts without code changes
+- **Modular composition** enables building enterprise applications through component assembly
 
 ![Bloxchain Protocol Actions](./images/sandblox-screenshot.png)
 *[SandBlox](https://sandblox.app/) Transactions - Main interface showing contract operations*
@@ -37,37 +38,69 @@ graph TB
     B --> C[SecureOwnable]
     B --> D[RuntimeRBAC]
     B --> E[GuardController]
-    B --> F[HookManager]
     
-    C --> G[SecureBlox]
-    D --> H[RoleBlox]
-    C --> H
-    E --> I[ControlBlox]
-    D --> I
-    C --> I
-    E --> J[MachineBlox]
-    D --> J
-    C --> J
-    F --> J
     B --> K[BareBlox]
+    C --> G[SecureBlox]
+    C --> H[RoleBlox]
+    D --> H
+    C --> I[ControlBlox]
+    D --> I
+    E --> I
     
     L[TypeScript SDK] --> M[SecureOwnable Client]
     L --> N[RuntimeRBAC Client]
     L --> O[Definitions Client]
     
-    P[Examples] --> Q[SimpleVault]
-    P --> R[SimpleRWA20]
+    C --> P1[SimpleVault]
+    C --> P2[SimpleRWA20]
+    C --> P3[PayBlox]
+    C --> P4[GuardianSafe]
+    B --> P5[CopyBlox]
+    C --> P6[BasicERC20]
+    
+    style A fill:#e1f5ff
+    style B fill:#b3e5fc
+    style C fill:#81d4fa
+    style D fill:#81d4fa
+    style E fill:#81d4fa
+    style L fill:#fff9c4
+    style P1 fill:#c8e6c9
+    style P2 fill:#c8e6c9
+    style P3 fill:#c8e6c9
+    style P4 fill:#c8e6c9
+    style P5 fill:#c8e6c9
+    style P6 fill:#c8e6c9
 ```
 
-### 🔧 Template Contracts
+### 🏗️ Modular Composition Architecture
 
-| Contract | Features | Use Case |
-|----------|----------|----------|
-| **BareBlox** | Minimal BaseStateMachine only | Core state machine operations |
-| **SecureBlox** | Basic SecureOwnable functionality | Simple ownership management |
-| **RoleBlox** | SecureOwnable + RuntimeRBAC | Role-based access control |
-| **ControlBlox** | GuardController + RuntimeRBAC + SecureOwnable | Complete execution workflows |
-| **MachineBlox** | GuardController + RuntimeRBAC + SecureOwnable + HookManager | Full-featured with hooks |
+Bloxchain Protocol uses a **modular composition pattern** where components can be combined to build enterprise-grade applications:
+
+- **BaseStateMachine**: Foundation for all blox contracts
+- **SecureOwnable**: Multi-role security (Owner, Broadcaster, Recovery)
+- **RuntimeRBAC**: Dynamic role-based access control
+- **GuardController**: Controlled endpoint for external contract interactions with dynamic access and workflow definition
+- **HookManager**: External hook contract attachment (experimental)
+
+**Template Contracts** (in `contracts/examples/templates/`):
+- **BareBlox**: Minimal BaseStateMachine only
+- **SecureBlox**: Basic SecureOwnable functionality
+- **RoleBlox**: SecureOwnable + RuntimeRBAC
+- **ControlBlox**: GuardController + RuntimeRBAC + SecureOwnable
+- **MachineBlox**: GuardController + RuntimeRBAC + SecureOwnable + HookManager (experimental)
+
+### 📦 Example Applications
+
+The `contracts/examples/` directory contains real-world applications demonstrating Bloxchain Protocol capabilities:
+
+| Application | Use Case | Key Features |
+|-------------|----------|-------------|
+| **SimpleVault** | Secure asset management | Time-locked ETH/ERC20 withdrawals with multi-signature approval |
+| **SimpleRWA20** | Tokenized real-world assets | Secure token minting/burning with meta-transaction support |
+| **PayBlox** | Payment management system | Payment tracking, accounting, and execution with time-delay workflows |
+| **CopyBlox** | Blox cloning factory | EIP-1167 minimal proxy pattern for deploying multiple blox instances |
+| **GuardianSafe** | Safe wallet integration | Safe wallet wrapper with Bloxchain security workflows |
+| **BasicERC20** | Basic token example | Standard ERC20 token implementation using Bloxchain security |
 
 ### 🛡️ Security Model
 
@@ -87,11 +120,11 @@ graph TB
 ### Prerequisites
 
 ```bash
-# Install Truffle globally
-npm install -g truffle
+# Install Node.js (v18 or higher)
+node --version
 
-# Install Ganache for local development
-# Download from: https://trufflesuite.com/ganache/
+# Install Hardhat v3 (included in project dependencies)
+npm install
 ```
 
 ### Installation
@@ -104,39 +137,29 @@ cd Bloxchain-Protocol
 # Install dependencies
 npm install
 
-# Start local blockchain
-ganache --deterministic --networkId 1337
-
 # Compile contracts
-npm run compile:truffle
+npm run compile:foundry
 
-# Deploy contracts
-npm run deploy:truffle
+# Run tests
+npm run test:foundry
 ```
 
-### 🌐 Testnet Deployment
+### 📦 Install Packages
 
-**Sepolia Testnet Support**:
+**Install the SDK and Contracts packages**:
+
 ```bash
-# Deploy to Sepolia testnet
-npm run deploy:truffle:sepolia
+# Install TypeScript SDK
+npm install @bloxchain/sdk
 
-# Or use SandBlox for interactive testing
-# Visit: https://sandblox.app/
+# Install Contracts package
+npm install @bloxchain/contracts
 ```
 
-**Supported Networks**:
-- **Local Development**: Ganache (networkId: 1337)
-- **Ethereum Sepolia**: Testnet deployment and testing
-- **SandBlox Platform**: Interactive testing environment
+### TypeScript SDK Usage
 
-### TypeScript SDK
-
-```bash
-# Install Viem (required dependency)
-npm install viem
-
-# Import BloxChain SDK
+```typescript
+// Import from @bloxchain/sdk package
 import { 
   SecureOwnable, 
   RuntimeRBAC,
@@ -144,14 +167,42 @@ import {
   type Address,
   type PublicClient,
   type WalletClient 
-} from './sdk/typescript';
+} from '@bloxchain/sdk';
+
+// Import contracts from @bloxchain/contracts package
+import '@bloxchain/contracts/contracts/core/security/SecureOwnable.sol';
 ```
+
+### 🌐 Testnet Deployment
+
+**Sepolia Testnet Support**:
+```bash
+# Deploy to Sepolia testnet (configure hardhat.config.cjs first)
+npm run deploy:hardhat -- --network sepolia
+
+# Or use SandBlox for interactive testing
+# Visit: https://sandblox.app/
+```
+
+**Supported Networks**:
+- **Local Development**: Hardhat Network (built-in, no setup required)
+- **Ethereum Sepolia**: Testnet deployment and testing
+- **SandBlox Platform**: Interactive testing environment
 
 ## 📖 Usage Examples
 
 ### Basic Ownership Management
 
 ```typescript
+// Import from @bloxchain/sdk package
+import { SecureOwnable, type Address, type PublicClient, type WalletClient } from '@bloxchain/sdk';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
+
+// Initialize clients
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: http() });
+
 // Initialize SecureOwnable client
 const secureOwnable = new SecureOwnable(
   publicClient,
@@ -206,6 +257,10 @@ await secureOwnable.transferOwnershipApprovalWithMetaTx(
 ### Dynamic Role-Based Access Control
 
 ```typescript
+// Import from @bloxchain/sdk package
+import { RuntimeRBAC } from '@bloxchain/sdk';
+import { encodeAbiParameters } from 'viem';
+
 // Initialize RuntimeRBAC client
 const runtimeRBAC = new RuntimeRBAC(
   publicClient,
@@ -233,44 +288,200 @@ const role = await runtimeRBAC.getRole(roleHash);
 const wallets = await runtimeRBAC.getWalletsInRole(roleHash);
 ```
 
-## 🏭 Real-World Examples
+## 🔐 Runtime RBAC: Dynamic Role-Based Access Control
 
-### SimpleVault: Secure Asset Management
+Bloxchain Protocol implements **Runtime RBAC** (Role-Based Access Control) that enables dynamic role configuration without contract upgrades. This system provides enterprise-grade access control through:
 
-**Time-Locked Withdrawal System**:
+### Key Features
+
+- **Batch Configuration**: Atomic role management operations via `roleConfigBatch`
+- **Function-Level Permissions**: Granular permissions using action bitmaps
+- **Dynamic Role Creation**: Create, update, and remove roles at runtime
+- **Handler Selectors**: Support for handler functions with execution selector permissions
+- **Protected Roles**: System roles (Owner, Broadcaster, Recovery) cannot be modified
+
+### Runtime RBAC Workflow
+
+```typescript
+// Create a custom role with specific permissions
+const actions = [{
+  actionType: 'CREATE_ROLE',
+  data: abi.encode(
+    ['string', 'uint256', 'tuple[]'],
+    ['TreasuryManager', 5, functionPermissions]
+  )
+}];
+
+// Execute via meta-transaction for gasless operation
+await runtimeRBAC.roleConfigBatchRequestAndApprove(metaTx, {
+  from: broadcasterAddress
+});
+```
+
+### Permission Model
+
+- **Action Bitmaps**: Compact representation of allowed actions (Request, Approve, Cancel, Sign, Execute)
+- **Function Selectors**: Per-function permission granularity
+- **Role Separation**: Mandatory separation between signing and execution roles
+- **Wallet Limits**: Configurable maximum wallets per role
+
+## 🛡️ GuardController: Controlled Endpoint for External Interactions
+
+**GuardController** provides a **controlled endpoint** for external contract interactions, enabling dynamic definition of access and workflows for external contracts. It serves as a secure gateway that delegates control to external addresses while maintaining strict security boundaries.
+
+### Key Features
+
+- **Dynamic Access Definition**: Configure access and workflows for external contracts at runtime
+- **Target Whitelisting**: Per-function selector whitelist restricts which contract addresses can be called
+- **Defense-in-Depth Security**: Multiple layers of validation (whitelist + permissions + time-locks)
+- **Workflow Support**: Time-locked and meta-transaction workflows for all external interactions
+- **Function Schema Registration**: Runtime function registration with action-level permissions
+
+### Security Model
+
+**Target Whitelist Enforcement**:
+- Each function selector has its own target address whitelist
+- Target MUST be explicitly whitelisted for the function selector
+- Empty whitelist = explicit deny (no targets allowed)
+- Prevents exploitation of global function selector permissions
+
+**Workflow Execution**:
+1. Register function schemas with supported actions
+2. Configure target whitelists per function selector (REQUIRED)
+3. Create roles and assign function permissions (via RuntimeRBAC)
+4. Execute operations via time-lock or meta-transaction workflows
+5. Target whitelist is ALWAYS validated before execution
+
+### Use Cases
+
+- **Multi-Signature Wallet Integration**: Secure delegation to external wallet contracts
+- **DAO Governance**: Controlled execution of governance proposals
+- **DeFi Protocol Integration**: Secure interaction with external DeFi protocols
+- **Cross-Contract Operations**: Orchestrate complex multi-contract workflows
+
+### Example Usage
+
 ```solidity
-contract SimpleVault is SecureOwnable {
-    // Time-locked ETH withdrawal request
-    function withdrawEthRequest(address to, uint256 amount) public onlyOwner returns (EngineBlox.TxRecord memory) {
-        // Creates time-locked withdrawal request
-        // Requires approval after time-lock period
+// GuardController enables secure external contract calls
+contract MyController is GuardController, RuntimeRBAC, SecureOwnable {
+    // Configure target whitelist for a function selector
+    function setupExternalCall() external {
+        GuardConfigAction[] memory actions = new GuardConfigAction[](1);
+        actions[0] = GuardConfigAction({
+            actionType: GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            data: abi.encode(functionSelector, targetAddress)
+        });
+        executeGuardConfigBatch(actions);
     }
     
-    // Standard approval workflow (after time delay)
-    function approveWithdrawalAfterDelay(uint256 txId) public onlyOwner returns (EngineBlox.TxRecord memory) {
-        // Approves withdrawal after mandatory time-lock period
-        // Requires owner role permission
-    }
-    
-    // Meta-transaction approval workflow (gasless)
-    function approveWithdrawalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public onlyBroadcaster returns (EngineBlox.TxRecord memory) {
-        // Approves withdrawal using meta-transaction
-        // Requires broadcaster role execution with off-chain signature
+    // Execute external call with time-lock workflow
+    function callExternalContract() external {
+        executeWithTimeLock(
+            targetAddress,
+            0, // value
+            functionSelector,
+            params,
+            gasLimit,
+            operationType
+        );
     }
 }
 ```
 
-### SimpleRWA20: Tokenized Real-World Assets
+## 📋 Definition Data Layer
 
-**Meta-Transaction Token Operations**:
+The **Definition Data Layer** enables modular contract initialization through the `IDefinition` interface. Definition contracts provide:
+
+### Core Components
+
+- **Function Schemas**: Define supported functions, operation types, and action permissions
+- **Role Permissions**: Map roles to function permissions with action bitmaps
+- **Pure Functions**: All definition functions are `pure` for immutability
+- **Modular Initialization**: Load definitions during contract initialization without increasing contract size
+
+### Definition Contract Structure
+
 ```solidity
-contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnable {
-    // Secure token minting with meta-transactions
-    function mintWithMetaTx(MetaTransaction memory metaTx) external {
-        // Only broadcaster can execute
-        // Requires off-chain signature from authorized role
+interface IDefinition {
+    function getFunctionSchemas() external pure returns (EngineBlox.FunctionSchema[] memory);
+    function getRolePermissions() external pure returns (RolePermission memory);
+}
+```
+
+### Benefits
+
+- **Contract Size Optimization**: Definitions stored in separate libraries
+- **Modular Design**: Easy to extend and customize
+- **Type Safety**: Compile-time validation of function schemas
+- **Runtime Discovery**: Dynamic querying of contract capabilities via SDK
+
+### Example Definition Contract
+
+```solidity
+library SimpleVaultDefinitions {
+    function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
+        // Define function schemas with operation types and action permissions
+    }
+    
+    function getRolePermissions() public pure returns (IDefinition.RolePermission memory) {
+        // Define role-to-permission mappings
     }
 }
+```
+
+## 🧪 Comprehensive Fuzz Testing
+
+Bloxchain Protocol includes **comprehensive fuzz testing** with **22 test files** and **152 fuzz test functions** (plus 16 regular test functions, totaling **168+ test functions**) covering all security-critical components and edge cases.
+
+### Test Coverage
+
+| Test Suite | Coverage Area | Test Count |
+|------------|---------------|------------|
+| **ComprehensiveStateMachineFuzz** | State machine security, reentrancy protection | 11 tests |
+| **ComprehensiveSecurityEdgeCasesFuzz** | Bitmap attacks, hook vulnerabilities, payment race conditions | 10 tests |
+| **ComprehensiveMetaTransactionFuzz** | Meta-transaction security, signature validation | 11 tests |
+| **ComprehensiveInputValidationFuzz** | Input validation, array manipulation, edge cases | 13 tests |
+| **ComprehensivePaymentSecurityFuzz** | Payment management, race conditions | 6 tests |
+| **ComprehensiveHookSystemFuzz** | Hook execution, interface compliance | 2 tests |
+| **ComprehensiveAccessControlFuzz** | Access control, permission validation | 13 tests |
+| **ComprehensiveDefinitionSecurityFuzz** | Definition loading, schema validation | 15 tests (6 fuzz + 9 regular) |
+| **ComprehensiveGasExhaustionFuzz** | Gas limits, batch operations | 17 tests |
+| **ComprehensiveWhitelistSchemaFuzz** | Target whitelisting, function schemas | 15 tests (9 fuzz + 6 regular) |
+| **ComprehensiveCompositeFuzz** | Composite attack vectors | 5 tests (4 fuzz + 1 regular) |
+| **ComprehensiveInitializationFuzz** | Initialization security, reentrancy | 9 tests |
+| **ComprehensiveEventForwardingFuzz** | Event forwarding, external integrations | 2 tests |
+| **GuardControllerFuzz** | Guard controller workflows | 4 tests |
+| **SecureOwnableFuzz** | Ownership management security | 5 tests |
+| **RuntimeRBACFuzz** | Runtime RBAC operations | 2 tests |
+| **StateMachineWorkflowFuzz** | Workflow state transitions | 5 tests |
+| **MetaTransactionSecurityFuzz** | Meta-transaction security | 6 tests |
+| **ProtectedResourceFuzz** | Protected resource access | 4 tests |
+| **EdgeCasesFuzz** | General edge cases | 4 tests |
+| **RBACPermissionFuzz** | RBAC permission validation | 3 tests |
+| **SystemMacroSelectorSecurityFuzz** | System selector security | 6 tests |
+
+### Security Focus Areas
+
+- **Reentrancy Protection**: All state-changing functions protected
+- **Bitmap Security**: Overflow/underflow prevention, invalid enum handling
+- **Hook Security**: Execution order, interface compliance, gas exhaustion
+- **Payment Security**: Race conditions, front-running prevention
+- **Access Control**: Permission escalation, role manipulation
+- **Meta-Transaction Security**: Signature validation, replay protection
+- **Gas Exhaustion**: Batch size limits, operation limits
+- **Composite Attacks**: Multi-vector attack scenarios
+
+### Running Fuzz Tests
+
+```bash
+# Run all Foundry fuzz tests
+npm run test:foundry:fuzz
+
+# Run Foundry tests with verbose output
+npm run test:foundry:verbose
+
+# Run specific fuzz test suite (using forge directly)
+forge test --match-path "test/foundry/fuzz/ComprehensiveStateMachineFuzz.t.sol" --fuzz-runs 10000
 ```
 
 
@@ -288,8 +499,11 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
 ### Contract Compilation & Size Monitoring
 
 ```bash
+# Compile contracts with Foundry
+npm run compile:foundry
+
 # Compile with size checking
-npm run compile:truffle:size
+npm run compile:foundry:size
 
 # Verify contracts are under 24KB limit
 # Output shows contract sizes and optimization status
@@ -298,15 +512,22 @@ npm run compile:truffle:size
 ### Testing Infrastructure
 
 ```bash
-# Run Truffle tests
-npm run test:truffle
+# Run Foundry tests
+npm run test:foundry
 
-# Run Hardhat tests
-npm run test:hardhat
+# Run Foundry fuzz tests (comprehensive security testing)
+npm run test:foundry:fuzz
+
+# Run Foundry tests with verbose output
+npm run test:foundry:verbose
+
+# Run Foundry coverage
+npm run test:foundry:coverage
 
 # Run sanity checks
 npm run test:sanity:secure-ownable
 npm run test:sanity:simple-vault
+npm run test:sanity:simple-rwa20
 
 # End-to-end testing
 npm run test:e2e
@@ -404,7 +625,7 @@ Validation Phase: Contract → Verifies signatures and executes
 - **BaseStateMachine**: Foundation for all security contracts with meta-transaction support
 - **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
 - **RuntimeRBAC**: Runtime role configuration with function-level permissions
-- **GuardController**: Execution workflows and time-locked transaction management
+- **GuardController**: Controlled endpoint for external contract interactions with dynamic access and workflow definition
 - **HookManager**: External hook contract attachment for state machine actions
 
 **Contract Hierarchy**:
@@ -437,7 +658,9 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 }
 
 abstract contract GuardController is BaseStateMachine {
-    // Execution workflows and time-locked transaction management
+    // Controlled endpoint for external contract interactions
+    // Dynamically defines access and workflows for external contracts
+    // Target whitelisting per function selector (defense-in-depth security)
 }
 
 abstract contract HookManager is BaseStateMachine {
@@ -460,10 +683,12 @@ abstract contract HookManager is BaseStateMachine {
 - **Event Monitoring**: Real-time event parsing and monitoring
 
 ### Testing & Quality
-- **Truffle Testing**: Comprehensive test suite with Ganache integration
-- **Hardhat Support**: Alternative testing framework support
+- **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering all security-critical components
+- **Foundry Testing**: Primary testing framework with fuzz testing and invariant checking
+- **Hardhat Support**: Alternative testing framework for compatibility
 - **Sanity Checks**: Production-ready validation scripts
 - **Contract Size Monitoring**: Automated size optimization verification
+- **Security Edge Cases**: Extensive coverage of attack vectors and vulnerabilities
 
 ## 🚧 Implementation Status
 
@@ -473,12 +698,14 @@ abstract contract HookManager is BaseStateMachine {
 - ✅ **BaseStateMachine**: Foundation contract with core state machine functionality
 - ✅ **SecureOwnable**: Multi-role security with Owner, Broadcaster, and Recovery roles
 - ✅ **RuntimeRBAC**: Dynamic role-based access control with runtime configuration
-- ✅ **GuardController**: Execution workflows and time-locked transaction management
-- ✅ **HookManager**: External hook contract attachment for state machine actions
+- ✅ **GuardController**: Controlled endpoint for external contract interactions with dynamic access and workflow definition
+- ✅ **HookManager**: External hook contract attachment for state machine actions (experimental)
 - ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, ControlBlox, MachineBlox
+- ✅ **Example Applications**: SimpleVault, SimpleRWA20, PayBlox, CopyBlox, GuardianSafe, BasicERC20
 - ✅ **TypeScript SDK**: Full client library with comprehensive documentation
-- ✅ **Example Contracts**: SimpleVault and SimpleRWA20 with real-world use cases
-- ✅ **Comprehensive Tests**: Full suite ensuring functionality and security
+- ✅ **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering security edge cases
+- ✅ **Runtime RBAC**: Dynamic role configuration without contract upgrades
+- ✅ **Definition Data Layer**: Modular initialization via IDefinition interface
 - ✅ **Sepolia Testnet Support**: Live deployment and testing on Ethereum Sepolia testnet
 
 **Security Features**:
@@ -521,16 +748,20 @@ We welcome contributions to the Bloxchain Protocol! Please see our comprehensive
 
 **Setup & Testing**:
 ```bash
-# Install dependencies and start local blockchain
+# Install dependencies
 npm install
-ganache --deterministic --networkId 1337
 
-# Compile contracts with size monitoring
-npm run compile:truffle:size
+# Compile contracts with Foundry
+npm run compile:foundry
 
 # Run comprehensive test suite
-npm run test:truffle
-npm run test:hardhat
+npm run test:foundry
+
+# Run fuzz tests for security validation
+npm run test:foundry:fuzz
+
+# Run invariant tests
+npm run test:foundry:invariant
 
 # Run sanity checks
 npm run test:sanity:secure-ownable
@@ -544,9 +775,11 @@ npm run test:sanity:simple-rwa20
 npm run docgen
 npm run format
 
-# Deploy to local network
-npm run deploy:truffle
+# Deploy to local Hardhat network
+npm run deploy:hardhat
 
+# Deploy to Sepolia testnet (configure network in hardhat.config.cjs)
+npm run deploy:hardhat -- --network sepolia
 ```
 
 ## 📄 License
@@ -580,10 +813,11 @@ See individual LICENSE files in each application directory for specific terms.
 
 ## 🙏 Acknowledgments
 
-- **[Particle Crypto Security](https://particlecs.com/)** for the innovative State Abstraction implementation
+- **[Particle Crypto Security](https://particlecs.com/)** for the innovative Bloxchain Protocol implementation
 - **OpenZeppelin** for secure smart contract components and upgradeable patterns
 - **Viem** for modern TypeScript blockchain interactions
-- **Truffle Suite** for comprehensive development and testing tools
+- **Hardhat** for comprehensive development and testing framework
+- **Foundry** for advanced fuzz testing and security validation
 
 ## 📞 Support & Community
 
