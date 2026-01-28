@@ -121,9 +121,9 @@ const txHash = await secureOwnable.updateTimeLockRequestAndApprove(
 )
 ```
 
-### **DynamicRBAC**
+### **RuntimeRBAC**
 
-The `DynamicRBAC` class provides type-safe access to DynamicRBAC contracts.
+The `RuntimeRBAC` class provides type-safe access to RuntimeRBAC contracts. It extends `BaseStateMachine` and provides batch-based role configuration.
 
 #### **Constructor**
 
@@ -138,44 +138,66 @@ constructor(
 
 #### **Read Methods**
 
-##### `roleEditingEnabled(): Promise<boolean>`
-Checks if role editing is enabled.
-
-```typescript
-const enabled = await dynamicRBAC.roleEditingEnabled()
-```
-
-##### `getRole(roleHash: string): Promise<Role>`
+##### `getRole(roleHash: Hex): Promise<Role>`
 Gets role information by hash.
 
 ```typescript
-const role = await dynamicRBAC.getRole('0x...')
+const role = await runtimeRBAC.getRole('0x...')
+// Returns: { roleName, roleHashReturn, maxWallets, walletCount, isProtected }
 ```
 
-##### `hasRole(account: Address, roleHash: string): Promise<boolean>`
-Checks if an account has a specific role.
+##### `hasRole(roleHash: Hex, wallet: Address): Promise<boolean>`
+Checks if a wallet has a specific role.
 
 ```typescript
-const hasRole = await dynamicRBAC.hasRole('0x...', '0x...')
+const hasRole = await runtimeRBAC.hasRole('0x...', '0x...')
 ```
 
-##### `getRoleCount(): Promise<bigint>`
-Returns the total number of roles.
+##### `getWalletsInRole(roleHash: Hex): Promise<Address[]>`
+Gets all authorized wallets for a role.
 
 ```typescript
-const count = await dynamicRBAC.getRoleCount()
+const wallets = await runtimeRBAC.getWalletsInRole('0x...')
+```
+
+##### `getWalletRoles(wallet: Address): Promise<Hex[]>`
+Gets all roles assigned to a wallet.
+
+```typescript
+const roles = await runtimeRBAC.getWalletRoles('0x...')
+```
+
+##### `getSupportedRoles(): Promise<Hex[]>`
+Returns the list of supported roles.
+
+```typescript
+const roles = await runtimeRBAC.getSupportedRoles()
+```
+
+##### `getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema>`
+Gets function schema information.
+
+```typescript
+const schema = await runtimeRBAC.getFunctionSchema('0xa9059cbb')
 ```
 
 #### **Write Methods**
 
-##### `updateRoleEditingToggleRequestAndApprove(enabled: boolean, options?: TransactionOptions): Promise<Hash>`
-Requests and approves role editing toggle.
+##### `roleConfigBatchRequestAndApprove(metaTx: MetaTransaction, options?: TransactionOptions): Promise<TransactionResult>`
+Requests and approves a RBAC configuration batch using a meta-transaction.
 
 ```typescript
-const txHash = await dynamicRBAC.updateRoleEditingToggleRequestAndApprove(
-  true,
+const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
+  metaTx,
   { from: account.address }
 )
+```
+
+##### `roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Promise<Hex>`
+Creates execution params for a RBAC configuration batch.
+
+```typescript
+const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(actions)
 ```
 
 
@@ -259,7 +281,7 @@ class ComplianceError extends GuardianError {
 ### **Basic Contract Interaction**
 
 ```typescript
-import { SecureOwnable } from '@guardian/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk/typescript'
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -287,4 +309,4 @@ console.log('Time lock period:', timeLock)
 
 **Need more details?** Check out the specific guides:
 - [SecureOwnable Guide](./secure-ownable.md)
-- [DynamicRBAC Guide](./dynamic-rbac.md)
+- [RuntimeRBAC Guide](./runtime-rbac.md)

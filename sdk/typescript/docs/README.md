@@ -8,7 +8,7 @@ Welcome to the Guardian TypeScript SDK documentation. This comprehensive guide c
 - [**Getting Started**](./getting-started.md) - Quick setup and basic usage
 - [**API Reference**](./api-reference.md) - Complete API documentation
 - [**SecureOwnable**](./secure-ownable.md) - SecureOwnable contract integration
-- [**DynamicRBAC**](./dynamic-rbac.md) - DynamicRBAC contract integration
+- [**RuntimeRBAC**](./runtime-rbac.md) - RuntimeRBAC contract integration
 - [**Definitions**](./definition-contract.md) - Dynamic definition library interaction
 - [**Meta-Transactions**](./meta-transactions.md) - Meta-transaction workflows and signing
 - [**Types & Interfaces**](./types-interfaces.md) - TypeScript type definitions
@@ -33,7 +33,7 @@ Welcome to the Guardian TypeScript SDK documentation. This comprehensive guide c
 ## 🚀 **Quick Start**
 
 ```typescript
-import { SecureOwnable } from '@guardian/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk/typescript'
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -61,7 +61,7 @@ console.log('Contract owner:', owner)
 1. [Getting Started](./getting-started.md)
 2. [API Reference](./api-reference.md)
 3. [SecureOwnable](./secure-ownable.md)
-4. [DynamicRBAC](./dynamic-rbac.md)
+4. [RuntimeRBAC](./runtime-rbac.md)
 5. [Definitions](./definition-contract.md)
 6. [Meta-Transactions](./meta-transactions.md)
 7. [Types & Interfaces](./types-interfaces.md)

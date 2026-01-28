@@ -862,7 +862,7 @@ function toUserAddress(value: string): UserAddress {
 ### **Type-Safe Contract Interaction**
 
 ```typescript
-import { Address, ContractAddress, UserAddress } from '@guardian/sdk/typescript'
+import { Address, ContractAddress, UserAddress } from '@bloxchain/sdk/typescript'
 
 function transferOwnership(
   contract: ContractAddress,
@@ -881,7 +881,7 @@ const txHash = await transferOwnership(contractAddr, userAddr)
 ### **Workflow Type Safety**
 
 ```typescript
-import { Workflow, WorkflowType } from '@guardian/sdk/typescript'
+import { Workflow, WorkflowType } from '@bloxchain/sdk/typescript'
 
 function processWorkflow(workflow: Workflow): void {
   switch (workflow.type) {
@@ -907,7 +907,7 @@ function processWorkflow(workflow: Workflow): void {
 ### **Error Handling with Types**
 
 ```typescript
-import { GuardianError, ContractError, ValidationError } from '@guardian/sdk/typescript'
+import { GuardianError, ContractError, ValidationError } from '@bloxchain/sdk/typescript'
 
 function handleError(error: unknown): void {
   if (error instanceof ContractError) {

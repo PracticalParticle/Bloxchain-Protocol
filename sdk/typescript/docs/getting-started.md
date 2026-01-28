@@ -13,10 +13,10 @@ This guide will help you get up and running with the Guardian TypeScript SDK qui
 
 ```bash
 # Install the SDK
-npm install @guardian/sdk
+npm install @bloxchain/sdk
 
 # Or with yarn
-yarn add @guardian/sdk
+yarn add @bloxchain/sdk
 ```
 
 ## 🔧 **Basic Setup**
@@ -24,7 +24,7 @@ yarn add @guardian/sdk
 ### 1. **Import Required Dependencies**
 
 ```typescript
-import { SecureOwnable, DynamicRBAC } from '@guardian/sdk/typescript'
+import { SecureOwnable, RuntimeRBAC } from '@bloxchain/sdk/typescript'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -59,8 +59,8 @@ const secureOwnable = new SecureOwnable(
   mainnet
 )
 
-// DynamicRBAC contract
-const dynamicRBAC = new DynamicRBAC(
+// RuntimeRBAC contract
+const runtimeRBAC = new RuntimeRBAC(
   publicClient,
   walletClient, // optional
   '0x...', // contract address
@@ -81,9 +81,9 @@ console.log('Owner:', owner)
 const timeLockPeriod = await secureOwnable.getTimeLockPeriodSec()
 console.log('Time lock period:', timeLockPeriod)
 
-// Check if role editing is enabled
-const roleEditingEnabled = await dynamicRBAC.roleEditingEnabled()
-console.log('Role editing enabled:', roleEditingEnabled)
+// Get supported roles
+const supportedRoles = await runtimeRBAC.getSupportedRoles()
+console.log('Supported roles:', supportedRoles)
 ```
 
 ### **Writing to Contracts**
@@ -216,7 +216,7 @@ try {
 
 1. **Read the API Reference**: [API Reference](./api-reference.md)
 2. **Explore SecureOwnable**: [SecureOwnable Guide](./secure-ownable.md)
-3. **Learn about DynamicRBAC**: [DynamicRBAC Guide](./dynamic-rbac.md)
+3. **Learn about RuntimeRBAC**: [RuntimeRBAC Guide](./runtime-rbac.md)
 5. **Check Examples**: [Basic Examples](./examples-basic.md)
 
 ## ❓ **Common Issues**

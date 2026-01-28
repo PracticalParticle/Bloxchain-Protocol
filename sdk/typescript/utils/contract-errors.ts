@@ -322,11 +322,6 @@ export interface CannotModifyProtectedError extends ContractError {
   params: { resourceId: string }
 }
 
-export interface RoleEditingDisabledError extends ContractError {
-  name: 'RoleEditingDisabled'
-  params: {}
-}
-
 export interface FunctionPermissionExistsError extends ContractError {
   name: 'FunctionPermissionExists'
   params: { functionSelector: string }
@@ -461,7 +456,6 @@ export type GuardianContractError =
   | MaxWalletsZeroError
   | CannotModifyProtectedRolesError
   | CannotModifyProtectedError
-  | RoleEditingDisabledError
   | FunctionPermissionExistsError
   | ActionNotSupportedError
   | ConflictingMetaTxPermissionsError
