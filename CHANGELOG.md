@@ -67,7 +67,7 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) f
 Breaking changes can be indicated in two ways:
 1. Use `!` after the type: `feat!: change API signature`
 2. Include `BREAKING CHANGE:` in the commit footer:
-   ```
+   ```text
    feat(contracts): update interface
    
    BREAKING CHANGE: The transferOwnership function now requires an additional parameter

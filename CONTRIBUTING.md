@@ -547,7 +547,7 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) f
 
 ### Commit Message Format
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -604,12 +604,12 @@ git commit -m "feat(contracts): add new role management
 ### Breaking Changes
 
 To indicate a breaking change, add a `!` after the type/scope:
-```
+```text
 feat(contracts)!: change API signature
 ```
 
 Or include `BREAKING CHANGE:` in the footer:
-```
+```text
 feat(contracts): update interface
 
 BREAKING CHANGE: The transferOwnership function now requires an additional parameter

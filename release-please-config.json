@@ -8,8 +8,7 @@
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "package/package.json",
-        "sdk/typescript/package.json",
-        "contracts/core/lib/EngineBlox.sol"
+        "sdk/typescript/package.json"
       ]
     },
     "package": {

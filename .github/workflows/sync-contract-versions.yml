@@ -14,7 +14,7 @@ permissions:
 jobs:
   sync-contract-versions:
     # Only run on PRs created by release-please
-    if: contains(github.event.pull_request.head.ref, 'release-please') || contains(github.event.pull_request.title, 'chore: release')
+    if: "contains(github.event.pull_request.head.ref, 'release-please') || contains(github.event.pull_request.title, 'chore: release')"
     runs-on: ubuntu-latest
     
     steps:
