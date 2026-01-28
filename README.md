@@ -122,9 +122,6 @@ The `contracts/examples/` directory contains real-world applications demonstrati
 ```bash
 # Install Node.js (v18 or higher)
 node --version
-
-# Install Hardhat v3 (included in project dependencies)
-npm install
 ```
 
 ### Installation
@@ -787,13 +784,31 @@ npm run deploy:hardhat -- --network sepolia
 This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - see the [LICENSE](LICENSE) file for details.
 
 ### Core Framework License
+
 **Key Benefits of MPL-2.0:**
 - **Open Source**: Free to use, modify, and distribute
 - **Commercial Use**: Clear commercial use permissions
 - **Patent Protection**: Protects contributors from patent litigation
+- **Weak Copyleft**: Allows proprietary integration while keeping core open
 - **No Vendor Lock-in**: Freedom to modify without proprietary restrictions
 
 ### Applications Directory License Structure
+**Covered Software:**
+- Core framework contracts (`contracts/core/`)
+- TypeScript SDK (`sdk/typescript/`)
+- Documentation and guides
+- Testing infrastructure
+- Build scripts and tooling
+
+### Examples Directory Exclusion
+
+**Important**: The `contracts/examples/` directory and it subdirectoies are **EXCLUDED** from MPL-2.0 licensing:
+
+- **Examples are NOT covered by MPL-2.0**
+- **Examples are NOT part of the "Covered Software"**
+- **Examples are NOT subject to MPL-2.0 terms**
+- **Each example maintains its own licensing terms**
+- **Examples are NOT officially supported** by Bloxchain Protocol
 
 **Important**: The `applications/` directory is **EXCLUDED** from MPL-2.0 licensing:
 
@@ -801,6 +816,7 @@ This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - se
 - **Applications**: Each application has its own separate license
 - **Community Applications** (`applications/community/`): Various open-source licenses (MIT, Apache 2.0, GPL v3, etc.)
 - **Proprietary Applications** (`applications/proprietary/`): Commercial/proprietary licenses
+See individual LICENSE files in each example subdirectory for specific terms.
 
 **Applications are:**
 - ❌ **NOT covered by MPL-2.0**
@@ -809,7 +825,11 @@ This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - se
 - ✅ **Licensed separately** with their own terms
 - ✅ **Used at your own risk**
 
+### Contributing License Agreement
+
 See individual LICENSE files in each application directory for specific terms.
+
+By contributing to Bloxchain Protocol, you agree that your contributions will be licensed under the Mozilla Public License 2.0 (MPL-2.0). See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## 🙏 Acknowledgments
 
