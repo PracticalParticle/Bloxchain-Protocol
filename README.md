@@ -802,7 +802,7 @@ This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - se
 
 ### Examples Directory Exclusion
 
-**Important**: The `contracts/examples/` directory and it subdirectoies are **EXCLUDED** from MPL-2.0 licensing:
+**Important**: The `contracts/examples/` directory and its subdirectories are **EXCLUDED** from MPL-2.0 licensing:
 
 - **Examples are NOT covered by MPL-2.0**
 - **Examples are NOT part of the "Covered Software"**

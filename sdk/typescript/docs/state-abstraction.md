@@ -114,6 +114,8 @@ await secureOwnable.executeTransferOwnership(txId);
 
 ### 2. Dynamic Role Management
 
+> **Note**: The examples below show action definitions for batch role configuration. For complete execution code including meta-transaction construction and `roleConfigBatchRequestAndApprove` calls, see [runtime-rbac.md](./runtime-rbac.md) for detailed batch configuration examples.
+
 ```typescript
 // Create a new role with specific permissions via batch
 // Note: Role management uses batch operations for atomic execution

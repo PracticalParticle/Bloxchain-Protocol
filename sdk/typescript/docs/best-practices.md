@@ -269,6 +269,8 @@ class GuardianManager {
 
 ✅ **Do:**
 ```typescript
+import { encodeAbiParameters, parseAbiParameters } from 'viem'
+
 // Modular architecture
 class GuardianManager {
   constructor(
@@ -286,7 +288,10 @@ class GuardianManager {
     // See runtime-rbac.md for batch configuration examples
     const actions = [{
       actionType: 2, // ADD_WALLET
-      data: encodeAbiParameters(['bytes32', 'address'], [roleHash, account])
+      data: encodeAbiParameters(
+        parseAbiParameters('bytes32, address'),
+        [roleHash, account]
+      )
     }]
     const executionParams = await this.runtimeRBAC.roleConfigBatchExecutionParams(actions)
     // Then use meta-transaction to execute
