@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "bloxchain-protocol",
+      "version-file": "package.json",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "package/package.json",
+        "sdk/typescript/package.json"
+      ]
+    },
+    "package": {
+      "release-type": "node",
+      "package-name": "@bloxchain/contracts",
+      "version-file": "package/package.json",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "sdk/typescript": {
+      "release-type": "node",
+      "package-name": "@bloxchain/sdk",
+      "version-file": "sdk/typescript/package.json",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "$comment": "Release Please will automatically create release PRs when changes are merged to main. The root package controls versioning for all packages in this monorepo."
+}

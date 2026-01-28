@@ -1,0 +1,99 @@
+name: Sync Contract Versions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      # - dev
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-contract-versions:
+    # Only run on PRs created by release-please
+    if: "contains(github.event.pull_request.head.ref, 'release-please') || contains(github.event.pull_request.title, 'chore: release')"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for uncommitted changes in EngineBlox.sol
+        id: check-uncommitted
+        run: |
+          if ! git diff --quiet HEAD -- contracts/core/lib/EngineBlox.sol; then
+            echo "❌ ERROR: EngineBlox.sol has uncommitted changes!"
+            echo ""
+            echo "The workflow cannot safely update version constants when there are uncommitted changes."
+            echo "Please commit or stash your changes to EngineBlox.sol before this workflow runs."
+            echo ""
+            echo "Uncommitted changes:"
+            git diff HEAD -- contracts/core/lib/EngineBlox.sol
+            exit 1
+          else
+            echo "✓ EngineBlox.sol is clean, safe to proceed with version sync"
+            echo "uncommitted=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync versions (including contract constants)
+        run: npm run release:sync-versions
+
+      - name: Check for contract version changes
+        id: check-changes
+        run: |
+          if ! git diff --quiet contracts/core/lib/EngineBlox.sol; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Version changes detected:"
+            git diff contracts/core/lib/EngineBlox.sol
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✓ Contract version constants already in sync"
+          fi
+
+      - name: Verify only version constants changed
+        if: steps.check-changes.outputs.changed == 'true'
+        id: verify-changes
+        run: |
+          # Get the diff and check if only VERSION_* constants changed
+          DIFF_OUTPUT=$(git diff contracts/core/lib/EngineBlox.sol)
+          
+          # Check if diff contains only version constant changes
+          # Version constants are: VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH
+          if echo "$DIFF_OUTPUT" | grep -qE "^[-+].*VERSION_(MAJOR|MINOR|PATCH)" && \
+             ! echo "$DIFF_OUTPUT" | grep -vE "^[-+].*VERSION_(MAJOR|MINOR|PATCH)|^@|^index|^---|^\+\+\+" | grep -qE "^[-+]"; then
+            echo "✓ Only version constants changed, safe to commit"
+            echo "safe=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ERROR: Changes detected in EngineBlox.sol are not limited to version constants!"
+            echo ""
+            echo "The workflow detected changes beyond VERSION_MAJOR, VERSION_MINOR, or VERSION_PATCH."
+            echo "This could indicate uncommitted changes were accidentally included."
+            echo ""
+            echo "Full diff:"
+            echo "$DIFF_OUTPUT"
+            exit 1
+          fi
+
+      - name: Commit and push contract version updates
+        if: steps.check-changes.outputs.changed == 'true' && steps.verify-changes.outputs.safe == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/core/lib/EngineBlox.sol
+          git commit -m "chore: sync contract version constants with package version"
+          git push
