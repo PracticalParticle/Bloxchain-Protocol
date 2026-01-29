@@ -766,14 +766,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionSchemas Array of function schema definitions  
      * @param roleHashes Array of role hashes
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
+     * @param allowProtectedSchemas Whether to allow protected function schemas (default: true for factory settings)
+     * @notice When allowProtectedSchemas is false, reverts if any function schema is protected
+     * @notice This allows custom definitions to be restricted from creating protected schemas
      */
     function _loadDefinitions(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
-        EngineBlox.FunctionPermission[] memory functionPermissions
+        EngineBlox.FunctionPermission[] memory functionPermissions,
+        bool allowProtectedSchemas
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
+            // Validate protected schemas if not allowed (for custom definitions)
+            if (!allowProtectedSchemas && functionSchemas[i].isProtected) {
+                revert SharedValidation.CannotModifyProtected(
+                    bytes32(functionSchemas[i].functionSelector)
+                );
+            }
             EngineBlox.createFunctionSchema(
                 _getSecureState(),
                 functionSchemas[i].functionSignature,

@@ -89,7 +89,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         _loadDefinitions(
             RuntimeRBACDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 

@@ -73,7 +73,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         _loadDefinitions(
             SecureOwnableDefinitions.getFunctionSchemas(),
             secureOwnablePermissions.roleHashes,
-            secureOwnablePermissions.functionPermissions
+            secureOwnablePermissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 

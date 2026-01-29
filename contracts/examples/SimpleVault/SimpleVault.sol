@@ -57,7 +57,8 @@ contract SimpleVault is SecureOwnable {
         _loadDefinitions(
             SimpleVaultDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 
