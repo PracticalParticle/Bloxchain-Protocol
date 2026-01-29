@@ -18,6 +18,17 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CannotModifyProtected",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "spender",
         "type": "address"
