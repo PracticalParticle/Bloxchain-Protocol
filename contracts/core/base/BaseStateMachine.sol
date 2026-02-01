@@ -701,6 +701,21 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         EngineBlox._validateRoleExists(_getSecureState(), roleHash);
     }
 
+    /**
+     * @dev Centralized function to validate that the caller is the contract itself (for execution-only entry points).
+     */
+    function _validateExecuteBySelf() internal view {
+        SharedValidation.validateInternalCall(address(this));
+    }
+
+    /**
+     * @dev Centralized function to validate batch size against EngineBlox.MAX_BATCH_SIZE.
+     * @param length The batch length to validate
+     */
+    function _validateBatchSize(uint256 length) internal pure {
+        SharedValidation.validateBatchSize(length, EngineBlox.MAX_BATCH_SIZE);
+    }
+
     // ============ UTILITY FUNCTIONS ============
 
     /**

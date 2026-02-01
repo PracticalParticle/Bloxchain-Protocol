@@ -120,7 +120,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @param actions Encoded role configuration actions
      */
     function executeRoleConfigBatch(RoleConfigAction[] calldata actions) external {
-        SharedValidation.validateInternalCall(address(this));
+        _validateExecuteBySelf();
         _executeRoleConfigBatch(actions);
     }
 
@@ -170,12 +170,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @param actions Encoded role configuration actions
      */
     function _executeRoleConfigBatch(RoleConfigAction[] calldata actions) internal {
-        // Validate batch size limit
-        SharedValidation.validateBatchSize(
-            actions.length,
-            EngineBlox.MAX_BATCH_SIZE
-        );
-        
+        _validateBatchSize(actions.length);
+
         for (uint256 i = 0; i < actions.length; i++) {
             RoleConfigAction calldata action = actions[i];
 

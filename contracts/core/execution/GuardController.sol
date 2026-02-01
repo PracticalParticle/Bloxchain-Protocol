@@ -149,9 +149,6 @@ abstract contract GuardController is BaseStateMachine {
         uint256 gasLimit,
         bytes32 operationType
     ) public returns (EngineBlox.TxRecord memory) {
-        // Validate inputs
-        SharedValidation.validateNotZeroAddress(target);
-        
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
@@ -335,7 +332,7 @@ abstract contract GuardController is BaseStateMachine {
      * @param actions Encoded guard configuration actions
      */
     function executeGuardConfigBatch(GuardConfigAction[] calldata actions) external {
-        SharedValidation.validateInternalCall(address(this));
+        _validateExecuteBySelf();
         _executeGuardConfigBatch(actions);
     }
 
@@ -346,12 +343,8 @@ abstract contract GuardController is BaseStateMachine {
      * @param actions Encoded guard configuration actions
      */
     function _executeGuardConfigBatch(GuardConfigAction[] calldata actions) internal {
-        // Validate batch size limit
-        SharedValidation.validateBatchSize(
-            actions.length,
-            EngineBlox.MAX_BATCH_SIZE
-        );
-        
+        _validateBatchSize(actions.length);
+
         for (uint256 i = 0; i < actions.length; i++) {
             GuardConfigAction calldata action = actions[i];
 
