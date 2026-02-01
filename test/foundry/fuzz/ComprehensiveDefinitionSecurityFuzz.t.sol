@@ -77,7 +77,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             testStateMachine.loadDefinitionsForTesting(
                 schemas,
                 permissions.roleHashes,
-                permissions.functionPermissions
+                permissions.functionPermissions,
+                true // Allow protected schemas for factory settings
             );
         } else {
             // If selector not found by heuristic, skip test
@@ -124,7 +125,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -148,7 +150,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Note: Handler validation happens when adding permissions, not when creating schemas
@@ -187,7 +190,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -222,7 +226,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             firstSchema,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Attempt to load duplicate - should fail with ResourceAlreadyExists
@@ -239,7 +244,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             duplicateSchema,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -270,7 +276,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -297,7 +304,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Attempt to load permissions with mismatched arrays - should fail
@@ -312,7 +320,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             new EngineBlox.FunctionSchema[](0),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -333,7 +342,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Attempt to load permissions with empty bitmap - should fail with NotSupported
@@ -342,7 +352,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             new EngineBlox.FunctionSchema[](0),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -366,7 +377,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // The test verifies that handler functions cannot have invalid self-references
@@ -389,7 +401,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             new EngineBlox.FunctionSchema[](0), // Don't reload schemas
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
         
         // Verify permissions were successfully loaded (asserts current behavior)
@@ -528,7 +541,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             new EngineBlox.FunctionSchema[](0), // Empty schemas
             roleHashes,
-            permissions
+            permissions,
+            true // Allow protected schemas for factory settings
         );
         
         // Load schema first, then permission - should succeed
@@ -538,7 +552,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             roleHashes,
-            permissions
+            permissions,
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -575,7 +590,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas1,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Create second set of definitions
@@ -594,7 +610,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas2,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
         
         // Try to load duplicate - should fail
@@ -608,7 +625,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas1,
             new bytes32[](0),
-            new EngineBlox.FunctionPermission[](0)
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas for factory settings
         );
     }
     
@@ -626,7 +644,8 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         testStateMachine.loadDefinitionsForTesting(
             schemas,
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
         
         // Verify contract is initialized
@@ -643,5 +662,199 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
         
         // The test passes if all individual tests pass
         assertTrue(true, "All attack vectors are tested in individual test functions");
+    }
+    
+    // ============ ALLOW PROTECTED SCHEMAS VALIDATION TESTS ============
+    
+    /**
+     * @dev Test: Protected schemas are rejected when allowProtectedSchemas is false
+     * Tests the new allowProtectedSchemas parameter validation
+     */
+    function testFuzz_ProtectedSchemasRejectedWhenNotAllowed(
+        bytes4 functionSelector
+    ) public {
+        vm.assume(functionSelector != bytes4(0));
+        
+        // Use testFunction selector that exists in TestStateMachine
+        bytes4 testFunctionSelector = bytes4(keccak256("testFunction()"));
+        
+        // Create a protected schema using the testFunction selector
+        // This selector exists in TestStateMachine bytecode
+        EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](1);
+        actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        
+        bytes4[] memory handlerForSelectors = new bytes4[](1);
+        handlerForSelectors[0] = testFunctionSelector;
+        
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](1);
+        schemas[0] = EngineBlox.FunctionSchema({
+            functionSignature: "testFunction()",
+            functionSelector: testFunctionSelector,
+            operationType: keccak256("TEST_OPERATION"),
+            operationName: "TEST_OPERATION",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            isProtected: true, // Protected schema
+            handlerForSelectors: handlerForSelectors
+        });
+        
+        // Attempt to load with allowProtectedSchemas = false - should fail
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.CannotModifyProtected.selector,
+                bytes32(testFunctionSelector)
+            )
+        );
+        
+        testStateMachine.loadDefinitionsForTesting(
+            schemas,
+            new bytes32[](0),
+            new EngineBlox.FunctionPermission[](0),
+            false // Don't allow protected schemas
+        );
+    }
+    
+    /**
+     * @dev Test: Protected schemas are allowed when allowProtectedSchemas is true
+     * Tests the new allowProtectedSchemas parameter validation
+     */
+    function testFuzz_ProtectedSchemasAllowedWhenPermitted(
+        bytes4 functionSelector
+    ) public {
+        vm.assume(functionSelector != bytes4(0));
+        
+        // Use testFunction selector that exists in TestStateMachine
+        bytes4 testFunctionSelector = bytes4(keccak256("testFunction()"));
+        
+        // Create a protected schema using the testFunction selector
+        EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](1);
+        actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        
+        bytes4[] memory handlerForSelectors = new bytes4[](1);
+        handlerForSelectors[0] = testFunctionSelector;
+        
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](1);
+        schemas[0] = EngineBlox.FunctionSchema({
+            functionSignature: "testFunction()",
+            functionSelector: testFunctionSelector,
+            operationType: keccak256("TEST_OPERATION"),
+            operationName: "TEST_OPERATION",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            isProtected: true, // Protected schema
+            handlerForSelectors: handlerForSelectors
+        });
+        
+        // Load with allowProtectedSchemas = true - should succeed
+        testStateMachine.loadDefinitionsForTesting(
+            schemas,
+            new bytes32[](0),
+            new EngineBlox.FunctionPermission[](0),
+            true // Allow protected schemas
+        );
+    }
+    
+    /**
+     * @dev Test: Non-protected schemas work regardless of allowProtectedSchemas value
+     * Tests that non-protected schemas are not affected by the parameter
+     */
+    function testFuzz_NonProtectedSchemasWorkRegardlessOfParameter(
+        bytes4 functionSelector,
+        bool allowProtectedSchemas
+    ) public {
+        vm.assume(functionSelector != bytes4(0));
+        
+        // Use a deterministic signature and derive selector from it
+        // This ensures signature and selector match
+        string memory functionSignature = "customFunction()";
+        bytes4 derivedSelector = bytes4(keccak256(bytes(functionSignature)));
+        
+        EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](1);
+        actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        
+        bytes4[] memory handlerForSelectors = new bytes4[](1);
+        handlerForSelectors[0] = derivedSelector;
+        
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](1);
+        schemas[0] = EngineBlox.FunctionSchema({
+            functionSignature: functionSignature,
+            functionSelector: derivedSelector,
+            operationType: keccak256("TEST_OPERATION"),
+            operationName: "TEST_OPERATION",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            isProtected: false, // Non-protected schema
+            handlerForSelectors: handlerForSelectors
+        });
+        
+        // Load with any allowProtectedSchemas value - should succeed
+        testStateMachine.loadDefinitionsForTesting(
+            schemas,
+            new bytes32[](0),
+            new EngineBlox.FunctionPermission[](0),
+            allowProtectedSchemas // Any value should work for non-protected schemas
+        );
+    }
+    
+    /**
+     * @dev Test: Mixed protected and non-protected schemas with allowProtectedSchemas = false
+     * Tests that even one protected schema causes rejection when not allowed
+     */
+    function testFuzz_MixedSchemasRejectedWhenProtectedNotAllowed(
+        bytes4 selector1,
+        bytes4 selector2
+    ) public {
+        vm.assume(selector1 != bytes4(0));
+        vm.assume(selector2 != bytes4(0));
+        vm.assume(selector1 != selector2);
+        
+        // Use deterministic signatures and derive selectors from them
+        // This ensures signatures and selectors match
+        string memory signature1 = "function1()";
+        string memory signature2 = "function2()";
+        bytes4 derivedSelector1 = bytes4(keccak256(bytes(signature1)));
+        bytes4 derivedSelector2 = bytes4(keccak256(bytes(signature2)));
+        
+        EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](1);
+        actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        
+        bytes4[] memory handlerForSelectors1 = new bytes4[](1);
+        handlerForSelectors1[0] = derivedSelector1;
+        
+        bytes4[] memory handlerForSelectors2 = new bytes4[](1);
+        handlerForSelectors2[0] = derivedSelector2;
+        
+        // Create mixed schemas: one protected, one non-protected
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](2);
+        schemas[0] = EngineBlox.FunctionSchema({
+            functionSignature: signature1,
+            functionSelector: derivedSelector1,
+            operationType: keccak256("OPERATION1"),
+            operationName: "OPERATION1",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            isProtected: false, // Non-protected
+            handlerForSelectors: handlerForSelectors1
+        });
+        schemas[1] = EngineBlox.FunctionSchema({
+            functionSignature: signature2,
+            functionSelector: derivedSelector2,
+            operationType: keccak256("OPERATION2"),
+            operationName: "OPERATION2",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            isProtected: true, // Protected - should cause rejection
+            handlerForSelectors: handlerForSelectors2
+        });
+        
+        // Attempt to load with allowProtectedSchemas = false - should fail on protected schema
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.CannotModifyProtected.selector,
+                bytes32(derivedSelector2)
+            )
+        );
+        
+        testStateMachine.loadDefinitionsForTesting(
+            schemas,
+            new bytes32[](0),
+            new EngineBlox.FunctionPermission[](0),
+            false // Don't allow protected schemas
+        );
     }
 }

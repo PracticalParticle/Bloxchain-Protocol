@@ -33,20 +33,9 @@ import "./interface/ISecureOwnable.sol";
 abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     using SharedValidation for *;
 
-
     // Request flags
     bool private _hasOpenOwnershipRequest;
     bool private _hasOpenBroadcasterRequest;
-
-    event OwnershipTransferRequest(address currentOwner, address newOwner);
-    event OwnershipTransferCancelled(uint256 txId);
-    event OwnershipTransferUpdated(address oldOwner, address newOwner);
-    event BroadcasterUpdateRequest(address currentBroadcaster, address newBroadcaster);
-    event BroadcasterUpdateCancelled(uint256 txId);
-    event BroadcasterUpdated(address oldBroadcaster, address newBroadcaster);
-    event RecoveryAddressUpdated(address oldRecovery, address newRecovery);
-    event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod);
-
 
     /**
      * @notice Initializer to initialize SecureOwnable state
@@ -73,7 +62,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         _loadDefinitions(
             SecureOwnableDefinitions.getFunctionSchemas(),
             secureOwnablePermissions.roleHashes,
-            secureOwnablePermissions.functionPermissions
+            secureOwnablePermissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 
@@ -107,7 +97,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
 
         _hasOpenOwnershipRequest = true;
-        emit OwnershipTransferRequest(owner(), getRecovery());
+        _logComponentEvent(abi.encode(owner(), getRecovery()));
         return txRecord;
     }
 
@@ -147,7 +137,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         SharedValidation.validateRecovery(getRecovery());
         EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenOwnershipRequest = false;
-        emit OwnershipTransferCancelled(txId);
+        _logComponentEvent(abi.encode(txId));
         return updatedRecord;
     }
 
@@ -162,7 +152,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         
         EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenOwnershipRequest = false;
-        emit OwnershipTransferCancelled(updatedRecord.txId);
+        _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord;
     }
 
@@ -190,7 +180,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
 
         _hasOpenBroadcasterRequest = true;
-        emit BroadcasterUpdateRequest(currentBroadcaster, newBroadcaster);
+        _logComponentEvent(abi.encode(currentBroadcaster, newBroadcaster));
         return txRecord;
     }
 
@@ -229,7 +219,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         _hasOpenBroadcasterRequest = false;
-        emit BroadcasterUpdateCancelled(txId);
+        _logComponentEvent(abi.encode(txId));
         return updatedRecord;
     }
 
@@ -244,7 +234,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         
         EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         _hasOpenBroadcasterRequest = false;
-        emit BroadcasterUpdateCancelled(updatedRecord.txId);
+        _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord;
     }
 
@@ -348,7 +338,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function _transferOwnership(address newOwner) internal virtual {
         address oldOwner = owner();
         _updateAssignedWallet(EngineBlox.OWNER_ROLE, newOwner, oldOwner);
-        emit OwnershipTransferUpdated(oldOwner, newOwner);
+        _logComponentEvent(abi.encode(oldOwner, newOwner));
     }
 
     /**
@@ -380,7 +370,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         if (newBroadcaster == address(0)) {
             if (oldBroadcaster != address(0)) {
                 _revokeWallet(EngineBlox.BROADCASTER_ROLE, oldBroadcaster);
-                emit BroadcasterUpdated(oldBroadcaster, address(0));
+                _logComponentEvent(abi.encode(oldBroadcaster, address(0)));
             }
             return;
         }
@@ -388,13 +378,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         // Case 2: Update existing broadcaster at location
         if (oldBroadcaster != address(0)) {
             _updateAssignedWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
-            emit BroadcasterUpdated(oldBroadcaster, newBroadcaster);
+            _logComponentEvent(abi.encode(oldBroadcaster, newBroadcaster));
             return;
         }
 
         // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
         _assignWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster);
-        emit BroadcasterUpdated(address(0), newBroadcaster);
+        _logComponentEvent(abi.encode(address(0), newBroadcaster));
     }
 
     /**
@@ -404,7 +394,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function _updateRecoveryAddress(address newRecoveryAddress) internal virtual {
         address oldRecovery = getRecovery();
         _updateAssignedWallet(EngineBlox.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
-        emit RecoveryAddressUpdated(oldRecovery, newRecoveryAddress);
+        _logComponentEvent(abi.encode(oldRecovery, newRecoveryAddress));
     }
 
     /**
@@ -414,6 +404,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
         uint256 oldPeriod = getTimeLockPeriodSec();
         super._updateTimeLockPeriod(newTimeLockPeriodSec);
-        emit TimeLockPeriodUpdated(oldPeriod, newTimeLockPeriodSec);
+        _logComponentEvent(abi.encode(oldPeriod, newTimeLockPeriodSec));
     }
 }

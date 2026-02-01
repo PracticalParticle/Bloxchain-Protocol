@@ -48,21 +48,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         RoleConfigActionType actionType;
         bytes data;
     }
-    
-    /**
-     * @dev Unified event for all RBAC configuration changes applied via batches
-     *
-     * - actionType: the high-level type of configuration action
-     * - roleHash: affected role hash (if applicable, otherwise 0)
-     * - functionSelector: affected function selector (if applicable, otherwise 0)
-     * - data: optional action-specific payload (kept minimal for size; decoded off-chain if needed)
-     */
-    event RoleConfigApplied(
-        RoleConfigActionType indexed actionType,
-        bytes32 indexed roleHash,
-        bytes4 indexed functionSelector,
-        bytes data
-    );
 
     /**
      * @notice Initializer to initialize RuntimeRBAC
@@ -89,7 +74,8 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         _loadDefinitions(
             RuntimeRBACDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 
@@ -176,28 +162,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         );
     }
 
-    /**
-     * @dev Gets all authorized wallets for a role
-     * @param roleHash The role hash to get wallets for
-     * @return Array of authorized wallet addresses
-     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
-     */
-    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
-        _validateAnyRole();
-        _validateRoleExists(roleHash);
-        
-        // Get role info to determine wallet count
-        EngineBlox.Role storage role = _getSecureState().getRole(roleHash);
-        uint256 walletCount = role.walletCount;
-        
-        // Build array by iterating through wallets using _getAuthorizedWalletAt
-        address[] memory wallets = new address[](walletCount);
-        for (uint256 i = 0; i < walletCount; i++) {
-            wallets[i] = _getAuthorizedWalletAt(roleHash, i);
-        }
-        
-        return wallets;
-    }
 
     // ============ HELPER FUNCTIONS ============
 
@@ -229,22 +193,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 
                 bytes32 roleHash = _createNewRole(roleName, maxWallets, functionPermissions);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.CREATE_ROLE,
-                    roleHash,
-                    bytes4(0),
-                    "" // optional: abi.encode(roleName, maxWallets)
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0), bytes("")));
             } else if (action.actionType == RoleConfigActionType.REMOVE_ROLE) {
                 (bytes32 roleHash) = abi.decode(action.data, (bytes32));
                 _removeRole(roleHash);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.REMOVE_ROLE,
-                    roleHash,
-                    bytes4(0),
-                    ""
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0), bytes("")));
             } else if (action.actionType == RoleConfigActionType.ADD_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
                 
@@ -255,12 +209,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 
                 _assignWallet(roleHash, wallet);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.ADD_WALLET,
-                    roleHash,
-                    bytes4(0),
-                    "" // optional: abi.encode(wallet)
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0), bytes("")));
             } else if (action.actionType == RoleConfigActionType.REVOKE_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
                 
@@ -271,12 +220,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
                 
                 _revokeWallet(roleHash, wallet);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.REVOKE_WALLET,
-                    roleHash,
-                    bytes4(0),
-                    "" // optional: abi.encode(wallet)
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0), bytes("")));
             } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
                 (
                     bytes32 roleHash,
@@ -285,22 +229,12 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 
                 _addFunctionToRole(roleHash, functionPermission);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
-                    roleHash,
-                    functionPermission.functionSelector,
-                    ""
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector, bytes("")));
             } else if (action.actionType == RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE) {
                 (bytes32 roleHash, bytes4 functionSelector) = abi.decode(action.data, (bytes32, bytes4));
                 _removeFunctionFromRole(roleHash, functionSelector);
 
-                emit RoleConfigApplied(
-                    RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
-                    roleHash,
-                    functionSelector,
-                    ""
-                );
+                _logComponentEvent(abi.encode(RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector, bytes("")));
             } else {
                 revert SharedValidation.NotSupported();
             }

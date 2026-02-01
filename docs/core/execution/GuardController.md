@@ -191,23 +191,6 @@ Requests and approves a transaction in one step using a meta-transaction
 
 ---
 
-### _isSystemMacroSelector
-
-```solidity
-function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool)
-```
-
-Checks if a function selector is a known system macro selector
-
-**Parameters:**
-- `` (): The function selector to check
-
-**Returns:**
-- true if the selector is a known system macro selector, false otherwise
-
-
----
-
 ### _validateNotInternalFunction
 
 ```solidity

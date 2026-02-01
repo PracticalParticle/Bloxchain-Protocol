@@ -87,7 +87,8 @@ contract PayBlox is SecureOwnable {
         _loadDefinitions(
             PayBloxDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
     

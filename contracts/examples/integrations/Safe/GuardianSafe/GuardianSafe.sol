@@ -118,7 +118,8 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         _loadDefinitions(
             GuardianSafeDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
-            permissions.functionPermissions
+            permissions.functionPermissions,
+            true // Allow protected schemas for factory settings
         );
     }
 

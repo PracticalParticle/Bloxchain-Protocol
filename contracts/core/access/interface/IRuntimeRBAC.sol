@@ -43,19 +43,7 @@ interface IRuntimeRBAC {
         bytes data;
     }
 
-    /**
-     * @dev Unified event for all RBAC configuration changes applied via batches
-     * @param actionType The type of configuration action
-     * @param roleHash Affected role hash (if applicable, otherwise 0)
-     * @param functionSelector Affected function selector (if applicable, otherwise 0)
-     * @param data Optional action-specific payload
-     */
-    event RoleConfigApplied(
-        RoleConfigActionType indexed actionType,
-        bytes32 indexed roleHash,
-        bytes4 indexed functionSelector,
-        bytes data
-    );
+    /// @dev RBAC config changes are emitted via BaseStateMachine.ComponentEvent with functionSelector = msg.sig (executeRoleConfigBatch). Decode data as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, bytes).
 
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 

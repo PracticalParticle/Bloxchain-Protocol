@@ -188,4 +188,11 @@ library SimpleRWA20Definitions {
             functionPermissions: functionPermissions
         });
     }
+
+    /**
+     * @dev ERC165: report support for IDefinition when this library is used at an address
+     */
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(IDefinition).interfaceId;
+    }
 }

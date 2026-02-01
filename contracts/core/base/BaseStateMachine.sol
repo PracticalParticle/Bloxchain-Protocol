@@ -42,31 +42,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
 
     EngineBlox.SecureOperationState internal _secureState;
 
-    // Events for core state machine operations
-    event TransactionRequested(
-        uint256 indexed txId,
-        address indexed requester,
-        bytes32 indexed operationType,
-        uint256 releaseTime
-    );
-    
-    event TransactionApproved(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        address indexed approver
-    );
-    
-    event TransactionCancelled(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        address indexed canceller
-    );
-    
-    event TransactionExecuted(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        bool success
-    );
+    /**
+     * @dev Unified component event for SecureOwnable, GuardController, RuntimeRBAC.
+     * Indexers filter by functionSelector (msg.sig at emit site) and decode data (abi-encoded payload).
+     * @param functionSelector The function selector (msg.sig) at the emit site; used by indexers to filter
+     * @param data ABI-encoded payload associated with the event
+     */
+    event ComponentEvent(bytes4 indexed functionSelector, bytes data);
 
     /**
      * @notice Initializes the base state machine core
@@ -442,6 +424,18 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
+     * @dev Gets all authorized wallets for a role
+     * @param roleHash The role hash to get wallets for
+     * @return Array of authorized wallet addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     */
+    function getWalletsInRole(bytes32 roleHash) public view virtual returns (address[] memory) {
+        _validateAnyRole();
+        _validateRoleExists(roleHash);
+        return _getAuthorizedWallets(roleHash);
+    }
+
+    /**
      * @dev Checks if a function schema exists
      * @param functionSelector The function selector to check
      * @return True if the function schema exists, false otherwise
@@ -766,14 +760,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionSchemas Array of function schema definitions  
      * @param roleHashes Array of role hashes
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
+     * @param allowProtectedSchemas Whether to allow protected function schemas (default: true for factory settings)
+     * @notice When allowProtectedSchemas is false, reverts if any function schema is protected
+     * @notice This allows custom definitions to be restricted from creating protected schemas
      */
     function _loadDefinitions(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
-        EngineBlox.FunctionPermission[] memory functionPermissions
+        EngineBlox.FunctionPermission[] memory functionPermissions,
+        bool allowProtectedSchemas
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
+            // Validate protected schemas if not allowed (for custom definitions)
+            if (!allowProtectedSchemas && functionSchemas[i].isProtected) {
+                revert SharedValidation.CannotModifyProtected(
+                    bytes32(functionSchemas[i].functionSelector)
+                );
+            }
             EngineBlox.createFunctionSchema(
                 _getSecureState(),
                 functionSchemas[i].functionSignature,
@@ -829,6 +833,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         if (!hasRole(EngineBlox.BROADCASTER_ROLE, caller)) {
             revert SharedValidation.NoPermission(caller);
         }
+    }
+
+    /**
+     * @dev Centralized component event logging for SecureOwnable, GuardController, RuntimeRBAC.
+     * Uses msg.sig as the event index so callers only pass encoded data.
+     * @param data abi.encode of event parameters
+     */
+    function _logComponentEvent(bytes memory data) internal {
+        emit ComponentEvent(msg.sig, data);
     }
 
 }

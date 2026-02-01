@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
 import "../../../../interfaces/IDefinition.sol";
 
@@ -752,6 +753,14 @@ library SecureOwnableDefinitions {
         index++;
         
         return index;
+    }
+
+    /**
+     * @dev ERC165: report support for IDefinition and IERC165 when this library is used at an address.
+     * IDefinition extends IERC165; both interface IDs must be reported for ERC165 compliance.
+     */
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IDefinition).interfaceId;
     }
 
 }

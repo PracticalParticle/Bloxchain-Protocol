@@ -47,13 +47,15 @@ contract TestStateMachine is BaseStateMachine {
     /**
      * @dev Public function to load definitions for testing
      * This exposes _loadDefinitions so we can test it with various definition contracts
+     * @param allowProtectedSchemas Whether to allow protected function schemas (default: true for factory settings)
      */
     function loadDefinitionsForTesting(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
-        EngineBlox.FunctionPermission[] memory functionPermissions
+        EngineBlox.FunctionPermission[] memory functionPermissions,
+        bool allowProtectedSchemas
     ) external {
-        _loadDefinitions(functionSchemas, roleHashes, functionPermissions);
+        _loadDefinitions(functionSchemas, roleHashes, functionPermissions, allowProtectedSchemas);
     }
     
     /**

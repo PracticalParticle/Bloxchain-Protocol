@@ -8,8 +8,9 @@ import { BroadcasterUpdateTests } from './broadcaster-update-tests.ts';
 import { RecoveryUpdateTests } from './recovery-update-tests.ts';
 import { TimelockPeriodTests } from './timelock-period-tests.ts';
 import { EIP712SigningTests } from './eip712-signing-tests.ts';
+import { MetaTxExecutionTests } from './meta-tx-execution-tests.ts';
 
-type TestClass = typeof OwnershipTransferTests | typeof BroadcasterUpdateTests | typeof RecoveryUpdateTests | typeof TimelockPeriodTests | typeof EIP712SigningTests;
+type TestClass = typeof OwnershipTransferTests | typeof BroadcasterUpdateTests | typeof RecoveryUpdateTests | typeof TimelockPeriodTests | typeof EIP712SigningTests | typeof MetaTxExecutionTests;
 
 class SecureOwnableSDKTestRunner {
   private testSuites: Record<string, TestClass> = {
@@ -18,6 +19,7 @@ class SecureOwnableSDKTestRunner {
     recovery: RecoveryUpdateTests,
     timelock: TimelockPeriodTests,
     eip712: EIP712SigningTests,
+    'meta-tx-exec': MetaTxExecutionTests,
   };
 
   private results = {
@@ -40,6 +42,7 @@ class SecureOwnableSDKTestRunner {
     console.log('  --recovery              Run recovery update tests only');
     console.log('  --timelock              Run timelock period tests only');
     console.log('  --eip712                Run EIP-712 signing tests only');
+    console.log('  --meta-tx-exec          Run meta-tx execution test only (sign + execute + assert)');
     console.log('  --help                   Show this help message');
     console.log();
     console.log('Examples:');
@@ -70,6 +73,7 @@ class SecureOwnableSDKTestRunner {
       if (args.includes('--recovery')) selectedSuites.push('recovery');
       if (args.includes('--timelock')) selectedSuites.push('timelock');
       if (args.includes('--eip712')) selectedSuites.push('eip712');
+      if (args.includes('--meta-tx-exec')) selectedSuites.push('meta-tx-exec');
     }
 
     if (selectedSuites.length === 0) {
