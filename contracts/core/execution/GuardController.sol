@@ -58,12 +58,6 @@ abstract contract GuardController is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
 
     /**
-     * @dev List of function selectors that are system macro selectors (e.g. native transfer, update payment).
-     * Stored as bytes32 (bytes4 right-padded). Populated at initialize; extendable by derived contracts or future admin.
-     */
-    bytes32[] internal systemMacroSelectorsList;
-
-    /**
      * @dev Action types for batched Guard configuration
      */
     enum GuardConfigActionType {
@@ -109,10 +103,6 @@ abstract contract GuardController is BaseStateMachine {
             guardControllerPermissions.functionPermissions,
             true // Allow protected schemas for factory settings
         );
-
-        // Register default system macro selectors (allowed to target address(this) for system-level operations)
-        systemMacroSelectorsList.push(bytes32(EngineBlox.NATIVE_TRANSFER_SELECTOR));
-        systemMacroSelectorsList.push(bytes32(EngineBlox.UPDATE_PAYMENT_SELECTOR));
     }
 
     // ============ INTERFACE SUPPORT ============
@@ -259,17 +249,6 @@ abstract contract GuardController is BaseStateMachine {
     // ============ INTERNAL VALIDATION HELPERS ============
 
     /**
-     * @dev Returns true if the given function selector is in the system macro selectors list.
-     */
-    function _isSystemMacroSelector(bytes4 functionSelector) internal view returns (bool) {
-        bytes32 sel = bytes32(functionSelector);
-        for (uint256 i = 0; i < systemMacroSelectorsList.length; i++) {
-            if (systemMacroSelectorsList[i] == sel) return true;
-        }
-        return false;
-    }
-
-    /**
      * @dev Validates that GuardController is not attempting to access internal execution functions
      * @param target The target contract address
      * @param functionSelector The function selector to validate
@@ -291,7 +270,7 @@ abstract contract GuardController is BaseStateMachine {
         if (target == address(this)) {
             // Allow system macro selectors (e.g., NATIVE_TRANSFER_SELECTOR for native token deposits)
             // These are special system-level operations that are safe to execute on address(this)
-            if (_isSystemMacroSelector(functionSelector)) {
+            if (_isMacroSelector(functionSelector)) {
                 return; // Allow system macro selectors
             }
             

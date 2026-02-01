@@ -716,6 +716,25 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         SharedValidation.validateBatchSize(length, EngineBlox.MAX_BATCH_SIZE);
     }
 
+    // ============ MACRO SELECTORS ============
+
+    /**
+     * @dev Adds a function selector to the system macro selectors set.
+     *      Macro selectors are allowed to target address(this) for system-level operations.
+     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR).
+     */
+    function _addMacroSelector(bytes4 functionSelector) internal {
+        EngineBlox.addMacroSelector(_getSecureState(), functionSelector);
+    }
+
+    /**
+     * @dev Returns true if the given function selector is in the system macro selectors set.
+     * @param functionSelector The function selector to check.
+     */
+    function _isMacroSelector(bytes4 functionSelector) internal view returns (bool) {
+        return EngineBlox.isMacroSelector(_getSecureState(), functionSelector);
+    }
+
     // ============ UTILITY FUNCTIONS ============
 
     /**
