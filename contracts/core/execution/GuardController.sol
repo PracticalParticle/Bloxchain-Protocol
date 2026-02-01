@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 import "./lib/definitions/GuardControllerDefinitions.sol";
@@ -59,6 +58,12 @@ abstract contract GuardController is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
 
     /**
+     * @dev List of function selectors that are system macro selectors (e.g. native transfer, update payment).
+     * Stored as bytes32 (bytes4 right-padded). Populated at initialize; extendable by derived contracts or future admin.
+     */
+    bytes32[] internal systemMacroSelectorsList;
+
+    /**
      * @dev Action types for batched Guard configuration
      */
     enum GuardConfigActionType {
@@ -75,23 +80,6 @@ abstract contract GuardController is BaseStateMachine {
         GuardConfigActionType actionType;
         bytes data;
     }
-
-    // ============ EVENTS ============
-    
-    /**
-     * @dev Unified event for all Guard configuration changes applied via batches
-     *
-     * - actionType: the high-level type of configuration action
-     * - functionSelector: affected function selector (if applicable, otherwise 0)
-     * - target: affected target address (if applicable, otherwise 0)
-     * - data: optional action-specific payload (kept minimal for size; decoded off-chain if needed)
-     */
-    event GuardConfigApplied(
-        GuardConfigActionType indexed actionType,
-        bytes4 indexed functionSelector,
-        address indexed target,
-        bytes data
-    );
 
     /**
      * @notice Initializer to initialize GuardController
@@ -121,6 +109,10 @@ abstract contract GuardController is BaseStateMachine {
             guardControllerPermissions.functionPermissions,
             true // Allow protected schemas for factory settings
         );
+
+        // Register default system macro selectors (allowed to target address(this) for system-level operations)
+        systemMacroSelectorsList.push(bytes32(EngineBlox.NATIVE_TRANSFER_SELECTOR));
+        systemMacroSelectorsList.push(bytes32(EngineBlox.UPDATE_PAYMENT_SELECTOR));
     }
 
     // ============ INTERFACE SUPPORT ============
@@ -270,17 +262,14 @@ abstract contract GuardController is BaseStateMachine {
     // ============ INTERNAL VALIDATION HELPERS ============
 
     /**
-     * @dev Checks if a function selector is a known system macro selector
-     * @param functionSelector The function selector to check
-     * @return true if the selector is a known system macro selector, false otherwise
-     * @notice System macro selectors are special selectors that represent system-level operations
-     *         and are allowed to bypass certain security restrictions
-     * @notice Currently known macro selectors:
-     *         - NATIVE_TRANSFER_SELECTOR: For native token transfers
+     * @dev Returns true if the given function selector is in the system macro selectors list.
      */
-    function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
-        return functionSelector == EngineBlox.NATIVE_TRANSFER_SELECTOR
-            || functionSelector == EngineBlox.UPDATE_PAYMENT_SELECTOR;
+    function _isSystemMacroSelector(bytes4 functionSelector) internal view returns (bool) {
+        bytes32 sel = bytes32(functionSelector);
+        for (uint256 i = 0; i < systemMacroSelectorsList.length; i++) {
+            if (systemMacroSelectorsList[i] == sel) return true;
+        }
+        return false;
     }
 
     /**
@@ -337,7 +326,6 @@ abstract contract GuardController is BaseStateMachine {
         EngineBlox.MetaTransaction memory metaTx
     ) public returns (EngineBlox.TxRecord memory) {
         _validateBroadcaster(msg.sender);
-        SharedValidation.validateOwnerIsSigner(metaTx.params.signer, owner());
         
         return _requestAndApproveTransaction(metaTx);
     }
@@ -374,12 +362,7 @@ abstract contract GuardController is BaseStateMachine {
 
                 _addTargetToFunctionWhitelist(functionSelector, target);
 
-                emit GuardConfigApplied(
-                    GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
-                    functionSelector,
-                    target,
-                    "" // optional: could encode additional data if needed
-                );
+                _logComponentEvent(abi.encode(GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target, bytes("")));
             } else if (action.actionType == GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
                 // Decode REMOVE_TARGET_FROM_WHITELIST action data
                 // Format: (bytes4 functionSelector, address target)
@@ -387,12 +370,7 @@ abstract contract GuardController is BaseStateMachine {
 
                 _removeTargetFromFunctionWhitelist(functionSelector, target);
 
-                emit GuardConfigApplied(
-                    GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
-                    functionSelector,
-                    target,
-                    ""
-                );
+                _logComponentEvent(abi.encode(GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target, bytes("")));
             } else if (action.actionType == GuardConfigActionType.REGISTER_FUNCTION) {
                 // Decode REGISTER_FUNCTION action data
                 // Format: (string functionSignature, string operationName, TxAction[] supportedActions)
@@ -404,12 +382,7 @@ abstract contract GuardController is BaseStateMachine {
 
                 bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
 
-                emit GuardConfigApplied(
-                    GuardConfigActionType.REGISTER_FUNCTION,
-                    functionSelector,
-                    address(0),
-                    "" // optional: abi.encode(operationName)
-                );
+                _logComponentEvent(abi.encode(GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0), bytes("")));
             } else if (action.actionType == GuardConfigActionType.UNREGISTER_FUNCTION) {
                 // Decode UNREGISTER_FUNCTION action data
                 // Format: (bytes4 functionSelector, bool safeRemoval)
@@ -417,12 +390,7 @@ abstract contract GuardController is BaseStateMachine {
 
                 _unregisterFunction(functionSelector, safeRemoval);
 
-                emit GuardConfigApplied(
-                    GuardConfigActionType.UNREGISTER_FUNCTION,
-                    functionSelector,
-                    address(0),
-                    ""
-                );
+                _logComponentEvent(abi.encode(GuardConfigActionType.UNREGISTER_FUNCTION, functionSelector, address(0), bytes("")));
             } else {
                 revert SharedValidation.NotSupported();
             }

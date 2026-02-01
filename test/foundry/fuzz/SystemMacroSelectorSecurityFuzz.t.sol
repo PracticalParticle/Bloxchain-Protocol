@@ -122,7 +122,7 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         bytes4 nonMacroSelector
     ) public {
         // Filter out system macro selectors - we only want to test non-macro selectors
-        vm.assume(!_isSystemMacroSelector(nonMacroSelector));
+        vm.assume(!_isDefaultSystemMacroSelector(nonMacroSelector));
         vm.assume(nonMacroSelector != bytes4(0));
         
         // Attempt to call address(this) with a non-macro selector via controlBlox
@@ -237,33 +237,39 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
     }
 
     /**
-     * @dev Test: System macro selectors are correctly identified
-     * 
-     * This verifies that _isSystemMacroSelector correctly identifies
-     * system macro selectors and rejects non-macro selectors
+     * @dev Test: Default system macro selectors are allowed to target address(this)
+     *
+     * Verifies that NATIVE_TRANSFER_SELECTOR and UPDATE_PAYMENT_SELECTOR (the defaults
+     * registered at GuardController initialize) are treated as system macro selectors.
      */
     function testFuzz_SystemMacroSelectorIdentification(
         bytes4 selector
     ) public {
-        // Test known system macro selectors
+        // Known system macro selectors (same as those added in GuardController.initialize)
         assertTrue(
-            _isSystemMacroSelector(EngineBlox.NATIVE_TRANSFER_SELECTOR),
-            "NATIVE_TRANSFER_SELECTOR should be identified as system macro"
+            _isDefaultSystemMacroSelector(EngineBlox.NATIVE_TRANSFER_SELECTOR),
+            "NATIVE_TRANSFER_SELECTOR should be default system macro"
         );
-        
         assertTrue(
-            _isSystemMacroSelector(EngineBlox.UPDATE_PAYMENT_SELECTOR),
-            "UPDATE_PAYMENT_SELECTOR should be identified as system macro"
+            _isDefaultSystemMacroSelector(EngineBlox.UPDATE_PAYMENT_SELECTOR),
+            "UPDATE_PAYMENT_SELECTOR should be default system macro"
         );
-        
-        // Test non-macro selectors (if not system macros)
-        if (selector != EngineBlox.NATIVE_TRANSFER_SELECTOR && 
+        // Non-default selectors are not system macros
+        if (selector != EngineBlox.NATIVE_TRANSFER_SELECTOR &&
             selector != EngineBlox.UPDATE_PAYMENT_SELECTOR) {
             assertFalse(
-                _isSystemMacroSelector(selector),
-                "Non-macro selector should not be identified as system macro"
+                _isDefaultSystemMacroSelector(selector),
+                "Non-macro selector should not be default system macro"
             );
         }
+    }
+
+    /**
+     * @dev Helper: true if selector is one of the default system macro selectors (added at GuardController.initialize)
+     */
+    function _isDefaultSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
+        return functionSelector == EngineBlox.NATIVE_TRANSFER_SELECTOR
+            || functionSelector == EngineBlox.UPDATE_PAYMENT_SELECTOR;
     }
 
     /**
@@ -441,14 +447,4 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         }
     }
 
-    // ============ HELPER FUNCTIONS ============
-
-    /**
-     * @dev Helper to check if selector is system macro selector
-     * Uses same logic as GuardController._isSystemMacroSelector
-     */
-    function _isSystemMacroSelector(bytes4 functionSelector) internal pure returns (bool) {
-        return functionSelector == EngineBlox.NATIVE_TRANSFER_SELECTOR
-            || functionSelector == EngineBlox.UPDATE_PAYMENT_SELECTOR;
-    }
 }

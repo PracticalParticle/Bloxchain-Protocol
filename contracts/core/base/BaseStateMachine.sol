@@ -42,31 +42,11 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
 
     EngineBlox.SecureOperationState internal _secureState;
 
-    // Events for core state machine operations
-    event TransactionRequested(
-        uint256 indexed txId,
-        address indexed requester,
-        bytes32 indexed operationType,
-        uint256 releaseTime
-    );
-    
-    event TransactionApproved(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        address indexed approver
-    );
-    
-    event TransactionCancelled(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        address indexed canceller
-    );
-    
-    event TransactionExecuted(
-        uint256 indexed txId,
-        bytes32 indexed operationType,
-        bool success
-    );
+    /**
+     * @dev Unified component event for SecureOwnable, GuardController, RuntimeRBAC.
+     * Indexers filter by functionSelector (msg.sig at emit site) and decode data (abi-encoded payload).
+     */
+    event ComponentEvent(bytes4 indexed functionSelector, bytes data);
 
     /**
      * @notice Initializes the base state machine core
@@ -439,6 +419,18 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function getWalletRoles(address wallet) public view returns (bytes32[] memory) {
         _validateAnyRole();
         return EngineBlox.getWalletRoles(_getSecureState(), wallet);
+    }
+
+    /**
+     * @dev Gets all authorized wallets for a role
+     * @param roleHash The role hash to get wallets for
+     * @return Array of authorized wallet addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     */
+    function getWalletsInRole(bytes32 roleHash) public view virtual returns (address[] memory) {
+        _validateAnyRole();
+        _validateRoleExists(roleHash);
+        return _getAuthorizedWallets(roleHash);
     }
 
     /**
@@ -839,6 +831,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         if (!hasRole(EngineBlox.BROADCASTER_ROLE, caller)) {
             revert SharedValidation.NoPermission(caller);
         }
+    }
+
+    /**
+     * @dev Centralized component event logging for SecureOwnable, GuardController, RuntimeRBAC.
+     * Uses msg.sig as the event index so callers only pass encoded data.
+     * @param data abi.encode of event parameters
+     */
+    function _logComponentEvent(bytes memory data) internal {
+        emit ComponentEvent(msg.sig, data);
     }
 
 }
