@@ -29,8 +29,7 @@ interface IRuntimeRBAC {
         ADD_WALLET,
         REVOKE_WALLET,
         ADD_FUNCTION_TO_ROLE,
-        REMOVE_FUNCTION_FROM_ROLE,
-        LOAD_DEFINITIONS
+        REMOVE_FUNCTION_FROM_ROLE
     }
 
     /**
