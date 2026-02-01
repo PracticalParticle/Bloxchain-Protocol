@@ -47,6 +47,9 @@ Each test suite can also be run individually:
 
 ```bash
 npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/secure-ownable/run-tests.ts --all
+npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/secure-ownable/run-tests.ts --meta-tx-exec
 npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/runtime-rbac/run-tests.ts --all
 npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/guard-controller/run-tests.ts --all
 ```
+
+**Meta-tx execution (no UI):** `--meta-tx-exec` runs the full meta-transaction flow: request → off-chain sign → broadcaster executes → assert on-chain state. Use this to verify meta-tx execution without any UI.

@@ -1,6 +1,21 @@
 # Bloxchain Protocol TypeScript SDK
 
+[![npm version](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
+[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+
 A comprehensive TypeScript SDK for interacting with the Bloxchain Protocol smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
+
+> **⚠️ EXPERIMENTAL SOFTWARE WARNING**  
+> This package contains experimental smart contract code and SDK support. While the framework is feature-complete and tested, it is not yet audited for production use. Use at your own risk and do not deploy with real assets without proper security review.
+
+## Requirements
+
+- **Node.js**: >= 18.0.0
+- **TypeScript**: 5.x (recommended)
+- **Peer dependency**: `viem` ^2.0.0 (required for all SDK usage)
+- **Optional peer**: `@bloxchain/contracts` ^1.0.0-alpha (for Solidity/ABI alignment when building apps that use both)
 
 ## 🏗️ **Unique Architecture**
 
@@ -46,14 +61,17 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 ## Installation
 
 ```bash
-# Install the SDK package
-npm install @bloxchain/sdk
+# Install the SDK and its required peer dependency
+npm install @bloxchain/sdk viem
 
-# Or install from the repository
+# Optional: install contracts package when building apps that use both SDK and Solidity
+npm install @bloxchain/contracts
+```
+
+To install from the repository (e.g. for development):
+
+```bash
 npm install https://github.com/PracticalParticle/Bloxchain-Protocol.git#main --save
-
-# The SDK requires viem as a peer dependency
-npm install viem
 ```
 
 ## Quick Start
@@ -263,7 +281,7 @@ definitions.updateConfig({
 ### Transaction Actions
 
 ```typescript
-import { TxAction } from './types/lib.index';
+import { TxAction } from '@bloxchain/sdk';
 
 // Available transaction actions
 TxAction.EXECUTE_TIME_DELAY_REQUEST
@@ -280,7 +298,7 @@ TxAction.EXECUTE_META_CANCEL
 ### Execution Types
 
 ```typescript
-import { ExecutionType } from './types/lib.index';
+import { ExecutionType } from '@bloxchain/sdk';
 
 ExecutionType.NONE
 ExecutionType.STANDARD
@@ -290,7 +308,7 @@ ExecutionType.RAW
 ### Transaction Status
 
 ```typescript
-import { TxStatus } from './types/lib.index';
+import { TxStatus } from '@bloxchain/sdk';
 
 TxStatus.UNDEFINED
 TxStatus.PENDING
@@ -323,6 +341,26 @@ try {
 - Monitor transaction status and handle failures appropriately
 - Keep private keys secure and never expose them in client-side code
 
+## Versioning and stability
+
+This package follows [Semantic Versioning](https://semver.org/). Current versions are **alpha** (`1.0.0-alpha.x`). Pre-1.0 releases may introduce breaking changes; we recommend pinning the exact version until the protocol is audited and stable.
+
+## Security
+
+- **Vulnerability reporting**: Do not open public GitHub issues for security vulnerabilities. See the [Security Policy](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/SECURITY.md) for reporting instructions (e.g. security@particlecs.com).
+- **Audit status**: The underlying protocol is not yet audited. Do not use with mainnet assets without an independent security review.
+
+## Support and links
+
+- **Documentation**: [SDK docs](./docs/) in this package; [Bloxchain Protocol README](https://github.com/PracticalParticle/Bloxchain-Protocol#readme) for protocol details
+- **Issues and feature requests**: [GitHub Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues)
+- **Homepage**: [bloxchain.app](https://bloxchain.app/)
+- **Author**: [Particle Crypto Security](https://particlecs.com/)
+
+## Repository
+
+Part of [Bloxchain Protocol](https://github.com/PracticalParticle/Bloxchain-Protocol). For protocol architecture and contract documentation, see the main repository README.
+
 ## Contributing
 
 When contributing to the SDK:
@@ -335,4 +373,4 @@ When contributing to the SDK:
 
 ## License
 
-This SDK is part of the Bloxchain Protocol and follows the same licensing terms.
+MPL-2.0 (Mozilla Public License 2.0). This SDK is part of the Bloxchain Protocol. See the [LICENSE](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/LICENSE) file in the main repository.

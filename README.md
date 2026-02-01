@@ -167,7 +167,7 @@ import {
 } from '@bloxchain/sdk';
 
 // Import contracts from @bloxchain/contracts package
-import '@bloxchain/contracts/contracts/core/security/SecureOwnable.sol';
+import '@bloxchain/contracts/core/security/SecureOwnable.sol';
 ```
 
 ### 🌐 Testnet Deployment

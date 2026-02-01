@@ -2,7 +2,8 @@
 
 /**
  * @file count-loc.cjs
- * @description Counts lines of code (LoC) excluding comments for Solidity contracts
+ * @description Counts lines of code (LoC) excluding comments for Solidity contracts.
+ * Excludes contracts under examples/ and experimental/ directories.
  * @usage node scripts/count-loc.cjs [contracts-path]
  */
 
@@ -78,8 +79,11 @@ function countLinesOfCode(content) {
     return loc;
 }
 
+/** Directories to exclude from LoC statistics (folder name only) */
+const EXCLUDED_DIRS = new Set(['examples', 'experimental']);
+
 /**
- * Recursively finds all .sol files in a directory
+ * Recursively finds all .sol files in a directory (skips examples and experimental)
  */
 function findSolidityFiles(dir, fileList = []) {
     const files = fs.readdirSync(dir);
@@ -89,6 +93,7 @@ function findSolidityFiles(dir, fileList = []) {
         const stat = fs.statSync(filePath);
         
         if (stat.isDirectory()) {
+            if (EXCLUDED_DIRS.has(file)) continue;
             findSolidityFiles(filePath, fileList);
         } else if (file.endsWith('.sol')) {
             fileList.push(filePath);

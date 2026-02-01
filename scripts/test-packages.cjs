@@ -195,13 +195,12 @@ function testContractsPackage() {
     });
     logSuccess('npm pack dry-run successful');
     
-    // Check that expected files are in the pack
-    // Look for contracts and abi files using regex
-    const hasContracts = /contracts\//.test(packOutput);
+    // Check that expected files are in the pack (core, utils, interfaces at package root)
+    const hasCore = /core\//.test(packOutput);
     const hasAbi = /abi\//.test(packOutput);
-    
-    if (!hasContracts) {
-      logWarning('Contracts directory not found in pack output');
+
+    if (!hasCore) {
+      logWarning('core/ directory not found in pack output');
     }
     if (!hasAbi) {
       logWarning('ABI directory not found in pack output');
