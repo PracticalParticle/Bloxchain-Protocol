@@ -45,6 +45,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Unified component event for SecureOwnable, GuardController, RuntimeRBAC.
      * Indexers filter by functionSelector (msg.sig at emit site) and decode data (abi-encoded payload).
+     * @param functionSelector The function selector (msg.sig) at the emit site; used by indexers to filter
+     * @param data ABI-encoded payload associated with the event
      */
     event ComponentEvent(bytes4 indexed functionSelector, bytes data);
 
