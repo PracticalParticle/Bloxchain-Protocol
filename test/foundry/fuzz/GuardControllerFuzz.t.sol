@@ -27,7 +27,7 @@ contract GuardControllerFuzzTest is CommonBase {
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
         GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
@@ -57,7 +57,7 @@ contract GuardControllerFuzzTest is CommonBase {
         // It will fail without whitelist, but we verify the function structure
         vm.prank(owner);
         bool succeeded = false;
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             value,
             selector,
@@ -85,13 +85,13 @@ contract GuardControllerFuzzTest is CommonBase {
 
         // Test with mock ERC20 - use the actual mock contract address
         // Mint tokens to contract
-        mockERC20.mint(address(controlBlox), amount);
+        mockERC20.mint(address(accountBlox), amount);
         
         // Verify balance
-        assertGe(mockERC20.balanceOf(address(controlBlox)), amount);
+        assertGe(mockERC20.balanceOf(address(accountBlox)), amount);
         
         // Verify the contract can receive tokens
-        assertEq(mockERC20.balanceOf(address(controlBlox)), amount);
+        assertEq(mockERC20.balanceOf(address(accountBlox)), amount);
     }
 
     function testFuzz_RegisterFunction(
@@ -125,7 +125,7 @@ contract GuardControllerFuzzTest is CommonBase {
         });
         
         // Test execution params creation
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
         GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));

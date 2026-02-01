@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/examples/templates/ControlBlox.sol";
+import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -21,12 +21,12 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
  * Based on: ATTACK_VECTORS_CODEX.md Section 12
  */
 contract ComprehensiveInitializationFuzzTest is CommonBase {
-    ControlBlox public uninitializedContract;
+    AccountBlox public uninitializedContract;
     
     function setUp() public override {
         super.setUp();
         // Deploy but don't initialize a new contract for uninitialized tests
-        uninitializedContract = new ControlBlox();
+        uninitializedContract = new AccountBlox();
     }
 
     // ============ MULTIPLE INITIALIZATION ATTACKS ============
@@ -36,7 +36,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      * Attack Vector: Multiple Initialization Attack (CRITICAL)
      * ID: INIT-001
      * 
-     * Note: ControlBlox uses OpenZeppelin's initializer modifier which prevents
+     * Note: AccountBlox uses OpenZeppelin's initializer modifier which prevents
      * re-initialization. This test verifies the protection works.
      */
     function testFuzz_MultipleInitializationPrevented(
@@ -52,7 +52,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
         vm.assume(attackerRecovery != recovery);
         
         // Create new contract instance for this test
-        ControlBlox testContract = new ControlBlox();
+        AccountBlox testContract = new AccountBlox();
         
         // First initialization should succeed
         vm.prank(owner);
@@ -97,7 +97,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      */
     function testFuzz_MultipleInitializationWithSameParamsPrevented() public {
         // Create new contract instance for this test
-        ControlBlox testContract = new ControlBlox();
+        AccountBlox testContract = new AccountBlox();
         
         // First initialization
         vm.prank(owner);
@@ -151,7 +151,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      * ID: INIT-003
      */
     function testFuzz_ZeroOwnerAddressPrevented() public {
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
             address(0), // Zero owner
@@ -168,7 +168,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      * ID: INIT-003
      */
     function testFuzz_ZeroBroadcasterAddressPrevented() public {
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
             owner,
@@ -185,7 +185,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      * ID: INIT-003
      */
     function testFuzz_ZeroRecoveryAddressPrevented() public {
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
             owner,
@@ -206,7 +206,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      */
     function testFuzz_ZeroTimeLockPeriodPrevented() public {
         // Time-lock period cannot be zero
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.expectRevert(abi.encodeWithSelector(
             SharedValidation.TimeLockPeriodZero.selector,
             0
@@ -226,7 +226,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
      * ID: INIT-003
      */
     function testFuzz_AllZeroAddressesPrevented() public {
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
             address(0),
@@ -259,7 +259,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
         // Time-lock period must be >= 1 day
         timeLockPeriod = bound(timeLockPeriod, 86400, type(uint256).max);
         
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         newContract.initialize(
             validOwner,
             validBroadcaster,
@@ -279,7 +279,7 @@ contract ComprehensiveInitializationFuzzTest is CommonBase {
     /**
      * @dev Helper to check if contract is initialized
      */
-    function _isInitialized(ControlBlox contractInstance) internal view returns (bool) {
+    function _isInitialized(AccountBlox contractInstance) internal view returns (bool) {
         // Try to get owner - if initialized, this will return an address
         // If not initialized, it will revert
         try contractInstance.owner() returns (address) {

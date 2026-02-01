@@ -420,7 +420,7 @@ Most tests should **PASS** as the codebase has strong security protections:
 Many tests use try-catch to handle `NoPermission` errors gracefully, as these indicate security is working correctly:
 
 ```solidity
-try controlBlox.executeWithTimeLock(...) returns (TxRecord memory txRecord) {
+try accountBlox.executeWithTimeLock(...) returns (TxRecord memory txRecord) {
     // Test logic when permission exists
 } catch (bytes memory reason) {
     bytes4 errorSelector = bytes4(reason);

@@ -51,7 +51,7 @@ contract AccessControlTest is CommonBase {
             data: abi.encode(bytes4(keccak256("execute()")), address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         assertGt(params.length, 0);
         
         // Verify the params can be decoded back to the original actions

@@ -42,7 +42,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         _registerFunction("execute()", "TEST_OPERATION", actions);
         
-        // Whitelist mockTarget for execute() selector on controlBlox
+        // Whitelist mockTarget for execute() selector on accountBlox
         bytes4 executeSelector = bytes4(keccak256("execute()"));
         _whitelistTarget(address(mockTarget), executeSelector);
         
@@ -58,7 +58,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
     }
     
     /**
-     * @dev Helper to whitelist a target for a function selector on controlBlox
+     * @dev Helper to whitelist a target for a function selector on accountBlox
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
         GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
@@ -67,10 +67,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
@@ -78,9 +78,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -96,7 +96,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         metaTx.signature = abi.encodePacked(r, s, v);
         
         vm.prank(broadcaster);
-        controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
     }
     
     /**
@@ -108,7 +108,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Check if roleBlox has GuardController functionality
         // Since RoleBlox doesn't extend GuardController, we skip whitelisting
         // The whitelist check error might be coming from a different source
-        // For now, we'll try to whitelist on controlBlox instead
+        // For now, we'll try to whitelist on accountBlox instead
         _whitelistTarget(target, selector);
     }
 
@@ -176,7 +176,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 gasBefore = gasleft();
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             testSelector,
@@ -290,7 +290,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // getWalletRoles requires caller to have any role, so we call it as owner
         uint256 gasBefore = gasleft();
         vm.prank(owner);
-        bytes32[] memory walletRoles = controlBlox.getWalletRoles(owner);
+        bytes32[] memory walletRoles = accountBlox.getWalletRoles(owner);
         uint256 gasUsed = gasBefore - gasleft();
         
         // Verify operation completes
@@ -366,7 +366,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 gasBefore = gasleft();
         vm.prank(testWallet);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             testSelector,
@@ -450,9 +450,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(testSelector, true) // safeRemoval = true
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(unregisterActions);
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(unregisterActions);
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
@@ -460,9 +460,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -479,7 +479,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 gasBefore = gasleft();
         vm.prank(broadcaster);
-        try controlBlox.guardConfigBatchRequestAndApprove(metaTx) returns (EngineBlox.TxRecord memory txRecord) {
+        try accountBlox.guardConfigBatchRequestAndApprove(metaTx) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 gasUsed = gasBefore - gasleft();
             
             // May succeed or fail depending on function protection
@@ -646,9 +646,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             });
         }
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
@@ -656,9 +656,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -677,7 +677,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: Gas measurement using gasleft() can be inaccurate for external calls in Foundry
         // Gas consumption is measured by Foundry's gas reporting system
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+        EngineBlox.TxRecord memory txRecord = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
         
         // Verify batch completes or fails gracefully
         assertTrue(
@@ -727,7 +727,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Create transactions up to rangeSize
         for (uint i = 0; i < rangeSize; i++) {
             vm.prank(owner);
-            try controlBlox.executeWithTimeLock(
+            try accountBlox.executeWithTimeLock(
                 address(mockTarget),
                 0,
                 executeSelector,
@@ -748,7 +748,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Measure gas
         uint256 gasBefore = gasleft();
-        try controlBlox.getTransactionHistory(fromTxId, toTxId) returns (EngineBlox.TxRecord[] memory history) {
+        try accountBlox.getTransactionHistory(fromTxId, toTxId) returns (EngineBlox.TxRecord[] memory history) {
             uint256 gasUsed = gasBefore - gasleft();
             
             // Verify query completes
@@ -888,7 +888,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // getSupportedRoles requires caller to have any role, so we call it as owner
         uint256 gasBefore = gasleft();
         vm.prank(owner);
-        bytes32[] memory roles = controlBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         uint256 gasUsed = gasBefore - gasleft();
         
         // Verify query completes
@@ -924,7 +924,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         for (uint i = 0; i < numberOfFunctions; i++) {
             string memory signature = string(abi.encodePacked("testFunction", i, "()"));
-            try this._registerFunctionExternal(address(controlBlox), signature, "TEST_OPERATION", actions) {
+            try this._registerFunctionExternal(address(accountBlox), signature, "TEST_OPERATION", actions) {
                 // Function registered
             } catch {
                 // May fail if limit reached or other reasons
@@ -936,7 +936,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // getSupportedFunctions requires caller to have any role, so we call it as owner
         uint256 gasBefore = gasleft();
         vm.prank(owner);
-        bytes4[] memory functions = controlBlox.getSupportedFunctions();
+        bytes4[] memory functions = accountBlox.getSupportedFunctions();
         uint256 gasUsed = gasBefore - gasleft();
         
         // Verify query completes
@@ -974,7 +974,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             bytes4 selector = bytes4(keccak256(bytes(signature)));
             
             // Register function first
-            try this._registerFunctionExternal(address(controlBlox), signature, "TEST_OPERATION", actions) {
+            try this._registerFunctionExternal(address(accountBlox), signature, "TEST_OPERATION", actions) {
                 // Add permission to role
                 _addFunctionPermissionToRole(roleHash, selector);
             } catch {
@@ -985,7 +985,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Measure gas for permissions retrieval
         uint256 gasBefore = gasleft();
-        try controlBlox.getActiveRolePermissions(roleHash) returns (EngineBlox.FunctionPermission[] memory permissions) {
+        try accountBlox.getActiveRolePermissions(roleHash) returns (EngineBlox.FunctionPermission[] memory permissions) {
             uint256 gasUsed = gasBefore - gasleft();
             
             // Verify query completes
@@ -1059,7 +1059,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         uint256 registeredCount = 0;
         for (uint i = 0; i < EngineBlox.MAX_FUNCTIONS; i++) {
             string memory signature = string(abi.encodePacked("testFunction", i, "()"));
-            try this._registerFunctionExternal(address(controlBlox), signature, "TEST_OPERATION", actions) {
+            try this._registerFunctionExternal(address(accountBlox), signature, "TEST_OPERATION", actions) {
                 registeredCount++;
             } catch {
                 // May fail for other reasons
@@ -1076,9 +1076,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 data: abi.encode(signature, "TEST_OPERATION", actions)
             });
             
-            bytes memory params = controlBlox.guardConfigBatchExecutionParams(guardActions);
-            EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-                address(controlBlox),
+            bytes memory params = accountBlox.guardConfigBatchExecutionParams(guardActions);
+            EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+                address(accountBlox),
                 GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
                 EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                 block.timestamp + 1 hours,
@@ -1086,9 +1086,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 owner
             );
             
-            EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+            EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
                 owner,
-                address(controlBlox),
+                address(accountBlox),
                 0,
                 0,
                 GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -1104,7 +1104,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             metaTx.signature = abi.encodePacked(r, s, v);
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+            EngineBlox.TxRecord memory txRecord = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
             
             // Should fail with MaxFunctionsExceeded
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -1291,10 +1291,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
@@ -1302,9 +1302,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -1320,7 +1320,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         metaTx.signature = abi.encodePacked(r, s, v);
         
         vm.prank(broadcaster);
-        controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
     }
 
     /**
@@ -1351,10 +1351,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             block.timestamp + 1 hours,
@@ -1362,9 +1362,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -1384,7 +1384,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
 
     /**
      * @dev Helper to create meta-transaction for role config
-     * Note: Uses roleBlox (not controlBlox) since role config operations are executed on roleBlox
+     * Note: Uses roleBlox (not accountBlox) since role config operations are executed on roleBlox
      */
     function _createMetaTxForRoleConfig(
         address signer,

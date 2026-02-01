@@ -27,7 +27,7 @@ contract WhitelistWorkflowTest is CommonBase {
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
         GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
@@ -44,7 +44,7 @@ contract WhitelistWorkflowTest is CommonBase {
      */
     function test_Whitelist_StartsEmpty() public {
         vm.prank(owner);
-        address[] memory targets = controlBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
     }
 
@@ -56,7 +56,7 @@ contract WhitelistWorkflowTest is CommonBase {
         
         vm.prank(owner);
         vm.expectRevert(); // Will fail due to whitelist check or permissions
-        controlBlox.executeWithTimeLock(
+        accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             TEST_FUNCTION_SELECTOR,
@@ -76,7 +76,7 @@ contract WhitelistWorkflowTest is CommonBase {
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
         GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
@@ -106,7 +106,7 @@ contract WhitelistWorkflowTest is CommonBase {
             data: abi.encode(TEST_FUNCTION_SELECTOR, target2)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
         GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));

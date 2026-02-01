@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../../contracts/core/lib/EngineBlox.sol";
 import "../../contracts/examples/templates/SecureBlox.sol";
 import "../../contracts/examples/templates/RoleBlox.sol";
-import "../../contracts/examples/templates/ControlBlox.sol";
+import "../../contracts/examples/templates/AccountBlox.sol";
 import "./helpers/MockContracts.sol";
 import "./helpers/TestHelpers.sol";
 
@@ -28,7 +28,7 @@ contract CommonBase is Test {
     // Deployed contracts
     SecureBlox public secureBlox;
     RoleBlox public roleBlox;
-    ControlBlox public controlBlox;
+    AccountBlox public accountBlox;
 
     // Mock contracts
     MockERC20 public mockERC20;
@@ -109,10 +109,10 @@ contract CommonBase is Test {
             address(mockEventForwarder)
         );
 
-        // Deploy and initialize ControlBlox
-        controlBlox = new ControlBlox();
+        // Deploy and initialize AccountBlox
+        accountBlox = new AccountBlox();
         vm.prank(owner);
-        controlBlox.initialize(
+        accountBlox.initialize(
             owner,
             broadcaster,
             recovery,

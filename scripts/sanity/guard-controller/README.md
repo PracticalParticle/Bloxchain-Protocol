@@ -1,6 +1,6 @@
 # GuardController Test Suite
 
-This folder contains a comprehensive test suite for the GuardController contract, testing ETH transfer functionality through the ControlBlox contract. The tests verify the complete workflow of registering bytes4(0) function, setting permissions, and executing ETH deposits/withdrawals.
+This folder contains a comprehensive test suite for the GuardController contract, testing ETH transfer functionality through the AccountBlox contract. The tests verify the complete workflow of registering bytes4(0) function, setting permissions, and executing ETH deposits/withdrawals.
 
 ## Structure
 
@@ -77,9 +77,9 @@ node run-tests.js --help
 ## Environment Requirements
 
 - Node.js with Web3.js
-- Access to deployed ControlBlox contract
+- Access to deployed AccountBlox contract
 - Environment variables configured in `.env` file:
-  - `CONTROLBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` (manual mode)
+  - `ACCOUNTBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` (manual mode)
   - `TEST_WALLET_1_PRIVATE_KEY` through `TEST_WALLET_5_PRIVATE_KEY`
   - `REMOTE_HOST` and `REMOTE_PORT` (if using remote blockchain)
   - `RPC_URL` (optional, defaults to localhost:8545)
@@ -94,7 +94,7 @@ The test suite supports two modes:
 - Set `TEST_MODE=auto` in `.env` file
 
 ### Manual Mode (Default)
-- Uses contract address from `CONTROLBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` environment variable
+- Uses contract address from `ACCOUNTBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` environment variable
 - Uses private keys from `TEST_WALLET_*_PRIVATE_KEY` environment variables
 - Set `TEST_MODE=manual` in `.env` file (or omit for default)
 
@@ -189,7 +189,7 @@ This test suite follows these principles:
 
 6. **Contract Address Not Found**: 
    - In auto mode: Ensure Truffle artifacts exist in `build/contracts/`
-   - In manual mode: Ensure `CONTROLBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` is set in `.env`
+   - In manual mode: Ensure `ACCOUNTBLOX_ADDRESS` or `GUARD_CONTROLLER_ADDRESS` is set in `.env`
 
 ### Debug Mode
 

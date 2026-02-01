@@ -19,7 +19,7 @@ const contractsToProcess = [
   'BareBlox',
   'SecureBlox',
   'RoleBlox',
-  'ControlBlox',
+  'AccountBlox',
   'SimpleVault',
   'SimpleVaultDefinitions',
   'SimpleRWA20',

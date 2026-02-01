@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/interfaces/IEventForwarder.sol";
-import "../../../contracts/examples/templates/ControlBlox.sol";
+import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 
 /**
@@ -48,7 +48,7 @@ contract ComprehensiveEventForwardingFuzzTest is CommonBase {
         // or by using a contract that exposes it
         
         // Create a new contract with malicious forwarder
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.prank(owner);
         newContract.initialize(
             owner,
@@ -81,7 +81,7 @@ contract ComprehensiveEventForwardingFuzzTest is CommonBase {
         vm.assume(target != address(0));
         
         // Set gas-intensive event forwarder
-        ControlBlox newContract = new ControlBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.prank(owner);
         newContract.initialize(
             owner,

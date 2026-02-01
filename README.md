@@ -43,7 +43,7 @@ graph TB
     C --> G[SecureBlox]
     C --> H[RoleBlox]
     D --> H
-    C --> I[ControlBlox]
+    C --> I[AccountBlox]
     D --> I
     E --> I
     
@@ -86,7 +86,7 @@ Bloxchain Protocol uses a **modular composition pattern** where components can b
 - **BareBlox**: Minimal BaseStateMachine only
 - **SecureBlox**: Basic SecureOwnable functionality
 - **RoleBlox**: SecureOwnable + RuntimeRBAC
-- **ControlBlox**: GuardController + RuntimeRBAC + SecureOwnable
+- **AccountBlox**: GuardController + RuntimeRBAC + SecureOwnable
 - **MachineBlox**: GuardController + RuntimeRBAC + SecureOwnable + HookManager (experimental)
 
 ### 📦 Example Applications
@@ -697,7 +697,7 @@ abstract contract HookManager is BaseStateMachine {
 - ✅ **RuntimeRBAC**: Dynamic role-based access control with runtime configuration
 - ✅ **GuardController**: Controlled endpoint for external contract interactions with dynamic access and workflow definition
 - ✅ **HookManager**: External hook contract attachment for state machine actions (experimental)
-- ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, ControlBlox, MachineBlox
+- ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, AccountBlox, MachineBlox
 - ✅ **Example Applications**: SimpleVault, SimpleRWA20, PayBlox, CopyBlox, GuardianSafe, BasicERC20
 - ✅ **TypeScript SDK**: Full client library with comprehensive documentation
 - ✅ **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering security edge cases

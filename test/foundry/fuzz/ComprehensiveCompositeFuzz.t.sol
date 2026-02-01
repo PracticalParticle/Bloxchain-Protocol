@@ -273,7 +273,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         bytes32 operationType = keccak256("TEST_OPERATION");
         bytes4 functionSelector = bytes4(keccak256("execute()"));
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             functionSelector,
@@ -288,8 +288,8 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // But meta-transaction should still require time-lock expiration
         
         // Create meta-transaction for approval
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             bytes4(keccak256("approveTimeLockExecution(uint256)")),
             EngineBlox.TxAction.SIGN_META_APPROVE,
             block.timestamp + 1 hours,
@@ -297,7 +297,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             metaTxParams
         );
@@ -311,7 +311,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Attempt to execute before time-lock expires
         if (block.timestamp < releaseTime) {
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory result = controlBlox.approveTimeLockExecutionWithMetaTx(metaTx);
+            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
             
             // Should fail - time-lock not expired
             // Note: Meta-transaction approval still checks releaseTime
@@ -343,7 +343,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         vm.assume(newRecipient != address(0));
         vm.assume(originalRecipient != newRecipient);
         // Bound payment amount to available balance (handle zero balance)
-        uint256 contractBalance = address(controlBlox).balance;
+        uint256 contractBalance = address(accountBlox).balance;
         if (contractBalance == 0) {
             return; // Skip if no balance
         }
@@ -352,8 +352,8 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Create transaction - may fail with NoPermission if setup didn't complete
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try accountBlox.executeWithTimeLock(
+            address(accountBlox),
             0,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
@@ -382,9 +382,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         });
         
         // Advance time and execute
-        advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+        advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
         vm.prank(owner);
-        controlBlox.approveTimeLockExecution(txId);
+        accountBlox.approveTimeLockExecution(txId);
         
         // Verify payment went to correct recipient
         // This tests payment update behavior

@@ -53,7 +53,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             SharedValidation.InvalidAddress.selector,
             address(0)
         ));
-        controlBlox.executeWithTimeLock(
+        accountBlox.executeWithTimeLock(
             address(0), // Zero address
             0,
             functionSelector,
@@ -339,7 +339,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         // Note: Zero selector validation depends on implementation
         // If validation exists, this will revert; otherwise it may proceed
         // The important property is that zero selectors are handled appropriately
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             bytes4(0), // Zero selector
@@ -399,7 +399,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         // Zero operation type validation may occur at different points
         // Accept either ZeroOperationTypeNotAllowed or other validation errors
         // Both indicate the zero operation type is being handled
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,

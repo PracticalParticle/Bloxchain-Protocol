@@ -5,7 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/examples/templates/ControlBlox.sol";
+import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
 
@@ -125,7 +125,7 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         vm.assume(!_isDefaultSystemMacroSelector(nonMacroSelector));
         vm.assume(nonMacroSelector != bytes4(0));
         
-        // Attempt to call address(this) with a non-macro selector via controlBlox
+        // Attempt to call address(this) with a non-macro selector via accountBlox
         // This should be blocked by GuardController._validateNotInternalFunction
         bytes32 operationType = keccak256("TEST_OPERATION");
         
@@ -136,8 +136,8 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
                 nonMacroSelector
             )
         );
-        controlBlox.executeWithTimeLock(
-            address(controlBlox), // Target is address(this) for controlBlox
+        accountBlox.executeWithTimeLock(
+            address(accountBlox), // Target is address(this) for accountBlox
             0,
             nonMacroSelector,
             "",
@@ -288,7 +288,7 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
     ) public {
         vm.assume(externalTarget != address(0));
         vm.assume(externalTarget != address(paymentHelper));
-        vm.assume(externalTarget != address(controlBlox));
+        vm.assume(externalTarget != address(accountBlox));
         
         // Bound transfer amount
         transferAmount = bound(transferAmount, 1, address(paymentHelper).balance);
