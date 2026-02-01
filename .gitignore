@@ -54,9 +54,11 @@ ENV/
 deployed-addresses.json
 
 ### Package Build Artifacts ###
-# Generated during prepublish for @bloxchain/contracts
+# Copied by package/scripts/prepublish-contracts.cjs for @bloxchain/contracts
 package/abi/
-package/contracts/
+package/core/
+package/interfaces/
+package/utils/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/

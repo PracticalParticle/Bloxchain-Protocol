@@ -143,7 +143,7 @@ npm run test:foundry
 
 ### 📦 Install Packages
 
-**Install the SDK and Contracts packages**:
+**Install the SDK and Contracts packages**: [@bloxchain/sdk](https://www.npmjs.com/package/@bloxchain/sdk) · [@bloxchain/contracts](https://www.npmjs.com/package/@bloxchain/contracts)
 
 ```bash
 # Install TypeScript SDK
