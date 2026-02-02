@@ -14,7 +14,10 @@ import type { RoleConfigAction } from '../../types/core.access.index';
  * Same encoding as web3.eth.abi.encodeParameter('tuple(uint8,bytes)[]', actionsArray).
  */
 export function roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex {
-  const actionsArray = actions.map((a) => [Number(a.actionType), a.data] as [number, Hex]);
+  const actionsArray = actions.map((a) => ({
+    actionType: Number(a.actionType),
+    data: a.data
+  }));
   return encodeAbiParameters(
     parseAbiParameters('(uint8 actionType, bytes data)[]'),
     [actionsArray]
