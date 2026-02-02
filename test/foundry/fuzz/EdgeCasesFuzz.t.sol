@@ -59,7 +59,7 @@ contract EdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -86,7 +86,7 @@ contract EdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Empty batch should still execute (no-op)
@@ -118,7 +118,7 @@ contract EdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -160,7 +160,7 @@ contract EdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);

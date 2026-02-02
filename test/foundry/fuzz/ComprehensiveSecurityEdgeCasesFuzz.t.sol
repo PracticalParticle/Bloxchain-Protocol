@@ -187,7 +187,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -223,7 +223,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addExecutionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // This should fail - empty bitmap should be rejected

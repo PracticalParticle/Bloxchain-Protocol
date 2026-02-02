@@ -103,7 +103,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -124,7 +124,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addWalletMetaTx = _createMetaTxForRoleConfig(
             owner,
             addWalletParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -157,7 +157,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addPermissionMetaTx = _createMetaTxForRoleConfig(
             owner,
             addPermissionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -253,7 +253,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -298,7 +298,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -713,7 +713,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             address(secureBlox),
             SecureOwnableDefinitions.UPDATE_TIMELOCK_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );

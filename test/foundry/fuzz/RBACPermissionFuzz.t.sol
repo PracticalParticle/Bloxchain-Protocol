@@ -101,7 +101,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -119,7 +119,7 @@ contract RBACPermissionFuzzTest is CommonBase {
             EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
@@ -137,7 +137,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory overflowMetaTx = _createMetaTxForRoleConfig(
             owner,
             overflowParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -186,7 +186,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -203,7 +203,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -220,7 +220,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);

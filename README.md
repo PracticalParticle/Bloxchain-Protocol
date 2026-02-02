@@ -680,7 +680,7 @@ abstract contract HookManager is BaseStateMachine {
 - **Event Monitoring**: Real-time event parsing and monitoring
 
 ### Testing & Quality
-- **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering all security-critical components
+- **Comprehensive Fuzz Testing**: 36 test suites, 290 tests covering all security-critical components
 - **Foundry Testing**: Primary testing framework with fuzz testing and invariant checking
 - **Hardhat Support**: Alternative testing framework for compatibility
 - **Sanity Checks**: Production-ready validation scripts
@@ -700,7 +700,7 @@ abstract contract HookManager is BaseStateMachine {
 - ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, AccountBlox, MachineBlox
 - ✅ **Example Applications**: SimpleVault, SimpleRWA20, PayBlox, CopyBlox, GuardianSafe, BasicERC20
 - ✅ **TypeScript SDK**: Full client library with comprehensive documentation
-- ✅ **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering security edge cases
+- ✅ **Comprehensive Fuzz Testing**: 36 test suites, 290 tests covering security edge cases
 - ✅ **Runtime RBAC**: Dynamic role configuration without contract upgrades
 - ✅ **Definition Data Layer**: Modular initialization via IDefinition interface
 - ✅ **Sepolia Testnet Support**: Live deployment and testing on Ethereum Sepolia testnet

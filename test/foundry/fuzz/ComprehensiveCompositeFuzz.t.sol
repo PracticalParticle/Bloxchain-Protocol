@@ -82,7 +82,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             createParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -100,7 +100,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             createParams2,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -117,7 +117,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -134,7 +134,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -188,7 +188,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Execute the batch operation
@@ -292,7 +292,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             address(accountBlox),
             bytes4(keccak256("approveTimeLockExecution(uint256)")),
             EngineBlox.TxAction.SIGN_META_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -429,7 +429,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory legitMetaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Execute legitimate transaction first - this will increment nonce
@@ -454,7 +454,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );

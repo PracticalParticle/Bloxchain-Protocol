@@ -61,7 +61,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -116,7 +116,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -183,7 +183,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Verify nonce in meta-transaction matches current nonce
@@ -207,7 +207,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -269,7 +269,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Extract signature components
@@ -338,7 +338,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Store original signature
@@ -534,7 +534,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             maxGasPrice,
             owner
         );
@@ -596,7 +596,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
             owner,
             executionParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Verify first transaction uses current nonce
@@ -615,7 +615,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -683,7 +683,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Replace with invalid signature (all zeros) - v=0 is invalid
@@ -728,7 +728,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Create signature with wrong length

@@ -48,9 +48,6 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         
         // PaymentTestHelper sets up permissions in initialize() for NATIVE_TRANSFER_SELECTOR
         // and requestTransaction/approveTransaction functions
-        
-        // Whitelist accountBlox for native transfers (already done in StateMachine tests, but ensure it's done)
-        // Note: This might already be whitelisted, but we ensure it here
     }
 
     // ============ PAYMENT MANIPULATION ATTACKS ============

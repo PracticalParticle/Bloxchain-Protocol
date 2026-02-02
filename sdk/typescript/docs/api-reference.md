@@ -193,12 +193,12 @@ const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
 )
 ```
 
-##### `roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Promise<Hex>`
+##### `roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex`
 Builds execution params locally (definition helper; no contract call).
 Creates execution params for a RBAC configuration batch.
 
 ```typescript
-const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(actions);
+const executionParams = runtimeRBAC.roleConfigBatchExecutionParams(actions);
 // Or use definition helper directly: import { roleConfigBatchExecutionParams } from '@bloxchain/sdk'; const executionParams = roleConfigBatchExecutionParams(actions);
 ```
 

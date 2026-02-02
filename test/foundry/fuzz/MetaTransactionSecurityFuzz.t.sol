@@ -99,7 +99,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -161,7 +161,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -206,7 +206,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
 
         // Override with invalid signature
@@ -246,7 +246,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             unauthorizedSigner
         );
@@ -296,7 +296,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
 
         // Execute first transaction

@@ -73,7 +73,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -250,7 +250,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 createParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
@@ -272,7 +272,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
@@ -455,7 +455,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -541,7 +541,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Measure gas for batch execution using Foundry's gas reporting
@@ -607,7 +607,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Should fail with BatchSizeExceeded error
@@ -651,7 +651,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -863,7 +863,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
@@ -1031,7 +1031,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -1081,7 +1081,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 address(accountBlox),
                 GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
                 EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-                block.timestamp + 1 hours,
+                1 hours,
                 0,
                 owner
             );
@@ -1149,7 +1149,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Execute composite operation
@@ -1208,7 +1208,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -1232,7 +1232,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -1268,7 +1268,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -1297,7 +1297,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -1357,7 +1357,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );

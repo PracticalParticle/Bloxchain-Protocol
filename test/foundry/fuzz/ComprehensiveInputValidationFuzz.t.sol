@@ -84,7 +84,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -101,7 +101,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -143,7 +143,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Execute - should handle large arrays
@@ -201,7 +201,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Execute empty batch - should succeed (no-op)
@@ -263,7 +263,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -472,7 +472,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
