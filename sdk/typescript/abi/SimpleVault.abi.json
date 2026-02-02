@@ -72,22 +72,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "newPeriod",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "currentPeriod",
-        "type": "uint256"
-      }
-    ],
-    "name": "NewTimelockSame",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "caller",
         "type": "address"
@@ -139,6 +123,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "PendingSecureRequest",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -157,17 +146,6 @@
   {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {
@@ -243,17 +221,6 @@
       }
     ],
     "name": "SafeERC20FailedOperation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "provided",
-        "type": "uint256"
-      }
-    ],
-    "name": "TimeLockPeriodZero",
     "type": "error"
   },
   {
@@ -3358,25 +3325,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newRecoveryAddress",
-        "type": "address"
-      }
-    ],
-    "name": "updateRecoveryExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "components": [
           {
             "components": [
@@ -3652,25 +3600,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newTimeLockPeriodSec",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateTimeLockExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

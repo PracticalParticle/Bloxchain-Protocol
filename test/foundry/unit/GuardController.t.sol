@@ -25,7 +25,7 @@ contract GuardControllerTest is CommonBase {
     function test_GetAllowedTargets_ReturnsWhitelistedTargets() public {
         // Initially empty whitelist
         vm.prank(owner);
-        address[] memory targets = controlBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
     }
 
@@ -33,22 +33,22 @@ contract GuardControllerTest is CommonBase {
         // Should require any role for privacy protection
         vm.prank(attacker);
         vm.expectRevert();
-        controlBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
     }
 
     function test_GuardConfigBatchExecutionParams_AddTargetToWhitelist() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
         
         (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
@@ -56,18 +56,18 @@ contract GuardControllerTest is CommonBase {
     }
 
     function test_GuardConfigBatchExecutionParams_RemoveTargetFromWhitelist() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST));
         
         (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
@@ -75,22 +75,22 @@ contract GuardControllerTest is CommonBase {
     }
 
     function test_GuardConfigBatchExecutionParams_Revert_ZeroAddress() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(0))
         });
         
         // The validation happens during execution, not during params creation
         // So we can create params with zero address, but execution will fail
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         assertGt(params.length, 0);
     }
 
     function test_EmptyWhitelist_DeniesAllExecutions() public {
         // No targets whitelisted
         vm.prank(owner);
-        address[] memory targets = controlBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
 
         // Execution should fail due to whitelist check
@@ -108,7 +108,7 @@ contract GuardControllerTest is CommonBase {
         vm.prank(owner);
         // May fail with NoPermission if owner doesn't have permission, or TargetNotWhitelisted if whitelist check happens first
         vm.expectRevert();
-        controlBlox.executeWithTimeLock(
+        accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             TEST_FUNCTION_SELECTOR,
@@ -129,7 +129,7 @@ contract GuardControllerTest is CommonBase {
         // Attempt to create execution request - will fail without whitelist or permissions
         vm.prank(owner);
         vm.expectRevert(); // Will fail due to whitelist or permission check
-        controlBlox.executeWithTimeLock(
+        accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             TEST_FUNCTION_SELECTOR,
@@ -156,7 +156,7 @@ contract GuardControllerTest is CommonBase {
         // Attempt to create execution request - will fail without whitelist or permissions
         vm.prank(owner);
         vm.expectRevert(); // Will fail due to whitelist or permission check
-        controlBlox.executeWithTimeLock(
+        accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             TEST_FUNCTION_SELECTOR,
@@ -175,10 +175,10 @@ contract GuardControllerTest is CommonBase {
 
     function test_SupportsInterface_IGuardController() public {
         bytes4 interfaceId = type(IGuardController).interfaceId;
-        assertTrue(controlBlox.supportsInterface(interfaceId));
+        assertTrue(accountBlox.supportsInterface(interfaceId));
     }
 
     function test_SupportsInterface_ERC165() public {
-        assertTrue(controlBlox.supportsInterface(0x01ffc9a7));
+        assertTrue(accountBlox.supportsInterface(0x01ffc9a7));
     }
 }

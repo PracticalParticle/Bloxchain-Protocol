@@ -7,6 +7,8 @@ import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { Uint16Bitmap } from '../utils/bitmap';
 import { INTERFACE_IDS } from '../utils/interface-ids';
+import type { RoleConfigAction } from '../types/core.access.index';
+import { roleConfigBatchExecutionParams as defRoleConfigBatchExecutionParams } from '../lib/definitions/RuntimeRBACDefinitions';
 
 /**
  * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission
@@ -49,13 +51,11 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   // ============ ROLE CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution params for a RBAC configuration batch
-   * @param actions Encoded role configuration actions
+   * @dev Creates execution params for a RBAC configuration batch (definition helper; no contract call)
+   * @param actions Role configuration actions
    */
-  async roleConfigBatchExecutionParams(
-    actions: Array<{ actionType: number; data: Hex }>
-  ): Promise<Hex> {
-    return this.executeReadContract<Hex>('roleConfigBatchExecutionParams', [actions]);
+  roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex {
+    return defRoleConfigBatchExecutionParams(actions);
   }
 
   /**

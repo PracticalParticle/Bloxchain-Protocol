@@ -54,17 +54,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "provided",
-        "type": "address"
-      }
-    ],
-    "name": "InvalidAddress",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
     "type": "error"
@@ -2593,37 +2582,6 @@
       {
         "components": [
           {
-            "internalType": "enum GuardController.GuardConfigActionType",
-            "name": "actionType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct GuardController.GuardConfigAction[]",
-        "name": "actions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "guardConfigBatchExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
             "components": [
               {
                 "internalType": "uint256",
@@ -2904,7 +2862,7 @@
       {
         "components": [
           {
-            "internalType": "enum GuardController.GuardConfigActionType",
+            "internalType": "enum GuardControllerDefinitions.GuardConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -2914,7 +2872,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct GuardController.GuardConfigAction[]",
+        "internalType": "struct GuardControllerDefinitions.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

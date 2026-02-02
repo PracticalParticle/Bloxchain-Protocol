@@ -190,6 +190,10 @@ library EngineBlox {
         mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
         // Per-function target hooks (generic pipeline for hook setup)
         mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
+
+        // ============ SYSTEM MACRO SELECTORS ============
+        // Function selectors that are allowed to target address(this) (e.g. native transfer, update payment)
+        EnumerableSet.Bytes32Set systemMacroSelectorsSet;
     }
 
     bytes32 constant OWNER_ROLE = keccak256(bytes("OWNER_ROLE"));
@@ -255,6 +259,10 @@ library EngineBlox {
         assignWallet(self, OWNER_ROLE, _owner);
         assignWallet(self, BROADCASTER_ROLE, _broadcaster);
         assignWallet(self, RECOVERY_ROLE, _recovery);
+
+        // Register default system macro selectors (allowed to target address(this) for system-level operations)
+        addMacroSelector(self, NATIVE_TRANSFER_SELECTOR);
+        addMacroSelector(self, UPDATE_PAYMENT_SELECTOR);
         
         // Mark as initialized after successful setup
         self.initialized = true;
@@ -1329,6 +1337,37 @@ library EngineBlox {
     ) public view returns (address[] memory) {
         EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
         return _convertAddressSetToArray(set);
+    }
+
+    // ============ SYSTEM MACRO SELECTORS ============
+
+    /**
+     * @dev Adds a function selector to the system macro selectors set.
+     *      Macro selectors are allowed to target address(this) for system-level operations (e.g. native transfer).
+     * @param self The SecureOperationState to modify.
+     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR).
+     */
+    function addMacroSelector(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public {
+        SharedValidation.validateHandlerSelector(functionSelector);
+        bytes32 sel = bytes32(functionSelector);
+        if (!self.systemMacroSelectorsSet.add(sel)) {
+            revert SharedValidation.ResourceAlreadyExists(sel);
+        }
+    }
+
+    /**
+     * @dev Returns true if the given function selector is in the system macro selectors set.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to check.
+     */
+    function isMacroSelector(
+        SecureOperationState storage self,
+        bytes4 functionSelector
+    ) public view returns (bool) {
+        return self.systemMacroSelectorsSet.contains(bytes32(functionSelector));
     }
 
     // ============ FUNCTION TARGET HOOKS MANAGEMENT ============

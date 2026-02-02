@@ -3,7 +3,7 @@ require('dotenv').config();
 const SecureBlox = artifacts.require("SecureBlox");
 const RoleBlox = artifacts.require("RoleBlox");
 const BareBlox = artifacts.require("BareBlox");
-const ControlBlox = artifacts.require("ControlBlox");
+const AccountBlox = artifacts.require("AccountBlox");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 // Helper function to wait for nonce to sync
@@ -26,13 +26,13 @@ module.exports = async function(deployer, network, accounts) {
     const deploySecureBlox = process.env.DEPLOY_SECUREBLOX === 'true'; // Default: false
     const deployRoleBlox = process.env.DEPLOY_ROLEBLOX === 'true'; // Default: false
     const deployBareBlox = process.env.DEPLOY_BAREBLOX === 'true'; // Default: false
-    const deployControlBlox = process.env.DEPLOY_CONTROLBLOX === 'true'; // Default: false
+    const deployAccountBlox = process.env.DEPLOY_ACCOUNTBLOX === 'true'; // Default: false
     
     console.log("\n🎯 Deployment Configuration:");
     console.log(`   SecureBlox: ${deploySecureBlox ? '✅ YES' : '❌ NO'}`);
     console.log(`   RoleBlox: ${deployRoleBlox ? '✅ YES' : '❌ NO'}`);
     console.log(`   BareBlox: ${deployBareBlox ? '✅ YES' : '❌ NO'}`);
-    console.log(`   ControlBlox: ${deployControlBlox ? '✅ YES' : '❌ NO'}`);
+    console.log(`   AccountBlox: ${deployAccountBlox ? '✅ YES' : '❌ NO'}`);
     
     // Get deployed foundation libraries from Migration 1
     console.log("\n📦 Step 1: Linking Foundation Libraries...");
@@ -298,23 +298,23 @@ module.exports = async function(deployer, network, accounts) {
         console.log("\n📦 Step 4: Skipping BareBlox deployment (disabled)");
     }
     
-    // Step 5: Deploy ControlBlox (if enabled)
-    let controlBlox = null;
-    if (deployControlBlox) {
-        console.log("\n📦 Step 5: Deploying ControlBlox...");
+    // Step 5: Deploy AccountBlox (if enabled)
+    let accountBlox = null;
+    if (deployAccountBlox) {
+        console.log("\n📦 Step 5: Deploying AccountBlox...");
         
-        // Link all required libraries to ControlBlox (includes GuardControllerDefinitions)
-        await deployer.link(EngineBlox, ControlBlox);
-        await deployer.link(SecureOwnableDefinitions, ControlBlox);
-        await deployer.link(RuntimeRBACDefinitions, ControlBlox);
-        await deployer.link(GuardControllerDefinitions, ControlBlox);
+        // Link all required libraries to AccountBlox (includes GuardControllerDefinitions)
+        await deployer.link(EngineBlox, AccountBlox);
+        await deployer.link(SecureOwnableDefinitions, AccountBlox);
+        await deployer.link(RuntimeRBACDefinitions, AccountBlox);
+        await deployer.link(GuardControllerDefinitions, AccountBlox);
         
-        // Deploy ControlBlox
-        await deployer.deploy(ControlBlox);
-        controlBlox = await ControlBlox.deployed();
-        console.log("✅ ControlBlox deployed at:", controlBlox.address);
+        // Deploy AccountBlox
+        await deployer.deploy(AccountBlox);
+        accountBlox = await AccountBlox.deployed();
+        console.log("✅ AccountBlox deployed at:", accountBlox.address);
         // Get web3 from deployed contract instance (available for error handling)
-        const web3 = controlBlox.constructor.web3 || global.web3;
+        const web3 = accountBlox.constructor.web3 || global.web3;
         
         // Wait for nonce to sync after deployment
         const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
@@ -325,22 +325,22 @@ module.exports = async function(deployer, network, accounts) {
         }
         
         // Save network info to artifact (fixes issue when network_id is "*")
-        await saveArtifactNetwork(ControlBlox, controlBlox.address, web3, network);
+        await saveArtifactNetwork(AccountBlox, accountBlox.address, web3, network);
         
-        // Initialize ControlBlox
-        console.log("🔧 Initializing ControlBlox...");
+        // Initialize AccountBlox
+        console.log("🔧 Initializing AccountBlox...");
         try {
-            const tx = await controlBlox.initialize(
+            const tx = await accountBlox.initialize(
                 accounts[0],  // initialOwner
                 accounts[1],  // broadcaster 
                 accounts[2],  // recovery 
                 1,          // timeLockPeriodSec
                 "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
             );
-            console.log("✅ ControlBlox initialized successfully");
+            console.log("✅ AccountBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
         } catch (error) {
-            console.log("❌ ControlBlox initialization failed:");
+            console.log("❌ AccountBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
             console.log("   Error data:", error.data);
@@ -350,7 +350,7 @@ module.exports = async function(deployer, network, accounts) {
             if (error.data) {
                 try {
                     const decodedError = await web3.eth.call({
-                        to: controlBlox.address,
+                        to: accountBlox.address,
                         data: error.data
                     });
                     console.log("   Decoded error data:", decodedError);
@@ -362,7 +362,7 @@ module.exports = async function(deployer, network, accounts) {
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
         }
     } else {
-        console.log("\n📦 Step 5: Skipping ControlBlox deployment (disabled)");
+        console.log("\n📦 Step 5: Skipping AccountBlox deployment (disabled)");
     }
     
     console.log("\n🎉 Migration 2 completed successfully!");
@@ -370,7 +370,7 @@ module.exports = async function(deployer, network, accounts) {
     if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
     if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
     if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
-    if (controlBlox) console.log(`   ControlBlox: ${controlBlox.address}`);
+    if (accountBlox) console.log(`   AccountBlox: ${accountBlox.address}`);
     
     // Save deployed addresses to file for auto mode fallback
     const fs = require('fs');
@@ -404,9 +404,9 @@ module.exports = async function(deployer, network, accounts) {
             deployedAt: new Date().toISOString()
         };
     }
-    if (controlBlox) {
-        addresses[network].ControlBlox = {
-            address: controlBlox.address,
+    if (accountBlox) {
+        addresses[network].AccountBlox = {
+            address: accountBlox.address,
             deployedAt: new Date().toISOString()
         };
     }
@@ -423,7 +423,7 @@ module.exports = async function(deployer, network, accounts) {
     if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
     if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
     if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
-    if (controlBlox) console.log(`   ControlBlox: ${controlBlox.address}`);
+    if (accountBlox) console.log(`   AccountBlox: ${accountBlox.address}`);
     
     console.log("\n✅ All contracts deployed and initialized successfully!");
     console.log("🎯 Ready for analyzer testing with fully functional contracts!");
@@ -435,8 +435,8 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   Event Forwarder: None`);
     
     console.log("\n💡 Usage Examples:");
-    console.log("   Deploy only SecureBlox: DEPLOY_SECUREBLOX=true DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_CONTROLBLOX=false truffle migrate");
-    console.log("   Deploy only BareBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=true DEPLOY_CONTROLBLOX=false truffle migrate");
-    console.log("   Deploy only ControlBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_CONTROLBLOX=true truffle migrate");
+    console.log("   Deploy only SecureBlox: DEPLOY_SECUREBLOX=true DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_ACCOUNTBLOX=false truffle migrate");
+    console.log("   Deploy only BareBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=true DEPLOY_ACCOUNTBLOX=false truffle migrate");
+    console.log("   Deploy only AccountBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_ACCOUNTBLOX=true truffle migrate");
     console.log("   Deploy all (default): truffle migrate");
 };

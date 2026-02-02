@@ -112,14 +112,18 @@ export class WhitelistTests extends BaseGuardControllerTest {
       console.log(`     Transaction Hash: ${result.hash}`);
       console.log(`     Transaction Status: ${receipt.status === 'success' ? 'SUCCESS' : 'FAILED'}`);
 
-      // Wait for state to update
-      console.log('  ⏳ Waiting for state to update...');
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Verify function is actually registered
-      const isRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+      // Wait for state to update and retry (chain propagation / indexing delay)
+      const maxRetries = 5;
+      const retryDelayMs = 2000;
+      let isRegistered = false;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`  ⏳ Waiting for state to update (attempt ${attempt}/${maxRetries})...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        isRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+        if (isRegistered) break;
+      }
       if (!isRegistered) {
-        throw new Error(`Function selector ${this.NATIVE_TRANSFER_SELECTOR} registration did not persist - transaction may have reverted`);
+        throw new Error(`Function selector ${this.NATIVE_TRANSFER_SELECTOR} registration did not persist after ${maxRetries} retries - transaction may have reverted`);
       }
       console.log(`  ✅ Verified function selector is registered: ${isRegistered}`);
 

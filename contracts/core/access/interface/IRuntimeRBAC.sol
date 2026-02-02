@@ -28,11 +28,8 @@ interface IRuntimeRBAC {
         REMOVE_ROLE,
         ADD_WALLET,
         REVOKE_WALLET,
-        REGISTER_FUNCTION,
-        UNREGISTER_FUNCTION,
         ADD_FUNCTION_TO_ROLE,
-        REMOVE_FUNCTION_FROM_ROLE,
-        LOAD_DEFINITIONS
+        REMOVE_FUNCTION_FROM_ROLE
     }
 
     /**
@@ -43,18 +40,9 @@ interface IRuntimeRBAC {
         bytes data;
     }
 
-    /// @dev RBAC config changes are emitted via BaseStateMachine.ComponentEvent with functionSelector = msg.sig (executeRoleConfigBatch). Decode data as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, bytes).
+    /// @dev RBAC config changes are emitted via BaseStateMachine.ComponentEvent with functionSelector = msg.sig (executeRoleConfigBatch). Decode data as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector).
 
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
-
-    /**
-     * @dev Creates execution params for a RBAC configuration batch
-     * @param actions Encoded role configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function roleConfigBatchExecutionParams(
-        RoleConfigAction[] memory actions
-    ) external pure returns (bytes memory);
 
     /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction

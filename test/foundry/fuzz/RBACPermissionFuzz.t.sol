@@ -97,11 +97,11 @@ contract RBACPermissionFuzzTest is CommonBase {
             data: abi.encode(roleName, maxWallets, permissions)
         });
         
-        bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -115,11 +115,11 @@ contract RBACPermissionFuzzTest is CommonBase {
                 data: abi.encode(roleHash, boundedWallets[i])
             });
             
-            bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
+            bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
             EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
-                block.timestamp + 1 hours
+                1 hours
             );
             
             vm.prank(broadcaster);
@@ -133,11 +133,11 @@ contract RBACPermissionFuzzTest is CommonBase {
             data: abi.encode(roleHash, boundedWallets[maxWallets])
         });
         
-        bytes memory overflowParams = roleBlox.roleConfigBatchExecutionParams(overflowActions);
+        bytes memory overflowParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(overflowActions));
         EngineBlox.MetaTransaction memory overflowMetaTx = _createMetaTxForRoleConfig(
             owner,
             overflowParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -182,11 +182,11 @@ contract RBACPermissionFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, permissions)
         });
         
-        bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -199,11 +199,11 @@ contract RBACPermissionFuzzTest is CommonBase {
             data: abi.encode(roleHash, wallet)
         });
         
-        bytes memory addParams1 = roleBlox.roleConfigBatchExecutionParams(addActions1);
+        bytes memory addParams1 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions1));
         EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -216,11 +216,11 @@ contract RBACPermissionFuzzTest is CommonBase {
             data: abi.encode(roleHash, wallet)
         });
         
-        bytes memory addParams2 = roleBlox.roleConfigBatchExecutionParams(addActions2);
+        bytes memory addParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions2));
         EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);

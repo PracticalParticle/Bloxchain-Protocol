@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/examples/templates/ControlBlox.sol";
+import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 
 /**
@@ -187,24 +187,24 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
      * or outside the search area. The function should not revert regardless.
      */
     function test_SelectorExistsInContract_KnownSelectors() public view {
-        // Test with known function selectors from controlBlox
+        // Test with known function selectors from accountBlox
         // The function should not revert, but may or may not find selectors
         // depending on how they're stored in the bytecode
         
         // Test executeWithTimeLock selector
-        bytes4 executeSelector = controlBlox.executeWithTimeLock.selector;
-        bool exists = EngineBlox.selectorExistsInContract(address(controlBlox), executeSelector);
+        bytes4 executeSelector = accountBlox.executeWithTimeLock.selector;
+        bool exists = EngineBlox.selectorExistsInContract(address(accountBlox), executeSelector);
         // Function should not revert - result depends on bytecode structure
         // Just verify the function executes successfully
         
         // Test initialize selector
-        bytes4 initSelector = controlBlox.initialize.selector;
-        exists = EngineBlox.selectorExistsInContract(address(controlBlox), initSelector);
+        bytes4 initSelector = accountBlox.initialize.selector;
+        exists = EngineBlox.selectorExistsInContract(address(accountBlox), initSelector);
         // Function should not revert
         
         // Test supportsInterface selector (from IERC165)
         bytes4 supportsInterfaceSelector = bytes4(0x01ffc9a7);
-        exists = EngineBlox.selectorExistsInContract(address(controlBlox), supportsInterfaceSelector);
+        exists = EngineBlox.selectorExistsInContract(address(accountBlox), supportsInterfaceSelector);
         // Function should not revert
         // Note: This is a heuristic check - may not find all selectors
     }
@@ -215,12 +215,12 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
     function test_SelectorExistsInContract_UnknownSelectors() public {
         // Test with arbitrary selectors that shouldn't exist
         bytes4 unknownSelector = bytes4(0x12345678);
-        bool exists = EngineBlox.selectorExistsInContract(address(controlBlox), unknownSelector);
+        bool exists = EngineBlox.selectorExistsInContract(address(accountBlox), unknownSelector);
         assertFalse(exists, "Unknown selector should not exist");
         
         // Test with zero selector
         bytes4 zeroSelector = bytes4(0);
-        exists = EngineBlox.selectorExistsInContract(address(controlBlox), zeroSelector);
+        exists = EngineBlox.selectorExistsInContract(address(accountBlox), zeroSelector);
         // Zero selector might exist in bytecode as padding, but unlikely in dispatch table
         // We just verify the function doesn't revert
     }
@@ -242,9 +242,9 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
         exists = EngineBlox.selectorExistsInContract(address(mockERC20), transferSelector);
         // Function should not revert
         
-        // Test with controlBlox
-        bytes4 executeWithTimeLockSelector = controlBlox.executeWithTimeLock.selector;
-        exists = EngineBlox.selectorExistsInContract(address(controlBlox), executeWithTimeLockSelector);
+        // Test with accountBlox
+        bytes4 executeWithTimeLockSelector = accountBlox.executeWithTimeLock.selector;
+        exists = EngineBlox.selectorExistsInContract(address(accountBlox), executeWithTimeLockSelector);
         // Function should not revert
         
         // Verify function can query any contract without reverting
@@ -314,8 +314,8 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
         // Test that the function can be called and doesn't revert
         // The actual validation is tested through createFunctionSchema
         
-        bytes4 knownSelector = controlBlox.executeWithTimeLock.selector;
-        bool exists = EngineBlox.selectorExistsInContract(address(controlBlox), knownSelector);
+        bytes4 knownSelector = accountBlox.executeWithTimeLock.selector;
+        bool exists = EngineBlox.selectorExistsInContract(address(accountBlox), knownSelector);
         
         // Function should not revert - result is heuristic
         // The important thing is that _validateContractFunctionProtection uses this
@@ -332,7 +332,7 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
     function test_SelectorExistsInContract_MultipleContracts() public {
         // Test all deployed contracts
         address[] memory contracts = new address[](4);
-        contracts[0] = address(controlBlox);
+        contracts[0] = address(accountBlox);
         contracts[1] = address(roleBlox);
         contracts[2] = address(secureBlox);
         contracts[3] = address(mockTarget);

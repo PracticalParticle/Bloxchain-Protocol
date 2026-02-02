@@ -78,7 +78,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Whitelist common targets for fuzz tests
         _whitelistTarget(address(mockTarget), executeSelector);
         _whitelistTarget(address(reentrancyTarget), maliciousSelector);
-        _whitelistTarget(address(controlBlox), EngineBlox.NATIVE_TRANSFER_SELECTOR);
+        _whitelistTarget(address(accountBlox), EngineBlox.NATIVE_TRANSFER_SELECTOR);
         _whitelistTarget(address(revertingTarget), alwaysRevertsSelector);
     }
     
@@ -99,15 +99,15 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
-        bytes memory createParams = controlBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory createResult = controlBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        EngineBlox.TxRecord memory createResult = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         // If role creation failed, skip permission setup
         if (createResult.status != EngineBlox.TxStatus.COMPLETED) {
             return;
@@ -120,15 +120,15 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleHash, owner)
         });
         
-        bytes memory addWalletParams = controlBlox.roleConfigBatchExecutionParams(addWalletActions);
+        bytes memory addWalletParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addWalletActions));
         EngineBlox.MetaTransaction memory addWalletMetaTx = _createMetaTxForRoleConfig(
             owner,
             addWalletParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory addWalletResult = controlBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
+        EngineBlox.TxRecord memory addWalletResult = accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
         // If wallet addition failed, skip permission setup
         if (addWalletResult.status != EngineBlox.TxStatus.COMPLETED) {
             return;
@@ -153,15 +153,15 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleHash, permission)
         });
         
-        bytes memory addPermissionParams = controlBlox.roleConfigBatchExecutionParams(addPermissionActions);
+        bytes memory addPermissionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addPermissionActions));
         EngineBlox.MetaTransaction memory addPermissionMetaTx = _createMetaTxForRoleConfig(
             owner,
             addPermissionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory addPermissionResult = controlBlox.roleConfigBatchRequestAndApprove(addPermissionMetaTx);
+        EngineBlox.TxRecord memory addPermissionResult = accountBlox.roleConfigBatchRequestAndApprove(addPermissionMetaTx);
         // If permission addition failed, log but continue (test will show NoPermission which is acceptable)
         if (addPermissionResult.status != EngineBlox.TxStatus.COMPLETED) {
             // Permission addition failed - this is okay, test will verify security is working
@@ -199,8 +199,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             RuntimeRBACDefinitions.ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -208,9 +208,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             RuntimeRBACDefinitions.ROLE_CONFIG_BATCH,
@@ -240,27 +240,27 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Ensure actions array is not empty
         require(supportedActions.length > 0, "Supported actions cannot be empty");
         
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Create and execute meta-transaction to register function
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -278,34 +278,34 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         // Execute meta-transaction
         vm.prank(broadcaster);
-        controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
     }
     
     /**
      * @dev Helper to whitelist a target for a function selector
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Create and execute meta-transaction to whitelist
-        EngineBlox.MetaTxParams memory metaTxParams = controlBlox.createMetaTxParams(
-            address(controlBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = controlBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(controlBlox),
+            address(accountBlox),
             0,
             0,
             GuardControllerDefinitions.CONTROLLER_OPERATION,
@@ -323,7 +323,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         // Execute meta-transaction
         vm.prank(broadcaster);
-        controlBlox.guardConfigBatchRequestAndApprove(metaTx);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
     }
 
     // ============ TRANSACTION STATUS MANIPULATION ============
@@ -342,7 +342,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Request transaction - may fail with NoPermission if setup didn't complete
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,
@@ -354,16 +354,16 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time past release time
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Attempt concurrent approval and cancellation
             vm.startPrank(owner);
             
             // First operation: approve
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
             
             // Get status after approval
-            EngineBlox.TxRecord memory recordAfterApproval = controlBlox.getTransaction(txId);
+            EngineBlox.TxRecord memory recordAfterApproval = accountBlox.getTransaction(txId);
             
             // Second operation: cancel (should fail - status is not PENDING anymore)
             vm.expectRevert(abi.encodeWithSelector(
@@ -371,7 +371,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 uint8(EngineBlox.TxStatus.PENDING),
                 uint8(recordAfterApproval.status)
             ));
-            controlBlox.cancelTimeLockExecution(txId);
+            accountBlox.cancelTimeLockExecution(txId);
             
             vm.stopPrank();
         } catch (bytes memory reason) {
@@ -404,7 +404,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Request transaction - may fail with NoPermission if setup didn't complete
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,
@@ -416,7 +416,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 releaseTime = txRecord.releaseTime;
             
             // Advance time but not enough
-            uint256 timeLockPeriod = controlBlox.getTimeLockPeriodSec();
+            uint256 timeLockPeriod = accountBlox.getTimeLockPeriodSec();
             uint256 advanceAmount = bound(timeAdvance, 1, timeLockPeriod - 1);
             advanceTime(advanceAmount);
             
@@ -427,7 +427,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 releaseTime,
                 block.timestamp
             ));
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -453,7 +453,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Request transaction - may fail with NoPermission if setup didn't complete
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,
@@ -464,9 +464,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time and approve (status becomes COMPLETED/FAILED)
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
             
             // Attempt to approve again (status is not PENDING) - should fail
             vm.prank(owner);
@@ -475,7 +475,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 uint8(EngineBlox.TxStatus.PENDING),
                 uint8(EngineBlox.TxStatus.COMPLETED) // or FAILED
             ));
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -497,7 +497,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         bytes memory params
     ) public {
         // Setup reentrancy target
-        reentrancyTarget.setTargetContract(address(controlBlox));
+        reentrancyTarget.setTargetContract(address(accountBlox));
         
         // Use whitelisted selector for reentrancy target
         bytes4 functionSelector = bytes4(keccak256("maliciousFunction()"));
@@ -505,7 +505,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Request transaction targeting reentrancy contract
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(reentrancyTarget),
             0,
             functionSelector,
@@ -519,15 +519,15 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             reentrancyTarget.setTargetTxId(txId);
             
             // Advance time
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve transaction - reentrancy target will attempt to reenter
             vm.prank(owner);
             // Reentrancy should fail because status is EXECUTING, not PENDING
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
             
             // Verify transaction completed (reentrancy prevented)
-            EngineBlox.TxRecord memory finalRecord = controlBlox.getTransaction(txId);
+            EngineBlox.TxRecord memory finalRecord = accountBlox.getTransaction(txId);
             assertTrue(
                 finalRecord.status == EngineBlox.TxStatus.COMPLETED ||
                 finalRecord.status == EngineBlox.TxStatus.FAILED,
@@ -555,10 +555,10 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         paymentAmount = bound(paymentAmount, 1, 1000 ether);
         
         // Fund contract
-        vm.deal(address(controlBlox), paymentAmount);
+        vm.deal(address(accountBlox), paymentAmount);
         
         // Setup malicious payment recipient
-        maliciousRecipient.setTargetContract(address(controlBlox));
+        maliciousRecipient.setTargetContract(address(accountBlox));
         
         // Create transaction - note: payment details are not set up because
         // _updatePaymentForTransaction is internal. This test verifies transaction-level
@@ -566,8 +566,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // which exposes payment functionality.
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try accountBlox.executeWithTimeLock(
+            address(accountBlox),
             0,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
@@ -577,7 +577,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time and approve
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Set target transaction for reentrancy
             maliciousRecipient.setTargetTxId(txId);
@@ -585,10 +585,10 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             vm.prank(owner);
             // Transaction execution should complete despite reentrancy attempt
             // (nonReentrant modifier protects against reentrancy)
-            controlBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
             
             // Verify transaction completed
-            EngineBlox.TxRecord memory finalRecord = controlBlox.getTransaction(txId);
+            EngineBlox.TxRecord memory finalRecord = accountBlox.getTransaction(txId);
             assertTrue(
                 finalRecord.status == EngineBlox.TxStatus.COMPLETED ||
                 finalRecord.status == EngineBlox.TxStatus.FAILED,
@@ -699,21 +699,21 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
     function testFuzz_TimeLockPeriodManipulationPrevented(
         uint256 newTimeLockPeriod
     ) public {
-        uint256 currentPeriod = controlBlox.getTimeLockPeriodSec();
+        uint256 currentPeriod = accountBlox.getTimeLockPeriodSec();
         vm.assume(newTimeLockPeriod != currentPeriod);
         vm.assume(newTimeLockPeriod > 0);
         vm.assume(newTimeLockPeriod < 365 days);
         
         // Time-lock update requires meta-transaction workflow
         // Create execution params for time-lock update
-        bytes memory executionParams = secureBlox.updateTimeLockExecutionParams(newTimeLockPeriod);
+        bytes memory executionParams = SecureOwnableDefinitions.updateTimeLockExecutionParams(newTimeLockPeriod);
         
         // Create meta-transaction for time-lock update
         EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
             address(secureBlox),
             SecureOwnableDefinitions.UPDATE_TIMELOCK_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -763,7 +763,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Request transaction - may fail with NoPermission if setup didn't complete
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,
@@ -773,7 +773,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             uint256 releaseTime = txRecord.releaseTime;
-            uint256 timeLockPeriod = controlBlox.getTimeLockPeriodSec();
+            uint256 timeLockPeriod = accountBlox.getTimeLockPeriodSec();
             
             // Miner can only manipulate ~15 seconds
             uint256 maxManipulation = 15;
@@ -790,7 +790,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             if (block.timestamp >= releaseTime) {
                 // Time-lock appears expired due to manipulation
                 vm.prank(owner);
-                controlBlox.approveTimeLockExecution(txId);
+                accountBlox.approveTimeLockExecution(txId);
                 // Should succeed if manipulation was enough
             } else {
                 // Time-lock still not expired
@@ -800,7 +800,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                     releaseTime,
                     block.timestamp
                 ));
-                controlBlox.approveTimeLockExecution(txId);
+                accountBlox.approveTimeLockExecution(txId);
             }
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
@@ -832,7 +832,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             target,
             0,
             functionSelector,
@@ -843,11 +843,11 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve with potentially insufficient gas
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
             
             // Transaction should either complete or fail gracefully
             assertTrue(
@@ -878,7 +878,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         bytes32 operationType = keccak256("TEST_OPERATION");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(revertingTarget),
             0,
             functionSelector,
@@ -889,11 +889,11 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve - target will revert
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
             
             // Transaction should be marked as FAILED, not revert
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -919,7 +919,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         uint256 paymentAmount
     ) public {
         // Ensure contract has some balance
-        uint256 contractBalance = address(controlBlox).balance;
+        uint256 contractBalance = address(accountBlox).balance;
         vm.assume(contractBalance < type(uint256).max / 2); // Avoid overflow
         // Set payment amount to exceed balance
         paymentAmount = bound(paymentAmount, contractBalance + 1, contractBalance + 1000 ether);
@@ -927,8 +927,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Create transaction with payment exceeding balance
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
-        try controlBlox.executeWithTimeLock(
-            address(controlBlox),
+        try accountBlox.executeWithTimeLock(
+            address(accountBlox),
             0,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
@@ -938,17 +938,17 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             uint256 txId = txRecord.txId;
             
             // Advance time
-            advanceTime(controlBlox.getTimeLockPeriodSec() + 1);
+            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve - should fail due to insufficient balance
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = controlBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
             
             // Transaction should fail with insufficient balance
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
             bytes memory expectedError = abi.encodeWithSelector(
                 SharedValidation.InsufficientBalance.selector,
-                address(controlBlox).balance,
+                address(accountBlox).balance,
                 paymentAmount
             );
             assertEq(result.result, expectedError);

@@ -1,7 +1,7 @@
 # Test Execution Guide
 
 **Purpose**: Complete guide for running the Bloxchain Protocol test suite  
-**Last Updated**: January 27, 2026  
+**Last Updated**: February 2, 2026  
 **Status**: Production Ready
 
 ---
@@ -10,7 +10,7 @@
 
 This guide provides comprehensive instructions for executing the Bloxchain Protocol test suite, including comprehensive fuzz tests, unit tests, integration tests, and security tests.
 
-**Test Suite Status**: ✅ **All tests passing** (70+ comprehensive fuzz tests + unit/integration/security tests)
+**Test Suite Status**: ✅ **All tests passing** (36 test suites, 290 tests passed)
 
 ---
 
@@ -40,7 +40,10 @@ forge test --match-test "testFuzz_BatchOperationAtomicity" -vv
 
 ## Test Suite Structure
 
-### Comprehensive Fuzz Tests (10 files - 70+ tests)
+### Full suite summary
+- **36 test suites**, **290 tests** (all passing). Includes fuzz, unit, integration, and security tests.
+
+### Comprehensive Fuzz Tests (10 files – subset of full suite)
 
 1. **ComprehensiveAccessControlFuzz.t.sol** - 13 tests ✅
    - Protected role modification
@@ -420,7 +423,7 @@ Most tests should **PASS** as the codebase has strong security protections:
 Many tests use try-catch to handle `NoPermission` errors gracefully, as these indicate security is working correctly:
 
 ```solidity
-try controlBlox.executeWithTimeLock(...) returns (TxRecord memory txRecord) {
+try accountBlox.executeWithTimeLock(...) returns (TxRecord memory txRecord) {
     // Test logic when permission exists
 } catch (bytes memory reason) {
     bytes4 errorSelector = bytes4(reason);
@@ -497,6 +500,6 @@ Tests use helper functions in `setUp()`:
 ---
 
 **Status**: ✅ **Production Ready**  
-**Last Updated**: January 27, 2026  
+**Last Updated**: February 2, 2026  
 **Test Coverage**: 100% of 180+ attack vectors  
-**Test Count**: 70+ comprehensive fuzz tests
+**Test Count**: 290 tests (36 suites)

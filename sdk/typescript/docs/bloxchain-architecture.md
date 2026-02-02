@@ -123,7 +123,7 @@ struct SecureOperationState {
 - **`BareBlox.sol`**: Minimal implementation using only BaseStateMachine
 - **`SecureBlox.sol`**: Basic implementation using SecureOwnable
 - **`RoleBlox.sol`**: Implementation combining SecureOwnable and RuntimeRBAC
-- **`ControlBlox.sol`**: Complete implementation with GuardController, RuntimeRBAC, and SecureOwnable
+- **`AccountBlox.sol`**: Complete implementation with GuardController, RuntimeRBAC, and SecureOwnable
 - **`MachineBlox.sol`**: Full-featured implementation with GuardController, RuntimeRBAC, SecureOwnable, and HookManager
 
 ### Layer 5: Application Contracts

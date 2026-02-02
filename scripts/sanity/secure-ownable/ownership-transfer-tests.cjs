@@ -491,8 +491,8 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             console.log(`  🛡️ Current recovery: ${currentRecovery}`);
             console.log(`  🛡️ New recovery: ${newRecovery}`);
 
-            // Create execution params for recovery update
-            const executionParams = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionParams(newRecovery));
+            // Build execution params locally (definition-library pattern; contract no longer exposes updateRecoveryExecutionParams)
+            const executionParams = this.web3.eth.abi.encodeParameter('address', newRecovery);
 
             // Get the execution selector for executeRecoveryUpdate(address)
             const executionSelector = '0x9ce5606e'; // UPDATE_RECOVERY_SELECTOR

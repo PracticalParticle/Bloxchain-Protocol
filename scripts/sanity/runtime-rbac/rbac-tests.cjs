@@ -1070,14 +1070,16 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             );
             
-            // DIAGNOSTIC: Test if contract can decode our encoding
+            // DIAGNOSTIC: Test local encoding for execution params (definition-library pattern; contract no longer exposes roleConfigBatchExecutionParams)
             try {
-                console.log('  🔍 DIAGNOSTIC: Testing if contract can encode our actions...');
+                console.log('  🔍 DIAGNOSTIC: Testing local encoding for execution params...');
                 const testActions = [action];
-                const testExecutionParams = await this.callContractMethod(
-                    this.contract.methods.roleConfigBatchExecutionParams(testActions)
+                const testActionsArray = testActions.map(a => [a.actionType, a.data]);
+                const testExecutionParams = this.web3.eth.abi.encodeParameter(
+                    'tuple(uint8,bytes)[]',
+                    testActionsArray
                 );
-                console.log(`  ✅ Contract can encode our actions (length: ${testExecutionParams.length} bytes)`);
+                console.log(`  ✅ Execution params encoded locally (length: ${testExecutionParams.length} bytes)`);
                 
                 // DIAGNOSTIC: Log the exact encoded data for CREATE_ROLE action
                 console.log('  🔍 DIAGNOSTIC: CREATE_ROLE action data (first 200 chars):', action.data.slice(0, 200));

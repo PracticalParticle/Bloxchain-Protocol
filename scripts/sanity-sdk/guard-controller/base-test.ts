@@ -48,7 +48,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    * Get contract address from artifacts
    */
   protected async getContractAddress(): Promise<Address | null> {
-    return getContractAddressFromArtifacts('ControlBlox');
+    return getContractAddressFromArtifacts('AccountBlox');
   }
 
   /**
@@ -56,9 +56,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    */
   protected getContractAddressFromEnv(): Address | null {
     const address = getTestConfig().contractAddresses.guardController || 
-                    process.env.CONTROLBLOX_ADDRESS;
+                    process.env.ACCOUNTBLOX_ADDRESS;
     if (!address) {
-      throw new Error('GUARDCONTROLLER_ADDRESS or CONTROLBLOX_ADDRESS not set in environment variables');
+      throw new Error('GUARDCONTROLLER_ADDRESS or ACCOUNTBLOX_ADDRESS not set in environment variables');
     }
     return address as Address;
   }

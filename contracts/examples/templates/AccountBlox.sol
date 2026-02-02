@@ -8,7 +8,7 @@ import "../../core/base/BaseStateMachine.sol";
 import "../../utils/SharedValidation.sol";
 
 /**
- * @title ControlBlox
+ * @title AccountBlox
  * @dev Complete controller implementation using GuardController, RuntimeRBAC, and SecureOwnable
  * 
  * This contract combines:
@@ -16,9 +16,9 @@ import "../../utils/SharedValidation.sol";
  * - RuntimeRBAC: Runtime role creation and management
  * - SecureOwnable: Secure ownership transfer and management
  */
-contract ControlBlox is GuardController, RuntimeRBAC, SecureOwnable {
+contract AccountBlox is GuardController, RuntimeRBAC, SecureOwnable {
     /**
-     * @notice Initializer to initialize ControlBlox
+     * @notice Initializer to initialize AccountBlox
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address

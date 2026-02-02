@@ -60,16 +60,25 @@ contract BaseStateMachineTest is CommonBase {
     }
 
     function test_GetTransactionHistory_ReturnsRange() public {
-        // Create multiple transactions
+        // Create first transaction (ownership request)
         vm.prank(recovery);
-        secureBlox.transferOwnershipRequest();
+        EngineBlox.TxRecord memory tx1 = secureBlox.transferOwnershipRequest();
+        uint256 txId1 = tx1.txId;
 
-        vm.prank(owner);
-        secureBlox.updateBroadcasterRequest(user1);
+        // Complete it so we can create a second request (only one secure request allowed at a time)
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(recovery);
+        secureBlox.transferOwnershipDelayedApproval(txId1);
+        // After approval, recovery is now the owner
+
+        // Create second transaction (broadcaster request) as new owner
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory tx2 = secureBlox.updateBroadcasterRequest(user1);
+        uint256 txId2 = tx2.txId;
 
         // getTransactionHistory requires fromTxId < toTxId (strictly less than)
-        vm.prank(owner);
-        EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, 2);
+        vm.prank(recovery);
+        EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(txId1, txId2);
         assertGe(history.length, 2);
     }
 

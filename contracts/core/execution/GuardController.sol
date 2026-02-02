@@ -58,30 +58,6 @@ abstract contract GuardController is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
 
     /**
-     * @dev List of function selectors that are system macro selectors (e.g. native transfer, update payment).
-     * Stored as bytes32 (bytes4 right-padded). Populated at initialize; extendable by derived contracts or future admin.
-     */
-    bytes32[] internal systemMacroSelectorsList;
-
-    /**
-     * @dev Action types for batched Guard configuration
-     */
-    enum GuardConfigActionType {
-        ADD_TARGET_TO_WHITELIST,
-        REMOVE_TARGET_FROM_WHITELIST,
-        REGISTER_FUNCTION,
-        UNREGISTER_FUNCTION
-    }
-
-    /**
-     * @dev Encodes a single Guard configuration action in a batch
-     */
-    struct GuardConfigAction {
-        GuardConfigActionType actionType;
-        bytes data;
-    }
-
-    /**
      * @notice Initializer to initialize GuardController
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
@@ -109,10 +85,6 @@ abstract contract GuardController is BaseStateMachine {
             guardControllerPermissions.functionPermissions,
             true // Allow protected schemas for factory settings
         );
-
-        // Register default system macro selectors (allowed to target address(this) for system-level operations)
-        systemMacroSelectorsList.push(bytes32(EngineBlox.NATIVE_TRANSFER_SELECTOR));
-        systemMacroSelectorsList.push(bytes32(EngineBlox.UPDATE_PAYMENT_SELECTOR));
     }
 
     // ============ INTERFACE SUPPORT ============
@@ -149,9 +121,6 @@ abstract contract GuardController is BaseStateMachine {
         uint256 gasLimit,
         bytes32 operationType
     ) public returns (EngineBlox.TxRecord memory) {
-        // Validate inputs
-        SharedValidation.validateNotZeroAddress(target);
-        
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
@@ -262,17 +231,6 @@ abstract contract GuardController is BaseStateMachine {
     // ============ INTERNAL VALIDATION HELPERS ============
 
     /**
-     * @dev Returns true if the given function selector is in the system macro selectors list.
-     */
-    function _isSystemMacroSelector(bytes4 functionSelector) internal view returns (bool) {
-        bytes32 sel = bytes32(functionSelector);
-        for (uint256 i = 0; i < systemMacroSelectorsList.length; i++) {
-            if (systemMacroSelectorsList[i] == sel) return true;
-        }
-        return false;
-    }
-
-    /**
      * @dev Validates that GuardController is not attempting to access internal execution functions
      * @param target The target contract address
      * @param functionSelector The function selector to validate
@@ -294,7 +252,7 @@ abstract contract GuardController is BaseStateMachine {
         if (target == address(this)) {
             // Allow system macro selectors (e.g., NATIVE_TRANSFER_SELECTOR for native token deposits)
             // These are special system-level operations that are safe to execute on address(this)
-            if (_isSystemMacroSelector(functionSelector)) {
+            if (_isMacroSelector(functionSelector)) {
                 return; // Allow system macro selectors
             }
             
@@ -304,17 +262,6 @@ abstract contract GuardController is BaseStateMachine {
     }
 
     // ============ GUARD CONFIGURATION BATCH INTERFACE ============
-
-    /**
-     * @dev Creates execution params for a Guard configuration batch
-     * @param actions Encoded guard configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function guardConfigBatchExecutionParams(
-        GuardConfigAction[] memory actions
-    ) public pure returns (bytes memory) {
-        return abi.encode(actions);
-    }
 
     /**
      * @dev Requests and approves a Guard configuration batch using a meta-transaction
@@ -334,8 +281,8 @@ abstract contract GuardController is BaseStateMachine {
      * @dev External function that can only be called by the contract itself to execute a Guard configuration batch
      * @param actions Encoded guard configuration actions
      */
-    function executeGuardConfigBatch(GuardConfigAction[] calldata actions) external {
-        SharedValidation.validateInternalCall(address(this));
+    function executeGuardConfigBatch(GuardControllerDefinitions.GuardConfigAction[] calldata actions) external {
+        _validateExecuteBySelf();
         _executeGuardConfigBatch(actions);
     }
 
@@ -345,33 +292,29 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Internal helper to execute a Guard configuration batch
      * @param actions Encoded guard configuration actions
      */
-    function _executeGuardConfigBatch(GuardConfigAction[] calldata actions) internal {
-        // Validate batch size limit
-        SharedValidation.validateBatchSize(
-            actions.length,
-            EngineBlox.MAX_BATCH_SIZE
-        );
-        
-        for (uint256 i = 0; i < actions.length; i++) {
-            GuardConfigAction calldata action = actions[i];
+    function _executeGuardConfigBatch(GuardControllerDefinitions.GuardConfigAction[] calldata actions) internal {
+        _validateBatchSize(actions.length);
 
-            if (action.actionType == GuardConfigActionType.ADD_TARGET_TO_WHITELIST) {
+        for (uint256 i = 0; i < actions.length; i++) {
+            GuardControllerDefinitions.GuardConfigAction calldata action = actions[i];
+
+            if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST) {
                 // Decode ADD_TARGET_TO_WHITELIST action data
                 // Format: (bytes4 functionSelector, address target)
                 (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
 
                 _addTargetToFunctionWhitelist(functionSelector, target);
 
-                _logComponentEvent(abi.encode(GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target, bytes("")));
-            } else if (action.actionType == GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target));
+            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
                 // Decode REMOVE_TARGET_FROM_WHITELIST action data
                 // Format: (bytes4 functionSelector, address target)
                 (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
 
                 _removeTargetFromFunctionWhitelist(functionSelector, target);
 
-                _logComponentEvent(abi.encode(GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target, bytes("")));
-            } else if (action.actionType == GuardConfigActionType.REGISTER_FUNCTION) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target));
+            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION) {
                 // Decode REGISTER_FUNCTION action data
                 // Format: (string functionSignature, string operationName, TxAction[] supportedActions)
                 (
@@ -382,19 +325,30 @@ abstract contract GuardController is BaseStateMachine {
 
                 bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
 
-                _logComponentEvent(abi.encode(GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0), bytes("")));
-            } else if (action.actionType == GuardConfigActionType.UNREGISTER_FUNCTION) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0)));
+            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION) {
                 // Decode UNREGISTER_FUNCTION action data
                 // Format: (bytes4 functionSelector, bool safeRemoval)
                 (bytes4 functionSelector, bool safeRemoval) = abi.decode(action.data, (bytes4, bool));
 
                 _unregisterFunction(functionSelector, safeRemoval);
 
-                _logComponentEvent(abi.encode(GuardConfigActionType.UNREGISTER_FUNCTION, functionSelector, address(0), bytes("")));
+                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION, functionSelector, address(0)));
             } else {
                 revert SharedValidation.NotSupported();
             }
         }
+    }
+
+    /**
+     * @dev Encodes guard config event payload for ComponentEvent. Decode as (GuardConfigActionType, bytes4 functionSelector, address target).
+     */
+    function _encodeGuardConfigEvent(
+        GuardControllerDefinitions.GuardConfigActionType actionType,
+        bytes4 functionSelector,
+        address target
+    ) internal pure returns (bytes memory) {
+        return abi.encode(actionType, functionSelector, target);
     }
 
     // ============ INTERNAL FUNCTION SCHEMA HELPERS ============

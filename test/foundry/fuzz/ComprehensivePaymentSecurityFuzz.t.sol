@@ -27,9 +27,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     
     function setUp() public override {
         super.setUp();
-        // Fund controlBlox for payment tests
-        vm.deal(address(controlBlox), 1000 ether);
-        mockERC20.mint(address(controlBlox), 1000000e18);
+        // Fund accountBlox for payment tests
+        vm.deal(address(accountBlox), 1000 ether);
+        mockERC20.mint(address(accountBlox), 1000000e18);
         
         // Deploy payment helper contract
         paymentHelper = new PaymentTestHelper();
@@ -48,9 +48,6 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         
         // PaymentTestHelper sets up permissions in initialize() for NATIVE_TRANSFER_SELECTOR
         // and requestTransaction/approveTransaction functions
-        
-        // Whitelist controlBlox for native transfers (already done in StateMachine tests, but ensure it's done)
-        // Note: This might already be whitelisted, but we ensure it here
     }
 
     // ============ PAYMENT MANIPULATION ATTACKS ============

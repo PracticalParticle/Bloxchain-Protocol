@@ -2,6 +2,7 @@ import { Address, Hex } from 'viem';
 import { TransactionResult, TransactionOptions } from './base.index';
 import { MetaTransaction } from './lib.index';
 import { TxAction } from '../types/lib.index';
+import type { RoleConfigAction } from '../types/core.access.index';
 
 /**
  * Interface for RuntimeRBAC contract methods
@@ -10,11 +11,9 @@ import { TxAction } from '../types/lib.index';
  */
 export interface IRuntimeRBAC {
   /**
-   * @dev Creates execution params for a RBAC configuration batch
+   * @dev Creates execution params for a RBAC configuration batch (definition helper; no contract call)
    */
-  roleConfigBatchExecutionParams(
-    actions: Array<{ actionType: number; data: Hex }>
-  ): Promise<Hex>;
+  roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex;
 
   /**
    * @dev Requests and approves a RBAC configuration batch using a meta-transaction

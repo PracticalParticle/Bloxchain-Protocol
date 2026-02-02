@@ -31,7 +31,7 @@ export const GUARD_CONTROLLER_FUNCTION_SELECTORS = {
 } as const;
 
 /**
- * GuardConfigActionType enum matching Solidity GuardController.GuardConfigActionType
+ * GuardConfigActionType enum matching Solidity GuardControllerDefinitions.GuardConfigActionType
  */
 export enum GuardConfigActionType {
   ADD_TARGET_TO_WHITELIST = 0,

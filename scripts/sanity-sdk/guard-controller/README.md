@@ -25,7 +25,7 @@ Tests the complete whitelist management lifecycle:
 ### Prerequisites
 
 1. Contracts must be deployed (run `npm run deploy:truffle`)
-2. ControlBlox contract must be initialized with proper roles
+2. AccountBlox contract must be initialized with proper roles
 3. Function schemas must be registered (if testing with custom function selectors)
 
 ### Run All Tests
@@ -49,7 +49,7 @@ The tests support two modes (set via `TEST_MODE` environment variable):
   - Uses Ganache deterministic accounts
   
 - **Manual Mode** (`TEST_MODE=manual`):
-  - Uses `GUARDCONTROLLER_ADDRESS` or `CONTROLBLOX_ADDRESS` from environment
+  - Uses `GUARDCONTROLLER_ADDRESS` or `ACCOUNTBLOX_ADDRESS` from environment
   - Uses `TEST_WALLET_*_PRIVATE_KEY` environment variables
 
 ## Environment Variables
@@ -60,7 +60,7 @@ For manual mode, set these in your `.env` file:
 # Contract Address
 GUARDCONTROLLER_ADDRESS=0x...
 # or
-CONTROLBLOX_ADDRESS=0x...
+ACCOUNTBLOX_ADDRESS=0x...
 
 # Test Wallets (for manual mode)
 TEST_WALLET_1_PRIVATE_KEY=0x...

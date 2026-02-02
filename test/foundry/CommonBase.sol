@@ -3,9 +3,13 @@ pragma solidity 0.8.33;
 
 import "forge-std/Test.sol";
 import "../../contracts/core/lib/EngineBlox.sol";
+import "../../contracts/core/access/interface/IRuntimeRBAC.sol";
+import "../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
+import "../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
+import "../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
 import "../../contracts/examples/templates/SecureBlox.sol";
 import "../../contracts/examples/templates/RoleBlox.sol";
-import "../../contracts/examples/templates/ControlBlox.sol";
+import "../../contracts/examples/templates/AccountBlox.sol";
 import "./helpers/MockContracts.sol";
 import "./helpers/TestHelpers.sol";
 
@@ -28,7 +32,7 @@ contract CommonBase is Test {
     // Deployed contracts
     SecureBlox public secureBlox;
     RoleBlox public roleBlox;
-    ControlBlox public controlBlox;
+    AccountBlox public accountBlox;
 
     // Mock contracts
     MockERC20 public mockERC20;
@@ -109,10 +113,10 @@ contract CommonBase is Test {
             address(mockEventForwarder)
         );
 
-        // Deploy and initialize ControlBlox
-        controlBlox = new ControlBlox();
+        // Deploy and initialize AccountBlox
+        accountBlox = new AccountBlox();
         vm.prank(owner);
-        controlBlox.initialize(
+        accountBlox.initialize(
             owner,
             broadcaster,
             recovery,

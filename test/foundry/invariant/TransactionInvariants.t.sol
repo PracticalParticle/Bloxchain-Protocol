@@ -13,13 +13,14 @@ contract TransactionInvariantsTest is CommonBase {
     }
 
     function invariant_TransactionStatusConsistency() public {
-        // Get transaction history - need to check if there are any transactions first
+        // getTransactionHistory requires fromTxId < toTxId; need at least 2 tx ids for a valid range
         vm.prank(owner);
         uint256[] memory pending = secureBlox.getPendingTransactions();
         
-        if (pending.length > 0) {
+        if (pending.length >= 2) {
+            uint256 toTxId = pending[pending.length - 1];
             vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
+            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, toTxId);
             
             for (uint256 i = 0; i < history.length; i++) {
                 EngineBlox.TxStatus status = history[i].status;
@@ -67,14 +68,14 @@ contract TransactionInvariantsTest is CommonBase {
     }
 
     function invariant_PaymentValidation() public {
-        // Verify that payment details are valid when present
-        // Check if there are transactions first
+        // getTransactionHistory requires fromTxId < toTxId; need at least 2 tx ids for a valid range
         vm.prank(owner);
         uint256[] memory pending = secureBlox.getPendingTransactions();
         
-        if (pending.length > 0) {
+        if (pending.length >= 2) {
+            uint256 toTxId = pending[pending.length - 1];
             vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, pending[0]);
+            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, toTxId);
             
             for (uint256 i = 0; i < history.length; i++) {
                 EngineBlox.PaymentDetails memory payment = history[i].payment;

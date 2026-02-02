@@ -38,7 +38,7 @@ class BaseGuardControllerTest {
         
         // Initialize contract address and ABI
         this.contractAddress = null; // Will be set during initialization
-        this.contractABI = this.loadABI('ControlBlox'); // ControlBlox is the concrete implementation
+        this.contractABI = this.loadABI('AccountBlox'); // AccountBlox is the concrete implementation
         
         // Initialize test wallets - will be populated during initialization
         this.wallets = {};
@@ -57,7 +57,7 @@ class BaseGuardControllerTest {
         
         this.roleWallets = {};
         
-        // Constants for RuntimeRBAC (ControlBlox includes RuntimeRBAC)
+        // Constants for RuntimeRBAC (AccountBlox includes RuntimeRBAC)
         this.ROLE_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
             'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10); // First 4 bytes
@@ -78,7 +78,7 @@ class BaseGuardControllerTest {
             REMOVE_FUNCTION_FROM_ROLE: 5
         };
         
-        // GuardConfigActionType enum values (GuardController component)
+        // GuardConfigActionType enum values (match GuardControllerDefinitions)
         this.GuardConfigActionType = {
             ADD_TARGET_TO_WHITELIST: 0,
             REMOVE_TARGET_FROM_WHITELIST: 1,
@@ -137,10 +137,10 @@ class BaseGuardControllerTest {
         
         try {
             // Get contract addresses from Truffle artifacts
-            this.contractAddress = await this.getContractAddressFromArtifacts('ControlBlox');
+            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
             
             if (!this.contractAddress) {
-                throw new Error('Could not find ControlBlox address in Truffle artifacts');
+                throw new Error('Could not find AccountBlox address in Truffle artifacts');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -161,10 +161,10 @@ class BaseGuardControllerTest {
         
         try {
             // Get contract address from environment
-            this.contractAddress = process.env.CONTROLBLOX_ADDRESS || process.env.GUARD_CONTROLLER_ADDRESS;
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS || process.env.GUARD_CONTROLLER_ADDRESS;
             
             if (!this.contractAddress) {
-                throw new Error('CONTROLBLOX_ADDRESS or GUARD_CONTROLLER_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS or GUARD_CONTROLLER_ADDRESS not set in environment variables');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -828,7 +828,7 @@ class BaseGuardControllerTest {
         try {
             // Create meta-transaction parameters
             // CRITICAL: For native transfers, handlerContract validation requires handlerContract == target
-            // - handlerContract: Must be a contract with requestAndApproveExecution (ControlBlox)
+            // - handlerContract: Must be a contract with requestAndApproveExecution (AccountBlox)
             // - target: Where ETH will be sent (recipient wallet)
             // This creates a conflict: we can't have handlerContract (contract) == target (wallet)
             //
@@ -892,7 +892,7 @@ class BaseGuardControllerTest {
             
             // For native transfers via meta-tx, there's a validation issue:
             // - handlerContract must equal target (EngineBlox validation)
-            // - handlerContract should be ControlBlox (has requestAndApproveExecution)
+            // - handlerContract should be AccountBlox (has requestAndApproveExecution)
             // - target should be recipient (where ETH is sent)
             // This creates a conflict: handlerContract (contract) != target (recipient wallet)
             //
@@ -1007,12 +1007,12 @@ class BaseGuardControllerTest {
      */
     async createGuardConfigBatchMetaTx(actions, signerAddress) {
         try {
-            // Convert actions to format expected by contract (array of [actionType, data] tuples)
+            // Convert actions to format expected for ABI encoding (array of [actionType, data] tuples)
             const actionsArray = actions.map(a => [a.actionType, a.data]);
-            
-            // Get execution params from contract method (matches RuntimeRBAC pattern)
-            const executionParams = await this.callContractMethod(
-                this.contract.methods.guardConfigBatchExecutionParams(actionsArray)
+            // Build execution params locally (definition-library pattern; contract no longer exposes guardConfigBatchExecutionParams)
+            const executionParams = this.web3.eth.abi.encodeParameter(
+                'tuple(uint8,bytes)[]',
+                actionsArray
             );
             
             // Create meta-transaction parameters using contract method

@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/execution/GuardController.sol";
+import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/utils/SharedValidation.sol";
 
 /**
@@ -39,25 +40,25 @@ contract AccessControlTest is CommonBase {
 
     // NOTE: Function registration has been moved to GuardController
     // This test is removed as REGISTER_FUNCTION is no longer part of RuntimeRBAC
-    // Use GuardController.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
+    // Use GuardControllerDefinitions.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
 
     function test_GuardConfigBatchExecutionParams() public {
         // Test that guardConfigBatchExecutionParams correctly encodes GuardConfigAction data
         // NOTE: This is a pure function that doesn't check authorization
         // Authorization is tested through the meta-transaction workflow
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(bytes4(keccak256("execute()")), address(mockTarget))
         });
         
-        bytes memory params = controlBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         assertGt(params.length, 0);
         
         // Verify the params can be decoded back to the original actions
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
     }
 
     function test_Revert_ProtectedRoleModification() public {

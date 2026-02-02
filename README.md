@@ -43,7 +43,7 @@ graph TB
     C --> G[SecureBlox]
     C --> H[RoleBlox]
     D --> H
-    C --> I[ControlBlox]
+    C --> I[AccountBlox]
     D --> I
     E --> I
     
@@ -86,7 +86,7 @@ Bloxchain Protocol uses a **modular composition pattern** where components can b
 - **BareBlox**: Minimal BaseStateMachine only
 - **SecureBlox**: Basic SecureOwnable functionality
 - **RoleBlox**: SecureOwnable + RuntimeRBAC
-- **ControlBlox**: GuardController + RuntimeRBAC + SecureOwnable
+- **AccountBlox**: GuardController + RuntimeRBAC + SecureOwnable
 - **MachineBlox**: GuardController + RuntimeRBAC + SecureOwnable + HookManager (experimental)
 
 ### 📦 Example Applications
@@ -143,7 +143,7 @@ npm run test:foundry
 
 ### 📦 Install Packages
 
-**Install the SDK and Contracts packages**:
+**Install the SDK and Contracts packages**: [@bloxchain/sdk](https://www.npmjs.com/package/@bloxchain/sdk) · [@bloxchain/contracts](https://www.npmjs.com/package/@bloxchain/contracts)
 
 ```bash
 # Install TypeScript SDK
@@ -680,7 +680,7 @@ abstract contract HookManager is BaseStateMachine {
 - **Event Monitoring**: Real-time event parsing and monitoring
 
 ### Testing & Quality
-- **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering all security-critical components
+- **Comprehensive Fuzz Testing**: 36 test suites, 290 tests covering all security-critical components
 - **Foundry Testing**: Primary testing framework with fuzz testing and invariant checking
 - **Hardhat Support**: Alternative testing framework for compatibility
 - **Sanity Checks**: Production-ready validation scripts
@@ -697,10 +697,10 @@ abstract contract HookManager is BaseStateMachine {
 - ✅ **RuntimeRBAC**: Dynamic role-based access control with runtime configuration
 - ✅ **GuardController**: Controlled endpoint for external contract interactions with dynamic access and workflow definition
 - ✅ **HookManager**: External hook contract attachment for state machine actions (experimental)
-- ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, ControlBlox, MachineBlox
+- ✅ **Template Contracts**: BareBlox, SecureBlox, RoleBlox, AccountBlox, MachineBlox
 - ✅ **Example Applications**: SimpleVault, SimpleRWA20, PayBlox, CopyBlox, GuardianSafe, BasicERC20
 - ✅ **TypeScript SDK**: Full client library with comprehensive documentation
-- ✅ **Comprehensive Fuzz Testing**: 22 test files with 170+ fuzz tests covering security edge cases
+- ✅ **Comprehensive Fuzz Testing**: 36 test suites, 290 tests covering security edge cases
 - ✅ **Runtime RBAC**: Dynamic role configuration without contract upgrades
 - ✅ **Definition Data Layer**: Modular initialization via IDefinition interface
 - ✅ **Sepolia Testnet Support**: Live deployment and testing on Ethereum Sepolia testnet

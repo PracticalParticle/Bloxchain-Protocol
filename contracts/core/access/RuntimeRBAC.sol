@@ -28,9 +28,9 @@ import "./interface/IRuntimeRBAC.sol";
 abstract contract RuntimeRBAC is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
     using SharedValidation for *;
-    
+
     /**
-     * @dev Action types for batched RBAC configuration
+     * @dev Action types for batched RBAC configuration (must match IRuntimeRBAC for encoding)
      */
     enum RoleConfigActionType {
         CREATE_ROLE,
@@ -42,7 +42,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     /**
-     * @dev Encodes a single RBAC configuration action in a batch
+     * @dev Encodes a single RBAC configuration action in a batch (must match IRuntimeRBAC for encoding)
      */
     struct RoleConfigAction {
         RoleConfigActionType actionType;
@@ -92,17 +92,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Creates execution params for a RBAC configuration batch
-     * @param actions Encoded role configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function roleConfigBatchExecutionParams(
-        RoleConfigAction[] memory actions
-    ) public pure returns (bytes memory) {
-        return abi.encode(actions);
-    }
-
-    /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record
@@ -120,7 +109,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      * @param actions Encoded role configuration actions
      */
     function executeRoleConfigBatch(RoleConfigAction[] calldata actions) external {
-        SharedValidation.validateInternalCall(address(this));
+        _validateExecuteBySelf();
         _executeRoleConfigBatch(actions);
     }
 
@@ -166,16 +155,22 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     // ============ HELPER FUNCTIONS ============
 
     /**
+     * @dev Reverts if the role is protected (prevents editing OWNER, BROADCASTER, RECOVERY via batch).
+     * @param roleHash The role hash to check
+     */
+    function _requireRoleNotProtected(bytes32 roleHash) internal view {
+        if (_getSecureState().roles[roleHash].isProtected) {
+            revert SharedValidation.CannotModifyProtected(roleHash);
+        }
+    }
+
+    /**
      * @dev Internal helper to execute a RBAC configuration batch
      * @param actions Encoded role configuration actions
      */
     function _executeRoleConfigBatch(RoleConfigAction[] calldata actions) internal {
-        // Validate batch size limit
-        SharedValidation.validateBatchSize(
-            actions.length,
-            EngineBlox.MAX_BATCH_SIZE
-        );
-        
+        _validateBatchSize(actions.length);
+
         for (uint256 i = 0; i < actions.length; i++) {
             RoleConfigAction calldata action = actions[i];
 
@@ -193,34 +188,24 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 
                 bytes32 roleHash = _createNewRole(roleName, maxWallets, functionPermissions);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0), bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0)));
             } else if (action.actionType == RoleConfigActionType.REMOVE_ROLE) {
                 (bytes32 roleHash) = abi.decode(action.data, (bytes32));
                 _removeRole(roleHash);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0), bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0)));
             } else if (action.actionType == RoleConfigActionType.ADD_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
-                
-                // Security check: Prevent editing protected roles
-                if (_getSecureState().roles[roleHash].isProtected) {
-                    revert SharedValidation.CannotModifyProtected(roleHash);
-                }
-                
+                _requireRoleNotProtected(roleHash);
                 _assignWallet(roleHash, wallet);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0), bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0)));
             } else if (action.actionType == RoleConfigActionType.REVOKE_WALLET) {
                 (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
-                
-                // Security check: Prevent editing protected roles
-                if (_getSecureState().roles[roleHash].isProtected) {
-                    revert SharedValidation.CannotModifyProtected(roleHash);
-                }
-                
+                _requireRoleNotProtected(roleHash);
                 _revokeWallet(roleHash, wallet);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0), bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0)));
             } else if (action.actionType == RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
                 (
                     bytes32 roleHash,
@@ -229,16 +214,23 @@ abstract contract RuntimeRBAC is BaseStateMachine {
 
                 _addFunctionToRole(roleHash, functionPermission);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector, bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector));
             } else if (action.actionType == RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE) {
                 (bytes32 roleHash, bytes4 functionSelector) = abi.decode(action.data, (bytes32, bytes4));
                 _removeFunctionFromRole(roleHash, functionSelector);
 
-                _logComponentEvent(abi.encode(RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector, bytes("")));
+                _logComponentEvent(_encodeRoleConfigEvent(RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector));
             } else {
                 revert SharedValidation.NotSupported();
             }
         }
+    }
+
+    /**
+     * @dev Encodes RBAC config event payload for ComponentEvent. Decode as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector).
+     */
+    function _encodeRoleConfigEvent(RoleConfigActionType action, bytes32 roleHash, bytes4 selector) internal pure returns (bytes memory) {
+        return abi.encode(action, roleHash, selector);
     }
 
     // ============ INTERNAL ROLE / FUNCTION HELPERS ============

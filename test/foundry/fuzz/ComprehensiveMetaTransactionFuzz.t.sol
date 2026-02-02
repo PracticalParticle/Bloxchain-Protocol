@@ -54,14 +54,14 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with wrong chainId
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -109,14 +109,14 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction (will get current nonce during generation)
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -179,11 +179,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Verify nonce in meta-transaction matches current nonce
@@ -207,7 +207,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -265,11 +265,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Extract signature components
@@ -334,11 +334,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Store original signature
@@ -400,7 +400,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with expired deadline
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
@@ -462,7 +462,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with very long deadline
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
@@ -528,13 +528,13 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             maxGasPrice,
             owner
         );
@@ -592,11 +592,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("ROLE1", 10, permissions)
         });
         
-        bytes memory executionParams1 = roleBlox.roleConfigBatchExecutionParams(actions1);
+        bytes memory executionParams1 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions1));
         EngineBlox.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
             owner,
             executionParams1,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Verify first transaction uses current nonce
@@ -609,13 +609,13 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("ROLE2", 10, permissions)
         });
         
-        bytes memory executionParams2 = roleBlox.roleConfigBatchExecutionParams(actions2);
+        bytes memory executionParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions2));
         
         EngineBlox.MetaTxParams memory metaTxParams2 = roleBlox.createMetaTxParams(
             address(roleBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            block.timestamp + 1 hours,
+            1 hours,
             0,
             owner
         );
@@ -679,11 +679,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Replace with invalid signature (all zeros) - v=0 is invalid
@@ -724,11 +724,11 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Create signature with wrong length

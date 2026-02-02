@@ -294,6 +294,14 @@ contract PaymentTestHelper is BaseStateMachine {
     }
     
     /**
+     * @notice Returns true if the given function selector is a system macro selector (for testing).
+     * @param functionSelector The function selector to check.
+     */
+    function containsSystemMacroSelector(bytes4 functionSelector) external view returns (bool) {
+        return EngineBlox.isMacroSelector(_getSecureState(), functionSelector);
+    }
+    
+    /**
      * @dev Fallback function that accepts calls for NATIVE_TRANSFER_SELECTOR
      * @notice For testing: allows NATIVE_TRANSFER_SELECTOR transactions to succeed
      * @notice This is safe for test contracts only

@@ -36,16 +36,16 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         bool succeeded = false;
         EngineBlox.TxRecord memory txRecord;
         
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             value,
             selector,
             callData,
             0,
             keccak256("TEST_OPERATION")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -62,7 +62,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Step 3: Approve transaction
         vm.prank(owner);
-        EngineBlox.TxRecord memory approvedTx = controlBlox.approveTimeLockExecution(txId);
+        EngineBlox.TxRecord memory approvedTx = accountBlox.approveTimeLockExecution(txId);
         
         // Step 4: Verify final state
         assertTrue(
@@ -72,7 +72,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Step 5: Verify transaction is no longer pending
         vm.prank(owner);
-        uint256[] memory pending = controlBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         bool found = false;
         for (uint256 i = 0; i < pending.length; i++) {
             if (pending[i] == txId) {
@@ -100,16 +100,16 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         EngineBlox.TxRecord memory txRecord;
         bool succeeded = false;
         
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             selector,
             callData,
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -122,12 +122,12 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Cancel before timelock expires
         vm.prank(owner);
-        EngineBlox.TxRecord memory cancelledTx = controlBlox.cancelTimeLockExecution(txId);
+        EngineBlox.TxRecord memory cancelledTx = accountBlox.cancelTimeLockExecution(txId);
         assertEq(uint8(cancelledTx.status), uint8(EngineBlox.TxStatus.CANCELLED));
         
         // Verify transaction is no longer pending
         vm.prank(owner);
-        uint256[] memory pending = controlBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         bool found = false;
         for (uint256 i = 0; i < pending.length; i++) {
             if (pending[i] == txId) {
@@ -155,16 +155,16 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         EngineBlox.TxRecord memory txRecord;
         bool succeeded = false;
         
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             selector,
             callData,
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -183,7 +183,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
                 block.timestamp
             )
         );
-        controlBlox.approveTimeLockExecution(txId);
+        accountBlox.approveTimeLockExecution(txId);
     }
 
     /**
@@ -202,7 +202,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         for (uint256 i = 0; i < count; i++) {
             vm.prank(owner);
             bool succeeded = false;
-            try controlBlox.executeWithTimeLock(
+            try accountBlox.executeWithTimeLock(
                 address(mockTarget),
                 0,
                 bytes4(keccak256("test()")),
@@ -228,7 +228,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         // Approve all successful transactions
         for (uint256 i = 0; i < successCount; i++) {
             vm.prank(owner);
-            EngineBlox.TxRecord memory approved = controlBlox.approveTimeLockExecution(txIds[i]);
+            EngineBlox.TxRecord memory approved = accountBlox.approveTimeLockExecution(txIds[i]);
             assertTrue(
                 uint8(approved.status) == uint8(EngineBlox.TxStatus.COMPLETED) ||
                 uint8(approved.status) == uint8(EngineBlox.TxStatus.FAILED),
@@ -238,7 +238,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Verify all transactions are no longer pending
         vm.prank(owner);
-        uint256[] memory pending = controlBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         for (uint256 i = 0; i < successCount; i++) {
             bool found = false;
             for (uint256 j = 0; j < pending.length; j++) {
@@ -267,16 +267,16 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         EngineBlox.TxRecord memory txRecord;
         bool succeeded = false;
         
-        try controlBlox.executeWithTimeLock(
+        try accountBlox.executeWithTimeLock(
             address(mockTarget),
             0,
             selector,
             "",
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -291,7 +291,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Approve - should transition to COMPLETED or FAILED
         vm.prank(owner);
-        EngineBlox.TxRecord memory approved = controlBlox.approveTimeLockExecution(txRecord.txId);
+        EngineBlox.TxRecord memory approved = accountBlox.approveTimeLockExecution(txRecord.txId);
         
         assertTrue(
             uint8(approved.status) == uint8(EngineBlox.TxStatus.COMPLETED) ||
@@ -301,7 +301,7 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
         
         // Verify status cannot change after completion
         vm.prank(owner);
-        EngineBlox.TxRecord memory finalTx = controlBlox.getTransaction(txRecord.txId);
+        EngineBlox.TxRecord memory finalTx = accountBlox.getTransaction(txRecord.txId);
         assertEq(uint8(finalTx.status), uint8(approved.status), "Status should remain unchanged");
     }
 }

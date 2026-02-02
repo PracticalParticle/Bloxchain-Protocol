@@ -49,17 +49,17 @@ contract EdgeCasesFuzzTest is CommonBase {
                 // Invalid: Try to modify protected role
                 actions[i] = RuntimeRBAC.RoleConfigAction({
                     actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
-                    data: abi.encode(OWNER_ROLE, address(uint160(i)))
+                    data: abi.encode(OWNER_ROLE, address(/* forge-lint: disable-next-line(unsafe-typecast) */ uint160(i)))
                 });
             }
         }
         
         // Execute batch - should revert on first invalid action
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -82,11 +82,11 @@ contract EdgeCasesFuzzTest is CommonBase {
     function testFuzz_EmptyBatchOperations() public {
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](0);
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         // Empty batch should still execute (no-op)
@@ -114,11 +114,11 @@ contract EdgeCasesFuzzTest is CommonBase {
             });
         }
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);
@@ -156,11 +156,11 @@ contract EdgeCasesFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
-            block.timestamp + 1 hours
+            1 hours
         );
         
         vm.prank(broadcaster);

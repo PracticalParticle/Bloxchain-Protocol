@@ -36,10 +36,9 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
             throw error;
         }
         
-        // Check if recovery update functions exist
+        // Check if recovery update handler exists (params built locally via definition pattern)
         const recoveryFunctions = [
-            'updateRecoveryRequestAndApprove',
-            'updateRecoveryExecutionParams'
+            'updateRecoveryRequestAndApprove'
         ];
         
         for (const funcName of recoveryFunctions) {
@@ -94,8 +93,8 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
         console.log(`  🎯 Testing recovery change to: ${description} (${newRecoveryAddress})`);
 
         try {
-            // Create execution params for recovery update
-            const executionParams = await this.callContractMethod(this.contract.methods.updateRecoveryExecutionParams(newRecoveryAddress));
+            // Build execution params locally (definition-library pattern; contract no longer exposes updateRecoveryExecutionParams)
+            const executionParams = this.web3.eth.abi.encodeParameter('address', newRecoveryAddress);
             console.log(`    ✅ Execution params created for ${description}`);
 
             // Get the execution selector for executeRecoveryUpdate(address)

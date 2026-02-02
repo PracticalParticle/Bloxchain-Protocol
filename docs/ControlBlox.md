@@ -1,6 +1,6 @@
 # Solidity API
 
-# ControlBlox
+# AccountBlox
 
 Complete controller implementation using GuardController, RuntimeRBAC, and SecureOwnable
 
