@@ -55,8 +55,15 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         );
         metaTxParams.deadline = pastDeadline;
 
-        // generateUnsignedMetaTransactionForNew may revert with DeadlineInPast when deadline is in the past
-        try roleBlox.generateUnsignedMetaTransactionForNew(
+        // generateUnsignedMetaTransactionForNew reverts with DeadlineInPast when deadline is in the past
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.DeadlineInPast.selector,
+                pastDeadline,
+                block.timestamp
+            )
+        );
+        roleBlox.generateUnsignedMetaTransactionForNew(
             owner,
             address(roleBlox),
             0,
@@ -65,19 +72,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             executionParams,
             metaTxParams
-        ) returns (EngineBlox.MetaTransaction memory metaTx) {
-            uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
-            bytes32 messageHash = metaTx.message;
-            bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
-            metaTx.signature = abi.encodePacked(r, s, v);
-
-            vm.prank(broadcaster);
-            vm.expectRevert();
-            roleBlox.roleConfigBatchRequestAndApprove(metaTx);
-        } catch (bytes memory) {
-            // Revert (e.g. DeadlineInPast) when creating expired meta-tx is acceptable
-        }
+        );
     }
 
     /**
