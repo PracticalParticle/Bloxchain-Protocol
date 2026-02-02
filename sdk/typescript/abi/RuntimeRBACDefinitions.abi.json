@@ -133,6 +133,56 @@
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
+            "name": "actionType",
+            "type": "IRuntimeRBAC.RoleConfigActionType"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
+        "name": "actions",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "roleConfigBatchExecutionParams",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "preEncoded",
+        "type": "bytes"
+      }
+    ],
+    "name": "roleConfigBatchExecutionParams",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"

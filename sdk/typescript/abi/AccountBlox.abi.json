@@ -99,22 +99,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "newPeriod",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "currentPeriod",
-        "type": "uint256"
-      }
-    ],
-    "name": "NewTimelockSame",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "caller",
         "type": "address"
@@ -259,17 +243,6 @@
       }
     ],
     "name": "RestrictedRecovery",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "provided",
-        "type": "uint256"
-      }
-    ],
-    "name": "TimeLockPeriodZero",
     "type": "error"
   },
   {
@@ -2482,37 +2455,6 @@
       {
         "components": [
           {
-            "internalType": "enum GuardController.GuardConfigActionType",
-            "name": "actionType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct GuardController.GuardConfigAction[]",
-        "name": "actions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "guardConfigBatchExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
             "components": [
               {
                 "internalType": "uint256",
@@ -3140,37 +3082,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
-            "name": "actionType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
-        "name": "actions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "roleConfigBatchExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -5260,25 +5171,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newRecoveryAddress",
-        "type": "address"
-      }
-    ],
-    "name": "updateRecoveryExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "components": [
           {
             "components": [
@@ -5554,25 +5446,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newTimeLockPeriodSec",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateTimeLockExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

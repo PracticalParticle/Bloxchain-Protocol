@@ -36,10 +36,9 @@ class TimelockPeriodTests extends BaseSecureOwnableTest {
             console.log(`  📋 Proceeding with timelock update test anyway...`);
         }
         
-        // Check if timelock update functions exist
+        // Check if timelock update handler exists (params built locally via definition pattern)
         const timelockFunctions = [
-            'updateTimeLockRequestAndApprove',
-            'updateTimeLockExecutionParams'
+            'updateTimeLockRequestAndApprove'
         ];
         
         for (const funcName of timelockFunctions) {
@@ -95,8 +94,8 @@ class TimelockPeriodTests extends BaseSecureOwnableTest {
         console.log(`  🎯 Testing timelock change to: ${description}`);
 
         try {
-            // Create execution params for timelock update
-            const executionParams = await this.callContractMethod(this.contract.methods.updateTimeLockExecutionParams(newTimelockSeconds));
+            // Build execution params locally (definition-library pattern; contract no longer exposes updateTimeLockExecutionParams)
+            const executionParams = this.web3.eth.abi.encodeParameter('uint256', newTimelockSeconds);
             console.log(`    ✅ Execution params created for ${description}`);
 
             // Get the execution selector for executeTimeLockUpdate(uint256)

@@ -1361,37 +1361,6 @@
       {
         "components": [
           {
-            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
-            "name": "actionType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
-        "name": "actions",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "roleConfigBatchExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
             "components": [
               {
                 "internalType": "uint256",

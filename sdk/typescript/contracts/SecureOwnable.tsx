@@ -6,6 +6,7 @@ import { MetaTransaction } from '../interfaces/lib.index';
 import { TxAction } from '../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../utils/interface-ids';
+import { updateRecoveryExecutionParams as defUpdateRecoveryExecutionParams, updateTimeLockExecutionParams as defUpdateTimeLockExecutionParams } from '../lib/definitions/SecureOwnableDefinitions';
 
 /**
  * @title SecureOwnable
@@ -65,15 +66,14 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
 
   // Recovery Management
   /**
-   * @dev Wrapper matching ISecureOwnable interface; delegates to updateRecoveryExecutionParams
+   * @dev Wrapper matching ISecureOwnable interface; delegates to definition helper (no contract call)
    */
   async updateRecoveryExecutionOptions(newRecoveryAddress: Address): Promise<Hex> {
     return this.updateRecoveryExecutionParams(newRecoveryAddress);
   }
 
   async updateRecoveryExecutionParams(newRecoveryAddress: Address): Promise<Hex> {
-    // Contract ABI encodes bytes as Hex string; read directly as Hex
-    return this.executeReadContract<Hex>('updateRecoveryExecutionParams', [newRecoveryAddress]);
+    return Promise.resolve(defUpdateRecoveryExecutionParams(newRecoveryAddress));
   }
 
   async updateRecoveryRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
@@ -82,15 +82,14 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
 
   // TimeLock Management
   /**
-   * @dev Wrapper matching ISecureOwnable interface; delegates to updateTimeLockExecutionParams
+   * @dev Wrapper matching ISecureOwnable interface; delegates to definition helper (no contract call)
    */
   async updateTimeLockExecutionOptions(newTimeLockPeriodSec: bigint): Promise<Hex> {
     return this.updateTimeLockExecutionParams(newTimeLockPeriodSec);
   }
 
   async updateTimeLockExecutionParams(newTimeLockPeriodSec: bigint): Promise<Hex> {
-    // Contract ABI encodes bytes as Hex string; read directly as Hex
-    return this.executeReadContract<Hex>('updateTimeLockExecutionParams', [newTimeLockPeriodSec]);
+    return Promise.resolve(defUpdateTimeLockExecutionParams(newTimeLockPeriodSec));
   }
 
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {

@@ -1007,12 +1007,12 @@ class BaseGuardControllerTest {
      */
     async createGuardConfigBatchMetaTx(actions, signerAddress) {
         try {
-            // Convert actions to format expected by contract (array of [actionType, data] tuples)
+            // Convert actions to format expected for ABI encoding (array of [actionType, data] tuples)
             const actionsArray = actions.map(a => [a.actionType, a.data]);
-            
-            // Get execution params from contract method (matches RuntimeRBAC pattern)
-            const executionParams = await this.callContractMethod(
-                this.contract.methods.guardConfigBatchExecutionParams(actionsArray)
+            // Build execution params locally (definition-library pattern; contract no longer exposes guardConfigBatchExecutionParams)
+            const executionParams = this.web3.eth.abi.encodeParameter(
+                'tuple(uint8,bytes)[]',
+                actionsArray
             );
             
             // Create meta-transaction parameters using contract method

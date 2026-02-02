@@ -5,6 +5,7 @@ import { IGuardController } from '../interfaces/core.execution.index';
 import { MetaTransaction } from '../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../utils/interface-ids';
+import { guardConfigBatchExecutionParams as defGuardConfigBatchExecutionParams } from '../lib/definitions/GuardControllerDefinitions';
 
 /**
  * @title GuardController
@@ -182,14 +183,14 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ GUARD CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution params for a guard configuration batch
-   * @param actions Encoded guard configuration actions
+   * @dev Creates execution params for a guard configuration batch (definition helper; no contract call)
+   * @param actions Guard configuration actions
    * @return Promise<Hex> The execution params to be used in a meta-transaction
    */
   async guardConfigBatchExecutionParams(
     actions: Array<{ actionType: number; data: Hex }>
   ): Promise<Hex> {
-    return this.executeReadContract<Hex>('guardConfigBatchExecutionParams', [actions]);
+    return Promise.resolve(defGuardConfigBatchExecutionParams(actions));
   }
 
   /**

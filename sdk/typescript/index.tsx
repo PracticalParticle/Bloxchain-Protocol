@@ -8,6 +8,12 @@ export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
 export { default as GuardController } from './contracts/GuardController';
 export { Definitions } from './lib/Definition';
 export { EngineBlox } from './lib/EngineBlox';
+export {
+  updateRecoveryExecutionParams,
+  updateTimeLockExecutionParams,
+  roleConfigBatchExecutionParams,
+  guardConfigBatchExecutionParams
+} from './lib/definitions';
 
 // Interfaces
 export * from './interfaces/base.index';
