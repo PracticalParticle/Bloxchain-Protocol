@@ -40,7 +40,7 @@ interface IRuntimeRBAC {
         bytes data;
     }
 
-    /// @dev RBAC config changes are emitted via BaseStateMachine.ComponentEvent with functionSelector = msg.sig (executeRoleConfigBatch). Decode data as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, bytes).
+    /// @dev RBAC config changes are emitted via BaseStateMachine.ComponentEvent with functionSelector = msg.sig (executeRoleConfigBatch). Decode data as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector).
 
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 

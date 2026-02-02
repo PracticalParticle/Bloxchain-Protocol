@@ -27,15 +27,17 @@ import "./interface/ISecureOwnable.sol";
  * Each operation follows a request -> approval workflow with appropriate time locks
  * and authorization checks. Operations can be cancelled within specific time windows.
  *
+ * At most one ownership-transfer or broadcaster-update request may be pending at a time:
+ * a pending request of either type blocks new requests until it is approved or cancelled.
+ *
  * This contract focuses purely on security logic while leveraging the BaseStateMachine
  * for transaction management, meta-transactions, and state machine operations.
  */
 abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     using SharedValidation for *;
 
-    // Request flags
-    bool private _hasOpenOwnershipRequest;
-    bool private _hasOpenBroadcasterRequest;
+    /// @dev True while any pending ownership transfer or broadcaster update request exists; blocks new requests until handled.
+    bool private _hasOpenRequest;
 
     /**
      * @notice Initializer to initialize SecureOwnable state
@@ -84,8 +86,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipRequest() public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateRecovery(getRecovery());
-        if (_hasOpenOwnershipRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
-        
+        _requireNoPendingRequest();
+
         EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
@@ -96,7 +98,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             abi.encode(getRecovery())
         );
 
-        _hasOpenOwnershipRequest = true;
+        _hasOpenRequest = true;
         _logComponentEvent(abi.encode(owner(), getRecovery()));
         return txRecord;
     }
@@ -152,7 +154,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateBroadcasterRequest(address newBroadcaster) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
-        if (_hasOpenBroadcasterRequest) revert SharedValidation.ResourceAlreadyExists(bytes32(uint256(0)));
+        _requireNoPendingRequest();
         address currentBroadcaster = _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, 0);
         SharedValidation.validateAddressUpdate(newBroadcaster, currentBroadcaster);
         
@@ -166,7 +168,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             abi.encode(newBroadcaster)
         );
 
-        _hasOpenBroadcasterRequest = true;
+        _hasOpenRequest = true;
         _logComponentEvent(abi.encode(currentBroadcaster, newBroadcaster));
         return txRecord;
     }
@@ -283,6 +285,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     // ============ INTERNAL FUNCTIONS ============
 
     /**
+     * @dev Reverts if an ownership-transfer or broadcaster-update request is already pending.
+     */
+    function _requireNoPendingRequest() internal view {
+        if (_hasOpenRequest) revert SharedValidation.PendingSecureRequest();
+    }
+
+    /**
      * @dev Validates that the caller is the broadcaster and that the meta-tx signer is the owner.
      * @param metaTx The meta-transaction to validate
      */
@@ -295,7 +304,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Completes ownership flow after approval: resets flag and returns record.
      */
     function _completeOwnershipApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
-        _hasOpenOwnershipRequest = false;
+        _hasOpenRequest = false;
         return updatedRecord;
     }
 
@@ -303,7 +312,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Completes ownership flow after cancellation: resets flag, logs txId, returns record.
      */
     function _completeOwnershipCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
-        _hasOpenOwnershipRequest = false;
+        _hasOpenRequest = false;
         _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord;
     }
@@ -312,7 +321,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Completes broadcaster flow after approval: resets flag and returns record.
      */
     function _completeBroadcasterApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
-        _hasOpenBroadcasterRequest = false;
+        _hasOpenRequest = false;
         return updatedRecord;
     }
 
@@ -320,7 +329,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Completes broadcaster flow after cancellation: resets flag, logs txId, returns record.
      */
     function _completeBroadcasterCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
-        _hasOpenBroadcasterRequest = false;
+        _hasOpenRequest = false;
         _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord;
     }

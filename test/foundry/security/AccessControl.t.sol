@@ -40,7 +40,7 @@ contract AccessControlTest is CommonBase {
 
     // NOTE: Function registration has been moved to GuardController
     // This test is removed as REGISTER_FUNCTION is no longer part of RuntimeRBAC
-    // Use GuardController.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
+    // Use GuardControllerDefinitions.guardConfigBatchExecutionParams with GuardConfigActionType.REGISTER_FUNCTION instead
 
     function test_GuardConfigBatchExecutionParams() public {
         // Test that guardConfigBatchExecutionParams correctly encodes GuardConfigAction data

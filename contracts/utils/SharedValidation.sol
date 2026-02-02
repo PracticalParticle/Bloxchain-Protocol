@@ -60,6 +60,7 @@ library SharedValidation {
     error TransactionStatusMismatch(uint8 expectedStatus, uint8 currentStatus);
     error AlreadyInitialized();
     error TransactionIdMismatch(uint256 expectedTxId, uint256 providedTxId);
+    error PendingSecureRequest();
     
     // Signature and meta-transaction errors with context
     error InvalidSignatureLength(uint256 providedLength, uint256 expectedLength);

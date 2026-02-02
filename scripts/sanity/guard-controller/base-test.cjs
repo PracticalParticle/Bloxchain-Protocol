@@ -78,7 +78,7 @@ class BaseGuardControllerTest {
             REMOVE_FUNCTION_FROM_ROLE: 5
         };
         
-        // GuardConfigActionType enum values (GuardController component)
+        // GuardConfigActionType enum values (match GuardControllerDefinitions)
         this.GuardConfigActionType = {
             ADD_TARGET_TO_WHITELIST: 0,
             REMOVE_TARGET_FROM_WHITELIST: 1,

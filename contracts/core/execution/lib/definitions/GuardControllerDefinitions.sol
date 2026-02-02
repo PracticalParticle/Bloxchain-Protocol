@@ -420,7 +420,7 @@ library GuardControllerDefinitions {
 
     /**
      * @dev Creates execution params for a Guard configuration batch (pure helper for EngineBlox).
-     * @param actions Encoded guard configuration actions (same layout as GuardController.GuardConfigAction[])
+     * @param actions Encoded guard configuration actions (same layout as GuardControllerDefinitions.GuardConfigAction[])
      * @return The execution params for EngineBlox
      */
     function guardConfigBatchExecutionParams(

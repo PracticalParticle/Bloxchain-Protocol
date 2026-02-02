@@ -49,7 +49,7 @@ contract EdgeCasesFuzzTest is CommonBase {
                 // Invalid: Try to modify protected role
                 actions[i] = RuntimeRBAC.RoleConfigAction({
                     actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
-                    data: abi.encode(OWNER_ROLE, address(uint160(i)))
+                    data: abi.encode(OWNER_ROLE, address(/* forge-lint: disable-next-line(unsafe-typecast) */ uint160(i)))
                 });
             }
         }

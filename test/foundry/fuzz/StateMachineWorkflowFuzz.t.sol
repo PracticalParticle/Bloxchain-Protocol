@@ -43,9 +43,9 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
             callData,
             0,
             keccak256("TEST_OPERATION")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -107,9 +107,9 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
             callData,
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -162,9 +162,9 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
             callData,
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete
@@ -274,9 +274,9 @@ contract StateMachineWorkflowFuzzTest is CommonBase {
             "",
             0,
             keccak256("TEST_OP")
-        ) returns (EngineBlox.TxRecord memory tx) {
+        ) returns (EngineBlox.TxRecord memory rec) {
             succeeded = true;
-            txRecord = tx;
+            txRecord = rec;
         } catch {
             // Expected - may fail without whitelist or permissions
             return; // Skip this fuzz run if setup isn't complete

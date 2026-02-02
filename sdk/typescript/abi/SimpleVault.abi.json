@@ -123,6 +123,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "PendingSecureRequest",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -141,17 +146,6 @@
   {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {

@@ -130,7 +130,7 @@ contract SecureOwnableTest is CommonBase {
         secureBlox.transferOwnershipRequest();
 
         vm.prank(recovery);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceAlreadyExists.selector, bytes32(uint256(0))));
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
         secureBlox.transferOwnershipRequest();
     }
 
@@ -381,7 +381,7 @@ contract SecureOwnableTest is CommonBase {
 
         // Try to create another ownership request
         vm.prank(recovery);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceAlreadyExists.selector, bytes32(uint256(0))));
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
         secureBlox.transferOwnershipRequest();
     }
 

@@ -73,7 +73,7 @@ contract EdgeCasesTest is CommonBase {
 
         // Try to create duplicate (should fail)
         vm.prank(recovery);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceAlreadyExists.selector, bytes32(uint256(0))));
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
         secureBlox.transferOwnershipRequest();
     }
 
@@ -110,17 +110,19 @@ contract EdgeCasesTest is CommonBase {
     }
 
     function test_ConcurrentOperations() public {
-        // Create multiple different operations
+        // Only one secure request (ownership or broadcaster) may be pending at a time
         vm.prank(recovery);
         secureBlox.transferOwnershipRequest();
 
+        // Second request while ownership is pending should revert
         vm.prank(owner);
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
         secureBlox.updateBroadcasterRequest(user1);
 
-        // Both should be pending
+        // Exactly one should be pending
         vm.prank(owner);
         uint256[] memory pending = secureBlox.getPendingTransactions();
-        assertGe(pending.length, 2);
+        assertEq(pending.length, 1);
     }
 
     function test_InvalidTransactionId() public {
