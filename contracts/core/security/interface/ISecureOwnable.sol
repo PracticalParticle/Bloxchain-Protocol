@@ -87,13 +87,6 @@ interface ISecureOwnable {
     // ============ RECOVERY MANAGEMENT ============
 
     /**
-     * @dev Creates execution params for updating the recovery address
-     * @param newRecoveryAddress The new recovery address
-     * @return The execution params
-     */
-    function updateRecoveryExecutionParams(address newRecoveryAddress) external view returns (bytes memory);
-
-    /**
      * @dev Requests and approves a recovery address update using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record
@@ -101,13 +94,6 @@ interface ISecureOwnable {
     function updateRecoveryRequestAndApprove(EngineBlox.MetaTransaction memory metaTx) external returns (EngineBlox.TxRecord memory);
 
     // ============ TIMELOCK MANAGEMENT ============
-
-    /**
-     * @dev Creates execution params for updating the time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     * @return The execution params
-     */
-    function updateTimeLockExecutionParams(uint256 newTimeLockPeriodSec) external view returns (bytes memory);
 
     /**
      * @dev Requests and approves a time lock period update using a meta-transaction

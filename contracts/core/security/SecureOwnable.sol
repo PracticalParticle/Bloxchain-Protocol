@@ -214,17 +214,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     // Recovery Management
-    /**
-     * @dev Creates execution params for updating the recovery address
-     * @param newRecoveryAddress The new recovery address
-     * @return The execution params
-     */
-    function updateRecoveryExecutionParams(
-        address newRecoveryAddress
-    ) public view returns (bytes memory) {
-        SharedValidation.validateAddressUpdate(newRecoveryAddress, getRecovery());
-        return abi.encode(newRecoveryAddress);
-    }
 
     /**
      * @dev Requests and approves a recovery address update using a meta-transaction
@@ -240,17 +229,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     // TimeLock Management
-    /**
-     * @dev Creates execution params for updating the time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     * @return The execution params
-     */
-    function updateTimeLockExecutionParams(
-        uint256 newTimeLockPeriodSec
-    ) public view returns (bytes memory) {
-        SharedValidation.validateTimeLockUpdate(newTimeLockPeriodSec, getTimeLockPeriodSec());
-        return abi.encode(newTimeLockPeriodSec);
-    }
 
     /**
      * @dev Requests and approves a time lock period update using a meta-transaction

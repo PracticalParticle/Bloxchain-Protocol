@@ -45,15 +45,6 @@ interface IRuntimeRBAC {
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Creates execution params for a RBAC configuration batch
-     * @param actions Encoded role configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function roleConfigBatchExecutionParams(
-        RoleConfigAction[] memory actions
-    ) external pure returns (bytes memory);
-
-    /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record

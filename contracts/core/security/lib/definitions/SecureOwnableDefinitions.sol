@@ -756,6 +756,26 @@ library SecureOwnableDefinitions {
     }
 
     /**
+     * @dev Creates execution params for updating the recovery address (pure helper for EngineBlox).
+     * @param newRecoveryAddress The new recovery address
+     * @return The execution params for executeRecoveryUpdate
+     * @notice Caller is responsible for validation; contract validates on execution.
+     */
+    function updateRecoveryExecutionParams(address newRecoveryAddress) public pure returns (bytes memory) {
+        return abi.encode(newRecoveryAddress);
+    }
+
+    /**
+     * @dev Creates execution params for updating the time lock period (pure helper for EngineBlox).
+     * @param newTimeLockPeriodSec The new time lock period in seconds
+     * @return The execution params for executeTimeLockUpdate
+     * @notice Caller is responsible for validation; contract validates on execution.
+     */
+    function updateTimeLockExecutionParams(uint256 newTimeLockPeriodSec) public pure returns (bytes memory) {
+        return abi.encode(newTimeLockPeriodSec);
+    }
+
+    /**
      * @dev ERC165: report support for IDefinition and IERC165 when this library is used at an address.
      * IDefinition extends IERC165; both interface IDs must be reported for ERC165 compliance.
      */

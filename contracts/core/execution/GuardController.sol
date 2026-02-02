@@ -282,17 +282,6 @@ abstract contract GuardController is BaseStateMachine {
     // ============ GUARD CONFIGURATION BATCH INTERFACE ============
 
     /**
-     * @dev Creates execution params for a Guard configuration batch
-     * @param actions Encoded guard configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function guardConfigBatchExecutionParams(
-        GuardConfigAction[] memory actions
-    ) public pure returns (bytes memory) {
-        return abi.encode(actions);
-    }
-
-    /**
      * @dev Requests and approves a Guard configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
      * @return The transaction record

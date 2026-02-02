@@ -28,9 +28,9 @@ import "./interface/IRuntimeRBAC.sol";
 abstract contract RuntimeRBAC is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
     using SharedValidation for *;
-    
+
     /**
-     * @dev Action types for batched RBAC configuration
+     * @dev Action types for batched RBAC configuration (must match IRuntimeRBAC for encoding)
      */
     enum RoleConfigActionType {
         CREATE_ROLE,
@@ -42,7 +42,7 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     /**
-     * @dev Encodes a single RBAC configuration action in a batch
+     * @dev Encodes a single RBAC configuration action in a batch (must match IRuntimeRBAC for encoding)
      */
     struct RoleConfigAction {
         RoleConfigActionType actionType;
@@ -90,17 +90,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
     }
 
     // ============ ROLE CONFIGURATION BATCH INTERFACE ============
-
-    /**
-     * @dev Creates execution params for a RBAC configuration batch
-     * @param actions Encoded role configuration actions
-     * @return The execution params for EngineBlox
-     */
-    function roleConfigBatchExecutionParams(
-        RoleConfigAction[] memory actions
-    ) public pure returns (bytes memory) {
-        return abi.encode(actions);
-    }
 
     /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction

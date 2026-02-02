@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
 import "../../../../interfaces/IDefinition.sol";
+import "../../../access/interface/IRuntimeRBAC.sol";
 
 /**
  * @title RuntimeRBACDefinitions
@@ -165,6 +166,27 @@ library RuntimeRBACDefinitions {
             roleHashes: roleHashes,
             functionPermissions: functionPermissions
         });
+    }
+
+    /**
+     * @dev Creates execution params for a RBAC configuration batch (pure helper for EngineBlox).
+     * @param actions Encoded role configuration actions (IRuntimeRBAC.RoleConfigAction[] layout)
+     * @return The execution params for EngineBlox
+     */
+    function roleConfigBatchExecutionParams(
+        IRuntimeRBAC.RoleConfigAction[] memory actions
+    ) public pure returns (bytes memory) {
+        return abi.encode(actions);
+    }
+
+    /**
+     * @dev Creates execution params from pre-encoded actions (e.g. abi.encode(RuntimeRBAC.RoleConfigAction[])).
+     * Use when callers have RuntimeRBAC.RoleConfigAction[] and same encoding applies.
+     * @param preEncoded ABI-encoded role config actions array
+     * @return The execution params for EngineBlox
+     */
+    function roleConfigBatchExecutionParams(bytes memory preEncoded) public pure returns (bytes memory) {
+        return preEncoded;
     }
 
     /**
