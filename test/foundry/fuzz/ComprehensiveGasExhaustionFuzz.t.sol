@@ -61,13 +61,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * @dev Helper to whitelist a target for a function selector on accountBlox
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),
@@ -246,7 +246,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
             
-            bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
+            bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
             EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 createParams,
@@ -268,7 +268,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 data: abi.encode(roleHash, owner)
             });
             
-            bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
+            bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
             EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
                 owner,
                 addParams,
@@ -444,13 +444,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Measure gas for function removal with safeRemoval
         // Use guardConfigBatch to unregister function
-        GuardController.GuardConfigAction[] memory unregisterActions = new GuardController.GuardConfigAction[](1);
-        unregisterActions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.UNREGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory unregisterActions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        unregisterActions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION,
             data: abi.encode(testSelector, true) // safeRemoval = true
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(unregisterActions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(unregisterActions);
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
@@ -537,7 +537,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             });
         }
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -603,7 +603,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             });
         }
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -634,19 +634,19 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         functionsInBatch = uint8(bound(functionsInBatch, 1, EngineBlox.MAX_BATCH_SIZE));
         
         // Create batch with many function registrations
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](functionsInBatch);
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](functionsInBatch);
         EngineBlox.TxAction[] memory supportedActions = new EngineBlox.TxAction[](1);
         supportedActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
         for (uint i = 0; i < functionsInBatch; i++) {
             string memory signature = string(abi.encodePacked("testFunction", i, "()"));
-            actions[i] = GuardController.GuardConfigAction({
-                actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+            actions[i] = GuardControllerDefinitions.GuardConfigAction({
+                actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
                 data: abi.encode(signature, "TEST_OPERATION", supportedActions)
             });
         }
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
@@ -859,7 +859,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
             
-            bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+            bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
             EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
@@ -1027,7 +1027,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -1070,13 +1070,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Attempt to register one more function - should fail if at limit
         if (registeredCount >= EngineBlox.MAX_FUNCTIONS) {
             string memory signature = "exceedLimitFunction()";
-            GuardController.GuardConfigAction[] memory guardActions = new GuardController.GuardConfigAction[](1);
-            guardActions[0] = GuardController.GuardConfigAction({
-                actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+            GuardControllerDefinitions.GuardConfigAction[] memory guardActions = new GuardControllerDefinitions.GuardConfigAction[](1);
+            guardActions[0] = GuardControllerDefinitions.GuardConfigAction({
+                actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
                 data: abi.encode(signature, "TEST_OPERATION", actions)
             });
             
-            bytes memory params = accountBlox.guardConfigBatchExecutionParams(guardActions);
+            bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(guardActions);
             EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
                 address(accountBlox),
                 GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
@@ -1145,7 +1145,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             });
         }
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -1204,7 +1204,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -1228,7 +1228,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(roleHash, wallet)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -1264,7 +1264,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             data: abi.encode(roleHash, permission)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(roleActions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(roleActions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -1285,13 +1285,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
     ) internal {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),
@@ -1345,13 +1345,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
     ) internal view returns (EngineBlox.MetaTransaction memory) {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),

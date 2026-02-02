@@ -30,7 +30,7 @@ contract RuntimeRBACTest is CommonBase {
             data: abi.encode(TEST_ROLE_NAME, 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create a transaction to execute the batch
         // This would typically go through the state machine workflow

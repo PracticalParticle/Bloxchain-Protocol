@@ -99,7 +99,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
-        bytes memory createParams = accountBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
@@ -120,7 +120,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleHash, owner)
         });
         
-        bytes memory addWalletParams = accountBlox.roleConfigBatchExecutionParams(addWalletActions);
+        bytes memory addWalletParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addWalletActions));
         EngineBlox.MetaTransaction memory addWalletMetaTx = _createMetaTxForRoleConfig(
             owner,
             addWalletParams,
@@ -153,7 +153,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             data: abi.encode(roleHash, permission)
         });
         
-        bytes memory addPermissionParams = accountBlox.roleConfigBatchExecutionParams(addPermissionActions);
+        bytes memory addPermissionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addPermissionActions));
         EngineBlox.MetaTransaction memory addPermissionMetaTx = _createMetaTxForRoleConfig(
             owner,
             addPermissionParams,
@@ -240,13 +240,13 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Ensure actions array is not empty
         require(supportedActions.length > 0, "Supported actions cannot be empty");
         
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Create and execute meta-transaction to register function
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
@@ -285,13 +285,13 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
      * @dev Helper to whitelist a target for a function selector
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Create and execute meta-transaction to whitelist
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
@@ -706,7 +706,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         // Time-lock update requires meta-transaction workflow
         // Create execution params for time-lock update
-        bytes memory executionParams = secureBlox.updateTimeLockExecutionParams(newTimeLockPeriod);
+        bytes memory executionParams = SecureOwnableDefinitions.updateTimeLockExecutionParams(newTimeLockPeriod);
         
         // Create meta-transaction for time-lock update
         EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(

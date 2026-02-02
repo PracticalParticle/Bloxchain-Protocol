@@ -235,38 +235,46 @@ contract SecureOwnableTest is CommonBase {
 
     function test_UpdateRecoveryExecutionParams_ValidAddress() public {
         address newRecovery = user1;
-        bytes memory params = secureBlox.updateRecoveryExecutionParams(newRecovery);
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(newRecovery);
         address decoded = abi.decode(params, (address));
         assertEq(decoded, newRecovery);
     }
 
-    function test_UpdateRecoveryExecutionParams_Revert_ZeroAddress() public {
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
-        secureBlox.updateRecoveryExecutionParams(address(0));
+    function test_UpdateRecoveryExecutionParams_ZeroAddress_Encodes() public {
+        // Library is pure: encodes without validation. Contract validates on executeRecoveryUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(address(0));
+        address decoded = abi.decode(params, (address));
+        assertEq(decoded, address(0));
     }
 
-    function test_UpdateRecoveryExecutionParams_Revert_SameAddress() public {
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.NotNewAddress.selector, recovery, recovery));
-        secureBlox.updateRecoveryExecutionParams(recovery);
+    function test_UpdateRecoveryExecutionParams_SameAddress_Encodes() public {
+        // Library is pure: encodes without validation. Contract validates on executeRecoveryUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(recovery);
+        address decoded = abi.decode(params, (address));
+        assertEq(decoded, recovery);
     }
 
     // ============ TIMELOCK UPDATE TESTS ============
 
     function test_UpdateTimeLockExecutionParams_ValidPeriod() public {
         uint256 newPeriod = 7200;
-        bytes memory params = secureBlox.updateTimeLockExecutionParams(newPeriod);
+        bytes memory params = SecureOwnableDefinitions.updateTimeLockExecutionParams(newPeriod);
         uint256 decoded = abi.decode(params, (uint256));
         assertEq(decoded, newPeriod);
     }
 
-    function test_UpdateTimeLockExecutionParams_Revert_ZeroPeriod() public {
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.TimeLockPeriodZero.selector, 0));
-        secureBlox.updateTimeLockExecutionParams(0);
+    function test_UpdateTimeLockExecutionParams_ZeroPeriod_Encodes() public {
+        // Library is pure: encodes without validation. Contract validates on executeTimeLockUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateTimeLockExecutionParams(0);
+        uint256 decoded = abi.decode(params, (uint256));
+        assertEq(decoded, 0);
     }
 
-    function test_UpdateTimeLockExecutionParams_Revert_SamePeriod() public {
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.NewTimelockSame.selector, DEFAULT_TIMELOCK_PERIOD, DEFAULT_TIMELOCK_PERIOD));
-        secureBlox.updateTimeLockExecutionParams(DEFAULT_TIMELOCK_PERIOD);
+    function test_UpdateTimeLockExecutionParams_SamePeriod_Encodes() public {
+        // Library is pure: encodes without validation. Contract validates on executeTimeLockUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateTimeLockExecutionParams(DEFAULT_TIMELOCK_PERIOD);
+        uint256 decoded = abi.decode(params, (uint256));
+        assertEq(decoded, DEFAULT_TIMELOCK_PERIOD);
     }
 
     // ============ EXECUTION FUNCTIONS TESTS ============

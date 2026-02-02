@@ -15,9 +15,10 @@ contract EdgeCasesTest is CommonBase {
     }
 
     function test_ZeroAddressHandling() public {
-        // Zero address should be rejected
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
-        secureBlox.updateRecoveryExecutionParams(address(0));
+        // Library is pure: encodes without validation. Contract validates on executeRecoveryUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(address(0));
+        address decoded = abi.decode(params, (address));
+        assertEq(decoded, address(0));
     }
 
     function test_InvalidStateTransitions() public {
@@ -79,7 +80,7 @@ contract EdgeCasesTest is CommonBase {
     function test_EmptyArrays() public {
         // Test with empty arrays
         RuntimeRBAC.RoleConfigAction[] memory emptyActions = new RuntimeRBAC.RoleConfigAction[](0);
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(emptyActions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(emptyActions));
         // Empty array encoding: offset (32) + length (32) = 64 bytes minimum
         // Plus any additional encoding overhead
         assertGe(executionParams.length, 64);
@@ -90,7 +91,7 @@ contract EdgeCasesTest is CommonBase {
         uint256 maxPeriod = type(uint256).max;
         
         // May or may not revert depending on validation - test that function handles it
-        try secureBlox.updateTimeLockExecutionParams(maxPeriod) returns (bytes memory params) {
+        try SecureOwnableDefinitions.updateTimeLockExecutionParams(maxPeriod) returns (bytes memory params) {
             // Function accepted the value (validation may allow it)
             // Verify params were created correctly
             uint256 decoded = abi.decode(params, (uint256));
@@ -102,9 +103,10 @@ contract EdgeCasesTest is CommonBase {
     }
 
     function test_SameAddressUpdate() public {
-        // Try to update to same address (should fail)
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.NotNewAddress.selector, recovery, recovery));
-        secureBlox.updateRecoveryExecutionParams(recovery);
+        // Library is pure: encodes without validation. Contract validates on executeRecoveryUpdate.
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(recovery);
+        address decoded = abi.decode(params, (address));
+        assertEq(decoded, recovery);
     }
 
     function test_ConcurrentOperations() public {

@@ -183,7 +183,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -219,7 +219,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             data: abi.encode(roleHash, permission)
         });
         
-        bytes memory addExecutionParams = roleBlox.roleConfigBatchExecutionParams(addActions);
+        bytes memory addExecutionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
         EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addExecutionParams,

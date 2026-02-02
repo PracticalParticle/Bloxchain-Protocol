@@ -19,23 +19,23 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(selector != bytes4(0));
 
         // Test execution params creation (now using batch config)
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
             actionType: isAdd 
-                ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
-                : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+                ? GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+                : GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
             data: abi.encode(selector, target)
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
         
-        GuardController.GuardConfigActionType expectedType = isAdd 
-            ? GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
-            : GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
+        GuardControllerDefinitions.GuardConfigActionType expectedType = isAdd 
+            ? GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+            : GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
         assertEq(uint8(decodedActions[0].actionType), uint8(expectedType));
         
         (bytes4 decodedSelector, address decodedTarget) = abi.decode(decodedActions[0].data, (bytes4, address));
@@ -118,19 +118,19 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(bytes(operationName).length > 0);
 
         // Create REGISTER_FUNCTION action
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REGISTER_FUNCTION,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
         // Test execution params creation
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.REGISTER_FUNCTION));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION));
         
         // Decode and verify the data
         (

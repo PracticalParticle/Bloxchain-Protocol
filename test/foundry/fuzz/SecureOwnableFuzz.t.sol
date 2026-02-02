@@ -72,7 +72,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newRecovery != broadcaster);
 
         // Test execution params creation
-        bytes memory params = secureBlox.updateRecoveryExecutionParams(newRecovery);
+        bytes memory params = SecureOwnableDefinitions.updateRecoveryExecutionParams(newRecovery);
         address decoded = abi.decode(params, (address));
         assertEq(decoded, newRecovery);
     }
@@ -82,7 +82,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newPeriod != DEFAULT_TIMELOCK_PERIOD);
         vm.assume(newPeriod < 365 days);
 
-        bytes memory params = secureBlox.updateTimeLockExecutionParams(newPeriod);
+        bytes memory params = SecureOwnableDefinitions.updateTimeLockExecutionParams(newPeriod);
         uint256 decoded = abi.decode(params, (uint256));
         assertEq(decoded, newPeriod);
     }

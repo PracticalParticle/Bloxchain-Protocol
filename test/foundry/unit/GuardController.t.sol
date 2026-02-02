@@ -37,18 +37,18 @@ contract GuardControllerTest is CommonBase {
     }
 
     function test_GuardConfigBatchExecutionParams_AddTargetToWhitelist() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
         
         (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
@@ -56,18 +56,18 @@ contract GuardControllerTest is CommonBase {
     }
 
     function test_GuardConfigBatchExecutionParams_RemoveTargetFromWhitelist() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(mockTarget))
         });
         
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardController.GuardConfigAction[]));
+        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST));
         
         (bytes4 selector, address target) = abi.decode(decodedActions[0].data, (bytes4, address));
         assertEq(selector, TEST_FUNCTION_SELECTOR);
@@ -75,15 +75,15 @@ contract GuardControllerTest is CommonBase {
     }
 
     function test_GuardConfigBatchExecutionParams_Revert_ZeroAddress() public {
-        GuardController.GuardConfigAction[] memory actions = new GuardController.GuardConfigAction[](1);
-        actions[0] = GuardController.GuardConfigAction({
-            actionType: GuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
+        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(TEST_FUNCTION_SELECTOR, address(0))
         });
         
         // The validation happens during execution, not during params creation
         // So we can create params with zero address, but execution will fail
-        bytes memory params = accountBlox.guardConfigBatchExecutionParams(actions);
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         assertGt(params.length, 0);
     }
 

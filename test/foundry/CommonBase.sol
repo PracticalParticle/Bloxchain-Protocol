@@ -3,6 +3,10 @@ pragma solidity 0.8.33;
 
 import "forge-std/Test.sol";
 import "../../contracts/core/lib/EngineBlox.sol";
+import "../../contracts/core/access/interface/IRuntimeRBAC.sol";
+import "../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
+import "../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
+import "../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
 import "../../contracts/examples/templates/SecureBlox.sol";
 import "../../contracts/examples/templates/RoleBlox.sol";
 import "../../contracts/examples/templates/AccountBlox.sol";

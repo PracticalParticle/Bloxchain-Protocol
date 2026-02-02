@@ -78,7 +78,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode(roleName1, 10, permissions1)
         });
         
-        bytes memory createParams1 = roleBlox.roleConfigBatchExecutionParams(createActions1);
+        bytes memory createParams1 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions1));
         EngineBlox.MetaTransaction memory createMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             createParams1,
@@ -96,7 +96,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode(roleName2, 10, permissions2)
         });
         
-        bytes memory createParams2 = roleBlox.roleConfigBatchExecutionParams(createActions2);
+        bytes memory createParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions2));
         EngineBlox.MetaTransaction memory createMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             createParams2,
@@ -113,7 +113,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode(roleHash1, wallet)
         });
         
-        bytes memory addParams1 = roleBlox.roleConfigBatchExecutionParams(addActions1);
+        bytes memory addParams1 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions1));
         EngineBlox.MetaTransaction memory addMetaTx1 = _createMetaTxForRoleConfig(
             owner,
             addParams1,
@@ -130,7 +130,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode(roleHash2, wallet)
         });
         
-        bytes memory addParams2 = roleBlox.roleConfigBatchExecutionParams(addActions2);
+        bytes memory addParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions2));
         EngineBlox.MetaTransaction memory addMetaTx2 = _createMetaTxForRoleConfig(
             owner,
             addParams2,
@@ -184,7 +184,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode(OWNER_ROLE, wallet)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -425,7 +425,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode("LEGIT_ROLE", 10, permissions)
         });
         
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory legitMetaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -468,7 +468,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             data: abi.encode("ATTACKER_ROLE", 10, permissions)
         });
         
-        bytes memory attackerParams_bytes = roleBlox.roleConfigBatchExecutionParams(attackerActions);
+        bytes memory attackerParams_bytes = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(attackerActions));
         
         // Generate meta-transaction with old nonce
         // Note: generateUnsignedMetaTransactionForNew might override the nonce, so we need to

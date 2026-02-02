@@ -42,7 +42,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -79,7 +79,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
 
         // Create meta-transaction with wrong nonce
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
@@ -141,7 +141,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
 
         // Create meta-transaction with wrong chain ID
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
@@ -203,7 +203,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -249,7 +249,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
 
         // Create meta-transaction signed by unauthorized address
         EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
@@ -305,7 +305,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE_1", 10, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx1 = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -323,7 +323,7 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
             data: abi.encode("TEST_ROLE_2", 10, permissions)
         });
 
-        bytes memory executionParams2 = roleBlox.roleConfigBatchExecutionParams(actions2);
+        bytes memory executionParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions2));
         
         // Get current nonce (should have incremented)
         uint256 currentNonce = roleBlox.getSignerNonce(owner);

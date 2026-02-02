@@ -52,7 +52,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
             data: abi.encode(roleName, maxWallets, permissions)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         assertGt(executionParams.length, 0);
 
         // Actually execute through meta-transaction
@@ -101,7 +101,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, permissions)
         });
 
-        bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
@@ -118,7 +118,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
             data: abi.encode(roleHash, wallet)
         });
 
-        bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
+        bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
         EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addParams,

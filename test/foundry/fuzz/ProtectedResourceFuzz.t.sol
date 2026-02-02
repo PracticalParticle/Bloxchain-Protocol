@@ -48,7 +48,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
                 data: abi.encode(protectedRoles[i], wallet)
             });
 
-            bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+            bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
 
             // Create and execute meta-transaction - should fail
             EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
@@ -83,7 +83,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             data: abi.encode(OWNER_ROLE, owner)
         });
 
-        bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
             owner,
             executionParams,
@@ -117,7 +117,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
                 data: abi.encode(protectedRoles[i])
             });
 
-            bytes memory executionParams = roleBlox.roleConfigBatchExecutionParams(actions);
+            bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
             EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
                 owner,
                 executionParams,
@@ -169,7 +169,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             data: abi.encode(roleName, 10, permissions)
         });
 
-        bytes memory createParams = roleBlox.roleConfigBatchExecutionParams(createActions);
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
             owner,
             createParams,
@@ -186,7 +186,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             data: abi.encode(newRoleHash, wallet)
         });
 
-        bytes memory addParams = roleBlox.roleConfigBatchExecutionParams(addActions);
+        bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
         EngineBlox.MetaTransaction memory addMetaTx = _createMetaTxForRoleConfig(
             owner,
             addParams,
