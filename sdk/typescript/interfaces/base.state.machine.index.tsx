@@ -88,6 +88,7 @@ export interface IBaseStateMachine {
   }>;
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
   getWalletRoles(wallet: Address): Promise<Hex[]>;
+  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
   functionSchemaExists(functionSelector: Hex): Promise<boolean>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
