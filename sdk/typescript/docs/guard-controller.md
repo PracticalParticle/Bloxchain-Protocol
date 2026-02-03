@@ -195,9 +195,9 @@ const executionParams = await guardController.guardConfigBatchExecutionParams(ac
 
 ### **3. Whitelist Management**
 
-#### **Get Allowed Targets**
+#### **Get Function Whitelist Targets**
 ```typescript
-const targets = await guardController.getAllowedTargets('0xa9059cbb') // function selector
+const targets = await guardController.getFunctionWhitelistTargets('0xa9059cbb') // function selector
 console.log('Whitelisted targets:', targets)
 ```
 
@@ -317,7 +317,7 @@ unwatchGuardConfig()
 Only whitelisted targets can be called for a given function:
 
 ```typescript
-const targets = await guardController.getAllowedTargets(functionSelector)
+const targets = await guardController.getFunctionWhitelistTargets(functionSelector)
 if (!targets.includes(targetAddress)) {
   throw new Error('Target not whitelisted for this function')
 }
@@ -418,7 +418,7 @@ import { describe, it, expect } from 'vitest'
 
 describe('GuardController', () => {
   it('should return whitelisted targets', async () => {
-    const targets = await guardController.getAllowedTargets(functionSelector)
+    const targets = await guardController.getFunctionWhitelistTargets(functionSelector)
     expect(Array.isArray(targets)).toBe(true)
   })
 

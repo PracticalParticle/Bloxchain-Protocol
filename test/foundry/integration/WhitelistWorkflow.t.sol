@@ -44,7 +44,7 @@ contract WhitelistWorkflowTest is CommonBase {
      */
     function test_Whitelist_StartsEmpty() public {
         vm.prank(owner);
-        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getFunctionWhitelistTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
     }
 

@@ -79,12 +79,12 @@ export interface IGuardController extends IBaseStateMachine {
   ): Promise<TransactionResult>;
 
   /**
-   * @dev Gets all whitelisted targets for a function selector
+   * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine)
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
-  getAllowedTargets(
+  getFunctionWhitelistTargets(
     functionSelector: Hex
   ): Promise<Address[]>;
 }

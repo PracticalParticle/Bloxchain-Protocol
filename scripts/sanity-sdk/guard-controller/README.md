@@ -15,7 +15,7 @@ These tests verify that the GuardController SDK correctly implements the secure 
 
 Tests the complete whitelist management lifecycle:
 1. **Add Target to Whitelist** - Uses `updateTargetWhitelistRequestAndApprove` via meta-transaction
-2. **Verify Target is Whitelisted** - Queries whitelist using `getAllowedTargets`
+2. **Verify Target is Whitelisted** - Queries whitelist using `getFunctionWhitelistTargets`
 3. **Query All Allowed Targets** - Tests the query functionality
 4. **Remove Target from Whitelist** - Uses `updateTargetWhitelistRequestAndApprove` with `isAdd=false`
 5. **Verify Target is Removed** - Confirms target is no longer in whitelist
@@ -137,7 +137,7 @@ const result = await guardController.updateTargetWhitelistRequestAndApprove(
 );
 
 // Query whitelisted targets
-const allowedTargets = await guardController.getAllowedTargets(
+const allowedTargets = await guardController.getFunctionWhitelistTargets(
   roleHash,
   functionSelector
 );

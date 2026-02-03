@@ -1971,25 +1971,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "getAllowedTargets",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "getBroadcasters",
     "outputs": [
@@ -2041,6 +2022,25 @@
         "internalType": "bool",
         "name": "isProtected",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "getFunctionWhitelistTargets",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",

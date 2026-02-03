@@ -209,20 +209,20 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   }
 
   /**
-   * @dev Gets all whitelisted targets for a function selector.
+   * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine).
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
    * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
-  async getAllowedTargets(
+  async getFunctionWhitelistTargets(
     functionSelector: Hex
   ): Promise<Address[]> {
-    const result = await this.executeReadContract<Address[]>('getAllowedTargets', [
+    const result = await this.executeReadContract<Address[]>('getFunctionWhitelistTargets', [
       functionSelector
     ]);
     
     if (!Array.isArray(result)) {
-      throw new Error(`Unexpected return type from getAllowedTargets: ${typeof result}`);
+      throw new Error(`Unexpected return type from getFunctionWhitelistTargets: ${typeof result}`);
     }
     
     return result;
