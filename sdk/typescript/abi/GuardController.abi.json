@@ -843,34 +843,46 @@
     "name": "getFunctionSchema",
     "outputs": [
       {
-        "internalType": "string",
-        "name": "functionSignature",
-        "type": "string"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "functionSelectorReturn",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "operationType",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "operationName",
-        "type": "string"
-      },
-      {
-        "internalType": "enum EngineBlox.TxAction[]",
-        "name": "supportedActions",
-        "type": "uint8[]"
-      },
-      {
-        "internalType": "bool",
-        "name": "isProtected",
-        "type": "bool"
+        "components": [
+          {
+            "internalType": "string",
+            "name": "functionSignature",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "functionSelector",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "operationType",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "string",
+            "name": "operationName",
+            "type": "string"
+          },
+          {
+            "internalType": "uint16",
+            "name": "supportedActionsBitmap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "isProtected",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes4[]",
+            "name": "handlerForSelectors",
+            "type": "bytes4[]"
+          }
+        ],
+        "internalType": "struct EngineBlox.FunctionSchema",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
