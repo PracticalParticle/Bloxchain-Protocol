@@ -10,7 +10,7 @@ execution patterns including time-locked transactions, meta-transactions, and pa
 
 Key Features:
 - Core state machine functionality from BaseStateMachine
-- Function schema query support (functionSchemaExists)
+- Function schema query support via BaseStateMachine (functionSchemaExists, getFunctionSchema)
 - STANDARD execution type only (function selector + params)
 - Meta-transaction support for delegated approvals and cancellations
 - Payment management for native tokens and ERC20 tokens
