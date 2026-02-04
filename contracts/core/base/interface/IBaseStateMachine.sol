@@ -106,6 +106,13 @@ interface IBaseStateMachine {
     function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) external view returns (bool);
 
     /**
+     * @dev Gets function schema information
+     * @param functionSelector The function selector to get information for
+     * @return The full FunctionSchema struct
+     */
+    function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory);
+
+    /**
      * @dev Gets the function permissions for a specific role
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role

@@ -195,9 +195,9 @@ const executionParams = await guardController.guardConfigBatchExecutionParams(ac
 
 ### **3. Whitelist Management**
 
-#### **Get Allowed Targets**
+#### **Get Function Whitelist Targets**
 ```typescript
-const targets = await guardController.getAllowedTargets('0xa9059cbb') // function selector
+const targets = await guardController.getFunctionWhitelistTargets('0xa9059cbb') // function selector
 console.log('Whitelisted targets:', targets)
 ```
 
@@ -218,11 +218,14 @@ console.log('Function schema exists:', exists)
 const schema = await guardController.getFunctionSchema('0xa9059cbb')
 console.log('Function schema:', {
   signature: schema.functionSignature,
+  functionSelector: schema.functionSelector,
   operationType: schema.operationType,
   operationName: schema.operationName,
-  supportedActions: schema.supportedActions,
-  isProtected: schema.isProtected
+  supportedActionsBitmap: schema.supportedActionsBitmap,
+  isProtected: schema.isProtected,
+  handlerForSelectors: schema.handlerForSelectors
 })
+// To get supported actions as an array, use EngineBlox.convertBitmapToActions(schema.supportedActionsBitmap)
 ```
 
 ## 🔄 **Complete Workflow Example**
@@ -317,7 +320,7 @@ unwatchGuardConfig()
 Only whitelisted targets can be called for a given function:
 
 ```typescript
-const targets = await guardController.getAllowedTargets(functionSelector)
+const targets = await guardController.getFunctionWhitelistTargets(functionSelector)
 if (!targets.includes(targetAddress)) {
   throw new Error('Target not whitelisted for this function')
 }
@@ -332,6 +335,7 @@ const schema = await guardController.getFunctionSchema(functionSelector)
 if (schema.isProtected) {
   console.log('This function schema is protected')
 }
+// schema is the full FunctionSchema (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors)
 ```
 
 ### **3. Role-Based Permissions**
@@ -418,7 +422,7 @@ import { describe, it, expect } from 'vitest'
 
 describe('GuardController', () => {
   it('should return whitelisted targets', async () => {
-    const targets = await guardController.getAllowedTargets(functionSelector)
+    const targets = await guardController.getFunctionWhitelistTargets(functionSelector)
     expect(Array.isArray(targets)).toBe(true)
   })
 

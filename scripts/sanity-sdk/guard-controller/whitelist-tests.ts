@@ -231,7 +231,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
 
       // Query allowed targets using owner's GuardController instance
-      const allowedTargets = await ownerGuardController.getAllowedTargets(
+      const allowedTargets = await ownerGuardController.getFunctionWhitelistTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -279,7 +279,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       
       const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
 
-      const allowedTargets = await ownerGuardController.getAllowedTargets(
+      const allowedTargets = await ownerGuardController.getFunctionWhitelistTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 
@@ -386,7 +386,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
 
       // Query allowed targets using owner's GuardController instance
-      const allowedTargets = await ownerGuardController.getAllowedTargets(
+      const allowedTargets = await ownerGuardController.getFunctionWhitelistTargets(
         this.NATIVE_TRANSFER_SELECTOR
       );
 

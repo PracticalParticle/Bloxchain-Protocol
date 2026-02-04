@@ -179,6 +179,41 @@ contract RuntimeRBACFuzzTest is CommonBase {
     }
 
     /**
+     * @dev Fuzz getFunctionSchema via BaseStateMachine surface:
+     *      - succeeds and returns matching selector when schema exists
+     *      - reverts with ResourceNotFound when schema does not exist
+     */
+    function testFuzz_GetFunctionSchema(bytes4 selector) public {
+        // Selector 0 can make functionSchemaExists true (default storage) while getFunctionSchema reverts with ResourceNotFound
+        vm.assume(selector != bytes4(0));
+        bool exists = roleBlox.functionSchemaExists(selector);
+
+        if (exists) {
+            vm.prank(owner); // getFunctionSchema requires caller to have any role
+            EngineBlox.FunctionSchema memory schema = roleBlox.getFunctionSchema(selector);
+
+            // Basic sanity checks for existing schemas
+            assertEq(schema.functionSelector, selector, "Returned selector must match input selector");
+            // Native-transfer macro selector (0x00000000) may intentionally have empty metadata,
+            // so only enforce signature/name constraints for non-zero selectors.
+            if (selector != bytes4(0)) {
+                assertGt(bytes(schema.functionSignature).length, 0, "Function signature should not be empty");
+                assertTrue(schema.operationType != bytes32(0), "Operation type should be non-zero");
+                assertGt(bytes(schema.operationName).length, 0, "Operation name should not be empty");
+            }
+
+            // For protected schemas, we expect at least one supported action (bitmap non-zero)
+            if (schema.isProtected) {
+                assertTrue(schema.supportedActionsBitmap != 0, "Protected schemas should advertise supported actions");
+            }
+        } else {
+            vm.prank(owner); // getFunctionSchema requires caller to have any role
+            vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(selector)));
+            roleBlox.getFunctionSchema(selector);
+        }
+    }
+
+    /**
      * @dev Get private key for test addresses
      * Uses vm.addr() to ensure addresses match private keys
      */

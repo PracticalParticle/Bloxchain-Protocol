@@ -413,18 +413,4 @@ abstract contract GuardController is BaseStateMachine {
         _removeFunctionSchema(functionSelector, safeRemoval);
     }
 
-    /**
-     * @dev Gets all whitelisted targets for a function selector
-     * @param functionSelector The function selector
-     * @return Array of whitelisted target addresses
-     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
-     */
-    function getAllowedTargets(
-        bytes4 functionSelector
-    ) external view returns (address[] memory) {
-        _validateAnyRole();
-        return _getFunctionWhitelistTargets(functionSelector);
-    }
 }
-
-

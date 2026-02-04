@@ -2,6 +2,7 @@ import { Address, Hex } from 'viem';
 // import { TransactionResult, TransactionOptions } from './base.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
 import { TxAction } from '../types/lib.index';
+import { FunctionSchema } from '../types/definition.index';
 
 /**
  * Interface for BaseStateMachine contract events
@@ -88,7 +89,9 @@ export interface IBaseStateMachine {
   }>;
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
   getWalletRoles(wallet: Address): Promise<Hex[]>;
+  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
   functionSchemaExists(functionSelector: Hex): Promise<boolean>;
+  getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   getSignerNonce(signer: Address): Promise<bigint>;

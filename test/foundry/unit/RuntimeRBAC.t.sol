@@ -54,18 +54,11 @@ contract RuntimeRBACTest is CommonBase {
         
         // This may or may not be registered depending on initialization
         // We test the function exists and handles both cases
-        try roleBlox.getFunctionSchema(selector) returns (
-            string memory functionSignature,
-            bytes4 functionSelector,
-            bytes32 operationType,
-            string memory operationName,
-            EngineBlox.TxAction[] memory supportedActions,
-            bool isProtected
-        ) {
+        try roleBlox.getFunctionSchema(selector) returns (EngineBlox.FunctionSchema memory schema) {
             // Function schema exists - verify it's valid
-            assertGt(bytes(functionSignature).length, 0);
-            assertEq(functionSelector, selector);
-            assertGt(bytes(operationName).length, 0);
+            assertGt(bytes(schema.functionSignature).length, 0);
+            assertEq(schema.functionSelector, selector);
+            assertGt(bytes(schema.operationName).length, 0);
         } catch {
             // Function schema doesn't exist - expected for some functions
             // This is valid if the function wasn't registered during initialization
@@ -74,6 +67,7 @@ contract RuntimeRBACTest is CommonBase {
 
     function test_GetFunctionSchema_Revert_UnregisteredFunction() public {
         bytes4 invalidSelector = bytes4(0x12345678);
+        vm.prank(owner); // getFunctionSchema requires caller to have any role
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(invalidSelector)));
         roleBlox.getFunctionSchema(invalidSelector);
     }

@@ -25,7 +25,7 @@ contract GuardControllerTest is CommonBase {
     function test_GetAllowedTargets_ReturnsWhitelistedTargets() public {
         // Initially empty whitelist
         vm.prank(owner);
-        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getFunctionWhitelistTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
     }
 
@@ -33,7 +33,7 @@ contract GuardControllerTest is CommonBase {
         // Should require any role for privacy protection
         vm.prank(attacker);
         vm.expectRevert();
-        accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        accountBlox.getFunctionWhitelistTargets(TEST_FUNCTION_SELECTOR);
     }
 
     function test_GuardConfigBatchExecutionParams_AddTargetToWhitelist() public {
@@ -90,7 +90,7 @@ contract GuardControllerTest is CommonBase {
     function test_EmptyWhitelist_DeniesAllExecutions() public {
         // No targets whitelisted
         vm.prank(owner);
-        address[] memory targets = accountBlox.getAllowedTargets(TEST_FUNCTION_SELECTOR);
+        address[] memory targets = accountBlox.getFunctionWhitelistTargets(TEST_FUNCTION_SELECTOR);
         assertEq(targets.length, 0);
 
         // Execution should fail due to whitelist check

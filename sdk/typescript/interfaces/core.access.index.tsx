@@ -23,16 +23,6 @@ export interface IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
-  // Note: getFunctionSchema remains available from the contract and is exposed via the wrapper
-  getFunctionSchema(functionSelector: Hex): Promise<{
-    functionSignature: string;
-    functionSelectorReturn: Hex;
-    operationType: Hex;
-    operationName: string;
-    supportedActions: TxAction[];
-    isProtected: boolean;
-  }>;
-
   /**
    * @dev Gets all authorized wallets for a role
    * @param roleHash The role hash to get wallets for

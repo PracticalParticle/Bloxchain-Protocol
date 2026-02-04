@@ -3,6 +3,7 @@ import { TransactionOptions, TransactionResult } from '../interfaces/base.index'
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
 import { TxAction } from '../types/lib.index';
+import { FunctionSchema } from '../types/definition.index';
 import { handleViemError } from '../utils/viem-error-handler';
 
 /**
@@ -249,6 +250,16 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<Hex[]>('getWalletRoles', [wallet]);
   }
 
+  /**
+   * Gets all authorized wallets for a role
+   * @param roleHash The role hash to get wallets for
+   * @returns Array of authorized wallet addresses
+   * @notice Requires caller to have any role for privacy protection
+   */
+  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getWalletsInRole', [roleHash]);
+  }
+
   async isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean> {
     return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
   }
@@ -259,6 +270,10 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
     return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
+  }
+
+  async getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema> {
+    return this.executeReadContract<FunctionSchema>('getFunctionSchema', [functionSelector]);
   }
 
   async getSignerNonce(signer: Address): Promise<bigint> {

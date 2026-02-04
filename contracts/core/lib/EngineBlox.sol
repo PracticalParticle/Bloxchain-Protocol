@@ -768,6 +768,18 @@ library EngineBlox {
     }
 
     /**
+     * @dev Gets the function schema by selector.
+     * @param self The SecureOperationState to read from.
+     * @param functionSelector The function selector to get the schema for.
+     * @return The FunctionSchema struct (memory copy).
+     * @notice Reverts with ResourceNotFound if the schema does not exist.
+     */
+    function getFunctionSchema(SecureOperationState storage self, bytes4 functionSelector) public view returns (FunctionSchema memory) {
+        _validateFunctionSchemaExists(self, functionSelector);
+        return self.functions[functionSelector];
+    }
+
+    /**
      * @dev Creates a role with specified function permissions.
      * @param self The SecureOperationState to check.
      * @param roleName Name of the role.
@@ -2041,6 +2053,17 @@ library EngineBlox {
     function _validateRoleExists(SecureOperationState storage self, bytes32 roleHash) internal view {
         if (self.roles[roleHash].roleHash == 0 || !self.supportedRolesSet.contains(roleHash)) {
             revert SharedValidation.ResourceNotFound(roleHash);
+        }
+    }
+
+    /**
+     * @dev Validates that a function schema exists for the given selector.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to validate.
+     */
+    function _validateFunctionSchemaExists(SecureOperationState storage self, bytes4 functionSelector) internal view {
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
     }
 

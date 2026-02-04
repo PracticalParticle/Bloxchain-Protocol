@@ -7,8 +7,8 @@ import "../../lib/EngineBlox.sol";
  * @title IGuardController
  * @dev Interface for GuardController contract that GuardianSafeV3 and other contracts delegate to
  * @notice This interface defines only GuardController-specific methods
- * @notice Functions from BaseStateMachine (createMetaTxParams, generateUnsignedMetaTransaction*, getTransaction, functionSchemaExists, owner, getBroadcaster, getRecovery) should be accessed via IBaseStateMachine
- * @notice Functions from RuntimeRBAC (registerFunction, unregisterFunction, getFunctionSchema, createNewRole, addWalletToRole, revokeWallet) should be accessed via IRuntimeRBAC
+ * @notice Functions from BaseStateMachine (createMetaTxParams, generateUnsignedMetaTransaction*, getTransaction, functionSchemaExists, getFunctionSchema, owner, getBroadcaster, getRecovery) should be accessed via IBaseStateMachine
+ * @notice Functions from RuntimeRBAC (registerFunction, unregisterFunction, createNewRole, addWalletToRole, revokeWallet) should be accessed via IRuntimeRBAC
  * @custom:security-contact security@particlecrypto.com
  */
 interface IGuardController {

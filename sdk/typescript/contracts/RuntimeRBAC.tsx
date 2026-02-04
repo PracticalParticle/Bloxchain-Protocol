@@ -71,29 +71,6 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   }
 
   /**
-   * @dev Gets function schema information
-   * @param functionSelector The function selector to get information for
-   * @return Function schema information
-   */
-  async getFunctionSchema(functionSelector: Hex): Promise<{
-    functionSignature: string;
-    functionSelectorReturn: Hex;
-    operationType: Hex;
-    operationName: string;
-    supportedActions: TxAction[];
-    isProtected: boolean;
-  }> {
-    return this.executeReadContract<{
-      functionSignature: string;
-      functionSelectorReturn: Hex;
-      operationType: Hex;
-      operationName: string;
-      supportedActions: TxAction[];
-      isProtected: boolean;
-    }>('getFunctionSchema', [functionSelector]);
-  }
-
-  /**
    * @dev Gets all authorized wallets for a role
    * @param roleHash The role hash to get wallets for
    * @return Array of authorized wallet addresses

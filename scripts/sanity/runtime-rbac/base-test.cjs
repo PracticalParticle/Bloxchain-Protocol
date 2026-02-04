@@ -350,7 +350,8 @@ class BaseRuntimeRBACTest {
                 this.contract.methods.getFunctionSchema(this.ROLE_CONFIG_BATCH_META_SELECTOR)
             );
             
-            if (functionSchema.functionSelectorReturn !== this.ROLE_CONFIG_BATCH_META_SELECTOR) {
+            const selector = functionSchema.functionSelector ?? functionSchema.functionSelectorReturn;
+            if (selector !== this.ROLE_CONFIG_BATCH_META_SELECTOR) {
                 throw new Error('RuntimeRBAC function schema not found. Contract may not be initialized with RuntimeRBAC.initialize()');
             }
             
@@ -362,7 +363,8 @@ class BaseRuntimeRBACTest {
                 this.contract.methods.getFunctionSchema(this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR)
             );
             
-            if (executionSchema.functionSelectorReturn !== this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR) {
+            const execSelector = executionSchema.functionSelector ?? executionSchema.functionSelectorReturn;
+            if (execSelector !== this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR) {
                 throw new Error('RuntimeRBAC execution function schema not found. Contract may not be initialized with RuntimeRBAC.initialize()');
             }
             

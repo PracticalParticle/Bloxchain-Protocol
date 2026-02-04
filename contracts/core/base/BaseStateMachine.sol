@@ -455,6 +455,16 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
+     * @dev Gets function schema information
+     * @param functionSelector The function selector to get information for
+     * @return The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors)
+     */
+    function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory) {
+        _validateAnyRole();
+        return _secureState.getFunctionSchema(functionSelector);
+    }
+
+    /**
      * @dev Gets the function permissions for a specific role
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role
@@ -778,11 +788,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to get all whitelisted targets for a function selector
+     * @dev Gets all whitelisted targets for a function selector
      * @param functionSelector The function selector
      * @return Array of whitelisted target addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function _getFunctionWhitelistTargets(bytes4 functionSelector) internal view returns (address[] memory) {
+    function getFunctionWhitelistTargets(bytes4 functionSelector) public view returns (address[] memory) {
+        _validateAnyRole();
         return _getSecureState().getFunctionWhitelistTargets(functionSelector);
     }
 
