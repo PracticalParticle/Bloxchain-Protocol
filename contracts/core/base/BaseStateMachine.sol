@@ -460,7 +460,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors)
      */
     function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory) {
-        return _getSecureState().getFunctionSchema(functionSelector);
+        _validateAnyRole();
+        return _secureState.getFunctionSchema(functionSelector);
     }
 
     /**

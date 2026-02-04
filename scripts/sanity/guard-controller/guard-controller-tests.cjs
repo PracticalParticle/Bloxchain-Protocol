@@ -52,7 +52,7 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 const existingSchema = await this.callContractMethod(
                     this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
                 );
-                const existingSelector = existingSchema && (existingSchema.functionSelector ?? existingSchema.functionSelectorReturn ?? existingSchema[1]);
+                const existingSelector = existingSchema && (existingSchema.functionSelector ?? existingSchema[1]);
                 if (existingSelector != null && String(existingSelector).toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()) {
                     alreadyExists = true;
                     console.log('  ✅ Function already registered!');
@@ -606,12 +606,13 @@ class GuardControllerTests extends BaseGuardControllerTest {
                     this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
                 );
                 console.log(`  📋 Function schema retrieved: ${JSON.stringify(functionSchema, null, 2)}`);
-                if (functionSchema && functionSchema.functionSelectorReturn === this.NATIVE_TRANSFER_SELECTOR) {
+                const schemaSelector = functionSchema && (functionSchema.functionSelector ?? functionSchema[1]);
+                if (functionSchema && schemaSelector && String(schemaSelector).toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()) {
                     console.log(`  ✅ Function schema exists!`);
                 } else {
                     console.log(`  ⚠️  Function schema returned but selector doesn't match`);
                     console.log(`     Expected: ${this.NATIVE_TRANSFER_SELECTOR}`);
-                    console.log(`     Got: ${functionSchema ? functionSchema.functionSelectorReturn : 'undefined'}`);
+                    console.log(`     Got: ${functionSchema ? schemaSelector : 'undefined'}`);
                 }
             } catch (schemaError) {
                 console.log(`  ❌ Error getting function schema: ${schemaError.message}`);
@@ -644,19 +645,12 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 `Operation name matches (expected: ${expectedOperationName}, actual: ${actualOperationName})`
             );
             
-            // getFunctionSchema returns supportedActions as an array, not a bitmap
-            // We need to check the array or convert it to a bitmap for verification
-            const supportedActionsArray = functionSchema.supportedActions || [];
-            console.log(`  📋 Supported actions array: ${JSON.stringify(supportedActionsArray)}`);
-            
-            // Convert array to bitmap for comparison
-            const actualBitmap = this.createBitmapFromActions(supportedActionsArray.map(a => 
-                typeof a === 'string' ? parseInt(a) : a
-            ));
+            // getFunctionSchema returns supportedActionsBitmap (index 4); use it for bitmap comparison
+            const supportedActionsBitmap = functionSchema.supportedActionsBitmap ?? functionSchema[4] ?? 0;
+            const actualBitmap = typeof supportedActionsBitmap === 'bigint' ? Number(supportedActionsBitmap) : (supportedActionsBitmap || 0);
             const expectedBitmap = this.createBitmapFromActions(supportedActions);
-            
+            console.log(`  📋 Supported actions bitmap from schema: ${actualBitmap} (binary: ${actualBitmap.toString(2)})`);
             console.log(`  📋 Expected bitmap: ${expectedBitmap} (binary: ${expectedBitmap.toString(2)})`);
-            console.log(`  📋 Actual bitmap: ${actualBitmap} (binary: ${actualBitmap.toString(2)})`);
             console.log(`  📋 SIGN_META_REQUEST_AND_APPROVE bit (3): ${(actualBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0 ? '✅' : '❌'}`);
             console.log(`  📋 EXECUTE_META_REQUEST_AND_APPROVE bit (6): ${(actualBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0 ? '✅' : '❌'}`);
             
@@ -666,22 +660,18 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 `Supported actions bitmap matches (expected: ${expectedBitmap}, actual: ${actualBitmap})`
             );
             
-            // Verify both actions are in the array
-            const hasSign = supportedActionsArray.includes(this.TxAction.SIGN_META_REQUEST_AND_APPROVE) ||
-                           supportedActionsArray.includes(this.TxAction.SIGN_META_REQUEST_AND_APPROVE.toString());
-            const hasExecute = supportedActionsArray.includes(this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE) ||
-                              supportedActionsArray.includes(this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE.toString());
-            
-            // Expected: Function should support both SIGN and EXECUTE actions
+            // Verify both actions are set in the bitmap
+            const hasSign = (actualBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
+            const hasExecute = (actualBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
             const expectedHasSign = true;
             const expectedHasExecute = true;
             this.assertTest(
                 hasSign === expectedHasSign,
-                `Function supports SIGN_META_REQUEST_AND_APPROVE (expected: ${expectedHasSign}, actual: ${hasSign}, actions: ${JSON.stringify(supportedActionsArray)})`
+                `Function supports SIGN_META_REQUEST_AND_APPROVE (expected: ${expectedHasSign}, actual: ${hasSign}, bitmap: ${actualBitmap})`
             );
             this.assertTest(
                 hasExecute === expectedHasExecute,
-                `Function supports EXECUTE_META_REQUEST_AND_APPROVE (expected: ${expectedHasExecute}, actual: ${hasExecute}, actions: ${JSON.stringify(supportedActionsArray)})`
+                `Function supports EXECUTE_META_REQUEST_AND_APPROVE (expected: ${expectedHasExecute}, actual: ${hasExecute}, bitmap: ${actualBitmap})`
             );
             
             console.log('  ✅ Function registered successfully');
@@ -767,8 +757,8 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 const functionSchema = await this.callContractMethod(
                     this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
                 );
-                console.log(`  🔍 Function schema handlerForSelectors: ${JSON.stringify(functionSchema.handlerForSelectors || functionSchema[5] || 'unknown')}`);
-                console.log(`  🔍 Function schema supportedActions: ${JSON.stringify(functionSchema.supportedActions || functionSchema[4] || 'unknown')}`);
+                console.log(`  🔍 Function schema handlerForSelectors: ${JSON.stringify(functionSchema.handlerForSelectors ?? functionSchema[6] ?? 'unknown')}`);
+                console.log(`  🔍 Function schema supportedActionsBitmap: ${functionSchema.supportedActionsBitmap ?? functionSchema[4] ?? 'unknown'}`);
                 
                 // Debug: Log the permission we're creating
                 const testPermission = this.createFunctionPermission(
@@ -781,7 +771,7 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 console.log(`     handlerForSelectors: ${JSON.stringify(testPermission.handlerForSelectors)}`);
                 
                 // Verify handlerForSelectors match
-                const schemaHandlers = functionSchema.handlerForSelectors || functionSchema[5] || [];
+                const schemaHandlers = functionSchema.handlerForSelectors ?? functionSchema[6] ?? [];
                 const permissionHandlers = testPermission.handlerForSelectors || [];
                 console.log(`  🔍 Schema handlers: ${JSON.stringify(schemaHandlers)}, Permission handlers: ${JSON.stringify(permissionHandlers)}`);
                 const handlersMatch = JSON.stringify(schemaHandlers.map(h => h.toLowerCase())) === JSON.stringify(permissionHandlers.map(h => h.toLowerCase()));
