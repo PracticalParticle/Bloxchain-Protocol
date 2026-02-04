@@ -304,7 +304,8 @@ class BaseGuardControllerTest {
                 this.contract.methods.getFunctionSchema(this.GUARD_CONFIG_BATCH_META_SELECTOR)
             );
             
-            if (handlerSchema.functionSelectorReturn !== this.GUARD_CONFIG_BATCH_META_SELECTOR) {
+            const handlerSelector = handlerSchema.functionSelector ?? handlerSchema.functionSelectorReturn;
+            if (handlerSelector !== this.GUARD_CONFIG_BATCH_META_SELECTOR) {
                 throw new Error('GuardController handler function schema not found. Contract may not be initialized with GuardController.initialize()');
             }
             
@@ -316,7 +317,8 @@ class BaseGuardControllerTest {
                 this.contract.methods.getFunctionSchema(this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR)
             );
             
-            if (executionSchema.functionSelectorReturn !== this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR) {
+            const execSelector = executionSchema.functionSelector ?? executionSchema.functionSelectorReturn;
+            if (execSelector !== this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR) {
                 throw new Error('GuardController execution function schema not found. Contract may not be initialized with GuardController.initialize()');
             }
             
@@ -338,7 +340,8 @@ class BaseGuardControllerTest {
                 this.contract.methods.getFunctionSchema(this.ROLE_CONFIG_BATCH_META_SELECTOR)
             );
             
-            if (functionSchema.functionSelectorReturn !== this.ROLE_CONFIG_BATCH_META_SELECTOR) {
+            const rbacSelector = functionSchema.functionSelector ?? functionSchema.functionSelectorReturn;
+            if (rbacSelector !== this.ROLE_CONFIG_BATCH_META_SELECTOR) {
                 throw new Error('RuntimeRBAC function schema not found. Contract may not be initialized with RuntimeRBAC.initialize()');
             }
             
@@ -1155,7 +1158,8 @@ class BaseGuardControllerTest {
             const functionSchema = await this.callContractMethod(
                 this.contract.methods.getFunctionSchema(functionSelector)
             );
-            return functionSchema.functionSelectorReturn === functionSelector;
+            const selector = functionSchema.functionSelector ?? functionSchema.functionSelectorReturn ?? functionSchema[1];
+            return selector != null && String(selector).toLowerCase() === String(functionSelector).toLowerCase();
         } catch (error) {
             return false;
         }
