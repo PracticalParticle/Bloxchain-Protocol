@@ -455,6 +455,42 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
+     * @dev Gets function schema information
+     * @param functionSelector The function selector to get information for
+     * @return functionSignature The function signature or name
+     * @return functionSelectorReturn The function selector
+     * @return operationType The operation type
+     * @return operationName The operation name
+     * @return supportedActions The supported actions
+     * @return isProtected Whether the function schema is protected
+     */
+    function getFunctionSchema(bytes4 functionSelector) external view returns (
+        string memory functionSignature,
+        bytes4 functionSelectorReturn,
+        bytes32 operationType,
+        string memory operationName,
+        EngineBlox.TxAction[] memory supportedActions,
+        bool isProtected
+    ) {
+        EngineBlox.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
+        if (schema.functionSelector != functionSelector) {
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
+        }
+
+        // Convert bitmap to array
+        supportedActions = _convertBitmapToActions(schema.supportedActionsBitmap);
+
+        return (
+            schema.functionSignature,
+            schema.functionSelector,
+            schema.operationType,
+            schema.operationName,
+            supportedActions,
+            schema.isProtected
+        );
+    }
+
+    /**
      * @dev Gets the function permissions for a specific role
      * @param roleHash The hash of the role to get permissions for
      * @return The function permissions array for the role

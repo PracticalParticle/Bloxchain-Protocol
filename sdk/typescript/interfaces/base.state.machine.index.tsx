@@ -90,6 +90,14 @@ export interface IBaseStateMachine {
   getWalletRoles(wallet: Address): Promise<Hex[]>;
   getWalletsInRole(roleHash: Hex): Promise<Address[]>;
   functionSchemaExists(functionSelector: Hex): Promise<boolean>;
+  getFunctionSchema(functionSelector: Hex): Promise<{
+    functionSignature: string;
+    functionSelectorReturn: Hex;
+    operationType: Hex;
+    operationName: string;
+    supportedActions: TxAction[];
+    isProtected: boolean;
+  }>;
   isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   getSignerNonce(signer: Address): Promise<bigint>;

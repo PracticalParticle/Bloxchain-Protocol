@@ -271,6 +271,24 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
   }
 
+  async getFunctionSchema(functionSelector: Hex): Promise<{
+    functionSignature: string;
+    functionSelectorReturn: Hex;
+    operationType: Hex;
+    operationName: string;
+    supportedActions: TxAction[];
+    isProtected: boolean;
+  }> {
+    return this.executeReadContract<{
+      functionSignature: string;
+      functionSelectorReturn: Hex;
+      operationType: Hex;
+      operationName: string;
+      supportedActions: TxAction[];
+      isProtected: boolean;
+    }>('getFunctionSchema', [functionSelector]);
+  }
+
   async getSignerNonce(signer: Address): Promise<bigint> {
     return this.executeReadContract<bigint>('getSignerNonce', [signer]);
   }

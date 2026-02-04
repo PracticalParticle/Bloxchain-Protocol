@@ -53,27 +53,6 @@ interface IRuntimeRBAC {
         EngineBlox.MetaTransaction memory metaTx
     ) external returns (EngineBlox.TxRecord memory);
 
-    // ============ QUERY FUNCTIONS ============
-
-    /**
-     * @dev Gets function schema information
-     * @param functionSelector The function selector to get information for
-     * @return functionSignature The function signature or name
-     * @return functionSelectorReturn The function selector
-     * @return operationType The operation type
-     * @return operationName The operation name
-     * @return supportedActions The supported actions
-     * @return isProtected Whether the function schema is protected
-     */
-    function getFunctionSchema(bytes4 functionSelector) external view returns (
-        string memory functionSignature,
-        bytes4 functionSelectorReturn,
-        bytes32 operationType,
-        string memory operationName,
-        EngineBlox.TxAction[] memory supportedActions,
-        bool isProtected
-    );
-
     /**
      * @dev Gets all authorized wallets for a role
      * @param roleHash The role hash to get wallets for

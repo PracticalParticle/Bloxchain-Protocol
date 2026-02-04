@@ -754,6 +754,50 @@
         "type": "bytes4"
       }
     ],
+    "name": "getFunctionSchema",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "functionSignature",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "functionSelectorReturn",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "operationType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "operationName",
+        "type": "string"
+      },
+      {
+        "internalType": "enum EngineBlox.TxAction[]",
+        "name": "supportedActions",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "bool",
+        "name": "isProtected",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
     "name": "getFunctionWhitelistTargets",
     "outputs": [
       {

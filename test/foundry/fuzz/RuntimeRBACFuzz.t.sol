@@ -179,6 +179,44 @@ contract RuntimeRBACFuzzTest is CommonBase {
     }
 
     /**
+     * @dev Fuzz getFunctionSchema via BaseStateMachine surface:
+     *      - succeeds and returns matching selector when schema exists
+     *      - reverts with ResourceNotFound when schema does not exist
+     */
+    function testFuzz_GetFunctionSchema(bytes4 selector) public {
+        bool exists = roleBlox.functionSchemaExists(selector);
+
+        if (exists) {
+            (
+                string memory functionSignature,
+                bytes4 returnedSelector,
+                bytes32 operationType,
+                string memory operationName,
+                EngineBlox.TxAction[] memory supportedActions,
+                bool isProtected
+            ) = roleBlox.getFunctionSchema(selector);
+
+            // Basic sanity checks for existing schemas
+            assertEq(returnedSelector, selector, "Returned selector must match input selector");
+            // Native-transfer macro selector (0x00000000) may intentionally have empty metadata,
+            // so only enforce signature/name constraints for non-zero selectors.
+            if (selector != bytes4(0)) {
+                assertGt(bytes(functionSignature).length, 0, "Function signature should not be empty");
+                assertTrue(operationType != bytes32(0), "Operation type should be non-zero");
+                assertGt(bytes(operationName).length, 0, "Operation name should not be empty");
+            }
+
+            // For protected schemas, we expect at least one supported action
+            if (isProtected) {
+                assertGt(supportedActions.length, 0, "Protected schemas should advertise supported actions");
+            }
+        } else {
+            vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(selector)));
+            roleBlox.getFunctionSchema(selector);
+        }
+    }
+
+    /**
      * @dev Get private key for test addresses
      * Uses vm.addr() to ensure addresses match private keys
      */
