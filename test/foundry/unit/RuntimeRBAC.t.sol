@@ -67,6 +67,7 @@ contract RuntimeRBACTest is CommonBase {
 
     function test_GetFunctionSchema_Revert_UnregisteredFunction() public {
         bytes4 invalidSelector = bytes4(0x12345678);
+        vm.prank(owner); // getFunctionSchema requires caller to have any role
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(invalidSelector)));
         roleBlox.getFunctionSchema(invalidSelector);
     }

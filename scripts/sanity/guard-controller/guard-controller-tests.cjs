@@ -646,8 +646,10 @@ class GuardControllerTests extends BaseGuardControllerTest {
             );
             
             // getFunctionSchema returns supportedActionsBitmap (index 4); use it for bitmap comparison
-            const supportedActionsBitmap = functionSchema.supportedActionsBitmap ?? functionSchema[4] ?? 0;
-            const actualBitmap = typeof supportedActionsBitmap === 'bigint' ? Number(supportedActionsBitmap) : (supportedActionsBitmap || 0);
+            const supportedActionsBitmapRaw = functionSchema.supportedActionsBitmap ?? functionSchema[4] ?? 0;
+            const actualBitmap = typeof supportedActionsBitmapRaw === 'bigint'
+                ? Number(supportedActionsBitmapRaw)
+                : (Number(supportedActionsBitmapRaw) || 0);
             const expectedBitmap = this.createBitmapFromActions(supportedActions);
             console.log(`  📋 Supported actions bitmap from schema: ${actualBitmap} (binary: ${actualBitmap.toString(2)})`);
             console.log(`  📋 Expected bitmap: ${expectedBitmap} (binary: ${expectedBitmap.toString(2)})`);
