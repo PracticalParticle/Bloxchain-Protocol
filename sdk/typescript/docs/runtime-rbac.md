@@ -95,9 +95,11 @@ console.log('Function schema:', {
   selector: schema.functionSelector,
   operationType: schema.operationType,
   operationName: schema.operationName,
-  supportedActions: schema.supportedActions,
-  isProtected: schema.isProtected
+  supportedActionsBitmap: schema.supportedActionsBitmap,
+  isProtected: schema.isProtected,
+  handlerForSelectors: schema.handlerForSelectors
 })
+// Supported actions as array: EngineBlox.convertBitmapToActions(schema.supportedActionsBitmap)
 ```
 
 #### **Check Function Schema Exists**

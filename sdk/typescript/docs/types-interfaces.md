@@ -85,13 +85,13 @@ interface FunctionPermission {
   handlerForSelector: Hex; // bytes4(0) for execution selector permissions (defines what action is performed), non-zero for handler selector permissions (indicates which execution selector this handler is connected to)
 }
 
-// Function schema structure
+// Function schema structure (matches EngineBlox.FunctionSchema returned by getFunctionSchema)
 interface FunctionSchema {
   functionSignature: string;
   functionSelector: Hex;
   operationType: Hex;
   operationName: string;
-  supportedActions: TxAction[];
+  supportedActionsBitmap: Uint16Bitmap; // uint16 bitmap for TxAction enum; use EngineBlox.convertBitmapToActions() for TxAction[]
   isProtected: boolean;
   handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
 }

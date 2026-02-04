@@ -966,7 +966,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
     /**
      * @dev Invariant-style fuzz: supportedFunctions list and getFunctionSchema are consistent
      *      - For every supported function selector, functionSchemaExists(selector) is true
-     *      - getFunctionSchema(selector).functionSelectorReturn == selector when schema exists
+     *      - getFunctionSchema(selector).functionSelector == selector when schema exists
      */
     function testFuzz_FunctionSchemaConsistency() public {
         // getSupportedFunctions / getFunctionSchema require caller to have any role;
@@ -977,16 +977,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 bool exists = accountBlox.functionSchemaExists(selector);
                 assertTrue(exists, "Supported function must have a registered schema");
 
-                (
-                    ,
-                    bytes4 returnedSelector,
-                    ,
-                    ,
-                    ,
-                    
-                ) = accountBlox.getFunctionSchema(selector);
-
-                assertEq(returnedSelector, selector, "Schema selector must match supportedFunctions entry");
+                EngineBlox.FunctionSchema memory schema = accountBlox.getFunctionSchema(selector);
+                assertEq(schema.functionSelector, selector, "Schema selector must match supportedFunctions entry");
             }
         } catch (bytes memory reason) {
             // If we hit a NoPermission revert, that means the permission guard is working;

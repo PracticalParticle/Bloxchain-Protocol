@@ -218,11 +218,14 @@ console.log('Function schema exists:', exists)
 const schema = await guardController.getFunctionSchema('0xa9059cbb')
 console.log('Function schema:', {
   signature: schema.functionSignature,
+  functionSelector: schema.functionSelector,
   operationType: schema.operationType,
   operationName: schema.operationName,
-  supportedActions: schema.supportedActions,
-  isProtected: schema.isProtected
+  supportedActionsBitmap: schema.supportedActionsBitmap,
+  isProtected: schema.isProtected,
+  handlerForSelectors: schema.handlerForSelectors
 })
+// To get supported actions as an array, use EngineBlox.convertBitmapToActions(schema.supportedActionsBitmap)
 ```
 
 ## 🔄 **Complete Workflow Example**
@@ -332,6 +335,7 @@ const schema = await guardController.getFunctionSchema(functionSelector)
 if (schema.isProtected) {
   console.log('This function schema is protected')
 }
+// schema is the full FunctionSchema (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors)
 ```
 
 ### **3. Role-Based Permissions**

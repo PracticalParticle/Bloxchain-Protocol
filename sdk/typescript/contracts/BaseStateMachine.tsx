@@ -3,6 +3,7 @@ import { TransactionOptions, TransactionResult } from '../interfaces/base.index'
 import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
 import { TxAction } from '../types/lib.index';
+import { FunctionSchema } from '../types/definition.index';
 import { handleViemError } from '../utils/viem-error-handler';
 
 /**
@@ -271,22 +272,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
   }
 
-  async getFunctionSchema(functionSelector: Hex): Promise<{
-    functionSignature: string;
-    functionSelectorReturn: Hex;
-    operationType: Hex;
-    operationName: string;
-    supportedActions: TxAction[];
-    isProtected: boolean;
-  }> {
-    return this.executeReadContract<{
-      functionSignature: string;
-      functionSelectorReturn: Hex;
-      operationType: Hex;
-      operationName: string;
-      supportedActions: TxAction[];
-      isProtected: boolean;
-    }>('getFunctionSchema', [functionSelector]);
+  async getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema> {
+    return this.executeReadContract<FunctionSchema>('getFunctionSchema', [functionSelector]);
   }
 
   async getSignerNonce(signer: Address): Promise<bigint> {

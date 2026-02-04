@@ -108,21 +108,9 @@ interface IBaseStateMachine {
     /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
-     * @return functionSignature The function signature or name
-     * @return functionSelectorReturn The function selector
-     * @return operationType The operation type
-     * @return operationName The operation name
-     * @return supportedActions The supported actions
-     * @return isProtected Whether the function schema is protected
+     * @return The full FunctionSchema struct
      */
-    function getFunctionSchema(bytes4 functionSelector) external view returns (
-        string memory functionSignature,
-        bytes4 functionSelectorReturn,
-        bytes32 operationType,
-        string memory operationName,
-        EngineBlox.TxAction[] memory supportedActions,
-        bool isProtected
-    );
+    function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory);
 
     /**
      * @dev Gets the function permissions for a specific role

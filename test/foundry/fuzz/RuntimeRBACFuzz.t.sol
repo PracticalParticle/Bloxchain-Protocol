@@ -187,28 +187,21 @@ contract RuntimeRBACFuzzTest is CommonBase {
         bool exists = roleBlox.functionSchemaExists(selector);
 
         if (exists) {
-            (
-                string memory functionSignature,
-                bytes4 returnedSelector,
-                bytes32 operationType,
-                string memory operationName,
-                EngineBlox.TxAction[] memory supportedActions,
-                bool isProtected
-            ) = roleBlox.getFunctionSchema(selector);
+            EngineBlox.FunctionSchema memory schema = roleBlox.getFunctionSchema(selector);
 
             // Basic sanity checks for existing schemas
-            assertEq(returnedSelector, selector, "Returned selector must match input selector");
+            assertEq(schema.functionSelector, selector, "Returned selector must match input selector");
             // Native-transfer macro selector (0x00000000) may intentionally have empty metadata,
             // so only enforce signature/name constraints for non-zero selectors.
             if (selector != bytes4(0)) {
-                assertGt(bytes(functionSignature).length, 0, "Function signature should not be empty");
-                assertTrue(operationType != bytes32(0), "Operation type should be non-zero");
-                assertGt(bytes(operationName).length, 0, "Operation name should not be empty");
+                assertGt(bytes(schema.functionSignature).length, 0, "Function signature should not be empty");
+                assertTrue(schema.operationType != bytes32(0), "Operation type should be non-zero");
+                assertGt(bytes(schema.operationName).length, 0, "Operation name should not be empty");
             }
 
-            // For protected schemas, we expect at least one supported action
-            if (isProtected) {
-                assertGt(supportedActions.length, 0, "Protected schemas should advertise supported actions");
+            // For protected schemas, we expect at least one supported action (bitmap non-zero)
+            if (schema.isProtected) {
+                assertTrue(schema.supportedActionsBitmap != 0, "Protected schemas should advertise supported actions");
             }
         } else {
             vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(selector)));
