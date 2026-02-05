@@ -64,11 +64,6 @@
         "internalType": "bytes4",
         "name": "functionSelector",
         "type": "bytes4"
-      },
-      {
-        "internalType": "string",
-        "name": "functionSignature",
-        "type": "string"
       }
     ],
     "name": "ContractFunctionMustBeProtected",

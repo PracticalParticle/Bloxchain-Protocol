@@ -88,7 +88,7 @@ library SharedValidation {
     error MaxWalletsZero(uint256 provided);
     error ConflictingMetaTxPermissions(bytes4 functionSelector);
     error InternalFunctionNotAccessible(bytes4 functionSelector);
-    error ContractFunctionMustBeProtected(bytes4 functionSelector, string functionSignature);
+    error ContractFunctionMustBeProtected(bytes4 functionSelector);
     error TargetNotWhitelisted(address target, bytes4 functionSelector);
     error FunctionSelectorMismatch(bytes4 providedSelector, bytes4 derivedSelector);
     error HandlerForSelectorMismatch(bytes4 schemaHandlerForSelector, bytes4 permissionHandlerForSelector);

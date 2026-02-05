@@ -1130,7 +1130,7 @@ library EngineBlox {
         // SECURITY: Validate that functions existing in contract bytecode must be protected
         // This checks if the function selector exists in the contract's bytecode
         // If it exists, it must be protected to prevent accidental removal of system-critical functions
-        _validateContractFunctionProtection(functionSignature, functionSelector, isProtected);
+        _validateContractFunctionProtection(functionSelector, isProtected);
 
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
@@ -2275,7 +2275,6 @@ library EngineBlox {
 
     /**
      * @dev Validates that if a function exists in contract bytecode, it must be protected
-     * @param functionSignature The function signature to check
      * @param functionSelector The function selector
      * @param isProtected Whether the function is marked as protected
      * @notice Checks if the function selector exists in the contract's bytecode function selector table
@@ -2284,15 +2283,15 @@ library EngineBlox {
      * @notice Since we're called via delegatecall, address(this) refers to the calling contract
      */
     function _validateContractFunctionProtection(
-        string memory functionSignature,
         bytes4 functionSelector,
         bool isProtected
     ) private view {
-        // Check if the function selector exists in the contract's bytecode
-        // Since we're called via delegatecall, address(this) refers to the calling contract
-        if (selectorExistsInContract(address(this), functionSelector)) {
-            if (!isProtected) {
-                revert SharedValidation.ContractFunctionMustBeProtected(functionSelector, functionSignature);
+        // Check cheaper condition first: skip expensive bytecode check when already protected
+        if (!isProtected) {
+            // Check if the function selector exists in the contract's bytecode
+            // Since we're called via delegatecall, address(this) refers to the calling contract
+            if (selectorExistsInContract(address(this), functionSelector)) {
+                revert SharedValidation.ContractFunctionMustBeProtected(functionSelector);
             }
         }
     }
