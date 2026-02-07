@@ -21,7 +21,7 @@ export type OperationType = typeof OPERATION_TYPES[keyof typeof OPERATION_TYPES]
 export const FUNCTION_SELECTORS = {
   // Execution selectors
   TRANSFER_OWNERSHIP_SELECTOR: keccak256(new TextEncoder().encode("executeTransferOwnership(address)")).slice(0, 10) as Hex,
-  UPDATE_BROADCASTER_SELECTOR: keccak256(new TextEncoder().encode("executeBroadcasterUpdate(address)")).slice(0, 10) as Hex,
+  UPDATE_BROADCASTER_SELECTOR: keccak256(new TextEncoder().encode("executeBroadcasterUpdate(address,uint256)")).slice(0, 10) as Hex,
   UPDATE_RECOVERY_SELECTOR: keccak256(new TextEncoder().encode("executeRecoveryUpdate(address)")).slice(0, 10) as Hex,
   UPDATE_TIMELOCK_SELECTOR: keccak256(new TextEncoder().encode("executeTimeLockUpdate(uint256)")).slice(0, 10) as Hex,
   
@@ -29,7 +29,7 @@ export const FUNCTION_SELECTORS = {
   TRANSFER_OWNERSHIP_REQUEST_SELECTOR: keccak256(new TextEncoder().encode("transferOwnershipRequest()")).slice(0, 10) as Hex,
   TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR: keccak256(new TextEncoder().encode("transferOwnershipDelayedApproval(uint256)")).slice(0, 10) as Hex,
   TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR: keccak256(new TextEncoder().encode("transferOwnershipCancellation(uint256)")).slice(0, 10) as Hex,
-  UPDATE_BROADCASTER_REQUEST_SELECTOR: keccak256(new TextEncoder().encode("updateBroadcasterRequest(address)")).slice(0, 10) as Hex,
+  UPDATE_BROADCASTER_REQUEST_SELECTOR: keccak256(new TextEncoder().encode("updateBroadcasterRequest(address,uint256)")).slice(0, 10) as Hex,
   UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR: keccak256(new TextEncoder().encode("updateBroadcasterDelayedApproval(uint256)")).slice(0, 10) as Hex,
   UPDATE_BROADCASTER_CANCELLATION_SELECTOR: keccak256(new TextEncoder().encode("updateBroadcasterCancellation(uint256)")).slice(0, 10) as Hex,
   

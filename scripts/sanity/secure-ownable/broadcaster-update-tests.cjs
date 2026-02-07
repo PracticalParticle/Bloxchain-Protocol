@@ -367,7 +367,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
 
         // Send the request
         await this.sendTransaction(
-            this.contract.methods.updateBroadcasterRequest(newBroadcaster),
+            this.contract.methods.updateBroadcasterRequest(newBroadcaster, 0),
             this.getRoleWalletObject('owner')
         );
 
@@ -449,7 +449,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
 
         // Send the request to change to target broadcaster
         await this.sendTransaction(
-            this.contract.methods.updateBroadcasterRequest(targetBroadcaster),
+            this.contract.methods.updateBroadcasterRequest(targetBroadcaster, 0),
             this.getRoleWalletObject('owner')
         );
 

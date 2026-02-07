@@ -53,7 +53,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != recovery);
 
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);

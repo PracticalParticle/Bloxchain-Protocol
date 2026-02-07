@@ -148,16 +148,20 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // Broadcaster Management
     /**
-     * @dev Updates the broadcaster address
-     * @param newBroadcaster The new broadcaster address
-     * @return The execution options
+     * @dev Requests an update to the broadcaster at a specific location (index).
+     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
+     * @param location The index in the broadcaster role's authorized wallets set
+     * @return The transaction record for the pending request
      */
-    function updateBroadcasterRequest(address newBroadcaster) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterRequest(address newBroadcaster, uint256 location) public returns (EngineBlox.TxRecord memory) {
         SharedValidation.validateOwner(owner());
         _requireNoPendingRequest();
-        address currentBroadcaster = _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, 0);
-        SharedValidation.validateAddressUpdate(newBroadcaster, currentBroadcaster);
-        
+
+        // Get the current broadcaster at the specified location. zero address if no broadcaster at location.
+        address currentBroadcaster = location < _getSecureState().roles[EngineBlox.BROADCASTER_ROLE].walletCount
+            ? _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, location)
+            : address(0);
+
         EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
             address(this),
@@ -165,7 +169,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             0, // gas limit
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
             SecureOwnableDefinitions.UPDATE_BROADCASTER_SELECTOR,
-            abi.encode(newBroadcaster)
+            abi.encode(newBroadcaster, location)
         );
 
         _hasOpenRequest = true;
@@ -257,11 +261,12 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     /**
      * @dev External function that can only be called by the contract itself to execute broadcaster update
-     * @param newBroadcaster The new broadcaster address
+     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
+     * @param location The index in the broadcaster role's authorized wallets set
      */
-    function executeBroadcasterUpdate(address newBroadcaster) external {
+    function executeBroadcasterUpdate(address newBroadcaster, uint256 location) external {
         _validateExecuteBySelf();
-        _updateBroadcaster(newBroadcaster, 0);
+        _updateBroadcaster(newBroadcaster, location);
     }
 
     /**

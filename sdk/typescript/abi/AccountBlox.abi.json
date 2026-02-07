@@ -54,17 +54,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "provided",
-        "type": "address"
-      }
-    ],
-    "name": "InvalidAddress",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "InvalidInitialization",
     "type": "error"
@@ -110,22 +99,6 @@
   {
     "inputs": [],
     "name": "NotInitializing",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "currentAddress",
-        "type": "address"
-      }
-    ],
-    "name": "NotNewAddress",
     "type": "error"
   },
   {
@@ -267,25 +240,6 @@
       }
     ],
     "name": "ComponentEvent",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "EthReceived",
     "type": "event"
   },
   {
@@ -1187,6 +1141,11 @@
         "internalType": "address",
         "name": "newBroadcaster",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "location",
+        "type": "uint256"
       }
     ],
     "name": "executeBroadcasterUpdate",
@@ -5076,6 +5035,11 @@
         "internalType": "address",
         "name": "newBroadcaster",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "location",
+        "type": "uint256"
       }
     ],
     "name": "updateBroadcasterRequest",
@@ -5799,13 +5763,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "deposit",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   }
 ]

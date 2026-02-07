@@ -67,7 +67,7 @@ export interface ISecureOwnable {
   transferOwnershipCancellationWithMetaTx(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
 
   // Broadcaster Management
-  updateBroadcasterRequest(newBroadcaster: Address, options: TransactionOptions): Promise<TransactionResult>;
+  updateBroadcasterRequest(newBroadcaster: Address, location: bigint, options: TransactionOptions): Promise<TransactionResult>;
   updateBroadcasterDelayedApproval(txId: bigint, options: TransactionOptions): Promise<TransactionResult>;
   updateBroadcasterApprovalWithMetaTx(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
   updateBroadcasterCancellation(txId: bigint, options: TransactionOptions): Promise<TransactionResult>;

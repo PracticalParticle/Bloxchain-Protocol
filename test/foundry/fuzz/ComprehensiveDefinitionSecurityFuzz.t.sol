@@ -69,8 +69,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             vm.expectRevert(
                 abi.encodeWithSelector(
                     SharedValidation.ContractFunctionMustBeProtected.selector,
-                    testFunctionSelector,
-                    "testFunction()"
+                    testFunctionSelector
                 )
             );
             
