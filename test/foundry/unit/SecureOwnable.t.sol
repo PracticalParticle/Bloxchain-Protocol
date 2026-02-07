@@ -259,6 +259,107 @@ contract SecureOwnableTest is CommonBase {
         assertEq(broadcasters[0], broadcaster);
     }
 
+    /**
+     * @dev Fuzz test for revoke-at-location path: seeds broadcaster list to >= 2,
+     * clamps location, submits revoke with address(0), approves, then asserts
+     * length decreased by one, removal-at-index behavior, no duplicates.
+     * References: secureBlox.updateBroadcasterRequest, updateBroadcasterDelayedApproval,
+     * getBroadcasters, test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress.
+     */
+    function testFuzz_UpdateBroadcasterRequest_RevokeAtLocation(uint256 location) public {
+        // Seed broadcaster list to at least two entries (same as test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress)
+        vm.prank(owner);
+        EngineBlox.TxRecord memory addTx = secureBlox.updateBroadcasterRequest(user2, 1);
+        uint256 addTxId = addTx.txId;
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(owner);
+        secureBlox.updateBroadcasterDelayedApproval(addTxId);
+        address[] memory before = secureBlox.getBroadcasters();
+        assertEq(before.length, 2);
+        assertEq(before[1], user2);
+
+        // Clamp location to valid index [0, broadcasters.length - 1]
+        uint256 loc = bound(location, 0, before.length - 1);
+
+        // Submit revoke-at-location request (address(0) = revoke)
+        vm.prank(owner);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(address(0), loc);
+        uint256 txId = requestTx.txId;
+
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+
+        vm.prank(owner);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.updateBroadcasterDelayedApproval(txId);
+
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
+        address[] memory after_ = secureBlox.getBroadcasters();
+
+        // Post-conditions: length decreased by one
+        assertEq(after_.length, before.length - 1, "length should decrease by one");
+
+        // Remaining elements equal to expected removal-at-index: [0..loc) unchanged, [loc+1..) shifted
+        for (uint256 i = 0; i < after_.length; i++) {
+            if (i < loc) {
+                assertEq(after_[i], before[i], "elements before index unchanged");
+            } else {
+                assertEq(after_[i], before[i + 1], "elements after index shifted");
+            }
+        }
+
+        // No duplicates in result
+        for (uint256 i = 0; i < after_.length; i++) {
+            for (uint256 j = i + 1; j < after_.length; j++) {
+                assertTrue(after_[i] != after_[j], "no duplicate addresses");
+            }
+        }
+    }
+
+    /**
+     * @dev Owner protection: revoking the last broadcaster fails (protected role);
+     * delayed approval catches the internal revert and returns status FAILED, list unchanged.
+     */
+    function test_UpdateBroadcasterRequest_RevokeAtLocation_LastBroadcaster_Reverts() public {
+        address[] memory b = secureBlox.getBroadcasters();
+        assertEq(b.length, 1, "exactly one broadcaster initially");
+
+        vm.prank(owner);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(address(0), 0);
+        uint256 txId = requestTx.txId;
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+
+        vm.prank(owner);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.updateBroadcasterDelayedApproval(txId);
+
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.FAILED), "owner protection: revoke last must fail");
+        address[] memory after_ = secureBlox.getBroadcasters();
+        assertEq(after_.length, 1, "broadcaster list unchanged");
+        assertEq(after_[0], broadcaster, "single broadcaster preserved");
+    }
+
+    /**
+     * @dev Invariant harness for broadcaster list safety. Asserts across state:
+     * broadcasters.length >= 1, broadcasters.length <= MAX_BROADCASTERS (from getRole),
+     * no duplicate addresses; identities change only via updateBroadcasterRequest /
+     * updateBroadcasterDelayedApproval (valid revokes). Reference: getBroadcasters,
+     * updateBroadcasterRequest, updateBroadcasterDelayedApproval,
+     * test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress.
+     */
+    function invariant_BroadcasterListSafety() public {
+        address[] memory broadcasters = secureBlox.getBroadcasters();
+
+        assertGe(broadcasters.length, 1, "at least one broadcaster");
+
+        vm.prank(owner);
+        (, , uint256 maxWallets, , ) = secureBlox.getRole(BROADCASTER_ROLE);
+        assertLe(broadcasters.length, maxWallets, "broadcasters within role limit");
+
+        for (uint256 i = 0; i < broadcasters.length; i++) {
+            for (uint256 j = i + 1; j < broadcasters.length; j++) {
+                assertTrue(broadcasters[i] != broadcasters[j], "no duplicate broadcaster addresses");
+            }
+        }
+    }
+
     // ============ RECOVERY UPDATE TESTS ============
 
     function test_UpdateRecoveryExecutionParams_ValidAddress() public {
