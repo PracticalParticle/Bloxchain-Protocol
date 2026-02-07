@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/bloxchain-protocol-v1.0.0...bloxchain-protocol-v2.0.0) (2026-02-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* TransactionEvent signature updated
+* Core library renamed from MultiPhaseSecureOperation to StateAbstraction
+
+### Features
+
+* add CannotModifyProtected error to ABI files ([38c7be9](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/38c7be97264784c1343c2685c18381c8417cf29d))
+* Add contract analysis tools and enhance TypeScript SDK with analyzer module ([a1482e9](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/a1482e91dc74b2edd92f58bcf98210feb745c34e))
+* Add DefinitionContract SDK integration with comprehensive workflow documentation ([da6a031](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/da6a031352a74f78735b24c0913df22faca27fc6))
+* add getWalletsInRole method to BaseStateMachine for role-based wallet retrieval ([5333fac](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/5333fac91c0ebbe25967ea349f3cd89ea0f61a5b))
+* Add payment attachment functionality to MultiPhaseSecureOperation ([a169c49](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/a169c49a9e53a7669d1088690ad7677524acfe59))
+* Add TXAction parameter to MetaTxParams for enhanced meta-transaction security ([284e724](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/284e724ab5050ef8cac5fae5dc08db68fe81c2df))
+* allow protected schemas in function definitions ([bd072c4](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/bd072c44ec4182432f505cd9842ea780a046b25d))
+* enhance ERC165 compliance in definition libraries ([22dadbc](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/22dadbcb832c4aed3c010a2792971a294e4d9b9e))
+* implement centralized event forwarding system with IEventForwarder interface ([f7f83d7](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f7f83d7b91f75355277b84ad346dc58559f33c5a))
+* implement ERC165 support in definition libraries ([a0e313b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/a0e313b4c2552c3e13b489eb2e0e4abf6100c3ee))
+* implement privacy-aware transaction events ([de97b76](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/de97b767a5027ebf4c4d6ab29449c4eb6f6493aa))
+* **sdk:** Complete TypeScript SDK overhaul with full contract compatibility ([4cdf122](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/4cdf122b1b0483b327cdc3c283c90c37842c5a90))
+
+
+### Bug Fixes
+
+* resolve contract initialization failures and definition loading issues ([8e020fa](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/8e020fab9feb1eeae8e8548427fccf95834c863e))
+
+
+### Code Refactoring
+
+* rename MultiPhaseSecureOperation to StateAbstraction across entire codebase ([7bdedb3](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/7bdedb37342930bd67171ccb52e386318d06ac9e))
+
 ## [Unreleased]
 
 ### Added
