@@ -50,11 +50,12 @@ interface ISecureOwnable {
     // ============ BROADCASTER MANAGEMENT ============
 
     /**
-     * @dev Updates the broadcaster address
-     * @param newBroadcaster The new broadcaster address
+     * @dev Requests an update to the broadcaster at a specific location (index).
+     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
+     * @param location The index in the broadcaster role's authorized wallets set
      * @return The transaction record
      */
-    function updateBroadcasterRequest(address newBroadcaster) external returns (EngineBlox.TxRecord memory);
+    function updateBroadcasterRequest(address newBroadcaster, uint256 location) external returns (EngineBlox.TxRecord memory);
 
     /**
      * @dev Approves a pending broadcaster update transaction after the release time

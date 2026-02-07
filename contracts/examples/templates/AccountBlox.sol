@@ -55,27 +55,17 @@ contract AccountBlox is GuardController, RuntimeRBAC, SecureOwnable {
     }
 
     /**
-     * @dev Explicit deposit function for ETH deposits
-     * @notice Users must call this function to deposit ETH to the contract
-     * @notice Direct ETH transfers to the contract will revert (no receive() function)
+     * @dev Accepts plain ETH transfers (no calldata).
+     * @notice General-use wallet: ETH can be sent naturally; balance is credited.
+     * @custom:security No external calls—reentrancy-safe; outgoing ETH only via GuardController execution.
      */
-    event EthReceived(address indexed from, uint256 amount);
-    
-    function deposit() external payable {
-        emit EthReceived(msg.sender, msg.value);
-        // ETH is automatically added to contract balance
-    }
-    
+    receive() external payable {}
+
     /**
-     * @dev Fallback function to reject accidental calls
-     * @notice Prevents accidental ETH transfers and unknown function calls
-     * @notice Users must use deposit() function to send ETH
+     * @dev Rejects calls with unknown selector (with or without value).
+     * @notice Only plain transfers hit receive(); all other calls revert.
      */
     fallback() external payable {
-        revert SharedValidation.NotSupported();
-    }
-
-    receive() external payable {
         revert SharedValidation.NotSupported();
     }
 }

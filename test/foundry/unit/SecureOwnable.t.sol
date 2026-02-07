@@ -190,7 +190,7 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_OwnerCanRequest() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        EngineBlox.TxRecord memory txRecord = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory txRecord = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
 
         assertGt(txRecord.txId, 0);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
@@ -200,13 +200,13 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_Revert_Unauthorized() public {
         vm.prank(attacker);
         vm.expectRevert();
-        secureBlox.updateBroadcasterRequest(user1);
+        secureBlox.updateBroadcasterRequest(user1, 0);
     }
 
     function test_UpdateBroadcasterDelayedApproval_AfterTimelock() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
         uint256 txId = requestTx.txId;
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -222,13 +222,41 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterCancellation_OwnerCanCancel() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
         uint256 txId = requestTx.txId;
 
         vm.prank(owner);
         EngineBlox.TxRecord memory cancelTx = secureBlox.updateBroadcasterCancellation(txId);
 
         assertEq(uint8(cancelTx.status), uint8(EngineBlox.TxStatus.CANCELLED));
+    }
+
+    function test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress() public {
+        // Add a second broadcaster at location 1 first (BROADCASTER_ROLE is protected: cannot revoke the last wallet)
+        vm.prank(owner);
+        EngineBlox.TxRecord memory addTx = secureBlox.updateBroadcasterRequest(user2, 1);
+        uint256 addTxId = addTx.txId;
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(owner);
+        secureBlox.updateBroadcasterDelayedApproval(addTxId);
+        address[] memory before = secureBlox.getBroadcasters();
+        assertEq(before.length, 2);
+        assertEq(before[1], user2);
+
+        // Request revoke at location 1 (zero address = revoke)
+        vm.prank(owner);
+        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(address(0), 1);
+        uint256 txId = requestTx.txId;
+
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+
+        vm.prank(owner);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.updateBroadcasterDelayedApproval(txId);
+
+        assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
+        address[] memory broadcasters = secureBlox.getBroadcasters();
+        assertEq(broadcasters.length, 1);
+        assertEq(broadcasters[0], broadcaster);
     }
 
     // ============ RECOVERY UPDATE TESTS ============

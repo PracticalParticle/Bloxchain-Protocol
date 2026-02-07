@@ -52,7 +52,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, {
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
         from: ownerWallet.address,
       });
 
@@ -121,7 +121,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, {
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
         from: ownerWallet.address,
       });
 
@@ -174,7 +174,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, {
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
         from: ownerWallet.address,
       });
 
@@ -259,7 +259,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, {
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
         from: ownerWallet.address,
       });
 

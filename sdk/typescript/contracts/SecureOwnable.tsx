@@ -44,8 +44,8 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   // Broadcaster Management
-  async updateBroadcasterRequest(newBroadcaster: Address, options: TransactionOptions): Promise<TransactionResult> {
-    return this.executeWriteContract('updateBroadcasterRequest', [newBroadcaster], options);
+  async updateBroadcasterRequest(newBroadcaster: Address, location: bigint, options: TransactionOptions): Promise<TransactionResult> {
+    return this.executeWriteContract('updateBroadcasterRequest', [newBroadcaster, location], options);
   }
 
   async updateBroadcasterDelayedApproval(txId: bigint, options: TransactionOptions): Promise<TransactionResult> {

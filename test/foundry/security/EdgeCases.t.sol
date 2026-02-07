@@ -117,7 +117,7 @@ contract EdgeCasesTest is CommonBase {
         // Second request while ownership is pending should revert
         vm.prank(owner);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
-        secureBlox.updateBroadcasterRequest(user1);
+        secureBlox.updateBroadcasterRequest(user1, 0);
 
         // Exactly one should be pending
         vm.prank(owner);

@@ -73,7 +73,7 @@ contract BaseStateMachineTest is CommonBase {
 
         // Create second transaction (broadcaster request) as new owner
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx2 = secureBlox.updateBroadcasterRequest(user1);
+        EngineBlox.TxRecord memory tx2 = secureBlox.updateBroadcasterRequest(user1, 0);
         uint256 txId2 = tx2.txId;
 
         // getTransactionHistory requires fromTxId < toTxId (strictly less than)

@@ -1,7 +1,7 @@
 /**
  * GuardController Functionality Tests
  * Comprehensive tests for GuardController ETH transfer functionality
- * Tests complete workflow: function registration, permission setup, ETH deposit, and ETH withdrawal
+ * Tests complete workflow: function registration, permission setup, direct ETH transfer, and ETH withdrawal
  */
 
 const BaseGuardControllerTest = require('./base-test.cjs');
@@ -925,8 +925,7 @@ class GuardControllerTests extends BaseGuardControllerTest {
         
         try {
             console.log('📋 Step 3: Deposit ETH from owner wallet to contract');
-            console.log('   Note: Deposits use the explicit deposit() function');
-            console.log('   Direct ETH transfers to the contract will revert (no receive() function)');
+            console.log('   Note: Contract accepts direct ETH transfer via receive() (no deposit() function)');
             
             // Get initial balances
             const initialContractBalance = await this.getContractBalance();
@@ -940,29 +939,22 @@ class GuardControllerTests extends BaseGuardControllerTest {
             const depositAmount = this.web3.utils.toWei('1', 'ether');
             console.log(`  💰 Deposit Amount: ${this.web3.utils.fromWei(depositAmount, 'ether')} ETH`);
             
-            // Call deposit() function to deposit ETH
-            console.log('  📝 Calling deposit() function to deposit ETH...');
+            // Direct ETH transfer (contract has receive() payable)
+            console.log('  📝 Sending direct ETH transfer to contract...');
             
-            // Use the explicit deposit() function instead of direct transfer
-            // Since the ABI might not be updated yet, we'll encode the function call manually
-            const depositFunctionSignature = this.web3.utils.keccak256('deposit()').slice(0, 10); // First 4 bytes
             let transferReceipt;
             try {
-                // Encode the function call and send with value
                 transferReceipt = await this.web3.eth.sendTransaction({
                     from: ownerWallet.address,
                     to: this.contractAddress,
                     value: depositAmount,
-                    data: depositFunctionSignature,
-                    gas: 100000 // More gas for function call
+                    data: '0x',
+                    gas: 100000
                 });
             } catch (error) {
-                // Transaction failed - this is a test failure
-                // Expected: Transaction should succeed
-                // Actual: Transaction failed
                 const expectedTxStatus = 'success';
                 const actualTxStatus = 'failed';
-                const errorMessage = `ETH deposit transaction failed (expected: ${expectedTxStatus}, actual: ${actualTxStatus}). Error: ${error.message}. The deposit() function call failed.`;
+                const errorMessage = `ETH transfer failed (expected: ${expectedTxStatus}, actual: ${actualTxStatus}). Error: ${error.message}.`;
                 console.log(`  ❌ ${errorMessage}`);
                 throw new Error(errorMessage);
             }
@@ -1003,9 +995,9 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 `Owner balance decreased by at least deposit amount (expected: >= ${this.web3.utils.fromWei(expectedMinOwnerBalanceDecrease.toString(), 'ether')} ETH, actual: ${this.web3.utils.fromWei(ownerBalanceDecrease.toString(), 'ether')} ETH)`
             );
             
-            console.log('  ✅ ETH deposit successful');
+            console.log('  ✅ Direct ETH transfer successful');
             
-            await this.passTest('Deposit ETH to contract', `${this.web3.utils.fromWei(depositAmount, 'ether')} ETH deposited`);
+            await this.passTest('Deposit ETH to contract', `${this.web3.utils.fromWei(depositAmount, 'ether')} ETH sent via direct transfer`);
             
         } catch (error) {
             await this.failTest('Deposit ETH to contract', error);
