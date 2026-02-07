@@ -1,6 +1,6 @@
 {
   "name": "@bloxchain/contracts",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "files": [
     "core",
