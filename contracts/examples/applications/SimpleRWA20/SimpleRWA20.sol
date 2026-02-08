@@ -7,9 +7,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/security/SecureOwnable.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../core/security/SecureOwnable.sol";
+import "../../../utils/SharedValidation.sol";
+import "../../../interfaces/IDefinition.sol";
 import "./SimpleRWA20Definitions.sol";
 
 /**
@@ -54,10 +54,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         // Initialize ERC20 state variables manually
         __ERC20_init(name, symbol);
         
-        // Initialize SecureOwnable directly
-        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        // Initialize SecureOwnable (base + SecureOwnable definitions: ownership, broadcaster, recovery, timelock)
+        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         
-        // Load SimpleRWA20-specific definitions
+        // Load SimpleRWA20-specific definitions (mint/burn meta-tx)
         IDefinition.RolePermission memory permissions = 
             SimpleRWA20Definitions.getRolePermissions();
         _loadDefinitions(
