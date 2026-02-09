@@ -52,6 +52,28 @@ interface IGuardController {
     ) external returns (uint256 txId);
 
     /**
+     * @dev Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
+     * @param target The address of the target contract
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
+     * @param gasLimit The gas limit for execution
+     * @param operationType The operation type hash
+     * @param paymentDetails The payment details to attach to the transaction
+     * @return txRecord The transaction record for the requested operation
+     * @notice Reuses EXECUTE_TIME_DELAY_REQUEST permission; approval/cancel same as executeWithTimeLock
+     */
+    function executeWithPayment(
+        address target,
+        uint256 value,
+        bytes4 functionSelector,
+        bytes memory params,
+        uint256 gasLimit,
+        bytes32 operationType,
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) external returns (EngineBlox.TxRecord memory);
+
+    /**
      * @dev Approves and executes a time-locked transaction
      * @param txId The transaction ID
      * @param expectedOperationType The expected operation type for validation

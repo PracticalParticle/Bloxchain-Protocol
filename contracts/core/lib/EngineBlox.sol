@@ -204,10 +204,6 @@ library EngineBlox {
     bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__()"));
     bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
     
-    // Payment update selector (reserved signature for payment detail updates)
-    bytes4 public constant UPDATE_PAYMENT_SELECTOR = bytes4(keccak256("__bloxchain_update_payment__()"));
-    bytes32 public constant UPDATE_PAYMENT_OPERATION = keccak256("UPDATE_PAYMENT");
-
     // EIP-712 Type Hashes
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -262,7 +258,6 @@ library EngineBlox {
 
         // Register default system macro selectors (allowed to target address(this) for system-level operations)
         addMacroSelector(self, NATIVE_TRANSFER_SELECTOR);
-        addMacroSelector(self, UPDATE_PAYMENT_SELECTOR);
         
         // Mark as initialized after successful setup
         self.initialized = true;
@@ -326,7 +321,51 @@ library EngineBlox {
             gasLimit,
             operationType,
             executionSelector,
-            executionParams
+            executionParams,
+            _noPayment()
+        );
+    }
+
+    /**
+     * @dev Requests a transaction with payment details attached from the start.
+     * @param self The SecureOperationState to modify.
+     * @param requester The address of the requester.
+     * @param target The target contract address for the transaction.
+     * @param value The value to send with the transaction.
+     * @param gasLimit The gas limit for the transaction.
+     * @param operationType The type of operation.
+     * @param handlerSelector The function selector of the handler/request function.
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
+     * @param executionParams The encoded parameters for the function (empty for simple native token transfers).
+     * @param paymentDetails The payment details to attach to the transaction.
+     * @return The created TxRecord with payment set.
+     * @notice Validates request permissions (same as txRequest).
+     */
+    function txRequestWithPayment(
+        SecureOperationState storage self,
+        address requester,
+        address target,
+        uint256 value,
+        uint256 gasLimit,
+        bytes32 operationType,
+        bytes4 handlerSelector,
+        bytes4 executionSelector,
+        bytes memory executionParams,
+        PaymentDetails memory paymentDetails
+    ) public returns (TxRecord memory) {
+        // Validate both execution and handler selector permissions (same as txRequest)
+        _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
+
+        return _txRequest(
+            self,
+            requester,
+            target,
+            value,
+            gasLimit,
+            operationType,
+            executionSelector,
+            executionParams,
+            paymentDetails
         );
     }
 
@@ -338,8 +377,8 @@ library EngineBlox {
      * @param value The value to send with the transaction.
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
-     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
      * @param executionParams The encoded parameters for the function (empty for simple native token transfers).
+     * @param paymentDetails The payment details to attach (use empty struct for no payment).
      * @return The created TxRecord.
      * @notice This function skips permission validation and should only be called from functions
      *         that have already validated permissions.
@@ -352,7 +391,8 @@ library EngineBlox {
         uint256 gasLimit,
         bytes32 operationType,
         bytes4 executionSelector,
-        bytes memory executionParams
+        bytes memory executionParams,
+        PaymentDetails memory paymentDetails
     ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
         // enforce that the requested target is whitelisted for this selector.
@@ -366,7 +406,8 @@ library EngineBlox {
             gasLimit,
             operationType,
             executionSelector,
-            executionParams
+            executionParams,
+            paymentDetails
         );
     
         self.txRecords[txRequestRecord.txId] = txRequestRecord;
@@ -507,7 +548,8 @@ library EngineBlox {
             metaTx.txRecord.params.gasLimit,
             metaTx.txRecord.params.operationType,
             metaTx.txRecord.params.executionSelector,
-            metaTx.txRecord.params.executionParams
+            metaTx.txRecord.params.executionParams,
+            metaTx.txRecord.payment
         );
 
         metaTx.txRecord = txRecord;
@@ -651,6 +693,7 @@ library EngineBlox {
      * @param operationType The type of operation being performed
      * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
      * @param executionParams The encoded parameters for the function (empty for simple native token transfers)
+     * @param payment The payment details to attach to the record (use empty struct for no payment)
      * @return TxRecord A new transaction record with populated fields
      */
     function createNewTxRecord(
@@ -661,8 +704,9 @@ library EngineBlox {
         uint256 gasLimit,
         bytes32 operationType,
         bytes4 executionSelector,
-        bytes memory executionParams
-    ) private view returns (TxRecord memory) {        
+        bytes memory executionParams,
+        PaymentDetails memory payment
+    ) private view returns (TxRecord memory) {
         return TxRecord({
             txId: self.txCounter + 1,
             releaseTime: block.timestamp + self.timeLockPeriodSec * 1 seconds,
@@ -678,12 +722,7 @@ library EngineBlox {
             }),
             message: 0,
             result: "",
-            payment: PaymentDetails({
-                recipient: address(0),
-                nativeTokenAmount: 0,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            })
+            payment: payment
         });
     }
 
@@ -714,42 +753,6 @@ library EngineBlox {
         if (!self.pendingTransactionsSet.remove(txId)) {
             revert SharedValidation.ResourceNotFound(bytes32(uint256(txId)));
         }
-    }
-
-    // ============ PAYMENT MANAGEMENT FUNCTIONS ============
-
-    /**
-     * @dev Updates payment details for a pending transaction
-     * @param self The SecureOperationState to modify
-     * @param txId The transaction ID to update payment for
-     * @param paymentDetails The new payment details
-     * @notice Access control: Requires permission for UPDATE_PAYMENT_SELECTOR and execution selector
-     * @notice This prevents attackers from redirecting funds after transaction request
-     * @notice Contracts must register UPDATE_PAYMENT_SELECTOR schema and grant permissions
-     * @notice Permission check: Both UPDATE_PAYMENT_SELECTOR AND execution selector permissions required
-     */
-    function updatePaymentForTransaction(
-        SecureOperationState storage self,
-        uint256 txId,
-        PaymentDetails memory paymentDetails
-    ) public {
-        _validateTxStatus(self, txId, TxStatus.PENDING);
-        
-        // Permission-based access control using macro selector
-        // Requires permission for UPDATE_PAYMENT_SELECTOR with EXECUTE_TIME_DELAY_REQUEST action
-        if (!hasActionPermission(self, msg.sender, UPDATE_PAYMENT_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-        
-        // Also verify permission for the transaction's execution selector
-        // This ensures caller has permission for the underlying transaction (dual permission check)
-        if (!hasActionPermission(self, msg.sender, self.txRecords[txId].params.executionSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST)) {
-            revert SharedValidation.NoPermission(msg.sender);
-        }
-           
-        self.txRecords[txId].payment = paymentDetails;
-        
-        logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
     // ============ ROLE-BASED ACCESS CONTROL FUNCTIONS ============
@@ -1357,7 +1360,7 @@ library EngineBlox {
      * @dev Adds a function selector to the system macro selectors set.
      *      Macro selectors are allowed to target address(this) for system-level operations (e.g. native transfer).
      * @param self The SecureOperationState to modify.
-     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR).
+     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR).
      */
     function addMacroSelector(
         SecureOperationState storage self,
@@ -1751,7 +1754,8 @@ library EngineBlox {
             txParams.gasLimit,
             txParams.operationType,
             txParams.executionSelector,
-            txParams.executionParams
+            txParams.executionParams,
+            _noPayment()
         );
 
          return generateMetaTransaction(self, txRecord, metaTxParams);
@@ -2339,6 +2343,19 @@ library EngineBlox {
         }
         
         return false;
+    }
+
+    /**
+     * @dev Returns an empty PaymentDetails struct for use when no payment is attached.
+     * @return payment Empty payment details (recipient and amounts zero).
+     */
+    function _noPayment() internal pure returns (PaymentDetails memory payment) {
+        return PaymentDetails({
+            recipient: address(0),
+            nativeTokenAmount: 0,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
     }
 
 }

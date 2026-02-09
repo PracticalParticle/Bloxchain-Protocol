@@ -153,6 +153,44 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
+     * @dev Centralized function to request a transaction with payment details attached from the start
+     * @param requester The address requesting the transaction
+     * @param target The target contract address
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param gasLimit The gas limit for execution
+     * @param operationType The type of operation
+     * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
+     * @param paymentDetails The payment details to attach to the transaction
+     * @return The created transaction record with payment set
+     * @notice Validates request permissions (same as request without payment)
+     * @notice This function is virtual to allow extensions to add hook functionality
+     */
+    function _requestTransactionWithPayment(
+        address requester,
+        address target,
+        uint256 value,
+        uint256 gasLimit,
+        bytes32 operationType,
+        bytes4 functionSelector,
+        bytes memory params,
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) internal virtual returns (EngineBlox.TxRecord memory) {
+        return EngineBlox.txRequestWithPayment(
+            _getSecureState(),
+            requester,
+            target,
+            value,
+            gasLimit,
+            operationType,
+            bytes4(msg.sig),
+            functionSelector,
+            params,
+            paymentDetails
+        );
+    }
+
+    /**
      * @dev Centralized function to approve a pending transaction after release time
      * @param txId The transaction ID
      * @return The updated transaction record
@@ -223,20 +261,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
         return EngineBlox.requestAndApprove(_getSecureState(), metaTx);
-    }
-
-    /**
-     * @dev Centralized function to update payment details for a pending transaction
-     * @param txId The transaction ID to update payment for
-     * @param paymentDetails The new payment details
-     * @notice This function is virtual to allow extensions to add hook functionality
-     */
-    function _updatePaymentForTransaction(
-        uint256 txId,
-        EngineBlox.PaymentDetails memory paymentDetails
-    ) internal virtual returns (EngineBlox.TxRecord memory) {
-        EngineBlox.updatePaymentForTransaction(_getSecureState(), txId, paymentDetails);
-        return _secureState.getTxRecord(txId);
     }
 
     // ============ META-TRANSACTION UTILITIES ============
@@ -731,7 +755,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Adds a function selector to the system macro selectors set.
      *      Macro selectors are allowed to target address(this) for system-level operations.
-     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR).
+     * @param functionSelector The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR).
      */
     function _addMacroSelector(bytes4 functionSelector) internal {
         EngineBlox.addMacroSelector(_getSecureState(), functionSelector);

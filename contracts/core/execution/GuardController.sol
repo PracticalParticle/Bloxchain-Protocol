@@ -136,6 +136,42 @@ abstract contract GuardController is BaseStateMachine {
         );
         return txRecord;
     }
+
+    /**
+     * @dev Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
+     * @param target The address of the target contract
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
+     * @param gasLimit The gas limit for execution
+     * @param operationType The operation type hash
+     * @param paymentDetails The payment details to attach to the transaction
+     * @return txRecord The transaction record for the requested operation
+     * @notice Creates a time-locked transaction with payment that must be approved after the timelock period
+     * @notice Reuses EXECUTE_TIME_DELAY_REQUEST permission for the execution selector (no new definitions)
+     * @notice Approval/cancel use same flows as executeWithTimeLock (approveTimeLockExecution, cancelTimeLockExecution)
+     */
+    function executeWithPayment(
+        address target,
+        uint256 value,
+        bytes4 functionSelector,
+        bytes memory params,
+        uint256 gasLimit,
+        bytes32 operationType,
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) public returns (EngineBlox.TxRecord memory) {
+        _validateNotInternalFunction(target, functionSelector);
+        return _requestTransactionWithPayment(
+            msg.sender,
+            target,
+            value,
+            gasLimit,
+            operationType,
+            functionSelector,
+            params,
+            paymentDetails
+        );
+    }
     
     /**
      * @dev Approves and executes a time-locked transaction
