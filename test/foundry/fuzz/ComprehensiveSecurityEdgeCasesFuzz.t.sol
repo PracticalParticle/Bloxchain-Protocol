@@ -443,74 +443,38 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Create transaction with payment (payment set at request time only; no update API)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient1,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            payment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set initial payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient1,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
-            
-            // Advance time to release
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
-            
-            // Attempt to update payment during execution (should fail)
-            // Status should be PENDING until approval starts
-            EngineBlox.PaymentDetails memory newPayment = EngineBlox.PaymentDetails({
-                recipient: recipient2,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            // Start approval (this changes status to EXECUTING)
             vm.prank(owner);
             try paymentHelper.approveTransaction(txId) {
                 // Transaction executed (might succeed or fail)
-                // Now attempt to update payment - should fail (status not PENDING)
-                vm.prank(owner);
-                vm.expectRevert(); // Should revert - status is not PENDING
-                paymentHelper.updatePaymentForTransaction(txId, newPayment);
             } catch (bytes memory reason) {
-                // If approval failed (e.g., PaymentFailed), status might still be PENDING
-                // In this case, payment update might still be possible
-                // This is acceptable - the key is that once status changes, updates are blocked
                 bytes4 errorSelector = bytes4(reason);
-                if (errorSelector == SharedValidation.PaymentFailed.selector) {
-                    // Payment failed - recipient might reject payments
-                    // Status might still be PENDING or FAILED
-                    // Try to update payment - if status is PENDING, it will work; if not, it will fail
-                    vm.prank(owner);
-                    try paymentHelper.updatePaymentForTransaction(txId, newPayment) {
-                        // Update succeeded - status was still PENDING
-                        // This is acceptable behavior
-                    } catch {
-                        // Update failed - status was not PENDING (expected)
-                    }
-                } else {
+                if (errorSelector != SharedValidation.PaymentFailed.selector) {
                     assembly {
                         revert(add(reason, 0x20), mload(reason))
                     }
                 }
             }
-            
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -543,51 +507,29 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Owner creates transaction with payment to legitimate recipient (payment fixed at request)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory legitimatePayment = EngineBlox.PaymentDetails({
+            recipient: legitimateRecipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            legitimatePayment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Legitimate user sets payment
-            EngineBlox.PaymentDetails memory legitimatePayment = EngineBlox.PaymentDetails({
-                recipient: legitimateRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, legitimatePayment);
-            
-            // Attacker attempts to front-run and update payment
-            // This requires UPDATE_PAYMENT permission, which attacker shouldn't have
-            // But if attacker has permission, they can update
-            EngineBlox.PaymentDetails memory attackerPayment = EngineBlox.PaymentDetails({
-                recipient: attackerRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            // Attacker (not owner) attempts to update - should fail
-            vm.prank(attacker);
-            vm.expectRevert(); // Should revert - no permission
-            paymentHelper.updatePaymentForTransaction(txId, attackerPayment);
-            
-            // Verify legitimate payment is still set
             vm.prank(owner);
             EngineBlox.TxRecord memory record = paymentHelper.getTransaction(txId);
-            assertEq(record.payment.recipient, legitimateRecipient, "Payment should remain legitimate");
-            
+            assertEq(record.payment.recipient, legitimateRecipient, "Payment should be set to legitimate recipient");
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -622,34 +564,26 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Create transaction with payment
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient1,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            payment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set initial payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient1,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
-            
-            // Note: Hook manipulation would require HookManager
-            // This test verifies that payment updates work correctly
-            // even if hooks are involved (hooks execute after core state changes)
             
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);

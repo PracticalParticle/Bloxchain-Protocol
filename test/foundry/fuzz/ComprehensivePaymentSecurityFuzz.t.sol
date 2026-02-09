@@ -75,47 +75,29 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         // Bound payment amount to available balance
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction using payment helper
-        // Note: This may fail with NoPermission if permissions aren't set up
-        // In a full test setup, permissions would be configured via GuardController
+        // Create transaction with payment to newRecipient (payment set at request time only)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
+            recipient: newRecipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            updatedPayment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             assertTrue(txId > 0, "Transaction should be created");
-            
-            // Set initial payment to original recipient
-            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
-                recipient: originalRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
-            
-            // Update payment to new recipient (simulating potential attack)
-            EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
-                recipient: newRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
             uint256 originalBalance = originalRecipient.balance;
             uint256 newBalance = newRecipient.balance;
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, updatedPayment);
             
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
@@ -170,42 +152,26 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         initialAmount = bound(initialAmount, 1, maxBalance - 1);
         manipulatedAmount = bound(manipulatedAmount, initialAmount + 1, maxBalance * 2); // Allow exceeding balance
         
-        // Create transaction using payment helper
-        // Note: This may fail with NoPermission if permissions aren't set up
+        // Create transaction with payment amount (set at request time; validated at execution)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory manipulatedPayment = EngineBlox.PaymentDetails({
+            recipient: recipient,
+            nativeTokenAmount: manipulatedAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            manipulatedPayment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set initial payment amount
-            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
-                recipient: recipient,
-                nativeTokenAmount: initialAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
-            
-            // Attempt to manipulate payment amount
-            EngineBlox.PaymentDetails memory manipulatedPayment = EngineBlox.PaymentDetails({
-                recipient: recipient,
-                nativeTokenAmount: manipulatedAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, manipulatedPayment);
             
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
@@ -252,33 +218,27 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         // Bound payment amount to available balance
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction using payment helper
-        // Note: This may fail with NoPermission if permissions aren't set up
+        // Create transaction with payment
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            payment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set up payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
             uint256 initialBalance = recipient.balance;
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
             
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
@@ -349,33 +309,27 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         
         address recipient = address(0x5678);
         
-        // Create transaction using payment helper
-        // Note: This may fail with NoPermission if permissions aren't set up
+        // Create transaction with ERC20 payment
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient,
+            nativeTokenAmount: 0,
+            erc20TokenAddress: tokenAddress,
+            erc20TokenAmount: paymentAmount
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            payment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set up ERC20 payment with fuzzed token address
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient,
-                nativeTokenAmount: 0,
-                erc20TokenAddress: tokenAddress,
-                erc20TokenAmount: paymentAmount
-            });
-            
             uint256 initialTokenBalance = tokenAddress == address(mockERC20) ? mockERC20.balanceOf(recipient) : 0;
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
             
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
@@ -432,34 +386,28 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         uint256[] memory txIds = new uint256[](numberOfTransactions);
         uint256 initialRecipientBalance = recipient.balance;
         
-        // Create multiple transactions with payments
-        // Note: This may fail with NoPermission if permissions aren't set up
+        // Create multiple transactions with payments (payment set at request time)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         for (uint256 i = 0; i < numberOfTransactions; i++) {
             vm.prank(owner);
-            try paymentHelper.requestTransaction(
+            try paymentHelper.requestTransactionWithPayment(
                 owner,
                 address(paymentHelper),
                 0,
                 0,
                 operationType,
                 EngineBlox.NATIVE_TRANSFER_SELECTOR,
-                ""
+                "",
+                payment
             ) returns (EngineBlox.TxRecord memory txRecord) {
                 txIds[i] = txRecord.txId;
-            
-                // Set up payment for each transaction
-                EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                    recipient: recipient,
-                    nativeTokenAmount: paymentAmount,
-                    erc20TokenAddress: address(0),
-                    erc20TokenAmount: 0
-                });
-                
-                vm.prank(owner);
-                paymentHelper.updatePaymentForTransaction(txIds[i], payment);
             } catch (bytes memory) {
-                // If NoPermission, skip this transaction
                 txIds[i] = 0; // Mark as invalid
             }
         }
@@ -518,53 +466,32 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         // Bound payment amount to available balance
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction using payment helper
-        // Note: This may fail with NoPermission if permissions aren't set up
+        // Create transaction with payment to newRecipient (payment fixed at request time)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
+            recipient: newRecipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            updatedPayment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
-            
-            // Set initial payment to original recipient
-            EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
-                recipient: originalRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
             uint256 originalBalance = originalRecipient.balance;
             uint256 newBalance = newRecipient.balance;
             
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, initialPayment);
-            
-            // Advance time close to release time
-            uint256 timeLockPeriod = paymentHelper.getTimeLockPeriodSec();
-            uint256 advance = bound(timeAdvance, 1, timeLockPeriod - 1);
-            advanceTime(advance);
-            
-            // Update payment to new recipient (before release time)
-            EngineBlox.PaymentDetails memory updatedPayment = EngineBlox.PaymentDetails({
-                recipient: newRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, updatedPayment);
-            
             // Advance to release time
-            advanceTime(timeLockPeriod - advance + 1);
+            uint256 timeLockPeriod = paymentHelper.getTimeLockPeriodSec();
+            advanceTime(timeLockPeriod + 1);
             
             // Execute
             vm.prank(owner);

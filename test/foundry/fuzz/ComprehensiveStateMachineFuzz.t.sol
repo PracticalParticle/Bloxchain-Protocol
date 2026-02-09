@@ -560,10 +560,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Setup malicious payment recipient
         maliciousRecipient.setTargetContract(address(accountBlox));
         
-        // Create transaction - note: payment details are not set up because
-        // _updatePaymentForTransaction is internal. This test verifies transaction-level
+        // Create transaction without payment. This test verifies transaction-level
         // reentrancy protection. For payment-level reentrancy testing, use PayBlox
-        // which exposes payment functionality.
+        // or requestTransactionWithPayment.
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
         try accountBlox.executeWithTimeLock(
@@ -622,35 +621,28 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Setup malicious ERC20 - it will attempt reentrancy during transfer
         maliciousERC20.setTargetContract(address(paymentHelper));
 
-        // Create transaction using payment helper
+        // Create transaction with payment using payment helper
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
-        vm.prank(owner);
-        EngineBlox.TxRecord memory txRecord = paymentHelper.requestTransaction(
-            owner,
-            address(paymentHelper),
-            0,
-            0,
-            operationType,
-            EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        );
-
-        uint256 txId = txRecord.txId;
-
-        // Set up ERC20 payment with malicious token
-        // Note: MaliciousERC20 doesn't fully implement ERC20, so this will fail at execution
-        // but we can test that the reentrancy attempt is blocked
         EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
             recipient: recipient,
             nativeTokenAmount: 0,
             erc20TokenAddress: address(maliciousERC20),
             erc20TokenAmount: paymentAmount
         });
-
-        maliciousERC20.setTargetTxId(txId);
-
         vm.prank(owner);
-        paymentHelper.updatePaymentForTransaction(txId, payment);
+        EngineBlox.TxRecord memory txRecord = paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
+            0,
+            0,
+            operationType,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            "",
+            payment
+        );
+
+        uint256 txId = txRecord.txId;
+        maliciousERC20.setTargetTxId(txId);
 
         // Advance time and approve
         advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);

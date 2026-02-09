@@ -13,8 +13,7 @@ import "./PayBloxDefinitions.sol";
  * using the payment management system from BaseStateMachine
  * 
  * This contract demonstrates:
- * - Creating payment requests with native token transfers
- * - Managing payment details using _updatePaymentForTransaction
+ * - Creating payment requests with native token transfers via _requestTransactionWithPayment
  * - Maintaining a payment table visible only to the owner role
  * - Time-delay workflow for secure payment execution
  * - Simple accounting tool for tracking payments
@@ -111,8 +110,8 @@ contract PayBlox is SecureOwnable {
      * @param paymentDetails The payment details including recipient and amounts
      * @param description Optional description/memo for accounting purposes
      * @return The transaction record
-     * @notice This creates a transaction request and immediately attaches payment details
-     *         using _updatePaymentForTransaction. All information is logged in the payment table.
+     * @notice This creates a transaction request with payment attached in one step via _requestTransactionWithPayment.
+     *         All information is logged in the payment table.
      */
     function requestWithPayment(
         EngineBlox.PaymentDetails memory paymentDetails,
@@ -128,20 +127,17 @@ contract PayBlox is SecureOwnable {
             revert SharedValidation.NotSupported();
         }
         
-        // Create transaction request using NATIVE_TRANSFER_SELECTOR
-        // For native transfers with attached payment, we use value=0 and target=address(this)
-        EngineBlox.TxRecord memory txRecord = _requestTransaction(
+        // Create transaction request with payment attached (value=0, target=this for no-op; payment holds recipient/amount)
+        EngineBlox.TxRecord memory txRecord = _requestTransactionWithPayment(
             msg.sender,
-            address(this), // target is this contract (no-op transaction)
-            0,            // value is 0 (payment will be attached separately)
-            0,            // gas limit (0 means use gasleft())
+            address(this),
+            0,
+            0,
             PayBloxDefinitions.NATIVE_PAYMENT,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""            // empty params for native transfers
+            "",
+            paymentDetails
         );
-        
-        // Update payment details for the transaction using _updatePaymentForTransaction
-        txRecord = _updatePaymentForTransaction(txRecord.txId, paymentDetails);
         
         // Register payment in the payment table with accounting information (owner-only visibility)
         _paymentTable[txRecord.txId] = PaymentRecord({

@@ -48,7 +48,7 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
         
         // This is verified through SystemMacroSelectorSecurityFuzz tests
         // The key is that external calls with regular selectors still require whitelist
-        // System macro selectors (NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR)
+        // System macro selectors (NATIVE_TRANSFER_SELECTOR)
         // can target address(this) by design
     }
 

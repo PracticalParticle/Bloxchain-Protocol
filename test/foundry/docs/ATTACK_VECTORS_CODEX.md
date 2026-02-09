@@ -3117,8 +3117,7 @@ updatePayment(txId, PaymentDetails({recipient: attackerAddress, ...}));
 ```
 
 **Current Protection**:
-- ✅ Payment update requires UPDATE_PAYMENT_SELECTOR permission
-- ✅ Payment update requires execution selector permission (dual permission check)
+- ✅ Payment update uses same permissions as request (execution + handler selector)
 - ✅ Only authorized users can update payments
 - ⚠️ No rate limiting or cooldown period
 - ⚠️ No event emission for payment updates (harder to detect)

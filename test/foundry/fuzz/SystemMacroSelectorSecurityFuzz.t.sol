@@ -14,7 +14,6 @@ import "../helpers/PaymentTestHelper.sol";
  * 
  * System macro selectors are special selectors for system-level operations:
  * - NATIVE_TRANSFER_SELECTOR: For native token transfers
- * - UPDATE_PAYMENT_SELECTOR: For payment detail updates
  * 
  * These selectors can bypass certain restrictions (e.g., call address(this))
  * but must still respect all other security checks (permissions, whitelist, etc.)
@@ -50,7 +49,7 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
     /**
      * @dev Test: System macro selectors can target address(this)
      * 
-     * This verifies that NATIVE_TRANSFER_SELECTOR and UPDATE_PAYMENT_SELECTOR
+     * This verifies that NATIVE_TRANSFER_SELECTOR
      * can be used to target address(this) for system-level operations
      */
     function testFuzz_SystemMacroSelectorsCanTargetAddressThis(
@@ -62,33 +61,27 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         // NATIVE_TRANSFER_SELECTOR should be able to target address(this)
         // This is tested through payment helper which uses NATIVE_TRANSFER_SELECTOR
         
-        // Create transaction with NATIVE_TRANSFER_SELECTOR targeting address(this)
+        // Create transaction with payment (NATIVE_TRANSFER_SELECTOR targeting address(this))
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: address(0x1234),
+            nativeTokenAmount: transferAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
-            address(paymentHelper), // Target is address(this) for payment helper
+            address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
+            "",
+            payment
         ) returns (EngineBlox.TxRecord memory txRecord) {
             uint256 txId = txRecord.txId;
             assertTrue(txId > 0, "Transaction should be created");
-            
-            // Set up payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: address(0x1234),
-                nativeTokenAmount: transferAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
-            
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
@@ -181,9 +174,9 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
     }
 
     /**
-     * @dev Test: UPDATE_PAYMENT_SELECTOR requires permissions
+     * @dev Test: requestTransactionWithPayment requires permissions (execution + handler selector)
      * 
-     * This verifies that UPDATE_PAYMENT_SELECTOR requires proper permissions
+     * This verifies that attaching payment at request time requires proper permissions
      */
     function testFuzz_UpdatePaymentSelectorRequiresPermissions(
         address unauthorizedUser,
@@ -192,47 +185,26 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
     ) public {
         vm.assume(unauthorizedUser != address(0));
         vm.assume(unauthorizedUser != owner);
-        
-        // Bound payment amount
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
-        
-        // First, create a transaction as owner
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
-        vm.prank(owner);
-        
-        try paymentHelper.requestTransaction(
-            owner,
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: address(0x1234),
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
+        vm.prank(unauthorizedUser);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, unauthorizedUser));
+        paymentHelper.requestTransactionWithPayment(
+            unauthorizedUser,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 actualTxId = txRecord.txId;
-            
-            // Unauthorized user attempts to update payment
-            // Should fail due to lack of permissions for UPDATE_PAYMENT_SELECTOR
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: address(0x1234),
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(unauthorizedUser);
-            vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, unauthorizedUser));
-            paymentHelper.updatePaymentForTransaction(actualTxId, payment);
-        } catch (bytes memory reason) {
-            // Handle NoPermission - permissions may not be set up
-            bytes4 errorSelector = bytes4(reason);
-            if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Skip if permissions not set up
-            }
-            assembly {
-                revert(add(reason, 0x20), mload(reason))
-            }
-        }
+            "",
+            payment
+        );
     }
 
     /**
@@ -250,14 +222,8 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             "NATIVE_TRANSFER_SELECTOR should be identified as system macro"
         );
         
-        assertTrue(
-            paymentHelper.containsSystemMacroSelector(EngineBlox.UPDATE_PAYMENT_SELECTOR),
-            "UPDATE_PAYMENT_SELECTOR should be identified as system macro"
-        );
-        
         // Test non-macro selectors (if not system macros)
-        if (selector != EngineBlox.NATIVE_TRANSFER_SELECTOR &&
-            selector != EngineBlox.UPDATE_PAYMENT_SELECTOR) {
+        if (selector != EngineBlox.NATIVE_TRANSFER_SELECTOR) {
             assertFalse(
                 paymentHelper.containsSystemMacroSelector(selector),
                 "Non-macro selector should not be identified as system macro"
@@ -290,31 +256,25 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         bytes4 systemMacroSelector = EngineBlox.NATIVE_TRANSFER_SELECTOR;
         
         // Test 1: System macro selector can target address(this) - should succeed
-        // (This bypasses whitelist check as address(this) is always allowed)
+        EngineBlox.PaymentDetails memory payment1 = EngineBlox.PaymentDetails({
+            recipient: address(0x1234),
+            nativeTokenAmount: transferAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
-            address(paymentHelper), // Target is address(this) for payment helper
+            address(paymentHelper),
             0,
             0,
             operationType,
             systemMacroSelector,
-            ""
+            "",
+            payment1
         ) returns (EngineBlox.TxRecord memory txRecord1) {
             uint256 txId1 = txRecord1.txId;
             assertTrue(txId1 > 0, "Transaction should be created for address(this)");
-            
-            // Set up payment and execute
-            EngineBlox.PaymentDetails memory payment1 = EngineBlox.PaymentDetails({
-                recipient: address(0x1234),
-                nativeTokenAmount: transferAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId1, payment1);
-            
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
@@ -337,29 +297,24 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         }
         
         // Test 2: System macro selector targeting non-whitelisted external address - should fail
+        EngineBlox.PaymentDetails memory payment2 = EngineBlox.PaymentDetails({
+            recipient: address(0x1234),
+            nativeTokenAmount: transferAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
-            externalTarget, // Non-whitelisted external target
+            externalTarget,
             0,
             0,
             operationType,
             systemMacroSelector,
-            ""
+            "",
+            payment2
         ) returns (EngineBlox.TxRecord memory txRecord2) {
             uint256 txId2 = txRecord2.txId;
-            
-            // Set up payment
-            EngineBlox.PaymentDetails memory payment2 = EngineBlox.PaymentDetails({
-                recipient: address(0x1234),
-                nativeTokenAmount: transferAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId2, payment2);
-            
             // Advance time and attempt execution
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
@@ -393,30 +348,25 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         vm.prank(owner);
         paymentHelper.whitelistTargetForTesting(externalTarget, systemMacroSelector);
         
+        EngineBlox.PaymentDetails memory payment3 = EngineBlox.PaymentDetails({
+            recipient: address(0x1234),
+            nativeTokenAmount: transferAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
-            externalTarget, // Now whitelisted
+            externalTarget,
             0,
             0,
             operationType,
             systemMacroSelector,
-            ""
+            "",
+            payment3
         ) returns (EngineBlox.TxRecord memory txRecord3) {
             uint256 txId3 = txRecord3.txId;
             assertTrue(txId3 > 0, "Transaction should be created for whitelisted target");
-            
-            // Set up payment
-            EngineBlox.PaymentDetails memory payment3 = EngineBlox.PaymentDetails({
-                recipient: address(0x1234),
-                nativeTokenAmount: transferAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId3, payment3);
-            
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
