@@ -319,7 +319,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hooks are set in order
         vm.prank(owner);
-        address[] memory retrievedHooks = machineBlox.getHook(functionSelector);
+        address[] memory retrievedHooks = machineBlox.getHooks(functionSelector);
         assertEq(retrievedHooks.length, numberOfHooks, "All hooks should be set");
         
         // Hook execution order should be deterministic (EnumerableSet iteration order)
@@ -347,7 +347,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hook failures should not affect core state
@@ -382,7 +382,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hooks are set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertEq(hooks.length, numberOfHooks, "All hooks should be set");
         
         // Key security property: Multiple hooks should not cause gas exhaustion
@@ -410,7 +410,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hooks should not be able to reenter
@@ -652,6 +652,10 @@ contract OrderTrackingHook is IOnActionHook {
         order = _order;
     }
     
+    function onAction(EngineBlox.TxRecord memory) external override {
+        callCount++;
+    }
+    
     function onRequest(
         EngineBlox.TxRecord memory,
         address
@@ -717,10 +721,7 @@ contract NonCompliantHookContract {
  * @dev Hook contract that consumes significant gas
  */
 contract GasIntensiveHookContract is IOnActionHook {
-    function onRequest(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
+    function onAction(EngineBlox.TxRecord memory) external override {
         // Consume gas through computation
         uint256 sum = 0;
         for (uint256 i = 0; i < 1000; i++) {
@@ -728,6 +729,16 @@ contract GasIntensiveHookContract is IOnActionHook {
         }
     }
     
+    // Legacy multi-hook helpers kept for backward compatibility (no longer used by HookManager)
+    function onRequest(
+        EngineBlox.TxRecord memory,
+        address
+    ) external {
+        uint256 sum = 0;
+        for (uint256 i = 0; i < 1000; i++) {
+            sum += i;
+        }
+    }
     function onApprove(
         EngineBlox.TxRecord memory,
         address
@@ -793,19 +804,8 @@ contract ReentrancyHookContract is IOnActionHook {
         targetContract = _targetContract;
     }
     
-    function onRequest(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
-        // Attempt reentrancy - should fail due to ReentrancyGuard
-        // Note: Cannot directly call internal functions, but pattern is tested
-    }
-    
-    function onApprove(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
-        // Reentrancy attempt would go here
+    function onAction(EngineBlox.TxRecord memory) external override {
+        // Reentrancy pattern is no-op here; actual protection tested elsewhere.
     }
     
     function onCancel(

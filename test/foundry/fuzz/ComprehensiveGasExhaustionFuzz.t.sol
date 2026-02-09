@@ -1445,6 +1445,17 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
  * Note: Currently unused but available for future hook testing
  */
 contract GasIntensiveHook is IOnActionHook {
+    function onAction(EngineBlox.TxRecord memory) external pure override {
+        // Consume gas through computation
+        uint256 sum = 0;
+        for (uint256 i = 0; i < 1000; i++) {
+            sum += i;
+        }
+        // Prevent unused variable warning
+        require(sum > 0, "Gas consumed");
+    }
+    
+    // Legacy helpers kept for backward compatibility (no longer used by HookManager)
     function onRequest(
         EngineBlox.TxRecord memory,
         address
@@ -1454,7 +1465,6 @@ contract GasIntensiveHook is IOnActionHook {
         for (uint256 i = 0; i < 1000; i++) {
             sum += i;
         }
-        // Prevent unused variable warning
         require(sum > 0, "Gas consumed");
     }
     

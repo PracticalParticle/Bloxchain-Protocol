@@ -27,26 +27,40 @@ contract RuntimeRBACFuzzTest is CommonBase {
         super.setUp();
     }
 
+    /// @dev Converts uint to decimal string to build deterministic role names (avoids vm.assume rejections).
+    function _uint2str(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory b = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k--;
+            b[k] = bytes1(uint8(48 + _i % 10));
+            _i /= 10;
+        }
+        return string(b);
+    }
+
     /**
-     * @dev Enhanced: Actually execute role creation through full workflow
+     * @dev Enhanced: Actually execute role creation through full workflow.
+     * Uses deterministic role names from fuzz index to avoid vm.assume reject limit.
      */
-    function testFuzz_RoleCreation(string memory roleName, uint256 maxWallets) public {
-        vm.assume(bytes(roleName).length > 0);
-        vm.assume(bytes(roleName).length < 32);
-        vm.assume(maxWallets > 0);
-        vm.assume(maxWallets < 100);
+    function testFuzz_RoleCreation(uint256 roleIndex, uint256 maxWallets) public {
+        roleIndex = bound(roleIndex, 1, 99_999);
+        maxWallets = bound(maxWallets, 1, 99);
+        string memory roleName = string(abi.encodePacked("fuzz_role_", _uint2str(roleIndex)));
 
         bytes32 roleHash = keccak256(bytes(roleName));
-        
-        // Skip protected role names to avoid conflicts
-        vm.assume(roleHash != OWNER_ROLE);
-        vm.assume(roleHash != BROADCASTER_ROLE);
-        vm.assume(roleHash != RECOVERY_ROLE);
 
         // Create role config batch
         RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        
+
         actions[0] = RuntimeRBAC.RoleConfigAction({
             actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, maxWallets, permissions)
@@ -64,10 +78,10 @@ contract RuntimeRBACFuzzTest is CommonBase {
 
         vm.prank(broadcaster);
         EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
-        
+
         // Verify transaction completed
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
-        
+
         // Verify role was created
         vm.prank(owner);
         (string memory name, bytes32 hash, , , ) = roleBlox.getRole(roleHash);

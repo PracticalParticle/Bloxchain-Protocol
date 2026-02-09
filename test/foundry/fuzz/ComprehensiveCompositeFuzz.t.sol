@@ -36,34 +36,55 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Note: This should be done in CommonBase, but we ensure it here for Composite tests
     }
 
+    /// @dev Converts uint to decimal string for deterministic role names (avoids vm.assume reject limit).
+    function _uint2str(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory b = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k--;
+            b[k] = bytes1(uint8(48 + _i % 10));
+            _i /= 10;
+        }
+        return string(b);
+    }
+
     // ============ MULTI-STAGE PERMISSION ESCALATION ============
 
     /**
      * @dev Test: Multi-stage permission escalation prevention
      * Attack Vector: Multi-Stage Permission Escalation (CRITICAL)
+     * Uses deterministic role names from fuzz indices to avoid vm.assume reject limit.
      */
     function testFuzz_MultiStagePermissionEscalationPrevented(
-        string memory roleName1,
-        string memory roleName2,
+        uint256 roleId1,
+        uint256 roleId2,
         address wallet,
         bytes4 functionSelector1,
         bytes4 functionSelector2
     ) public {
-        vm.assume(bytes(roleName1).length > 0 && bytes(roleName1).length < 32);
-        vm.assume(bytes(roleName2).length > 0 && bytes(roleName2).length < 32);
+        roleId1 = bound(roleId1, 1, 99_999);
+        roleId2 = bound(roleId2, 1, 99_999);
+        if (roleId1 == roleId2) {
+            roleId2 = roleId2 == 99_999 ? 1 : roleId2 + 1;
+        }
+        string memory roleName1 = string(abi.encodePacked("fuzz_a_", _uint2str(roleId1)));
+        string memory roleName2 = string(abi.encodePacked("fuzz_b_", _uint2str(roleId2)));
         vm.assume(wallet != address(0));
         vm.assume(functionSelector1 != bytes4(0));
         vm.assume(functionSelector2 != bytes4(0));
         vm.assume(functionSelector1 != functionSelector2);
-        
+
         bytes32 roleHash1 = keccak256(bytes(roleName1));
         bytes32 roleHash2 = keccak256(bytes(roleName2));
-        
-        // Skip protected roles
-        vm.assume(roleHash1 != OWNER_ROLE && roleHash1 != BROADCASTER_ROLE && roleHash1 != RECOVERY_ROLE);
-        vm.assume(roleHash2 != OWNER_ROLE && roleHash2 != BROADCASTER_ROLE && roleHash2 != RECOVERY_ROLE);
-        vm.assume(roleHash1 != roleHash2);
-        
+        assertTrue(roleHash1 != roleHash2, "role hashes must differ");
+
         // Stage 1: Create role1 with permission for function1
         // Stage 2: Create role2 with permission for function2
         // Stage 3: Assign wallet to both roles

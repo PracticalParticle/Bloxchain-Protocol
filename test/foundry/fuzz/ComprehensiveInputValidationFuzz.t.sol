@@ -225,10 +225,12 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         uint256 length1,
         uint256 length2
     ) public {
-        vm.assume(length1 != length2);
-        vm.assume(length1 > 0 && length1 < 100);
-        vm.assume(length2 > 0 && length2 < 100);
-        
+        length1 = bound(length1, 1, 99);
+        length2 = bound(length2, 1, 99);
+        if (length1 == length2) {
+            length2 = length2 == 99 ? 1 : length2 + 1;
+        }
+        assertTrue(length1 != length2 && length1 >= 1 && length1 < 100 && length2 >= 1 && length2 < 100);
         // Array length validation is tested through role configuration operations
         // which enforce matching array lengths. This test documents the security property.
         // The actual validation occurs in role configuration batch operations.

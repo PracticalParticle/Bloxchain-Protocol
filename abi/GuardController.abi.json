@@ -908,6 +908,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "getHooks",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "hooks",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getPendingTransactions",
     "outputs": [

@@ -62,13 +62,13 @@ Clears the hook contract for a function selector
 
 ---
 
-### getHook
+### getHooks
 
 ```solidity
-function getHook(bytes4 functionSelector) external view returns (address[])
+function getHooks(bytes4 functionSelector) public view returns (address[])
 ```
 
-Returns all configured hooks for a function selector
+Returns all configured hooks for a function selector (defined on BaseStateMachine; requires any role via _validateAnyRole).
 
 **Parameters:**
 - `` (): The function selector

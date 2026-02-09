@@ -73,6 +73,23 @@ contract MaliciousHookContract is IOnActionHook {
         shouldConsumeGas = _shouldConsumeGas;
     }
     
+    function onAction(EngineBlox.TxRecord memory) external override {
+        callCount++;
+        if (shouldRevert) {
+            revert("Malicious hook revert");
+        }
+        if (shouldConsumeGas) {
+            uint256 sum = 0;
+            for (uint256 i = 0; i < 10000; i++) {
+                sum += i;
+            }
+            // prevent warnings
+            if (sum == 0) {
+                revert("Gas consumed");
+            }
+        }
+    }
+    
     function onRequest(
         EngineBlox.TxRecord memory,
         address
@@ -160,10 +177,7 @@ contract ReentrancyHookContract is IOnActionHook {
         targetTxId = _txId;
     }
     
-    function onApprove(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
+    function onAction(EngineBlox.TxRecord memory) external override {
         // Attempt reentrancy - should fail due to ReentrancyGuard
         // Note: approveTransaction is internal, so we can't call it directly
         // This test verifies the pattern - actual reentrancy protection is tested elsewhere
