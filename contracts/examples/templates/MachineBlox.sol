@@ -51,54 +51,15 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
     // ============ INTERNAL FUNCTION OVERRIDES ============
     // These overrides resolve conflicts by ensuring HookManager's hook execution is called
 
-    function _requestTransaction(
-        address requester,
-        address target,
-        uint256 value,
-        uint256 gasLimit,
-        bytes32 operationType,
-        bytes4 functionSelector,
-        bytes memory params
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._requestTransaction(requester, target, value, gasLimit, operationType, functionSelector, params);
-    }
-
-    function _approveTransaction(
-        uint256 txId
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._approveTransaction(txId);
-    }
-
-    function _approveTransactionWithMetaTx(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._approveTransactionWithMetaTx(metaTx);
-    }
-
-    function _cancelTransaction(
-        uint256 txId
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._cancelTransaction(txId);
-    }
-
-    function _cancelTransactionWithMetaTx(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._cancelTransactionWithMetaTx(metaTx);
-    }
-
-    function _requestAndApproveTransaction(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override(BaseStateMachine, HookManager) returns (EngineBlox.TxRecord memory) {
-        return HookManager._requestAndApproveTransaction(metaTx);
-    }
-
     /**
-     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
-     * @param newTimeLockPeriodSec The new time lock period in seconds
+     * @dev Resolve ambiguity between BaseStateMachine and HookManager for post-action hook.
+     *      This ensures HookManager's external hook execution is wired into the unified
+     *      BaseStateMachine post-transaction entry point.
      */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
-        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
+    function _postActionHook(
+        EngineBlox.TxRecord memory txRecord
+    ) internal virtual override(BaseStateMachine, HookManager) {
+        HookManager._postActionHook(txRecord);
     }
 
     /**

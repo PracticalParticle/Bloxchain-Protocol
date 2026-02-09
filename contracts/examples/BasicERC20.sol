@@ -6,14 +6,16 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @title BasicERC20
- * @dev A simple ERC20 token contract with access control for minting
- * This token uses OpenZeppelin AccessControl to manage minter roles
+ * @dev A simple ERC20 token contract with access control for minting.
+ * Uses OpenZeppelin AccessControl to manage minter roles.
+ * @notice When used with Bloxchain, the minter is typically the AccountBlox contract address
+ *         (from deployed-addresses.json), so AccountBlox can mint via GuardController execution.
  */
 contract BasicERC20 is ERC20, AccessControl {
     /// @dev The role identifier for minters
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     
-    /// @dev The minter address that will be granted the MINTER_ROLE
+    /// @dev The minter address that will be granted the MINTER_ROLE (e.g. AccountBlox when used with Bloxchain)
     address public minter;
     
     /**
@@ -21,7 +23,7 @@ contract BasicERC20 is ERC20, AccessControl {
      * @param name The name of the token
      * @param symbol The symbol of the token
      * @param totalSupply The total supply of tokens to mint (in wei/smallest unit)
-     * @param minterAddress The address that will be granted the MINTER_ROLE
+     * @param minterAddress The address granted the MINTER_ROLE (typically AccountBlox from deployed-addresses.json)
      */
     constructor(
         string memory name,

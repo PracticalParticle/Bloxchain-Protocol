@@ -139,7 +139,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bytes4 functionSelector,
         bytes memory params
     ) internal virtual returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txRequest(
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txRequest(
             _getSecureState(),
             requester,
             target,
@@ -150,6 +150,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
             functionSelector,
             params
         );
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -176,7 +178,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bytes memory params,
         EngineBlox.PaymentDetails memory paymentDetails
     ) internal virtual returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txRequestWithPayment(
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txRequestWithPayment(
             _getSecureState(),
             requester,
             target,
@@ -188,6 +190,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
             params,
             paymentDetails
         );
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -202,7 +206,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransaction(
         uint256 txId
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txDelayedApproval(_getSecureState(), txId, bytes4(msg.sig));
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -217,7 +223,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txApprovalWithMetaTx(_getSecureState(), metaTx);
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txApprovalWithMetaTx(_getSecureState(), metaTx);
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -231,7 +239,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransaction(
         uint256 txId
     ) internal virtual returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txCancellation(_getSecureState(), txId, bytes4(msg.sig));
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -245,7 +255,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.txCancellationWithMetaTx(_getSecureState(), metaTx);
+        EngineBlox.TxRecord memory txRecord = EngineBlox.txCancellationWithMetaTx(_getSecureState(), metaTx);
+        _postActionHook(txRecord);
+        return txRecord;
     }
 
     /**
@@ -260,7 +272,51 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _requestAndApproveTransaction(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
-        return EngineBlox.requestAndApprove(_getSecureState(), metaTx);
+        EngineBlox.TxRecord memory txRecord = EngineBlox.requestAndApprove(_getSecureState(), metaTx);
+        _postActionHook(txRecord);
+        return txRecord;
+    }
+
+    /**
+     * @dev Post-action hook invoked after any transaction operation that produces a TxRecord.
+     *      Override in derived contracts to add centralized post-tx logic (e.g. notifications, side effects).
+     * @param txRecord The transaction record produced by the operation
+     */
+    function _postActionHook(EngineBlox.TxRecord memory txRecord) internal virtual {}
+
+    // ============ HOOK MANAGEMENT ============
+
+    /**
+     * @dev Sets the hook contract for a function selector (internal; no access control).
+     *      Extensions (e.g. HookManager) may expose an external setHook with owner check.
+     * @param functionSelector The function selector
+     * @param hook The hook contract address (must not be zero)
+     */
+    function _setHook(bytes4 functionSelector, address hook) internal {
+        EngineBlox.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
+        _logComponentEvent(abi.encode(functionSelector, hook));
+    }
+
+    /**
+     * @dev Clears the hook contract for a function selector (internal; no access control).
+     *      Extensions may expose an external clearHook with owner check.
+     * @param functionSelector The function selector
+     * @param hook The hook contract address to remove (must not be zero)
+     */
+    function _clearHook(bytes4 functionSelector, address hook) internal {
+        EngineBlox.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
+        _logComponentEvent(abi.encode(functionSelector, hook));
+    }
+
+    /**
+     * @dev Returns all configured hooks for a function selector
+     * @param functionSelector The function selector
+     * @return hooks Array of hook contract addresses
+     * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     */
+    function getHooks(bytes4 functionSelector) public view returns (address[] memory hooks) {
+        _validateAnyRole();
+        return EngineBlox.getFunctionHookTargets(_getSecureState(), functionSelector);
     }
 
     // ============ META-TRANSACTION UTILITIES ============
@@ -651,7 +707,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice This function is virtual to allow extensions to add hook functionality
      */
     function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual {
+        uint256 oldPeriod = getTimeLockPeriodSec();
         EngineBlox.updateTimeLockPeriod(_getSecureState(), newTimeLockPeriodSec);
+        _logComponentEvent(abi.encode(oldPeriod, newTimeLockPeriodSec));
     }
 
     // ============ FUNCTION SCHEMA MANAGEMENT ============

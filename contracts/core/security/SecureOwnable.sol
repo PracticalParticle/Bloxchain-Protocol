@@ -405,13 +405,4 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         _logComponentEvent(abi.encode(oldRecovery, newRecoveryAddress));
     }
 
-    /**
-     * @dev Updates the time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
-        uint256 oldPeriod = getTimeLockPeriodSec();
-        super._updateTimeLockPeriod(newTimeLockPeriodSec);
-        _logComponentEvent(abi.encode(oldPeriod, newTimeLockPeriodSec));
-    }
 }

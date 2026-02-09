@@ -47,14 +47,6 @@ contract AccountBlox is GuardController, RuntimeRBAC, SecureOwnable {
     }
 
     /**
-     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
-        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
-    }
-
-    /**
      * @dev Accepts plain ETH transfers (no calldata).
      * @notice General-use wallet: ETH can be sent naturally; balance is credited.
      * @custom:security No external calls—reentrancy-safe; outgoing ETH only via GuardController execution.
