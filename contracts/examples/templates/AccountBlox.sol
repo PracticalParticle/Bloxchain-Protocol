@@ -5,7 +5,7 @@ import "../../core/execution/GuardController.sol";
 import "../../core/access/RuntimeRBAC.sol";
 import "../../core/security/SecureOwnable.sol";
 import "../../core/base/BaseStateMachine.sol";
-import "../../utils/SharedValidation.sol";
+import "../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title AccountBlox

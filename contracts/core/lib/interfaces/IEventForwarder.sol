@@ -2,7 +2,7 @@
 pragma solidity 0.8.33;
 
 // Import TxRecord struct from EngineBlox
-import "../core/lib/EngineBlox.sol";
+import "../EngineBlox.sol";
 
 /**
  * @title IEventForwarder

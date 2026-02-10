@@ -6,7 +6,7 @@ import "../../core/access/RuntimeRBAC.sol";
 import "../../core/security/SecureOwnable.sol";
 import "../../experimental/hook/HookManager.sol";
 import "../../core/base/BaseStateMachine.sol";
-import "../../utils/SharedValidation.sol";
+import "../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title MachineBlox

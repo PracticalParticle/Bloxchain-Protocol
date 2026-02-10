@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
-import "../../../../interfaces/IDefinition.sol";
+import "../../../lib/interfaces/IDefinition.sol";
 
 /**
  * @title GuardControllerDefinitions

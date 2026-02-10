@@ -4,9 +4,9 @@ pragma solidity 0.8.33;
 // Contract imports
 import "../base/BaseStateMachine.sol";
 import "../lib/EngineBlox.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
+import "../lib/interfaces/IDefinition.sol";
 import "./interface/IRuntimeRBAC.sol";
 
 /**

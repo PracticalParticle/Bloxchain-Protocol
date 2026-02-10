@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
 import "../../../core/security/SecureOwnable.sol";
-import "../../../utils/SharedValidation.sol";
-import "../../../interfaces/IDefinition.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
+import "../../../core/lib/interfaces/IDefinition.sol";
 import "./SimpleVaultDefinitions.sol";
 
 

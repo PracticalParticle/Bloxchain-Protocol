@@ -2,8 +2,8 @@
 pragma solidity 0.8.33;
 
 import "../../../../core/security/SecureOwnable.sol";
-import "../../../../utils/SharedValidation.sol";
-import "../../../../interfaces/IDefinition.sol";
+import "../../../../core/lib/utils/SharedValidation.sol";
+import "../../../../core/lib/interfaces/IDefinition.sol";
 import "./GuardianSafeDefinitions.sol";
 
 interface ISafe {

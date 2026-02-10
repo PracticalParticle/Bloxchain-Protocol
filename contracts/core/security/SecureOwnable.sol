@@ -4,8 +4,8 @@ pragma solidity 0.8.33;
 // Contracts imports
 import "../base/BaseStateMachine.sol";
 import "./lib/definitions/SecureOwnableDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/interfaces/IDefinition.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./interface/ISecureOwnable.sol";
 
 /**

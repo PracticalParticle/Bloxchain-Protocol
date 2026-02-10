@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 // Contracts imports
 import "../lib/EngineBlox.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./interface/IBaseStateMachine.sol";
 
 /**

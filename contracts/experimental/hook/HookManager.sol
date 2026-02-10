@@ -4,8 +4,8 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../../core/base/BaseStateMachine.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IOnActionHook.sol";
+import "../../core/lib/utils/SharedValidation.sol";
+import "../../experimental/hook/interface/IOnActionHook.sol";
 
 /**
  * @title HookManager

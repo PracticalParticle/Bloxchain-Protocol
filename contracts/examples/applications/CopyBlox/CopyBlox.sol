@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../core/base/BaseStateMachine.sol";
 import "../../../core/base/interface/IBaseStateMachine.sol";
 import "../../../core/lib/EngineBlox.sol";
-import "../../../interfaces/IEventForwarder.sol";
-import "../../../utils/SharedValidation.sol";
+import "../../../core/lib/interfaces/IEventForwarder.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBlox

@@ -2,9 +2,9 @@
 pragma solidity 0.8.33;
 
 import "../base/BaseStateMachine.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./lib/definitions/GuardControllerDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
+import "../lib/interfaces/IDefinition.sol";
 import "./interface/IGuardController.sol";
 
 /**
