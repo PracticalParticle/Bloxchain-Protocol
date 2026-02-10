@@ -5,7 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/security/SecureOwnable.sol";
 import "../../../contracts/core/security/interface/ISecureOwnable.sol";
 import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 

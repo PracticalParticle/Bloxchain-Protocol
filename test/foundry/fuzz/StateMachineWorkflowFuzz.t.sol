@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/execution/GuardController.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title StateMachineWorkflowFuzzTest

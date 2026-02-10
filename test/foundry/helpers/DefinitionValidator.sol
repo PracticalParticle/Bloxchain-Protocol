@@ -2,8 +2,8 @@
 pragma solidity 0.8.33;
 
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/interfaces/IDefinition.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/interfaces/IDefinition.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title DefinitionValidator

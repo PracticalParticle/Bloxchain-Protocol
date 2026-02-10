@@ -3,8 +3,8 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/interfaces/IOnActionHook.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
+import "../../../contracts/experimental/hook/interface/IOnActionHook.sol";
 import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 

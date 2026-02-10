@@ -8,7 +8,7 @@ import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.so
 import "../../../contracts/core/security/SecureOwnable.sol";
 import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
