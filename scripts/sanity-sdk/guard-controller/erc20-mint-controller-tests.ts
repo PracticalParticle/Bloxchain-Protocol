@@ -161,9 +161,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       console.log('  ✅ Mint schema registration tx sent');
       console.log(`     Tx hash: ${result.hash}`);
-      console.log(
-        `     Status: ${receipt.status === 'success' || receipt.status === 1 ? 'SUCCESS' : 'FAILED'}`
-      );
+      const status0 = receipt.status as any;
+      const isSuccess0 = status0 === 'success' || status0 === 1 || String(status0) === '1';
+      console.log(`     Status: ${isSuccess0 ? 'SUCCESS' : 'FAILED'}`);
 
       // Best-effort verification (do not fail hard if remote node quirks exist).
       // The core CJS sanity tests already perform a deep verification of the ERC20 mint
@@ -234,9 +234,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       console.log('  ✅ Whitelist update tx sent');
       console.log(`     Tx hash: ${result.hash}`);
-      console.log(
-        `     Status: ${receipt.status === 'success' || receipt.status === 1 ? 'SUCCESS' : 'FAILED'}`
-      );
+      const status1 = receipt.status as any;
+      const isSuccess1 = status1 === 'success' || status1 === 1 || String(status1) === '1';
+      console.log(`     Status: ${isSuccess1 ? 'SUCCESS' : 'FAILED'}`);
 
       const targetsAfter = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
       console.log(`  📋 Whitelist targets after SDK update (${targetsAfter.length}):`);
@@ -337,12 +337,12 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
         console.log('  ✅ requestAndApproveExecution meta-tx sent');
         console.log(`     Tx hash: ${result.hash}`);
-        console.log(
-          `     Status: ${receipt.status === 'success' || receipt.status === 1 ? 'SUCCESS' : 'FAILED'}`
-        );
+        const status2 = receipt.status as any;
+        const isSuccess2 = status2 === 'success' || status2 === 1 || String(status2) === '1';
+        console.log(`     Status: ${isSuccess2 ? 'SUCCESS' : 'FAILED'}`);
 
         this.assertTest(
-          receipt.status === 'success' || receipt.status === 1,
+          isSuccess2,
           'Mint meta-transaction executed successfully'
         );
       } catch (execError: any) {
