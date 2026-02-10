@@ -348,15 +348,15 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
           'Mint meta-transaction executed successfully'
         );
       } catch (execError: any) {
-        console.warn('  ⚠️  Mint meta-transaction execution via SDK reverted or failed during simulation.');
-        console.warn(
-          `     Details: ${execError?.message || execError}`
+        console.error(
+          '  [SDK mint] requestAndApproveExecution reverted or failed during simulation (soft-failure).'
         );
+        console.error(`     Details: ${execError?.message || execError}`);
         console.warn(
           '     Treating this as a best-effort execution check for the SDK wrapper. ' +
-          'Core CJS sanity tests validate the full GuardController mint flow (roles, permissions, and balance change).'
+            'Core CJS sanity tests validate the full GuardController mint flow (roles, permissions, and balance change).'
         );
-        // Mark as logically passed from the SDK perspective so that environment-specific
+        // Soft-failure: surface in CI via console.error above; test still passes so environment-specific
         // permission or simulation issues do not fail the entire sanity-sdk core suite.
         this.assertTest(true, 'Mint meta-transaction treated as best-effort (SDK helper)');
       }
@@ -387,12 +387,12 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
           `AccountBlox BASIC balance >= 100 (after=${balanceAfter.toString()})`
         );
       } else {
-        console.warn(
-          `  ⚠️  BASIC balance delta after SDK mint flow was ${delta.toString()} (expected 100e18).`
+        console.error(
+          `  [SDK mint] BASIC balance delta after mint flow was ${delta.toString()} (expected 100e18) (soft-failure).`
         );
         console.warn(
           '     Treating this as a best-effort verification for the SDK wrapper. ' +
-          'The underlying CJS GuardController sanity tests already assert the exact balance change.'
+            'The underlying CJS GuardController sanity tests already assert the exact balance change.'
         );
         this.assertTest(true, 'BASIC balance verification treated as best-effort (SDK helper)');
       }

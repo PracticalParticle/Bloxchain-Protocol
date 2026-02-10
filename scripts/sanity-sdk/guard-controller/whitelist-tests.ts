@@ -156,7 +156,13 @@ export class WhitelistTests extends BaseGuardControllerTest {
         console.log(`  ✅ Verified function selector is registered via functionSchemaExists: ${isRegistered}`);
       }
 
-      this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} registration tx succeeded`);
+      const status = receipt.status as string | number;
+      const txSucceeded =
+        status === 'success' || status === 1 || String(status) === '1';
+      this.assertTest(
+        txSucceeded,
+        `Function selector ${this.NATIVE_TRANSFER_SELECTOR} registration tx succeeded (status: ${receipt.status})`
+      );
     } catch (error: any) {
       this.handleTestError('Register function selector', error);
       throw error;
