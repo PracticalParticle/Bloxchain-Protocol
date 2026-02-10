@@ -147,7 +147,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function requestTransaction(SafeTx calldata safeTx) 
         external 
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256 txId) 
     {
         SharedValidation.validateOwner(owner());
         // Use helper function to encode parameters and avoid stack too deep
@@ -165,7 +165,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         
         emit TransactionRequested(safeTx);
 
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
@@ -192,9 +192,10 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @notice Approve a pending transaction after timelock period
      * @param txId The transaction ID to approve
      */
-    function approveTransactionAfterDelay(uint256 txId) external returns (EngineBlox.TxRecord memory) {
+    function approveTransactionAfterDelay(uint256 txId) external returns (uint256) {
         SharedValidation.validateOwner(owner());
-        return _approveTransaction(txId);
+        EngineBlox.TxRecord memory txRecord = _approveTransaction(txId);
+        return txRecord.txId;
     }
 
     /**
@@ -203,21 +204,22 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function approveTransactionWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         external 
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256) 
     {
         _validateBroadcaster(msg.sender);
-        return _approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = _approveTransactionWithMetaTx(metaTx);
+        return txRecord.txId;
     }
 
     /**
      * @notice Cancel a pending transaction
      * @param txId The transaction ID to cancel
      */
-    function cancelTransaction(uint256 txId) external returns (EngineBlox.TxRecord memory) {
+    function cancelTransaction(uint256 txId) external returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updatedRecord = _cancelTransaction(txId);
         emit TransactionCancelled(txId);
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
@@ -226,12 +228,12 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function cancelTransactionWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         external 
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256) 
     {
         _validateBroadcaster(msg.sender);
         EngineBlox.TxRecord memory updatedRecord = _cancelTransactionWithMetaTx(metaTx);
         emit TransactionCancelled(updatedRecord.txId);
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
@@ -241,9 +243,10 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function requestAndApproveTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     /**

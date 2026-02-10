@@ -51,7 +51,7 @@ interface IRuntimeRBAC {
      */
     function roleConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) external returns (EngineBlox.TxRecord memory);
+    ) external returns (uint256);
 
     /**
      * @dev Gets all authorized wallets for a role

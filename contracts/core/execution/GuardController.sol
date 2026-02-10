@@ -120,7 +120,7 @@ abstract contract GuardController is BaseStateMachine {
         bytes memory params,
         uint256 gasLimit,
         bytes32 operationType
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256 txId) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(target, functionSelector);
         
@@ -134,7 +134,7 @@ abstract contract GuardController is BaseStateMachine {
             functionSelector,
             params
         );
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
@@ -146,7 +146,7 @@ abstract contract GuardController is BaseStateMachine {
      * @param gasLimit The gas limit for execution
      * @param operationType The operation type hash
      * @param paymentDetails The payment details to attach to the transaction
-     * @return txRecord The transaction record for the requested operation
+     * @return txId The transaction ID for the requested operation (use getTransaction(txId) for full record)
      * @notice Creates a time-locked transaction with payment that must be approved after the timelock period
      * @notice Reuses EXECUTE_TIME_DELAY_REQUEST permission for the execution selector (no new definitions)
      * @notice Approval/cancel use same flows as executeWithTimeLock (approveTimeLockExecution, cancelTimeLockExecution)
@@ -159,9 +159,9 @@ abstract contract GuardController is BaseStateMachine {
         uint256 gasLimit,
         bytes32 operationType,
         EngineBlox.PaymentDetails memory paymentDetails
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256 txId) {
         _validateNotInternalFunction(target, functionSelector);
-        return _requestTransactionWithPayment(
+        EngineBlox.TxRecord memory txRecord = _requestTransactionWithPayment(
             msg.sender,
             target,
             value,
@@ -171,6 +171,7 @@ abstract contract GuardController is BaseStateMachine {
             params,
             paymentDetails
         );
+        return txRecord.txId;
     }
     
     /**
@@ -181,13 +182,14 @@ abstract contract GuardController is BaseStateMachine {
      */
     function approveTimeLockExecution(
         uint256 txId
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         // SECURITY: Prevent access to internal execution functions
         EngineBlox.TxRecord memory txRecord = _getSecureState().txRecords[txId];
         _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
         // Approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
-        return _approveTransaction(txId);  
+        txRecord = _approveTransaction(txId);
+        return txRecord.txId;
     }
     
     /**
@@ -198,13 +200,14 @@ abstract contract GuardController is BaseStateMachine {
      */
     function cancelTimeLockExecution(
         uint256 txId
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         // SECURITY: Prevent access to internal execution functions
         EngineBlox.TxRecord memory txRecord = _getSecureState().txRecords[txId];
         _validateNotInternalFunction(txRecord.params.target, txRecord.params.executionSelector);
         
         // Cancel via BaseStateMachine helper (validates permissions in EngineBlox)
-        return _cancelTransaction(txId);
+        txRecord = _cancelTransaction(txId);
+        return txRecord.txId;
     }
     
     /**
@@ -215,12 +218,13 @@ abstract contract GuardController is BaseStateMachine {
      */
     function approveTimeLockExecutionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
         // Approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
-        return _approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = _approveTransactionWithMetaTx(metaTx);
+        return txRecord.txId;
     }
     
     /**
@@ -231,12 +235,13 @@ abstract contract GuardController is BaseStateMachine {
      */
     function cancelTimeLockExecutionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
         // Cancel via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
-        return _cancelTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = _cancelTransactionWithMetaTx(metaTx);
+        return txRecord.txId;
     }
     
     /**
@@ -249,12 +254,13 @@ abstract contract GuardController is BaseStateMachine {
      */
     function requestAndApproveExecution(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         // SECURITY: Prevent access to internal execution functions
         _validateNotInternalFunction(metaTx.txRecord.params.target, metaTx.txRecord.params.executionSelector);
         
         // Request and approve via BaseStateMachine helper (validates permissions and whitelist in EngineBlox)
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
     
     // Note: Meta-transaction utility functions (createMetaTxParams, 
@@ -307,10 +313,10 @@ abstract contract GuardController is BaseStateMachine {
      */
     function guardConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
-        
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     /**

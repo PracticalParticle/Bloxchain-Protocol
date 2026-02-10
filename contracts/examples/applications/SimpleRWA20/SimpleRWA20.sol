@@ -71,29 +71,31 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
     /**
      * @notice Create a mint request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing mint parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function mintWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);
-        return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
+        EngineBlox.TxRecord memory txRecord = _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
+        return txRecord.txId;
     }
 
     /**
      * @notice Create a burn request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing burn parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function burnWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);
-        return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
+        EngineBlox.TxRecord memory txRecord = _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
+        return txRecord.txId;
     }
 
     /**

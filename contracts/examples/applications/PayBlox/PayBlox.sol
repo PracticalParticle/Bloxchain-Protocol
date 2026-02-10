@@ -109,14 +109,14 @@ contract PayBlox is SecureOwnable {
      * @notice Request a payment with payment details
      * @param paymentDetails The payment details including recipient and amounts
      * @param description Optional description/memo for accounting purposes
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      * @notice This creates a transaction request with payment attached in one step via _requestTransactionWithPayment.
      *         All information is logged in the payment table.
      */
     function requestWithPayment(
         EngineBlox.PaymentDetails memory paymentDetails,
         string memory description
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
         if (paymentDetails.nativeTokenAmount == 0 && paymentDetails.erc20TokenAmount == 0) {
@@ -156,7 +156,7 @@ contract PayBlox is SecureOwnable {
             block.timestamp,
             description
         );
-        return txRecord;
+        return txRecord.txId;
     }
     
     /**
@@ -164,7 +164,7 @@ contract PayBlox is SecureOwnable {
      * @param txId The ID of the payment transaction to approve
      * @return The updated transaction record
      */
-    function approvePaymentAfterDelay(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function approvePaymentAfterDelay(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _approveTransaction(txId);
         
@@ -185,7 +185,7 @@ contract PayBlox is SecureOwnable {
             );
         }
         
-        return updated;
+        return updated.txId;
     }
     
     /**
@@ -193,7 +193,7 @@ contract PayBlox is SecureOwnable {
      * @param txId The ID of the payment transaction to cancel
      * @return The updated transaction record
      */
-    function cancelPayment(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function cancelPayment(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _cancelTransaction(txId);
         
@@ -210,7 +210,7 @@ contract PayBlox is SecureOwnable {
             );
         }
         
-        return updated;
+        return updated.txId;
     }
     
     /**

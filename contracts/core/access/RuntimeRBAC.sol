@@ -99,9 +99,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      */
     function roleConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     /**
