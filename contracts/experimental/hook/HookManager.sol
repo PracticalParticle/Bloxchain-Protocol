@@ -17,7 +17,10 @@ import "../../experimental/hook/interface/IOnActionHook.sol";
  * - Multiple hooks per function selector (via EngineBlox.functionTargetHooks)
  * - OWNER role can set/clear hooks
  * - Hooks are executed AFTER the core state machine operation completes
- * - Hooks are best-effort: if no hook is configured, nothing happens
+ * - If no hook is configured for a selector, nothing runs for that selector
+ * - Hooks are mandatory for the transaction: if any registered hook reverts (e.g. bug, OOG, or
+ *   malicious behavior), the entire parent transaction (request/approve/cancel) will revert.
+ *   Only register trusted, non-reverting hook contracts.
  *
  * Hook integration:
  * - BaseStateMachine provides a single _postActionHook entry point that is called
@@ -62,7 +65,8 @@ abstract contract HookManager is BaseStateMachine {
 
     /**
      * @dev Executes all hooks for the transaction's execution selector using the unified
-     *      onAction callback.
+     *      onAction callback. If any hook reverts, the entire parent transaction reverts;
+     *      only register trusted, non-reverting hook contracts.
      * @param txRecord The transaction record produced by the operation
      */
     function _executeActionHooks(

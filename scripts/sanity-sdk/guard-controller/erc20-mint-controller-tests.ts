@@ -240,7 +240,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       const targetsAfter = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
       console.log(`  📋 Whitelist targets after SDK update (${targetsAfter.length}):`);
-      targetsAfter.forEach((t, i) => console.log(`     ${i + 1}. ${t}`));
+      targetsAfter.forEach((t, i) => {
+        console.log(`     ${i + 1}. ${t}`);
+      });
 
       const nowWhitelisted = targetsAfter.some((t) => t.toLowerCase() === token.toLowerCase());
       if (nowWhitelisted) {

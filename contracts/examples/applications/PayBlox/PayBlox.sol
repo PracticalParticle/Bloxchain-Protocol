@@ -162,7 +162,7 @@ contract PayBlox is SecureOwnable {
     /**
      * @notice Approve a payment after the time delay has passed
      * @param txId The ID of the payment transaction to approve
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function approvePaymentAfterDelay(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
@@ -191,7 +191,7 @@ contract PayBlox is SecureOwnable {
     /**
      * @notice Cancel a pending payment request
      * @param txId The ID of the payment transaction to cancel
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function cancelPayment(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());

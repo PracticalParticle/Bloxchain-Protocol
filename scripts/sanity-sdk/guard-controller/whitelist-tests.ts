@@ -292,14 +292,14 @@ export class WhitelistTests extends BaseGuardControllerTest {
         console.log('  ✅ Target verified as whitelisted');
         this.assertTest(true, `Target ${this.testTarget} found in whitelist`);
       } else {
-        console.warn(
-          `  ⚠️  Target whitelist verification failed via SDK helper (expected: ${expectedIsWhitelisted}, actual: ${isWhitelisted}).`
+        console.error(
+          `  [SDK whitelist] Verification failed via SDK helper (expected: ${expectedIsWhitelisted}, actual: ${isWhitelisted}).`
         );
         console.warn(
           '     Treating this as a best-effort visibility check only; low-level CJS sanity tests cover whitelist behavior in depth.'
         );
         // Mark as passed from the SDK test perspective so guard-controller SDK tests don't
-        // fail purely on read-helper differences.
+        // fail purely on read-helper differences. Soft failure is tracked via console.error above.
         this.assertTest(true, 'Target whitelist verification treated as best-effort (SDK helper)');
       }
     } catch (error: any) {
@@ -347,8 +347,8 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
         this.assertTest(true, `Query successful: ${actualTargets} target(s) found`);
       } else {
-        console.warn(
-          `  ⚠️  Target whitelist query via SDK helper returned no entries (expected: >= ${expectedMinTargets}, actual: ${actualTargets}).`
+        console.error(
+          `  [SDK whitelist] Query via SDK helper returned no entries (expected: >= ${expectedMinTargets}, actual: ${actualTargets}).`
         );
         console.warn(
           '     Treating this as a best-effort visibility check only; core CJS sanity tests validate whitelist state.'

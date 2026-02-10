@@ -106,7 +106,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Approves a pending ownership transfer transaction after the release time
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function transferOwnershipDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
@@ -116,7 +116,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Approves a pending ownership transfer transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function transferOwnershipApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
@@ -126,7 +126,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending ownership transfer transaction
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function transferOwnershipCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateRecovery(getRecovery());
@@ -136,7 +136,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending ownership transfer transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function transferOwnershipCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
@@ -177,7 +177,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Approves a pending broadcaster update transaction after the release time
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function updateBroadcasterDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
@@ -187,7 +187,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Approves a pending broadcaster update transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function updateBroadcasterApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
@@ -197,7 +197,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending broadcaster update transaction
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function updateBroadcasterCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
@@ -207,7 +207,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending broadcaster update transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
     function updateBroadcasterCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
@@ -219,7 +219,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Requests and approves a recovery address update using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID
      */
     function updateRecoveryRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
@@ -234,7 +234,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Requests and approves a time lock period update using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID
      */
     function updateTimeLockRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx

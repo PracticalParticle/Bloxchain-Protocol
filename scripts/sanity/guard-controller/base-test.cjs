@@ -624,7 +624,8 @@ class BaseGuardControllerTest {
             if (error.reason) {
                 errorMessage = `${errorMessage} (Reason: ${error.reason})`;
             }
-            // Workaround: ABI decode failure on return value (e.g. requestAndApproveExecution returns uint256, ABI expected TxRecord) - tx may have succeeded
+            // Workaround: ABI decode failure on return value (e.g. requestAndApproveExecution returns uint256, ABI expected TxRecord) - tx may have succeeded.
+            // Callers may receive a raw receipt instead of a decoded return; they should check for receipt.status and handle both shapes.
             const isDecodeError = (error.code === 'INVALID_ARGUMENT' || (error.message && error.message.includes('invalid type')));
             if (isDecodeError) {
                 let receipt = error.receipt || (error.transaction && error.transaction.receipt);
@@ -917,7 +918,7 @@ class BaseGuardControllerTest {
         let encodedData;
         
         switch (actionType) {
-            case this.RoleConfigActionType.CREATE_ROLE:
+            case this.RoleConfigActionType.CREATE_ROLE: {
                 // (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
                 // FunctionPermission is tuple(bytes4,uint16,bytes4[])
                 const permTuples = (data.functionPermissions || []).map(p => [
@@ -930,6 +931,7 @@ class BaseGuardControllerTest {
                     [data.roleName, data.maxWallets || 10, permTuples]
                 );
                 break;
+            }
             case this.RoleConfigActionType.ADD_WALLET:
                 // (bytes32 roleHash, address wallet)
                 encodedData = this.web3.eth.abi.encodeParameters(
