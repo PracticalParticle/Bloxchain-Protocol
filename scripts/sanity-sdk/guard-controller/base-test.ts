@@ -4,7 +4,7 @@
  */
 
 import { Address, Hex } from 'viem';
-import { GuardController } from '../../../sdk/typescript/contracts/GuardController.tsx';
+import { GuardController } from '../../../sdk/typescript/contracts/core/GuardController.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
 import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';

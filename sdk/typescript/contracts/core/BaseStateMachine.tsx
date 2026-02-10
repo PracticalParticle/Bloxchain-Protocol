@@ -1,10 +1,10 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
-import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
-import { TxAction } from '../types/lib.index';
-import { FunctionSchema } from '../types/definition.index';
-import { handleViemError } from '../utils/viem-error-handler';
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
+import { IBaseStateMachine } from '../../interfaces/base.state.machine.index';
+import { TxRecord, MetaTransaction, MetaTxParams } from '../../interfaces/lib.index';
+import { TxAction } from '../../types/lib.index';
+import { FunctionSchema } from '../../types/definition.index';
+import { handleViemError } from '../../utils/viem-error-handler';
 
 /**
  * @title BaseStateMachine
@@ -349,7 +349,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    */
   async supportsBaseStateMachineInterface(): Promise<boolean> {
     // Import dynamically to avoid circular dependencies
-    const { INTERFACE_IDS } = await import('../utils/interface-ids');
+    const { INTERFACE_IDS } = await import('../../utils/interface-ids');
     return this.supportsInterface(INTERFACE_IDS.IBaseStateMachine);
   }
 }

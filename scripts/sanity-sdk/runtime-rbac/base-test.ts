@@ -4,7 +4,7 @@
  */
 
 import { Address, Hex } from 'viem';
-import { RuntimeRBAC } from '../../../sdk/typescript/contracts/RuntimeRBAC.tsx';
+import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
 import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';

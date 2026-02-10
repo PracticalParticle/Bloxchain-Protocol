@@ -4,7 +4,7 @@
  */
 
 import { Address, Hex } from 'viem';
-import { SecureOwnable } from '../../../sdk/typescript/contracts/SecureOwnable.tsx';
+import { SecureOwnable } from '../../../sdk/typescript/contracts/core/SecureOwnable.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
 import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';

@@ -1,12 +1,12 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import SecureOwnableABIJson from '../abi/SecureOwnable.abi.json';
-import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
-import { ISecureOwnable } from '../interfaces/core.security.index';
-import { MetaTransaction } from '../interfaces/lib.index';
-import { TxAction } from '../types/lib.index';
+import SecureOwnableABIJson from '../../abi/SecureOwnable.abi.json';
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
+import { ISecureOwnable } from '../../interfaces/core.security.index';
+import { MetaTransaction } from '../../interfaces/lib.index';
+import { TxAction } from '../../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
-import { INTERFACE_IDS } from '../utils/interface-ids';
-import { updateRecoveryExecutionParams as defUpdateRecoveryExecutionParams, updateTimeLockExecutionParams as defUpdateTimeLockExecutionParams } from '../lib/definitions/SecureOwnableDefinitions';
+import { INTERFACE_IDS } from '../../utils/interface-ids';
+import { updateRecoveryExecutionParams as defUpdateRecoveryExecutionParams, updateTimeLockExecutionParams as defUpdateTimeLockExecutionParams } from '../../lib/definitions/SecureOwnableDefinitions';
 
 /**
  * @title SecureOwnable

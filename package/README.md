@@ -23,18 +23,18 @@ npm install @bloxchain/contracts
 
 ## Usage
 
-Import contracts in your Solidity files. Paths are relative to the package root (`core/`, `utils/`, `interfaces/`):
+Import contracts in your Solidity files. All contracts live under `@bloxchain/contracts/core/`:
 
 ```solidity
 import "@bloxchain/contracts/core/base/BaseStateMachine.sol";
 import "@bloxchain/contracts/core/security/SecureOwnable.sol";
 import "@bloxchain/contracts/core/access/RuntimeRBAC.sol";
 import "@bloxchain/contracts/core/execution/GuardController.sol";
-import "@bloxchain/contracts/utils/SharedValidation.sol";
-import "@bloxchain/contracts/interfaces/IDefinition.sol";
+import "@bloxchain/contracts/core/lib/utils/SharedValidation.sol";
+import "@bloxchain/contracts/core/lib/interfaces/IDefinition.sol";
 ```
 
-**Foundry**: No remapping needed; the package exposes `core/`, `utils/`, and `interfaces/` at root.  
+**Foundry**: No remapping needed; the package exposes `core/` at root (lib, base, access, execution, security live inside it).  
 **Hardhat / Truffle**: Resolve `@bloxchain/contracts` from `node_modules` as usual.
 
 ## Contracts

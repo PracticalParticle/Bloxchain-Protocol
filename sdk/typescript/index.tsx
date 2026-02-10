@@ -2,10 +2,10 @@
 // Main entry point for all SDK functionality
 
 // Core Classes
-export { default as BaseStateMachine } from './contracts/BaseStateMachine';
-export { default as SecureOwnable } from './contracts/SecureOwnable';
-export { default as RuntimeRBAC } from './contracts/RuntimeRBAC';
-export { default as GuardController } from './contracts/GuardController';
+export { default as BaseStateMachine } from './contracts/core/BaseStateMachine';
+export { default as SecureOwnable } from './contracts/core/SecureOwnable';
+export { default as RuntimeRBAC } from './contracts/core/RuntimeRBAC';
+export { default as GuardController } from './contracts/core/GuardController';
 export { Definitions } from './lib/Definition';
 export { EngineBlox } from './lib/EngineBlox';
 export {
