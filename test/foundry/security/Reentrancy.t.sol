@@ -19,14 +19,17 @@ contract ReentrancyTest is CommonBase {
     function test_ReentrancyProtection_OwnershipTransfer() public {
         // Create ownership transfer request
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         // First approval should succeed
         vm.prank(recovery);
-        EngineBlox.TxRecord memory approvalTx = secureBlox.transferOwnershipDelayedApproval(txId);
+        secureBlox.transferOwnershipDelayedApproval(txId);
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory approvalTx = secureBlox.getTransaction(txId);
 
         // Verify single execution completed
         assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
@@ -45,8 +48,9 @@ contract ReentrancyTest is CommonBase {
         // Reentry attempts would find status as EXECUTING, not PENDING, and fail
 
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 

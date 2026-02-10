@@ -45,12 +45,5 @@ contract RoleBlox is RuntimeRBAC, SecureOwnable {
         return RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
     }
 
-    /**
-     * @dev Override to resolve ambiguity between BaseStateMachine and SecureOwnable
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override(BaseStateMachine, SecureOwnable) {
-        SecureOwnable._updateTimeLockPeriod(newTimeLockPeriodSec);
-    }
 }
 

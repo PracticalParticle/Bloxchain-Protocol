@@ -101,63 +101,50 @@ class EIP712Signer {
     }
 
     /**
-     * Generate the complete EIP-712 message hash using the contract's own process
-     * This uses SecureOwnable's generateUnsignedMetaTransactionForNew/ForExisting functions
-     * to get the exact message hash that the contract expects
+     * Normalize a value to a 66-char hex message hash (0x + 64 hex digits).
+     * Handles string, BN, and other types; returns null if invalid.
+     */
+    _normalizeMessageHex(value) {
+        if (value == null || value === '') return null;
+        let hex;
+        try {
+            if (typeof value === 'string') hex = value;
+            else if (typeof value === 'bigint') hex = '0x' + value.toString(16);
+            else hex = this.web3.utils.toHex(value);
+        } catch (_) {
+            hex = String(value);
+        }
+        if (!hex || typeof hex !== 'string') return null;
+        if (!hex.startsWith('0x')) hex = '0x' + hex;
+        const body = hex.slice(2).replace(/[^0-9a-fA-F]/g, '') || '0';
+        if (body.length > 64) hex = '0x' + body.slice(-64);
+        else hex = '0x' + body.padStart(64, '0');
+        return /^0x[0-9a-fA-F]{64}$/.test(hex) ? hex : null;
+    }
+
+    /**
+     * Generate the EIP-712 message hash for a meta-transaction.
+     *
+     * EngineBlox (see EngineBlox.generateMetaTransaction) already computes and
+     * stores the hash in `metaTx.message` inside the unsigned meta-transaction
+     * returned by `generateUnsignedMetaTransactionForNew/Existing`.
+     *
+     * For sanity tests we MUST trust that field and MUST NOT call the contract
+     * again to recreate the hash, because some ABIs contain enum metadata that
+     * breaks generic decoders (\"invalid type: u\").
      */
     async generateMessageHash(metaTx, contract) {
-        try {
-            console.log('🔍 Using SecureOwnable contract for EIP-712 message hash generation...');
-            
-            // Check if the metaTx already has a message hash (from generateUnsignedMetaTransactionForNew)
-            if (metaTx.message && metaTx.message !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
-                console.log('  📋 Using existing message hash from unsigned meta-transaction...');
-                console.log(`📝 Existing Message Hash: ${metaTx.message}`);
-                return metaTx.message;
-            }
-            
-            // Check if this is a new transaction (has txId = 0 or undefined) or existing transaction
-            const txId = metaTx.txRecord.txId || metaTx.txRecord[0];
-            const isNewTransaction = !txId || txId === '0' || txId === 0 || txId === 'undefined';
-            
-            let unsignedMetaTx;
-            
-            if (isNewTransaction) {
-                console.log('  📋 Generating unsigned meta-transaction for NEW operation...');
-                
-                // Extract parameters for new transaction
-                const txParams = metaTx.txRecord.params || metaTx.txRecord[3];
-                const metaTxParams = metaTx.params;
-                
-                unsignedMetaTx = await contract.methods.generateUnsignedMetaTransactionForNew(
-                    txParams.requester || txParams[0],
-                    txParams.target || txParams[1], 
-                    txParams.value || txParams[2],
-                    txParams.gasLimit || txParams[3],
-                    txParams.operationType || txParams[4],
-                    txParams.executionSelector || txParams[5],
-                    txParams.executionParams || txParams[6],
-                    metaTxParams
-                ).call();
-            } else {
-                console.log(`  📋 Generating unsigned meta-transaction for EXISTING transaction ${txId}...`);
-                
-                unsignedMetaTx = await contract.methods.generateUnsignedMetaTransactionForExisting(
-                    txId,
-                    metaTx.params
-                ).call();
-            }
-            
-            // The unsigned meta-transaction should have the message field populated
-            const messageHash = unsignedMetaTx.message || unsignedMetaTx[2];
-            console.log(`📝 Contract Message Hash: ${messageHash}`);
-            
-            return messageHash;
-            
-        } catch (error) {
-            console.log(`❌ Failed to get contract message hash: ${error.message}`);
-            throw new Error(`Contract EIP-712 generation failed: ${error.message}`);
+        const hex = this._normalizeMessageHex(metaTx.message);
+        if (!hex) {
+            throw new Error(
+                'Meta-transaction missing valid message hash in `metaTx.message`. ' +
+                'EngineBlox.generateUnsignedMetaTransactionForNew/Existing must populate this field.'
+            );
         }
+
+        console.log('  📋 Using metaTx.message from unsigned meta-transaction...');
+        console.log(`📝 Message Hash: ${hex}`);
+        return hex;
     }
 
     /**

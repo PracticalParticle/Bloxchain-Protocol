@@ -667,32 +667,6 @@
   },
   {
     "inputs": [],
-    "name": "UPDATE_PAYMENT_OPERATION",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "UPDATE_PAYMENT_SELECTOR",
-    "outputs": [
-      {
-        "internalType": "bytes4",
-        "name": "",
-        "type": "bytes4"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "VERSION_MAJOR",
     "outputs": [
       {

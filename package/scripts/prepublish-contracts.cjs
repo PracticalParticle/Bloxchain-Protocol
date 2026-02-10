@@ -33,7 +33,7 @@ try {
   process.exit(1);
 }
 
-// Step 2: Copy contract dirs to package root (core, utils, interfaces) so imports are @bloxchain/contracts/core/...
+// Step 2: Copy contracts/core to package/core (single exposed folder; lib/utils, lib/interfaces live inside core)
 console.log('📋 Step 2: Copying contracts to package root...');
 if (!fs.existsSync(sourceContractsDir)) {
   console.error('❌ Source contracts directory not found!');
@@ -41,20 +41,17 @@ if (!fs.existsSync(sourceContractsDir)) {
 }
 
 const excludedDirs = ['examples', 'experimental'];
-const contractTopDirs = ['core', 'utils', 'interfaces'];
-for (const dir of contractTopDirs) {
-  const src = path.join(sourceContractsDir, dir);
-  const dest = path.join(contractsDir, dir);
-  if (!fs.existsSync(src)) {
-    console.error(`❌ Source directory not found: ${dir}`);
-    process.exit(1);
-  }
-  if (fs.existsSync(dest)) {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
-  copyDir(src, dest, excludedDirs);
+const coreSrc = path.join(sourceContractsDir, 'core');
+const coreDest = path.join(contractsDir, 'core');
+if (!fs.existsSync(coreSrc)) {
+  console.error('❌ Source directory not found: contracts/core');
+  process.exit(1);
 }
-console.log('✅ Contracts copied (core, utils, interfaces at package root)\n');
+if (fs.existsSync(coreDest)) {
+  fs.rmSync(coreDest, { recursive: true, force: true });
+}
+copyDir(coreSrc, coreDest, excludedDirs);
+console.log('✅ Contracts copied (package/core contains all contracts)\n');
 
 // Step 3: Copy abi directory
 console.log('📋 Step 3: Copying ABIs...');

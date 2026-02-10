@@ -4,8 +4,8 @@ pragma solidity 0.8.33;
 // Contracts imports
 import "../base/BaseStateMachine.sol";
 import "./lib/definitions/SecureOwnableDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/interfaces/IDefinition.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./interface/ISecureOwnable.sol";
 
 /**
@@ -82,9 +82,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     // Ownership Management
     /**
      * @dev Requests a transfer of ownership
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
-    function transferOwnershipRequest() public returns (EngineBlox.TxRecord memory) {
+    function transferOwnershipRequest() public returns (uint256 txId) {
         SharedValidation.validateRecovery(getRecovery());
         _requireNoPendingRequest();
 
@@ -100,37 +100,35 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
         _hasOpenRequest = true;
         _logComponentEvent(abi.encode(owner(), getRecovery()));
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
      * @dev Approves a pending ownership transfer transaction after the release time
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function transferOwnershipDelayedApproval(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function transferOwnershipDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
-        
         return _completeOwnershipApprove(_approveTransaction(txId));
     }
 
     /**
      * @dev Approves a pending ownership transfer transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function transferOwnershipApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
+    function transferOwnershipApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
         return _completeOwnershipApprove(_approveTransactionWithMetaTx(metaTx));
     }
 
     /**
      * @dev Cancels a pending ownership transfer transaction
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function transferOwnershipCancellation(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function transferOwnershipCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateRecovery(getRecovery());
         return _completeOwnershipCancel(_cancelTransaction(txId));
     }
@@ -138,11 +136,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending ownership transfer transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function transferOwnershipCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
+    function transferOwnershipCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
         return _completeOwnershipCancel(_cancelTransactionWithMetaTx(metaTx));
     }
 
@@ -151,9 +148,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      * @dev Requests an update to the broadcaster at a specific location (index).
      * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
      * @param location The index in the broadcaster role's authorized wallets set
-     * @return The transaction record for the pending request
+     * @return txId The transaction ID for the pending request (use getTransaction(txId) for full record)
      */
-    function updateBroadcasterRequest(address newBroadcaster, uint256 location) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterRequest(address newBroadcaster, uint256 location) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         _requireNoPendingRequest();
 
@@ -174,15 +171,15 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
         _hasOpenRequest = true;
         _logComponentEvent(abi.encode(currentBroadcaster, newBroadcaster));
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
      * @dev Approves a pending broadcaster update transaction after the release time
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function updateBroadcasterDelayedApproval(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         return _completeBroadcasterApprove(_approveTransaction(txId));
     }
@@ -190,20 +187,19 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Approves a pending broadcaster update transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function updateBroadcasterApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
         return _completeBroadcasterApprove(_approveTransactionWithMetaTx(metaTx));
     }
 
     /**
      * @dev Cancels a pending broadcaster update transaction
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function updateBroadcasterCancellation(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         return _completeBroadcasterCancel(_cancelTransaction(txId));
     }
@@ -211,11 +207,10 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Cancels a pending broadcaster update transaction using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function updateBroadcasterCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
+    function updateBroadcasterCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
         return _completeBroadcasterCancel(_cancelTransactionWithMetaTx(metaTx));
     }
 
@@ -224,14 +219,14 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Requests and approves a recovery address update using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID
      */
     function updateRecoveryRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     // TimeLock Management
@@ -239,14 +234,14 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     /**
      * @dev Requests and approves a time lock period update using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID
      */
     function updateTimeLockRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     // Execution Functions
@@ -306,37 +301,45 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Completes ownership flow after approval: resets flag and returns record.
+     * @dev Completes ownership flow after approval: resets flag and returns txId.
+     * @param updatedRecord The updated transaction record from approval
+     * @return txId The transaction ID
      */
-    function _completeOwnershipApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
+    function _completeOwnershipApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
-     * @dev Completes ownership flow after cancellation: resets flag, logs txId, returns record.
+     * @dev Completes ownership flow after cancellation: resets flag, logs txId, returns txId.
+     * @param updatedRecord The updated transaction record from cancellation
+     * @return txId The transaction ID
      */
-    function _completeOwnershipCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
+    function _completeOwnershipCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
         _logComponentEvent(abi.encode(updatedRecord.txId));
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
-     * @dev Completes broadcaster flow after approval: resets flag and returns record.
+     * @dev Completes broadcaster flow after approval: resets flag and returns txId.
+     * @param updatedRecord The updated transaction record from approval
+     * @return txId The transaction ID
      */
-    function _completeBroadcasterApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
+    function _completeBroadcasterApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
-     * @dev Completes broadcaster flow after cancellation: resets flag, logs txId, returns record.
+     * @dev Completes broadcaster flow after cancellation: resets flag, logs txId, returns txId.
+     * @param updatedRecord The updated transaction record from cancellation
+     * @return txId The transaction ID
      */
-    function _completeBroadcasterCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (EngineBlox.TxRecord memory) {
+    function _completeBroadcasterCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
         _logComponentEvent(abi.encode(updatedRecord.txId));
-        return updatedRecord;
+        return updatedRecord.txId;
     }
 
     /**
@@ -405,13 +408,4 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         _logComponentEvent(abi.encode(oldRecovery, newRecoveryAddress));
     }
 
-    /**
-     * @dev Updates the time lock period
-     * @param newTimeLockPeriodSec The new time lock period in seconds
-     */
-    function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal virtual override {
-        uint256 oldPeriod = getTimeLockPeriodSec();
-        super._updateTimeLockPeriod(newTimeLockPeriodSec);
-        _logComponentEvent(abi.encode(oldPeriod, newTimeLockPeriodSec));
-    }
 }

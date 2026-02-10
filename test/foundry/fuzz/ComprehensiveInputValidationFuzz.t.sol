@@ -5,7 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/execution/GuardController.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -105,7 +105,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Should fail with InvalidAddress
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -148,7 +150,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         
         // Execute - should handle large arrays
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should either complete or fail gracefully
         assertTrue(
@@ -206,7 +210,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         
         // Execute empty batch - should succeed (no-op)
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Empty batch should complete (no operations to perform)
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
@@ -225,10 +231,12 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         uint256 length1,
         uint256 length2
     ) public {
-        vm.assume(length1 != length2);
-        vm.assume(length1 > 0 && length1 < 100);
-        vm.assume(length2 > 0 && length2 < 100);
-        
+        length1 = bound(length1, 1, 99);
+        length2 = bound(length2, 1, 99);
+        if (length1 == length2) {
+            length2 = length2 == 99 ? 1 : length2 + 1;
+        }
+        assertTrue(length1 != length2 && length1 >= 1 && length1 < 100 && length2 >= 1 && length2 < 100);
         // Array length validation is tested through role configuration operations
         // which enforce matching array lengths. This test documents the security property.
         // The actual validation occurs in role configuration batch operations.
@@ -267,7 +275,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Should handle various name lengths
         assertTrue(
@@ -344,7 +354,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory) {
+        ) returns (uint256) {
             // If it succeeds, verify the transaction is handled correctly
             // (zero selector may be allowed for specific system operations)
         } catch {
@@ -404,7 +414,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             params,
             0,
             bytes32(0) // Zero operation type
-        ) returns (EngineBlox.TxRecord memory) {
+        ) returns (uint256) {
             // If transaction is created, verify it's handled appropriately
             // Zero operation type should not be executable
         } catch (bytes memory reason) {
@@ -476,8 +486,10 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
-            
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+
             // Should fail with MaxWalletsZero
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
             bytes memory expectedError = abi.encodeWithSelector(

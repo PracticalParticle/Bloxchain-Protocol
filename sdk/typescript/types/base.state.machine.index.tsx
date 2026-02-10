@@ -10,8 +10,7 @@ export const BASE_STATE_MACHINE_OPERATION_TYPES = {
   TX_CANCELLATION: keccak256(new TextEncoder().encode("TX_CANCELLATION")),
   META_TX_APPROVAL: keccak256(new TextEncoder().encode("META_TX_APPROVAL")),
   META_TX_CANCELLATION: keccak256(new TextEncoder().encode("META_TX_CANCELLATION")),
-  META_TX_REQUEST_AND_APPROVE: keccak256(new TextEncoder().encode("META_TX_REQUEST_AND_APPROVE")),
-  UPDATE_PAYMENT: keccak256(new TextEncoder().encode("UPDATE_PAYMENT"))
+  META_TX_REQUEST_AND_APPROVE: keccak256(new TextEncoder().encode("META_TX_REQUEST_AND_APPROVE"))
 } as const;
 
 export type BaseStateMachineOperationType = typeof BASE_STATE_MACHINE_OPERATION_TYPES[keyof typeof BASE_STATE_MACHINE_OPERATION_TYPES];

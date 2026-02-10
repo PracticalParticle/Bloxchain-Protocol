@@ -2,7 +2,7 @@
 pragma solidity 0.8.33;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "../core/lib/EngineBlox.sol";
+import "../EngineBlox.sol";
 
 /**
  * @dev Interface for definition contracts that provide operation types, function schemas, and role permissions

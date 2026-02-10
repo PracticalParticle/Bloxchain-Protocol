@@ -1,10 +1,10 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
-import { IBaseStateMachine } from '../interfaces/base.state.machine.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from '../interfaces/lib.index';
-import { TxAction } from '../types/lib.index';
-import { FunctionSchema } from '../types/definition.index';
-import { handleViemError } from '../utils/viem-error-handler';
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
+import { IBaseStateMachine } from '../../interfaces/base.state.machine.index';
+import { TxRecord, MetaTransaction, MetaTxParams } from '../../interfaces/lib.index';
+import { TxAction } from '../../types/lib.index';
+import { FunctionSchema } from '../../types/definition.index';
+import { handleViemError } from '../../utils/viem-error-handler';
 
 /**
  * @title BaseStateMachine
@@ -328,6 +328,15 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<Address>('getRecovery');
   }
 
+  /**
+   * @dev Returns all hook contracts registered for a function selector
+   * @param functionSelector The function selector to query hooks for
+   * @return Array of hook contract addresses
+   */
+  async getHooks(functionSelector: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getHooks', [functionSelector]);
+  }
+
   // ============ INTERFACE SUPPORT ============
 
   async supportsInterface(interfaceId: Hex): Promise<boolean> {
@@ -340,7 +349,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    */
   async supportsBaseStateMachineInterface(): Promise<boolean> {
     // Import dynamically to avoid circular dependencies
-    const { INTERFACE_IDS } = await import('../utils/interface-ids');
+    const { INTERFACE_IDS } = await import('../../utils/interface-ids');
     return this.supportsInterface(INTERFACE_IDS.IBaseStateMachine);
   }
 }

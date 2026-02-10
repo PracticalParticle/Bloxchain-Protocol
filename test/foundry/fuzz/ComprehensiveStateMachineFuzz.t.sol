@@ -8,7 +8,7 @@ import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.so
 import "../../../contracts/core/security/SecureOwnable.sol";
 import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
@@ -107,7 +107,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory createResult = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        uint256 _createTxId = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory createResult = accountBlox.getTransaction(_createTxId);
         // If role creation failed, skip permission setup
         if (createResult.status != EngineBlox.TxStatus.COMPLETED) {
             return;
@@ -128,7 +130,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory addWalletResult = accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
+        uint256 _addWalletTxId = accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory addWalletResult = accountBlox.getTransaction(_addWalletTxId);
         // If wallet addition failed, skip permission setup
         if (addWalletResult.status != EngineBlox.TxStatus.COMPLETED) {
             return;
@@ -161,7 +165,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory addPermissionResult = accountBlox.roleConfigBatchRequestAndApprove(addPermissionMetaTx);
+        uint256 _addPermTxId = accountBlox.roleConfigBatchRequestAndApprove(addPermissionMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory addPermissionResult = accountBlox.getTransaction(_addPermTxId);
         // If permission addition failed, log but continue (test will show NoPermission which is acceptable)
         if (addPermissionResult.status != EngineBlox.TxStatus.COMPLETED) {
             // Permission addition failed - this is okay, test will verify security is working
@@ -349,9 +355,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // If transaction was created, test the concurrent approval/cancellation
-            uint256 txId = txRecord.txId;
             
             // Advance time past release time
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
@@ -411,8 +417,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             uint256 releaseTime = txRecord.releaseTime;
             
             // Advance time but not enough
@@ -460,8 +466,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Advance time and approve (status becomes COMPLETED/FAILED)
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
@@ -512,8 +518,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Set target transaction ID for reentrancy attempt
             reentrancyTarget.setTargetTxId(txId);
@@ -560,10 +566,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Setup malicious payment recipient
         maliciousRecipient.setTargetContract(address(accountBlox));
         
-        // Create transaction - note: payment details are not set up because
-        // _updatePaymentForTransaction is internal. This test verifies transaction-level
+        // Create transaction without payment. This test verifies transaction-level
         // reentrancy protection. For payment-level reentrancy testing, use PayBlox
-        // which exposes payment functionality.
+        // or requestTransactionWithPayment.
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         vm.prank(owner);
         try accountBlox.executeWithTimeLock(
@@ -573,8 +578,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Advance time and approve
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
@@ -622,35 +627,28 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Setup malicious ERC20 - it will attempt reentrancy during transfer
         maliciousERC20.setTargetContract(address(paymentHelper));
 
-        // Create transaction using payment helper
+        // Create transaction with payment using payment helper
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
-        vm.prank(owner);
-        EngineBlox.TxRecord memory txRecord = paymentHelper.requestTransaction(
-            owner,
-            address(paymentHelper),
-            0,
-            0,
-            operationType,
-            EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        );
-
-        uint256 txId = txRecord.txId;
-
-        // Set up ERC20 payment with malicious token
-        // Note: MaliciousERC20 doesn't fully implement ERC20, so this will fail at execution
-        // but we can test that the reentrancy attempt is blocked
         EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
             recipient: recipient,
             nativeTokenAmount: 0,
             erc20TokenAddress: address(maliciousERC20),
             erc20TokenAmount: paymentAmount
         });
-
-        maliciousERC20.setTargetTxId(txId);
-
         vm.prank(owner);
-        paymentHelper.updatePaymentForTransaction(txId, payment);
+        uint256 txId = paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
+            0,
+            0,
+            operationType,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            "",
+            payment
+        );
+        vm.prank(owner);
+        EngineBlox.TxRecord memory txRecord = paymentHelper.getTransaction(txId);
+        maliciousERC20.setTargetTxId(txId);
 
         // Advance time and approve
         advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
@@ -659,7 +657,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // ERC20 payment execution should be protected against reentrancy
         // The malicious token will attempt reentrancy during transfer, but nonReentrant should block it
         // The transaction may fail due to the malicious token's behavior, but reentrancy should be prevented
-        try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+        try paymentHelper.approveTransaction(txId) returns (uint256) {
+            vm.prank(owner);
+            EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
             // If execution succeeds, verify status
             assertTrue(
                 result.status == EngineBlox.TxStatus.COMPLETED ||
@@ -738,7 +738,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         // Execute meta-transaction (bypasses time-lock as designed)
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = secureBlox.updateTimeLockRequestAndApprove(metaTx);
+        secureBlox.updateTimeLockRequestAndApprove(metaTx);
         
         // Verify time-lock updated (meta-transaction executes immediately)
         assertEq(secureBlox.getTimeLockPeriodSec(), newTimeLockPeriod);
@@ -770,8 +770,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             uint256 releaseTime = txRecord.releaseTime;
             uint256 timeLockPeriod = accountBlox.getTimeLockPeriodSec();
             
@@ -839,15 +839,16 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             gasLimit,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Advance time
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve with potentially insufficient gas
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
             
             // Transaction should either complete or fail gracefully
             assertTrue(
@@ -885,15 +886,16 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Advance time
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve - target will revert
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
             
             // Transaction should be marked as FAILED, not revert
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -934,15 +936,16 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             
             // Advance time
             advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
             
             // Approve - should fail due to insufficient balance
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecution(txId);
+            accountBlox.approveTimeLockExecution(txId);
+            EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
             
             // Transaction should fail with insufficient balance
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));

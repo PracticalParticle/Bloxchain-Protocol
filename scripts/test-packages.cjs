@@ -195,7 +195,7 @@ function testContractsPackage() {
     });
     logSuccess('npm pack dry-run successful');
     
-    // Check that expected files are in the pack (core, utils, interfaces at package root)
+    // Check that expected files are in the pack (core and abi at package root)
     const hasCore = /core\//.test(packOutput);
     const hasAbi = /abi\//.test(packOutput);
 

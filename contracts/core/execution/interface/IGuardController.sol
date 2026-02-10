@@ -52,62 +52,84 @@ interface IGuardController {
     ) external returns (uint256 txId);
 
     /**
+     * @dev Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
+     * @param target The address of the target contract
+     * @param value The ETH value to send (0 for standard function calls)
+     * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+     * @param params The encoded parameters for the function (empty for simple native token transfers)
+     * @param gasLimit The gas limit for execution
+     * @param operationType The operation type hash
+     * @param paymentDetails The payment details to attach to the transaction
+     * @return txId The transaction ID for the requested operation (use getTransaction(txId) for full record)
+     * @notice Reuses EXECUTE_TIME_DELAY_REQUEST permission; approval/cancel same as executeWithTimeLock
+     */
+    function executeWithPayment(
+        address target,
+        uint256 value,
+        bytes4 functionSelector,
+        bytes memory params,
+        uint256 gasLimit,
+        bytes32 operationType,
+        EngineBlox.PaymentDetails memory paymentDetails
+    ) external returns (uint256 txId);
+
+    /**
      * @dev Approves and executes a time-locked transaction
      * @param txId The transaction ID
      * @param expectedOperationType The expected operation type for validation
-     * @return result The execution result
+     * @return txId The transaction ID (use getTransaction(txId) for full record and result)
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_APPROVE permission for the execution function
      */
     function approveTimeLockExecution(
         uint256 txId,
         bytes32 expectedOperationType
-    ) external returns (bytes memory result);
+    ) external returns (uint256);
 
     /**
      * @dev Cancels a time-locked transaction
      * @param txId The transaction ID
      * @param expectedOperationType The expected operation type for validation
-     * @return The updated transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_CANCEL permission for the execution function
      */
     function cancelTimeLockExecution(
         uint256 txId,
         bytes32 expectedOperationType
-    ) external returns (EngineBlox.TxRecord memory);
+    ) external returns (uint256);
 
     /**
      * @dev Approves a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
      * @param expectedOperationType The expected operation type for validation
      * @param requiredSelector The handler selector for validation
-     * @return The updated transaction record
+     * @return The transaction ID (use getTransaction(txId) for full record)
      * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
-    ) external returns (EngineBlox.TxRecord memory);
+    ) external returns (uint256);
 
     /**
      * @dev Cancels a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
      * @param expectedOperationType The expected operation type for validation
      * @param requiredSelector The handler selector for validation
-     * @return The updated transaction record
+     * @return The transaction ID (use getTransaction(txId) for full record)
      * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx,
         bytes32 expectedOperationType,
         bytes4 requiredSelector
-    ) external returns (EngineBlox.TxRecord memory);
+    ) external returns (uint256);
 
     /**
      * @dev Requests and approves a transaction in one step using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
      * @param requiredSelector The handler selector for validation
-     * @return The transaction record after request and approval
+     * @return The transaction ID (use getTransaction(txId) for full record)
      * @notice Requires STANDARD execution type
      * @notice Validates function schema and permissions for the execution function (same as executeWithTimeLock)
      * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
@@ -115,6 +137,6 @@ interface IGuardController {
     function requestAndApproveExecution(
         EngineBlox.MetaTransaction memory metaTx,
         bytes4 requiredSelector
-    ) external returns (EngineBlox.TxRecord memory);
+    ) external returns (uint256);
 }
 

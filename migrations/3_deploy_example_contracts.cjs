@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MPL-2.0
-// Migration 3: Deploy Example Contracts (SimpleVault and SimpleRWA20)
+// Migration 3: Deploy Example Contracts (SimpleVault, SimpleRWA20, ERC20Blox)
 
 const SimpleVault = artifacts.require("SimpleVault");
 const SimpleRWA20 = artifacts.require("SimpleRWA20");
+const ERC20Blox = artifacts.require("ERC20Blox");
 
 // Import the deployed library artifacts to get their addresses
 const EngineBlox = artifacts.require("EngineBlox");
 const SecureOwnableDefinitions = artifacts.require("SecureOwnableDefinitions");
 const RuntimeRBACDefinitions = artifacts.require("RuntimeRBACDefinitions");
+const GuardControllerDefinitions = artifacts.require("GuardControllerDefinitions");
 
 // Import the example-specific definitions
 const SimpleVaultDefinitions = artifacts.require("SimpleVaultDefinitions");
 const SimpleRWA20Definitions = artifacts.require("SimpleRWA20Definitions");
+const ERC20BloxDefinitions = artifacts.require("ERC20BloxDefinitions");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 module.exports = async function(deployer, network, accounts) {
@@ -24,17 +27,20 @@ module.exports = async function(deployer, network, accounts) {
   // Configuration flags - set to true/false to control which contracts to deploy
   const deploySimpleVault = process.env.DEPLOY_SIMPLE_VAULT === 'true'; // Default: false
   const deploySimpleRWA20 = process.env.DEPLOY_SIMPLE_RWA20 === 'true'; // Default: false
+  const deployERC20Blox = process.env.DEPLOY_ERC20_BLOX === 'true'; // Default: false
   
   console.log("\n🎯 Deployment Configuration:");
   console.log(`   SimpleVault: ${deploySimpleVault ? '✅ YES' : '❌ NO'}`);
   console.log(`   SimpleRWA20: ${deploySimpleRWA20 ? '✅ YES' : '❌ NO'}`);
+  console.log(`   ERC20Blox: ${deployERC20Blox ? '✅ YES' : '❌ NO'}`);
 
   try {
     // Step 1: Deploy Example-Specific Definitions Libraries (only if needed)
     let simpleVaultDefinitions = null;
     let simpleRWA20Definitions = null;
+    let erc20BloxDefinitions = null;
     
-    if (deploySimpleVault || deploySimpleRWA20) {
+    if (deploySimpleVault || deploySimpleRWA20 || deployERC20Blox) {
         console.log("\n📦 Step 1: Deploying Example-Specific Definitions Libraries...");
         
         if (deploySimpleVault) {
@@ -50,12 +56,19 @@ module.exports = async function(deployer, network, accounts) {
             simpleRWA20Definitions = await SimpleRWA20Definitions.deployed();
             console.log(`✅ SimpleRWA20Definitions deployed at: ${simpleRWA20Definitions.address}`);
         }
+        
+        if (deployERC20Blox) {
+            // Deploy ERC20BloxDefinitions
+            await deployer.deploy(ERC20BloxDefinitions);
+            erc20BloxDefinitions = await ERC20BloxDefinitions.deployed();
+            console.log(`✅ ERC20BloxDefinitions deployed at: ${erc20BloxDefinitions.address}`);
+        }
     } else {
         console.log("\n📦 Step 1: Skipping Example-Specific Definitions Libraries (no contracts enabled)");
     }
 
     // Retrieve deployed foundation library instances (deploy if needed)
-    let sa, sod, drbd;
+    let sa, sod, drbd, gcd;
     try {
         sa = await EngineBlox.deployed();
     } catch (e) {
@@ -77,11 +90,19 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.deploy(RuntimeRBACDefinitions);
         drbd = await RuntimeRBACDefinitions.deployed();
     }
+    try {
+        gcd = await GuardControllerDefinitions.deployed();
+    } catch (e) {
+        console.log("⚠️  GuardControllerDefinitions not found in artifacts; deploying now...");
+        await deployer.deploy(GuardControllerDefinitions);
+        gcd = await GuardControllerDefinitions.deployed();
+    }
 
     console.log("\n📦 Step 2: Linking Foundation Libraries...");
     console.log(`✅ Using EngineBlox at: ${sa.address}`);
     console.log(`✅ Using SecureOwnableDefinitions at: ${sod.address}`);
     console.log(`✅ Using RuntimeRBACDefinitions at: ${drbd.address}`);
+    console.log(`✅ Using GuardControllerDefinitions at: ${gcd.address}`);
 
     // Step 3: Deploy SimpleVault (if enabled)
     let simpleVault = null;
@@ -191,10 +212,54 @@ module.exports = async function(deployer, network, accounts) {
         console.log("\n📦 Step 4: Skipping SimpleRWA20 deployment (disabled)");
     }
 
+    // Step 5: Deploy ERC20Blox (if enabled)
+    let erc20Blox = null;
+    if (deployERC20Blox) {
+        console.log("\n📦 Step 5: Deploying ERC20Blox...");
+        await deployer.link(sa, ERC20Blox);
+        await deployer.link(sod, ERC20Blox);
+        await deployer.link(drbd, ERC20Blox);
+        await deployer.link(gcd, ERC20Blox);
+        await deployer.link(erc20BloxDefinitions, ERC20Blox);
+        await deployer.deploy(ERC20Blox);
+        erc20Blox = await ERC20Blox.deployed();
+        console.log(`✅ ERC20Blox deployed at: ${erc20Blox.address}`);
+        const web3Erc20 = erc20Blox.constructor.web3 || global.web3;
+        await saveArtifactNetwork(ERC20Blox, erc20Blox.address, web3Erc20, network);
+
+        // Initialize ERC20Blox (5 params)
+        console.log("🔧 Initializing ERC20Blox...");
+        try {
+            await erc20Blox.initialize(
+                accounts[0],  // initialOwner
+                accounts[1],  // broadcaster
+                accounts[2],  // recovery
+                1,            // timeLockPeriodInSeconds (1 second for fast testing)
+                "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
+            );
+            console.log("✅ ERC20Blox initialize(5 params) succeeded");
+        } catch (error) {
+            console.log("❌ ERC20Blox initialize failed:", error.message);
+            console.log("⚠️  Contract deployed but not initialized.");
+        }
+
+        // Initialize ERC20 token name/symbol (reinitializer(2))
+        try {
+            const tx = await erc20Blox.initializeToken("ERC20Blox", "BLOX20");
+            console.log("✅ ERC20Blox initializeToken succeeded");
+            console.log("   Transaction hash:", tx.tx);
+        } catch (error) {
+            console.log("❌ ERC20Blox initializeToken failed:", error.message);
+        }
+    } else {
+        console.log("\n📦 Step 5: Skipping ERC20Blox deployment (disabled)");
+    }
+
     console.log("\n🎉 Migration 3 completed successfully!");
     console.log("📋 Example Contracts Deployed & Initialized:");
     if (simpleVault) console.log(`   SimpleVault: ${simpleVault.address}`);
     if (simpleRWA20) console.log(`   SimpleRWA20: ${simpleRWA20.address}`);
+    if (erc20Blox) console.log(`   ERC20Blox: ${erc20Blox.address}`);
 
     // Save deployed addresses to file for auto mode fallback
     const fs = require('fs');
@@ -222,6 +287,12 @@ module.exports = async function(deployer, network, accounts) {
             deployedAt: new Date().toISOString()
         };
     }
+    if (erc20BloxDefinitions) {
+        addresses[network].ERC20BloxDefinitions = {
+            address: erc20BloxDefinitions.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
     if (simpleVault) {
         addresses[network].SimpleVault = {
             address: simpleVault.address,
@@ -234,6 +305,12 @@ module.exports = async function(deployer, network, accounts) {
             deployedAt: new Date().toISOString()
         };
     }
+    if (erc20Blox) {
+        addresses[network].ERC20Blox = {
+            address: erc20Blox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
     
     fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2));
     console.log(`\n💾 Saved addresses to ${addressesFile}`);
@@ -243,15 +320,18 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   EngineBlox: ${sa.address}`);
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drbd.address}`);
+    console.log(`   GuardControllerDefinitions: ${gcd.address}`);
     console.log("📋 Example-Specific Definitions:");
     if (simpleVaultDefinitions) console.log(`   SimpleVaultDefinitions: ${simpleVaultDefinitions.address}`);
     if (simpleRWA20Definitions) console.log(`   SimpleRWA20Definitions: ${simpleRWA20Definitions.address}`);
+    if (erc20BloxDefinitions) console.log(`   ERC20BloxDefinitions: ${erc20BloxDefinitions.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
     console.log(`   GuardianAccountAbstraction: 0xf759A0e8F2fFBb5F5a9DD50f1106668FBE29bC93`);
     console.log(`   GuardianAccountAbstractionWithRoles: 0xA5682DF1987D214Fe4dfC3a262179eBDc205b525`);
     console.log("🏦 Example Contracts (Deployed & Initialized):");
     if (simpleVault) console.log(`   SimpleVault: ${simpleVault.address}`);
     if (simpleRWA20) console.log(`   SimpleRWA20: ${simpleRWA20.address}`);
+    if (erc20Blox) console.log(`   ERC20Blox: ${erc20Blox.address}`);
     console.log("\n✅ All contracts deployed and initialized successfully!");
     console.log("🎯 Ready for comprehensive analyzer testing with fully functional contracts!");
     console.log("🔧 Initialization Parameters:");
@@ -264,9 +344,10 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   Token Symbol: SRWA`);
     
     console.log("\n💡 Usage Examples:");
-    console.log("   Deploy only SimpleVault: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=false truffle migrate");
-    console.log("   Deploy only SimpleRWA20: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=true truffle migrate");
-    console.log("   Deploy all example contracts: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=true truffle migrate");
+    console.log("   Deploy only SimpleVault: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=false truffle migrate");
+    console.log("   Deploy only SimpleRWA20: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=false truffle migrate");
+    console.log("   Deploy only ERC20Blox: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=true truffle migrate");
+    console.log("   Deploy all example contracts: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=true truffle migrate");
     console.log("   Deploy none (default): truffle migrate");
 
   } catch (error) {

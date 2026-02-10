@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 
@@ -48,7 +48,7 @@ contract ComprehensiveWhitelistSchemaFuzzTest is CommonBase {
         
         // This is verified through SystemMacroSelectorSecurityFuzz tests
         // The key is that external calls with regular selectors still require whitelist
-        // System macro selectors (NATIVE_TRANSFER_SELECTOR, UPDATE_PAYMENT_SELECTOR)
+        // System macro selectors (NATIVE_TRANSFER_SELECTOR)
         // can target address(this) by design
     }
 

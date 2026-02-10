@@ -5,7 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title AccessControlTest

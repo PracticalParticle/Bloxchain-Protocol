@@ -4,9 +4,9 @@ pragma solidity 0.8.33;
 // Contract imports
 import "../base/BaseStateMachine.sol";
 import "../lib/EngineBlox.sol";
-import "../../utils/SharedValidation.sol";
+import "../lib/utils/SharedValidation.sol";
 import "./lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../interfaces/IDefinition.sol";
+import "../lib/interfaces/IDefinition.sol";
 import "./interface/IRuntimeRBAC.sol";
 
 /**
@@ -99,9 +99,10 @@ abstract contract RuntimeRBAC is BaseStateMachine {
      */
     function roleConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
-        return _requestAndApproveTransaction(metaTx);
+        EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
+        return txRecord.txId;
     }
 
     /**

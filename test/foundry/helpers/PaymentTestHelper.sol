@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title PaymentTestHelper
@@ -150,6 +150,34 @@ contract PaymentTestHelper is BaseStateMachine {
             EngineBlox.addFunctionToRole(state, ownerRoleHash, requestTxPermission);
         }
         
+        // Register requestTransactionWithPayment function schema (needs REQUEST + execution selector permission)
+        bytes4 requestWithPaymentSelector = this.requestTransactionWithPayment.selector;
+        bytes4[] memory requestWithPaymentHandlers = new bytes4[](2);
+        requestWithPaymentHandlers[0] = requestWithPaymentSelector;
+        requestWithPaymentHandlers[1] = nativeTransferSelector;
+        if (!state.supportedFunctionsSet.contains(bytes32(requestWithPaymentSelector))) {
+            EngineBlox.createFunctionSchema(
+                state,
+                "requestTransactionWithPayment(address,address,uint256,uint256,bytes32,bytes4,bytes,(address,uint256,address,uint256))",
+                requestWithPaymentSelector,
+                "TEST_OPERATION_WITH_PAYMENT",
+                requestActionsBitmap,
+                true,
+                requestWithPaymentHandlers
+            );
+        }
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(requestWithPaymentSelector))) {
+            bytes4[] memory requestWithPaymentPermissionHandlers = new bytes4[](2);
+            requestWithPaymentPermissionHandlers[0] = requestWithPaymentSelector;
+            requestWithPaymentPermissionHandlers[1] = nativeTransferSelector;
+            EngineBlox.FunctionPermission memory requestWithPaymentPermission = EngineBlox.FunctionPermission({
+                functionSelector: requestWithPaymentSelector,
+                grantedActionsBitmap: requestActionsBitmap,
+                handlerForSelectors: requestWithPaymentPermissionHandlers
+            });
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, requestWithPaymentPermission);
+        }
+        
         // Register approveTransaction function schema if not already registered
         bytes4 approveTxSelector = this.approveTransaction.selector;
         bytes4[] memory approveTxHandlers = new bytes4[](1);
@@ -176,33 +204,6 @@ contract PaymentTestHelper is BaseStateMachine {
             });
             EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
-        
-        // Register UPDATE_PAYMENT_SELECTOR function schema if not already registered
-        bytes4 updatePaymentSelector = EngineBlox.UPDATE_PAYMENT_SELECTOR;
-        bytes4[] memory updatePaymentHandlers = new bytes4[](1);
-        updatePaymentHandlers[0] = updatePaymentSelector; // Self-reference
-        
-        if (!state.supportedFunctionsSet.contains(bytes32(updatePaymentSelector))) {
-            EngineBlox.createFunctionSchema(
-                state,
-                "__bloxchain_update_payment__()",
-                updatePaymentSelector,
-                "UPDATE_PAYMENT",
-                requestActionsBitmap, // Use REQUEST action for payment updates
-                true, // isProtected = true (required for functions starting with '_')
-                updatePaymentHandlers
-            );
-        }
-        
-        // Ensure permissions are granted even if schema already exists
-        if (!ownerRole.functionSelectorsSet.contains(bytes32(updatePaymentSelector))) {
-            EngineBlox.FunctionPermission memory updatePaymentPermission = EngineBlox.FunctionPermission({
-                functionSelector: updatePaymentSelector,
-                grantedActionsBitmap: requestActionsBitmap, // REQUEST action
-                handlerForSelectors: updatePaymentHandlers
-            });
-            EngineBlox.addFunctionToRole(state, ownerRoleHash, updatePaymentPermission);
-        }
     }
     
     // _requestTransaction is inherited from BaseStateMachine and uses msg.sig as handlerSelector
@@ -210,16 +211,38 @@ contract PaymentTestHelper is BaseStateMachine {
     // For PaymentTestHelper.requestTransaction, we need to set up permissions for that selector
     
     /**
-     * @notice Exposes _updatePaymentForTransaction for testing
-     * @param txId The transaction ID to update payment for
-     * @param paymentDetails The payment details to set
-     * @return The updated transaction record
+     * @notice Exposes _requestTransactionWithPayment for testing (request tx with payment attached in one step)
+     * @param requester The address requesting the transaction
+     * @param target The target contract address
+     * @param value The value to send with the transaction
+     * @param gasLimit The gas limit for the transaction
+     * @param operationType The operation type
+     * @param executionSelector The function selector to execute
+     * @param executionParams The execution parameters
+     * @param paymentDetails The payment details to attach
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
-    function updatePaymentForTransaction(
-        uint256 txId,
+    function requestTransactionWithPayment(
+        address requester,
+        address target,
+        uint256 value,
+        uint256 gasLimit,
+        bytes32 operationType,
+        bytes4 executionSelector,
+        bytes memory executionParams,
         EngineBlox.PaymentDetails memory paymentDetails
-    ) external returns (EngineBlox.TxRecord memory) {
-        return _updatePaymentForTransaction(txId, paymentDetails);
+    ) external returns (uint256 txId) {
+        EngineBlox.TxRecord memory txRecord = _requestTransactionWithPayment(
+            requester,
+            target,
+            value,
+            gasLimit,
+            operationType,
+            executionSelector,
+            executionParams,
+            paymentDetails
+        );
+        return txRecord.txId;
     }
     
     /**
@@ -231,7 +254,7 @@ contract PaymentTestHelper is BaseStateMachine {
      * @param operationType The operation type
      * @param executionSelector The function selector to execute
      * @param executionParams The execution parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function requestTransaction(
         address requester,
@@ -241,8 +264,8 @@ contract PaymentTestHelper is BaseStateMachine {
         bytes32 operationType,
         bytes4 executionSelector,
         bytes memory executionParams
-    ) external returns (EngineBlox.TxRecord memory) {
-        return _requestTransaction(
+    ) external returns (uint256 txId) {
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             requester,
             target,
             value,
@@ -251,15 +274,17 @@ contract PaymentTestHelper is BaseStateMachine {
             executionSelector,
             executionParams
         );
+        return txRecord.txId;
     }
     
     /**
      * @notice Exposes _approveTransaction for testing
      * @param txId The transaction ID to approve
-     * @return The updated transaction record
+     * @return The transaction ID (use getTransaction(txId) for full record)
      */
-    function approveTransaction(uint256 txId) external returns (EngineBlox.TxRecord memory) {
-        return _approveTransaction(txId);
+    function approveTransaction(uint256 txId) external returns (uint256) {
+        EngineBlox.TxRecord memory txRecord = _approveTransaction(txId);
+        return txRecord.txId;
     }
     
     /**

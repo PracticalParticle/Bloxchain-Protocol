@@ -5,7 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -36,34 +36,55 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Note: This should be done in CommonBase, but we ensure it here for Composite tests
     }
 
+    /// @dev Converts uint to decimal string for deterministic role names (avoids vm.assume reject limit).
+    function _uint2str(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) return "0";
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory b = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k--;
+            b[k] = bytes1(uint8(48 + _i % 10));
+            _i /= 10;
+        }
+        return string(b);
+    }
+
     // ============ MULTI-STAGE PERMISSION ESCALATION ============
 
     /**
      * @dev Test: Multi-stage permission escalation prevention
      * Attack Vector: Multi-Stage Permission Escalation (CRITICAL)
+     * Uses deterministic role names from fuzz indices to avoid vm.assume reject limit.
      */
     function testFuzz_MultiStagePermissionEscalationPrevented(
-        string memory roleName1,
-        string memory roleName2,
+        uint256 roleId1,
+        uint256 roleId2,
         address wallet,
         bytes4 functionSelector1,
         bytes4 functionSelector2
     ) public {
-        vm.assume(bytes(roleName1).length > 0 && bytes(roleName1).length < 32);
-        vm.assume(bytes(roleName2).length > 0 && bytes(roleName2).length < 32);
+        roleId1 = bound(roleId1, 1, 99_999);
+        roleId2 = bound(roleId2, 1, 99_999);
+        if (roleId1 == roleId2) {
+            roleId2 = roleId2 == 99_999 ? 1 : roleId2 + 1;
+        }
+        string memory roleName1 = string(abi.encodePacked("fuzz_a_", _uint2str(roleId1)));
+        string memory roleName2 = string(abi.encodePacked("fuzz_b_", _uint2str(roleId2)));
         vm.assume(wallet != address(0));
         vm.assume(functionSelector1 != bytes4(0));
         vm.assume(functionSelector2 != bytes4(0));
         vm.assume(functionSelector1 != functionSelector2);
-        
+
         bytes32 roleHash1 = keccak256(bytes(roleName1));
         bytes32 roleHash2 = keccak256(bytes(roleName2));
-        
-        // Skip protected roles
-        vm.assume(roleHash1 != OWNER_ROLE && roleHash1 != BROADCASTER_ROLE && roleHash1 != RECOVERY_ROLE);
-        vm.assume(roleHash2 != OWNER_ROLE && roleHash2 != BROADCASTER_ROLE && roleHash2 != RECOVERY_ROLE);
-        vm.assume(roleHash1 != roleHash2);
-        
+        assertTrue(roleHash1 != roleHash2, "role hashes must differ");
+
         // Stage 1: Create role1 with permission for function1
         // Stage 2: Create role2 with permission for function2
         // Stage 3: Assign wallet to both roles
@@ -233,8 +254,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             }
         }
         
-        // Call succeeded - decode return value and test atomicity
-        EngineBlox.TxRecord memory txRecord = abi.decode(returnData, (EngineBlox.TxRecord));
+        // Call succeeded - decode txId (roleConfigBatchRequestAndApprove returns uint256)
+        uint256 txId = abi.decode(returnData, (uint256));
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(txId);
         
         // CRITICAL: Batch should be atomic - Action 1 should NOT execute
         // The batch should fail because Action 2 (modifying protected role) is invalid
@@ -280,8 +303,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            vm.prank(owner);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             uint256 releaseTime = txRecord.releaseTime;
         
         // Immediately sign meta-transaction to approve
@@ -311,7 +335,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Attempt to execute before time-lock expires
         if (block.timestamp < releaseTime) {
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
+            accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
             
             // Should fail - time-lock not expired
             // Note: Meta-transaction approval still checks releaseTime
@@ -359,8 +383,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
         
         // Set initial payment
         EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
@@ -434,7 +457,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         
         // Execute legitimate transaction first - this will increment nonce
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory legitResult = roleBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
+        uint256 legitTxId = roleBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory legitResult = roleBlox.getTransaction(legitTxId);
         
         // If legitimate transaction failed, skip test
         if (legitResult.status != EngineBlox.TxStatus.COMPLETED) {

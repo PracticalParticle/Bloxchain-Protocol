@@ -8,6 +8,49 @@ const fs = require('fs');
 const path = require('path');
 const EIP712Signer = require('../utils/eip712-signing.cjs');
 
+// Patch web3-eth-abi globally in sanity tests to coerce any truncated/invalid
+// scalar types (e.g. "u") to "uint8" before ethers' AbiCoder sees them.
+// This protects against ABI metadata bugs in enum-encoded structs.
+try {
+    // eslint-disable-next-line import/no-extraneous-dependencies
+    const AbiModule = require('web3-eth-abi');
+    const AbiCoder = AbiModule.ABICoder || AbiModule.AbiCoder || AbiModule;
+    if (AbiCoder && AbiCoder.prototype && typeof AbiCoder.prototype.mapTypes === 'function') {
+        const originalMapTypes = AbiCoder.prototype.mapTypes;
+        AbiCoder.prototype.mapTypes = function (types) {
+            let sawSuspicious = false;
+            const fixed = (types || []).map((t) => {
+                if (t && typeof t === 'object' && typeof t.type === 'string') {
+                    const ty = t.type.trim();
+                    if (ty === 'u' || ty.length < 2) {
+                        sawSuspicious = true;
+                        return { ...t, type: 'uint8' };
+                    }
+                } else if (typeof t === 'string') {
+                    const ty = t.trim();
+                    if (ty === 'u' || ty.length < 2) {
+                        sawSuspicious = true;
+                        return 'uint8';
+                    }
+                }
+                return t;
+            });
+            if (sawSuspicious) {
+                // Log the original and fixed types to understand where "u" comes from
+                try {
+                    console.error('  [ABI-PATCH] Detected suspicious type in mapTypes. Original:', JSON.stringify(types));
+                    console.error('  [ABI-PATCH] Fixed types:', JSON.stringify(fixed));
+                } catch {
+                    // ignore logging errors
+                }
+            }
+            return originalMapTypes.call(this, fixed);
+        };
+    }
+} catch {
+    // If patching fails we continue; tests will still run (worst case: original bug persists).
+}
+
 // Load environment variables from the project root
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
@@ -98,6 +141,17 @@ class BaseGuardControllerTest {
             EXECUTE_META_APPROVE: 7,
             EXECUTE_META_CANCEL: 8
         };
+        // TxStatus enum values (EngineBlox)
+        this.TxStatus = {
+            UNDEFINED: 0,
+            PENDING: 1,
+            EXECUTING: 2,
+            PROCESSING_PAYMENT: 3,
+            CANCELLED: 4,
+            COMPLETED: 5,
+            FAILED: 6,
+            REJECTED: 7
+        };
         
         // GuardController constants
         // NATIVE_TRANSFER uses a reserved signature: __bloxchain_native_transfer__()
@@ -129,7 +183,34 @@ class BaseGuardControllerTest {
 
     loadABI(contractName) {
         const abiPath = path.join(__dirname, '../../../abi', `${contractName}.abi.json`);
-        return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+        const abi = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+        return this._normalizeABIEnumsToUint8(abi);
+    }
+
+    /**
+     * Recursively replace enum internalType with "uint8" and fix truncated type (e.g. "u") so
+     * contract method output decoding (web3/ethers) does not hit "invalid type".
+     */
+    _normalizeABIEnumsToUint8(abi) {
+        if (!abi) return abi;
+        if (Array.isArray(abi)) {
+            return abi.map(item => this._normalizeABIEnumsToUint8(item));
+        }
+        if (typeof abi === 'object') {
+            const out = {};
+            for (const key of Object.keys(abi)) {
+                let val = abi[key];
+                if (key === 'internalType' && typeof val === 'string' && val.indexOf('enum') !== -1) {
+                    val = 'uint8';
+                }
+                if (key === 'type' && typeof val === 'string' && (val.length < 3 || val === 'u' || !/^(u?int|address|bool|bytes|string|tuple)/.test(val))) {
+                    if (val === 'u' || (val.length <= 2 && val.startsWith('u'))) val = 'uint8';
+                }
+                out[key] = this._normalizeABIEnumsToUint8(val);
+            }
+            return out;
+        }
+        return abi;
     }
 
     async initializeAutoMode() {
@@ -420,6 +501,42 @@ class BaseGuardControllerTest {
         return await this.sendTransactionWithValue(method, wallet, '0');
     }
 
+    /**
+     * Send a contract method as a transaction and return only the receipt (avoids ABI decode of return value).
+     * Use when the method's return type causes decode errors (e.g. complex tuple with enum).
+     * Uses raw eth_sendTransaction so the contract Method's output formatter is never invoked.
+     */
+    async sendTransactionReceiptOnly(method, wallet, value = '0') {
+        const from = wallet.address;
+        const data = method.encodeABI();
+        let gas;
+        try {
+            gas = await this.web3.eth.estimateGas({ from, to: this.contractAddress, data, value });
+        } catch (e) {
+            gas = 500000;
+        }
+        const pk = wallet.privateKey || wallet;
+        const signed = await this.web3.eth.accounts.signTransaction(
+            { to: this.contractAddress, data, gas, value },
+            pk
+        );
+        const { transactionHash } = await this.web3.eth.sendSignedTransaction(signed.rawTransaction);
+        let receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
+        if (!receipt && transactionHash) {
+            const maxWait = 30;
+            for (let i = 0; i < maxWait; i++) {
+                await new Promise(r => setTimeout(r, 1000));
+                receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
+                if (receipt) break;
+            }
+        }
+        if (!receipt) throw new Error('Transaction receipt not found');
+        if (receipt.status === false || receipt.status === '0x0') {
+            throw new Error(`Transaction reverted. Receipt status: ${receipt.status}`);
+        }
+        return receipt;
+    }
+
     async sendTransactionWithValue(method, wallet, value) {
         try {
             const from = wallet.address;
@@ -507,6 +624,28 @@ class BaseGuardControllerTest {
             if (error.reason) {
                 errorMessage = `${errorMessage} (Reason: ${error.reason})`;
             }
+            // Workaround: ABI decode failure on return value (e.g. requestAndApproveExecution returns uint256, ABI expected TxRecord) - tx may have succeeded.
+            // Callers may receive a raw receipt instead of a decoded return; they should check for receipt.status and handle both shapes.
+            const isDecodeError = (error.code === 'INVALID_ARGUMENT' || (error.message && error.message.includes('invalid type')));
+            if (isDecodeError) {
+                let receipt = error.receipt || (error.transaction && error.transaction.receipt);
+                const txHash = error.transactionHash || error.hash || error.receipt?.transactionHash || (error.transaction && (error.transaction.transactionHash || error.transaction.hash));
+                if (!receipt && txHash) {
+                    try {
+                        receipt = await this.web3.eth.getTransactionReceipt(txHash);
+                    } catch (e) { /* ignore */ }
+                }
+                if (!receipt && txHash) {
+                    try {
+                        await new Promise(r => setTimeout(r, 2000));
+                        receipt = await this.web3.eth.getTransactionReceipt(txHash);
+                    } catch (e) { /* ignore */ }
+                }
+                if (receipt && (receipt.status === true || receipt.status === 1 || receipt.status === '0x1')) {
+                    console.log('  ⚠️  Return value decode failed but tx succeeded; using receipt');
+                    return receipt;
+                }
+            }
             throw new Error(`Transaction failed: ${errorMessage}`);
         }
     }
@@ -522,12 +661,196 @@ class BaseGuardControllerTest {
             } else {
                 fromWallet = this.wallets.wallet1;
             }
-            
+            const methodName = method && method._method && (method._method.name || method._method.signature || 'unknown');
+            console.log(`  [DEBUG] callContractMethod: ${methodName}`);
             const result = await method.call({ from: fromWallet.address });
             return result;
         } catch (error) {
-            throw new Error(`Contract call failed: ${error.message}`);
+            const methodName = method && method._method && (method._method.name || method._method.signature || 'unknown');
+            throw new Error(`Contract call failed for ${methodName}: ${error.message}`);
         }
+    }
+
+    /**
+     * Sanitize ABI outputs for decode: force type "uint8" for enum fields so decoders
+     * (web3-eth-abi + ethers) do not choke on "enum EngineBlox.TxStatus" / "enum EngineBlox.TxAction".
+     * Deep clone with only name/type/components; strip internalType entirely; enums and invalid types become "uint8".
+     */
+    _sanitizeOutputsForDecode(outputs) {
+        if (!outputs || !Array.isArray(outputs)) return outputs;
+        return outputs.map((out) => {
+            let type = (out && out.type != null) ? String(out.type).trim() : '';
+            const isEnum = out && out.internalType && String(out.internalType).indexOf('enum') !== -1;
+            if (isEnum || !type || type.length < 2 || type === 'u') {
+                type = 'uint8';
+            }
+            const clone = { name: out.name != null ? out.name : '', type };
+            if (out.components && out.components.length) {
+                clone.components = this._sanitizeOutputsForDecode(out.components);
+            }
+            return clone;
+        });
+    }
+
+    /**
+     * Minimal output schema for createMetaTxParams return: one tuple (MetaTxParams).
+     * All enum-like fields use uint8 so decoder never sees "u" or enum internalType.
+     */
+    _getMinimalCreateMetaTxParamsOutputs() {
+        return [{
+            name: '',
+            type: 'tuple',
+            components: [
+                { name: 'chainId', type: 'uint256' },
+                { name: 'nonce', type: 'uint256' },
+                { name: 'handlerContract', type: 'address' },
+                { name: 'handlerSelector', type: 'bytes4' },
+                { name: 'action', type: 'uint8' },
+                { name: 'deadline', type: 'uint256' },
+                { name: 'maxGasPrice', type: 'uint256' },
+                { name: 'signer', type: 'address' }
+            ]
+        }];
+    }
+
+    /**
+     * Call createMetaTxParams via raw eth_call and decode with minimal hand-built
+     * outputs (no ABI file) to avoid ABI decoder errors on enum / "u" type.
+     */
+    async _callCreateMetaTxParamsRaw(handlerContract, handlerSelector, action, deadline, maxGasPrice, signer) {
+        const fromWallet = this.roleWallets.owner || this.wallets.wallet1;
+        const method = this.contract.methods.createMetaTxParams(
+            handlerContract,
+            handlerSelector,
+            action,
+            deadline,
+            maxGasPrice,
+            signer
+        );
+        const data = method.encodeABI();
+        const returnHex = await this.web3.eth.call({
+            to: this.contractAddress,
+            data,
+            from: fromWallet.address
+        });
+        const outputs = this._getMinimalCreateMetaTxParamsOutputs();
+        let decoded;
+        try {
+            decoded = this.web3.eth.abi.decodeParameters(outputs, returnHex);
+        } catch (e) {
+            console.error('  [RAW] createMetaTxParams decode failed:', e.message);
+            throw e;
+        }
+        return decoded.__length__ === 1 ? decoded[0] : decoded;
+    }
+
+    /**
+     * Minimal output schema for generateUnsignedMetaTransactionForNew return: one tuple
+     * (txRecord, params, message, signature, data). All enum-like fields forced to uint8
+     * so decoder never sees "u" or enum internalType.
+     */
+    _getMinimalGenerateUnsignedOutputs() {
+        return [{
+            name: '',
+            type: 'tuple',
+            components: [
+                { name: 'txRecord', type: 'tuple', components: [
+                    { name: 'txId', type: 'uint256' },
+                    { name: 'releaseTime', type: 'uint256' },
+                    { name: 'status', type: 'uint8' },
+                    { name: 'params', type: 'tuple', components: [
+                        { name: 'requester', type: 'address' },
+                        { name: 'target', type: 'address' },
+                        { name: 'value', type: 'uint256' },
+                        { name: 'gasLimit', type: 'uint256' },
+                        { name: 'operationType', type: 'bytes32' },
+                        { name: 'executionSelector', type: 'bytes4' },
+                        { name: 'executionParams', type: 'bytes' }
+                    ]},
+                    { name: 'message', type: 'bytes32' },
+                    { name: 'result', type: 'bytes' },
+                    { name: 'payment', type: 'tuple', components: [
+                        { name: 'recipient', type: 'address' },
+                        { name: 'nativeTokenAmount', type: 'uint256' },
+                        { name: 'erc20TokenAddress', type: 'address' },
+                        { name: 'erc20TokenAmount', type: 'uint256' }
+                    ]}
+                ]},
+                { name: 'params', type: 'tuple', components: [
+                    { name: 'chainId', type: 'uint256' },
+                    { name: 'nonce', type: 'uint256' },
+                    { name: 'handlerContract', type: 'address' },
+                    { name: 'handlerSelector', type: 'bytes4' },
+                    { name: 'action', type: 'uint8' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'maxGasPrice', type: 'uint256' },
+                    { name: 'signer', type: 'address' }
+                ]},
+                { name: 'message', type: 'bytes32' },
+                { name: 'signature', type: 'bytes' },
+                { name: 'data', type: 'bytes' }
+            ]
+        }];
+    }
+
+    /**
+     * Call generateUnsignedMetaTransactionForNew via raw eth_call and decode with
+     * minimal hand-built outputs (no ABI file) to avoid ABI decoder errors on enum / "u" type.
+     * Uses same return shape as createExternalExecutionMetaTx: { txRecord, params, message, signature, data }.
+     */
+    async _callGenerateUnsignedMetaTransactionForNewRaw(requesterAddress, targetAddress, value, gasLimit, operationType, executionSelector, executionParams, metaParams) {
+        const fromWallet = this.roleWallets.owner || this.wallets.wallet1;
+        const method = this.contract.methods.generateUnsignedMetaTransactionForNew(
+            requesterAddress,
+            targetAddress,
+            value,
+            gasLimit,
+            operationType,
+            executionSelector,
+            executionParams,
+            metaParams
+        );
+        const data = method.encodeABI();
+        const returnHex = await this.web3.eth.call({
+            to: this.contractAddress,
+            data,
+            from: fromWallet.address
+        });
+        const outputs = this._getMinimalGenerateUnsignedOutputs();
+        let decoded;
+        try {
+            decoded = this.web3.eth.abi.decodeParameters(outputs, returnHex);
+        } catch (e) {
+            console.error('  [RAW] generateUnsignedMetaTransactionForNew decode failed:', e.message);
+            throw e;
+        }
+        const single = decoded.__length__ === 1;
+        const result = single ? decoded[0] : decoded;
+        const tuple = result && (result.txRecord !== undefined || result[0] !== undefined) ? result : (single ? decoded : result);
+        const msg = (tuple && (tuple.message ?? tuple[2])) ?? (result && (result.message ?? result[2]));
+        const sig = (tuple && (tuple.signature ?? tuple[3])) ?? (result && (result.signature ?? result[3]));
+        const dat = (tuple && (tuple.data ?? tuple[4])) ?? (result && (result.data ?? result[4]));
+        const txRecord = (tuple && (tuple.txRecord ?? tuple[0])) ?? (result && (result.txRecord ?? result[0]));
+        const params = (tuple && (tuple.params ?? tuple[1])) ?? (result && (result.params ?? result[1]));
+        let messageHex = msg;
+        if (msg != null) {
+            const raw = typeof msg === 'string' ? msg : this.web3.utils.toHex(msg);
+            messageHex = raw.startsWith('0x') ? raw : '0x' + raw;
+            if (messageHex.length < 66) messageHex = '0x' + messageHex.slice(2).padStart(64, '0');
+        }
+        // Ensure txRecord has .message so signer can use metaTx.txRecord?.message
+        if (txRecord != null && messageHex != null) {
+            if (typeof txRecord === 'object' && !Array.isArray(txRecord)) {
+                txRecord.message = txRecord.message ?? messageHex;
+            }
+        }
+        return {
+            txRecord,
+            params,
+            message: messageHex,
+            signature: sig !== undefined ? sig : '0x',
+            data: dat
+        };
     }
 
     assertTest(condition, message) {
@@ -595,16 +918,44 @@ class BaseGuardControllerTest {
         let encodedData;
         
         switch (actionType) {
+            case this.RoleConfigActionType.CREATE_ROLE: {
+                // (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
+                // FunctionPermission is tuple(bytes4,uint16,bytes4[])
+                const permTuples = (data.functionPermissions || []).map(p => [
+                    p.functionSelector,
+                    typeof p.grantedActionsBitmap === 'number' ? p.grantedActionsBitmap : this.createBitmapFromActions(p.actions || []),
+                    p.handlerForSelectors || [p.functionSelector]
+                ]);
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['string', 'uint256', 'tuple(bytes4,uint16,bytes4[])[]'],
+                    [data.roleName, data.maxWallets || 10, permTuples]
+                );
+                break;
+            }
+            case this.RoleConfigActionType.ADD_WALLET:
+                // (bytes32 roleHash, address wallet)
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['bytes32', 'address'],
+                    [data.roleHash, data.wallet]
+                );
+                break;
             case this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
                 // (bytes32 roleHash, FunctionPermission functionPermission)
                 // FunctionPermission is tuple(bytes4,uint16,bytes4[])
                 encodedData = this.web3.eth.abi.encodeParameters(
                     ['bytes32', 'tuple(bytes4,uint16,bytes4[])'],
                     [data.roleHash, [
-                        data.functionPermission.functionSelector, 
+                        data.functionPermission.functionSelector,
                         data.functionPermission.grantedActionsBitmap,
                         data.functionPermission.handlerForSelectors || [data.functionPermission.functionSelector]
                     ]]
+                );
+                break;
+            case this.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE:
+                // (bytes32 roleHash, bytes4 functionSelector)
+                encodedData = this.web3.eth.abi.encodeParameters(
+                    ['bytes32', 'bytes4'],
+                    [data.roleHash, data.functionSelector]
                 );
                 break;
             default:
@@ -698,33 +1049,33 @@ class BaseGuardControllerTest {
                 'tuple(uint8,bytes)[]',
                 actionsArray
             );
-            
-            // Create meta-transaction parameters using contract method
-            const metaParams = await this.callContractMethod(
-                this.contract.methods.createMetaTxParams(
-                    this.contractAddress,
-                    this.ROLE_CONFIG_BATCH_META_SELECTOR,
-                    this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-                    3600, // 1 hour default
-                    0, // maxGasPrice
-                    signerAddress
-                )
+
+            // Create meta-transaction parameters using raw eth_call to avoid enum ABI decode
+            const metaParams = await this._callCreateMetaTxParamsRaw(
+                this.contractAddress,
+                this.ROLE_CONFIG_BATCH_META_SELECTOR,
+                this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+                3600, // 1 hour default
+                0, // maxGasPrice
+                signerAddress
             );
-            
-            // Generate unsigned meta-transaction for new operation
-            const unsignedMetaTx = await this.callContractMethod(
-                this.contract.methods.generateUnsignedMetaTransactionForNew(
-                    signerAddress,
-                    this.contractAddress,
-                    0, // value
-                    1000000, // gasLimit
-                    this.ROLE_CONFIG_BATCH_OPERATION_TYPE,
-                    this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
-                    executionParams,
-                    metaParams
-                )
+
+            // Generate unsigned meta-transaction for new operation via raw helper
+            const unsignedMetaTx = await this._callGenerateUnsignedMetaTransactionForNewRaw(
+                signerAddress,
+                this.contractAddress,
+                0, // value
+                1000000, // gasLimit
+                this.ROLE_CONFIG_BATCH_OPERATION_TYPE,
+                this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
+                executionParams,
+                metaParams
             );
-            
+
+            if (!unsignedMetaTx.message) {
+                throw new Error('createRoleConfigBatchMetaTx: raw path returned no message hash');
+            }
+
             return {
                 txRecord: unsignedMetaTx.txRecord,
                 params: unsignedMetaTx.params,
@@ -732,7 +1083,7 @@ class BaseGuardControllerTest {
                 signature: '0x',
                 data: unsignedMetaTx.data
             };
-            
+
         } catch (error) {
             console.error('❌ Failed to create role config batch meta-transaction:', error.message);
             throw error;
@@ -760,8 +1111,8 @@ class BaseGuardControllerTest {
                 this.contract
             );
             
-            // Execute meta-transaction via broadcaster
-            const receipt = await this.sendTransaction(
+            // Execute meta-transaction via broadcaster (receipt-only to avoid ABI decode of uint256 return)
+            const receipt = await this.sendTransactionReceiptOnly(
                 this.contract.methods.roleConfigBatchRequestAndApprove(signedMetaTx),
                 broadcasterWallet
             );
@@ -821,6 +1172,56 @@ class BaseGuardControllerTest {
     }
 
     /**
+     * Add function permission to a role with an explicit handlerForSelectors array.
+     * This is required when granting permissions on a handler selector that should
+     * point at one or more underlying execution selectors, instead of using the
+     * default self-reference used for execution selectors.
+     * @param {string} roleHash - Role hash (bytes32)
+     * @param {string} functionSelector - Function selector (4 bytes)
+     * @param {number[]} actions - Array of TxAction enum values
+     * @param {string[]} handlerForSelectors - Array of bytes4 selectors this function can act on
+     * @param {string} signerPrivateKey - Private key of the signer (owner)
+     * @param {Object} broadcasterWallet - Wallet object for broadcaster
+     * @returns {Promise<Object>} Transaction receipt
+     */
+    async addFunctionToRoleWithHandlerForSelectors(roleHash, functionSelector, actions, handlerForSelectors, signerPrivateKey, broadcasterWallet) {
+        const functionPermission = this.createFunctionPermission(functionSelector, actions, handlerForSelectors);
+        const action = this.encodeRoleConfigAction(
+            this.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+            {
+                roleHash: roleHash,
+                functionPermission: functionPermission
+            }
+        );
+        
+        return await this.executeRoleConfigBatch([action], signerPrivateKey, broadcasterWallet);
+    }
+
+    /**
+     * Remove a function permission from a role (for idempotent re-set of permissions).
+     * Ignores ResourceNotFound (no-op if permission not present).
+     * @param {string} roleHash - Role hash (bytes32)
+     * @param {string} functionSelector - Function selector (4 bytes)
+     * @param {string} signerPrivateKey - Owner key for signing
+     * @param {Object} broadcasterWallet - Wallet to send tx
+     * @returns {Promise<Object>} Receipt or null if removed/not found
+     */
+    async removeFunctionFromRole(roleHash, functionSelector, signerPrivateKey, broadcasterWallet) {
+        const action = this.encodeRoleConfigAction(
+            this.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+            { roleHash, functionSelector }
+        );
+        try {
+            return await this.executeRoleConfigBatch([action], signerPrivateKey, broadcasterWallet);
+        } catch (error) {
+            if (error.message && (error.message.includes('ResourceNotFound') || error.message.includes('ItemNotFound'))) {
+                return null;
+            }
+            throw error;
+        }
+    }
+
+    /**
      * Create a meta-transaction for ETH transfer
      * @param {string} target - Target address (contract or wallet)
      * @param {string} value - ETH value in wei
@@ -829,44 +1230,32 @@ class BaseGuardControllerTest {
      */
     async createEthTransferMetaTx(target, value, signerAddress) {
         try {
-            // Create meta-transaction parameters
-            // CRITICAL: For native transfers, handlerContract validation requires handlerContract == target
-            // - handlerContract: Must be a contract with requestAndApproveExecution (AccountBlox)
-            // - target: Where ETH will be sent (recipient wallet)
-            // This creates a conflict: we can't have handlerContract (contract) == target (wallet)
-            //
-            // The validation in EngineBlox.sol line 1311 requires:
-            //   handlerContract == target
-            // This prevents native transfers to external addresses via meta-tx
-            //
-            // WORKAROUND: Set both to the recipient address
-            // This will fail because recipient doesn't have requestAndApproveExecution
-            // But let's try it to see the exact error
-            const metaParams = await this.callContractMethod(
-                this.contract.methods.createMetaTxParams(
-                    target, // handlerContract = target (required by validation, but recipient isn't a contract!)
-                    this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, // handlerSelector for requestAndApproveExecution
-                    this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-                    3600, // 1 hour default
-                    0, // maxGasPrice
-                    signerAddress
-                )
+            // Create meta-transaction parameters using raw helper to avoid enum ABI decode
+            const metaParams = await this._callCreateMetaTxParamsRaw(
+                target, // handlerContract (see EngineBlox validation notes above)
+                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, // handlerSelector for requestAndApproveExecution
+                this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+                3600, // 1 hour default
+                0, // maxGasPrice
+                signerAddress
             );
-            
-            // Generate unsigned meta-transaction for new operation
-            const unsignedMetaTx = await this.callContractMethod(
-                this.contract.methods.generateUnsignedMetaTransactionForNew(
-                    signerAddress,
-                    target, // target = recipient (where ETH will be sent)
-                    value,
-                    100000, // gasLimit for native token transfer
-                    this.NATIVE_TRANSFER_OPERATION_TYPE,
-                    this.NATIVE_TRANSFER_SELECTOR,
-                    '0x', // empty params for native token transfer
-                    metaParams
-                )
+
+            // Generate unsigned meta-transaction for new operation via raw helper
+            const unsignedMetaTx = await this._callGenerateUnsignedMetaTransactionForNewRaw(
+                signerAddress,
+                target, // target = recipient/contract
+                value,
+                100000, // gasLimit for native token transfer
+                this.NATIVE_TRANSFER_OPERATION_TYPE,
+                this.NATIVE_TRANSFER_SELECTOR,
+                '0x', // empty params for native token transfer
+                metaParams
             );
-            
+
+            if (!unsignedMetaTx.message) {
+                throw new Error('createEthTransferMetaTx: raw path returned no message hash');
+            }
+
             return {
                 txRecord: unsignedMetaTx.txRecord,
                 params: unsignedMetaTx.params,
@@ -874,7 +1263,7 @@ class BaseGuardControllerTest {
                 signature: '0x',
                 data: unsignedMetaTx.data
             };
-            
+
         } catch (error) {
             console.error('❌ Failed to create ETH transfer meta-transaction:', error.message);
             throw error;
@@ -939,6 +1328,64 @@ class BaseGuardControllerTest {
             console.error('❌ Failed to execute ETH transfer:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Create unsigned meta-transaction for external execution (e.g. ERC20 mint on another contract).
+     * Used for request flow: requester in tx record, signerForMetaApprove signs, broadcaster calls requestAndApproveExecution.
+     * @param {string} requesterAddress - Address recorded as requester (e.g. MINT_REQUESTOR)
+     * @param {string} targetAddress - Target contract (e.g. BasicERC20)
+     * @param {string} value - Value in wei (usually '0')
+     * @param {number} gasLimit - Gas limit for execution
+     * @param {string} operationType - bytes32 operation type (e.g. ERC20_MINT)
+     * @param {string} executionSelector - bytes4 execution selector (e.g. mint(address,uint256))
+     * @param {string} executionParams - ABI-encoded execution params (e.g. (to, amount))
+     * @param {string} signerForMetaApproveAddress - Address that will sign
+     * @param {number} [metaAction] - TxAction for meta (default SIGN_META_APPROVE; use SIGN_META_REQUEST_AND_APPROVE for single-step request+approve)
+     * @returns {Promise<Object>} Unsigned meta-transaction { txRecord, params, message, signature, data }
+     */
+    async createExternalExecutionMetaTx(requesterAddress, targetAddress, value, gasLimit, operationType, executionSelector, executionParams, signerForMetaApproveAddress, metaAction = null) {
+        process.stderr.write('  [DEBUG] createExternalExecutionMetaTx ENTER\n');
+        const action = metaAction !== null && metaAction !== undefined ? metaAction : this.TxAction.SIGN_META_APPROVE;
+        // Use raw eth_call + sanitized decode to avoid ABI decoder errors on enum TxAction/TxStatus.
+        let metaParams;
+        let unsignedMetaTx;
+        try {
+            process.stderr.write('  [DEBUG] calling _callCreateMetaTxParamsRaw\n');
+            metaParams = await this._callCreateMetaTxParamsRaw(
+                this.contractAddress,
+                executionSelector,
+                action,
+                3600,
+                0,
+                signerForMetaApproveAddress
+            );
+            process.stderr.write('  [DEBUG] calling _callGenerateUnsignedMetaTransactionForNewRaw\n');
+            unsignedMetaTx = await this._callGenerateUnsignedMetaTransactionForNewRaw(
+                requesterAddress,
+                targetAddress,
+                value,
+                gasLimit,
+                operationType,
+                executionSelector,
+                executionParams,
+                metaParams
+            );
+        } catch (e) {
+            const msg = e && (e.message || String(e));
+            throw new Error(`createExternalExecutionMetaTx raw path failed: ${msg}`);
+        }
+        if (unsignedMetaTx.message == null || unsignedMetaTx.message === '') {
+            throw new Error('createExternalExecutionMetaTx: raw path returned no message hash');
+        }
+        console.log('  [DEBUG] createExternalExecutionMetaTx EXIT (message set)');
+        return {
+            txRecord: unsignedMetaTx.txRecord,
+            params: unsignedMetaTx.params,
+            message: unsignedMetaTx.message,
+            signature: '0x',
+            data: unsignedMetaTx.data
+        };
     }
 
     /**
@@ -1017,33 +1464,33 @@ class BaseGuardControllerTest {
                 'tuple(uint8,bytes)[]',
                 actionsArray
             );
-            
-            // Create meta-transaction parameters using contract method
-            const metaParams = await this.callContractMethod(
-                this.contract.methods.createMetaTxParams(
-                    this.contractAddress,
-                    this.GUARD_CONFIG_BATCH_META_SELECTOR,
-                    this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-                    3600, // 1 hour default
-                    0, // maxGasPrice
-                    signerAddress
-                )
+
+            // Create meta-transaction parameters using raw helper (no ABI enums)
+            const metaParams = await this._callCreateMetaTxParamsRaw(
+                this.contractAddress,
+                this.GUARD_CONFIG_BATCH_META_SELECTOR,
+                this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+                3600, // 1 hour default
+                0, // maxGasPrice
+                signerAddress
             );
-            
-            // Generate unsigned meta-transaction for new operation
-            const unsignedMetaTx = await this.callContractMethod(
-                this.contract.methods.generateUnsignedMetaTransactionForNew(
-                    signerAddress,
-                    this.contractAddress,
-                    0, // value
-                    1000000, // gasLimit
-                    this.CONTROLLER_OPERATION_TYPE,
-                    this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
-                    executionParams,
-                    metaParams
-                )
+
+            // Generate unsigned meta-transaction for new operation via raw helper
+            const unsignedMetaTx = await this._callGenerateUnsignedMetaTransactionForNewRaw(
+                signerAddress,
+                this.contractAddress,
+                0, // value
+                1000000, // gasLimit
+                this.CONTROLLER_OPERATION_TYPE,
+                this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
+                executionParams,
+                metaParams
             );
-            
+
+            if (!unsignedMetaTx.message) {
+                throw new Error('createGuardConfigBatchMetaTx: raw path returned no message hash');
+            }
+
             return {
                 txRecord: unsignedMetaTx.txRecord,
                 params: unsignedMetaTx.params,
@@ -1051,7 +1498,7 @@ class BaseGuardControllerTest {
                 signature: '0x',
                 data: unsignedMetaTx.data
             };
-            
+
         } catch (error) {
             console.error('❌ Failed to create guard config batch meta-transaction:', error.message);
             throw error;
@@ -1163,6 +1610,115 @@ class BaseGuardControllerTest {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Get function schema or null if it does not exist (ResourceNotFound)
+     * @param {string} functionSelector - Function selector (4 bytes)
+     * @returns {Promise<Object|null>} FunctionSchema (signature, selector, operationType, operationName, supportedActionsBitmap, isProtected, handlerForSelectors) or null
+     */
+    async getFunctionSchemaOrNull(functionSelector) {
+        try {
+            return await this.callContractMethod(
+                this.contract.methods.getFunctionSchema(functionSelector)
+            );
+        } catch (error) {
+            // Any revert (ResourceNotFound, missing selector, etc.) means schema not present
+            const msg = (error && error.message) ? String(error.message) : '';
+            if (msg.includes('ResourceNotFound') || msg.includes('function schema') || msg.includes('revert') || msg.includes('invalid opcode')) {
+                return null;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Verify function schema state: exists and matches expected (signature, operationName, supportedActionsBitmap or actions).
+     * @param {string} functionSelector - Function selector
+     * @param {Object} expected - { functionSignature?, operationName?, supportedActionsBitmap? (number), supportedActions? (number[] TxAction) }
+     * @returns {Promise<Object>} The schema if all checks pass
+     */
+    async verifyFunctionSchema(functionSelector, expected) {
+        const schema = await this.getFunctionSchemaOrNull(functionSelector);
+        if (!schema) {
+            throw new Error(`Expected function schema to exist for selector ${functionSelector}`);
+        }
+        const sel = schema.functionSelector ?? schema[1];
+        if (String(sel).toLowerCase() !== String(functionSelector).toLowerCase()) {
+            throw new Error(`Schema selector mismatch: expected ${functionSelector}, got ${sel}`);
+        }
+        if (expected.functionSignature != null) {
+            const sig = schema.functionSignature ?? schema[0];
+            if (sig !== expected.functionSignature) {
+                throw new Error(`Schema functionSignature mismatch: expected ${expected.functionSignature}, got ${sig}`);
+            }
+        }
+        if (expected.operationName != null) {
+            const op = schema.operationName ?? schema[3];
+            if (op !== expected.operationName) {
+                throw new Error(`Schema operationName mismatch: expected ${expected.operationName}, got ${op}`);
+            }
+        }
+        const bitmapRaw = schema.supportedActionsBitmap ?? schema[4] ?? 0;
+        const bitmap = typeof bitmapRaw === 'bigint' ? Number(bitmapRaw) : (Number(bitmapRaw) || 0);
+        if (expected.supportedActionsBitmap != null) {
+            if (bitmap !== expected.supportedActionsBitmap) {
+                throw new Error(`Schema supportedActionsBitmap mismatch: expected ${expected.supportedActionsBitmap}, got ${bitmap}`);
+            }
+        }
+        if (expected.supportedActions != null && Array.isArray(expected.supportedActions)) {
+            const expectedBitmap = this.createBitmapFromActions(expected.supportedActions);
+            if (bitmap !== expectedBitmap) {
+                throw new Error(`Schema supportedActions bitmap mismatch: expected ${expectedBitmap} (from actions), got ${bitmap}`);
+            }
+        }
+        return schema;
+    }
+
+    /**
+     * Check if target is whitelisted for a function selector
+     * @param {string} functionSelector - Function selector (4 bytes)
+     * @param {string} target - Address to check
+     * @returns {Promise<boolean>}
+     */
+    async isTargetWhitelistedForSelector(functionSelector, target) {
+        const list = await this.callContractMethod(
+            this.contract.methods.getFunctionWhitelistTargets(functionSelector)
+        );
+        const addresses = Array.isArray(list) ? list : (list || []);
+        const targetLower = String(target).toLowerCase();
+        return addresses.some(addr => String(addr).toLowerCase() === targetLower);
+    }
+
+    /** Normalize bytes4 selector for comparison (contract may return 32-byte padded). */
+    _normalizeSelector(sel) {
+        const s = String(sel || '').toLowerCase();
+        if (s.startsWith('0x') && s.length > 10) return s.slice(0, 10);
+        return s;
+    }
+
+    /**
+     * Check if a role has a specific action permission for a function selector
+     * @param {string} roleHash - Role hash (bytes32)
+     * @param {string} functionSelector - Function selector (4 bytes)
+     * @param {number} txAction - TxAction enum value
+     * @returns {Promise<boolean>}
+     */
+    async roleHasPermissionForSelector(roleHash, functionSelector, txAction) {
+        const permissions = await this.callContractMethod(
+            this.contract.methods.getActiveRolePermissions(roleHash)
+        );
+        const perms = Array.isArray(permissions) ? permissions : (permissions || []);
+        const selectorNorm = this._normalizeSelector(functionSelector);
+        for (const p of perms) {
+            const sel = p.functionSelector ?? p[0];
+            if (sel && this._normalizeSelector(sel) === selectorNorm) {
+                const raw = p.grantedActionsBitmap ?? p[1];
+                const bitmap = typeof raw === 'bigint' ? Number(raw) : (Number(raw) || 0);
+                return (bitmap & (1 << txAction)) !== 0;
+            }
+        }
+        return false;
     }
 
     /**

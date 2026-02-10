@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -63,7 +63,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should fail due to protected role modification
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -91,7 +93,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         
         // Empty batch should still execute (no-op)
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
     }
 
@@ -122,7 +126,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify all roles were created
@@ -164,7 +170,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify role was created with correct name

@@ -1,8 +1,8 @@
 # Ignore everything except what we want to publish
 *
 
-# Include these (must use ** to include directory contents recursively)
-!contracts/**
+# Include only core (all contracts live under core/) and abi
+!core/**
 !abi/**
 !README.md
 !package.json

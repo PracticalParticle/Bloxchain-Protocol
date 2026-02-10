@@ -7,8 +7,8 @@ import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/interfaces/IOnActionHook.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
+import "../../../contracts/experimental/hook/interface/IOnActionHook.sol";
 import "../../../contracts/examples/templates/MachineBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
@@ -228,7 +228,9 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // This should fail - empty bitmap should be rejected
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory result = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory result = roleBlox.getTransaction(_txId);
         
         // Should fail with empty bitmap error
         assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with empty bitmap");
@@ -319,7 +321,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hooks are set in order
         vm.prank(owner);
-        address[] memory retrievedHooks = machineBlox.getHook(functionSelector);
+        address[] memory retrievedHooks = machineBlox.getHooks(functionSelector);
         assertEq(retrievedHooks.length, numberOfHooks, "All hooks should be set");
         
         // Hook execution order should be deterministic (EnumerableSet iteration order)
@@ -347,7 +349,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hook failures should not affect core state
@@ -382,7 +384,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hooks are set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertEq(hooks.length, numberOfHooks, "All hooks should be set");
         
         // Key security property: Multiple hooks should not cause gas exhaustion
@@ -410,7 +412,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHook(functionSelector);
+        address[] memory hooks = machineBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hooks should not be able to reenter
@@ -443,74 +445,37 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Create transaction with payment (payment set at request time only; no update API)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient1,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
-            
-            // Set initial payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient1,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
-            
-            // Advance time to release
+            "",
+            payment
+        ) returns (uint256 txId) {
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
-            
-            // Attempt to update payment during execution (should fail)
-            // Status should be PENDING until approval starts
-            EngineBlox.PaymentDetails memory newPayment = EngineBlox.PaymentDetails({
-                recipient: recipient2,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            // Start approval (this changes status to EXECUTING)
             vm.prank(owner);
             try paymentHelper.approveTransaction(txId) {
                 // Transaction executed (might succeed or fail)
-                // Now attempt to update payment - should fail (status not PENDING)
-                vm.prank(owner);
-                vm.expectRevert(); // Should revert - status is not PENDING
-                paymentHelper.updatePaymentForTransaction(txId, newPayment);
             } catch (bytes memory reason) {
-                // If approval failed (e.g., PaymentFailed), status might still be PENDING
-                // In this case, payment update might still be possible
-                // This is acceptable - the key is that once status changes, updates are blocked
                 bytes4 errorSelector = bytes4(reason);
-                if (errorSelector == SharedValidation.PaymentFailed.selector) {
-                    // Payment failed - recipient might reject payments
-                    // Status might still be PENDING or FAILED
-                    // Try to update payment - if status is PENDING, it will work; if not, it will fail
-                    vm.prank(owner);
-                    try paymentHelper.updatePaymentForTransaction(txId, newPayment) {
-                        // Update succeeded - status was still PENDING
-                        // This is acceptable behavior
-                    } catch {
-                        // Update failed - status was not PENDING (expected)
-                    }
-                } else {
+                if (errorSelector != SharedValidation.PaymentFailed.selector) {
                     assembly {
                         revert(add(reason, 0x20), mload(reason))
                     }
                 }
             }
-            
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -543,51 +508,28 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Owner creates transaction with payment to legitimate recipient (payment fixed at request)
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory legitimatePayment = EngineBlox.PaymentDetails({
+            recipient: legitimateRecipient,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
-            
-            // Legitimate user sets payment
-            EngineBlox.PaymentDetails memory legitimatePayment = EngineBlox.PaymentDetails({
-                recipient: legitimateRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, legitimatePayment);
-            
-            // Attacker attempts to front-run and update payment
-            // This requires UPDATE_PAYMENT permission, which attacker shouldn't have
-            // But if attacker has permission, they can update
-            EngineBlox.PaymentDetails memory attackerPayment = EngineBlox.PaymentDetails({
-                recipient: attackerRecipient,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            // Attacker (not owner) attempts to update - should fail
-            vm.prank(attacker);
-            vm.expectRevert(); // Should revert - no permission
-            paymentHelper.updatePaymentForTransaction(txId, attackerPayment);
-            
-            // Verify legitimate payment is still set
+            "",
+            legitimatePayment
+        ) returns (uint256 txId) {
             vm.prank(owner);
             EngineBlox.TxRecord memory record = paymentHelper.getTransaction(txId);
-            assertEq(record.payment.recipient, legitimateRecipient, "Payment should remain legitimate");
-            
+            assertEq(record.payment.recipient, legitimateRecipient, "Payment should be set to legitimate recipient");
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
@@ -622,40 +564,32 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         
-        // Create transaction
+        // Create transaction with payment
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: recipient1,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
         vm.prank(owner);
-        try paymentHelper.requestTransaction(
+        try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
             0,
             0,
             operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
-            
-            // Set initial payment
-            EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
-                recipient: recipient1,
-                nativeTokenAmount: paymentAmount,
-                erc20TokenAddress: address(0),
-                erc20TokenAmount: 0
-            });
-            
-            vm.prank(owner);
-            paymentHelper.updatePaymentForTransaction(txId, payment);
-            
-            // Note: Hook manipulation would require HookManager
-            // This test verifies that payment updates work correctly
-            // even if hooks are involved (hooks execute after core state changes)
-            
+            "",
+            payment
+        ) returns (uint256 txId) {
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
-            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (uint256) {
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 // Verify payment went to correct recipient
                 if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     // Payment should have been sent to recipient1
@@ -716,6 +650,10 @@ contract OrderTrackingHook is IOnActionHook {
     
     constructor(uint8 _order) {
         order = _order;
+    }
+    
+    function onAction(EngineBlox.TxRecord memory) external override {
+        callCount++;
     }
     
     function onRequest(
@@ -783,10 +721,7 @@ contract NonCompliantHookContract {
  * @dev Hook contract that consumes significant gas
  */
 contract GasIntensiveHookContract is IOnActionHook {
-    function onRequest(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
+    function onAction(EngineBlox.TxRecord memory) external override {
         // Consume gas through computation
         uint256 sum = 0;
         for (uint256 i = 0; i < 1000; i++) {
@@ -794,6 +729,16 @@ contract GasIntensiveHookContract is IOnActionHook {
         }
     }
     
+    // Legacy multi-hook helpers kept for backward compatibility (no longer used by HookManager)
+    function onRequest(
+        EngineBlox.TxRecord memory,
+        address
+    ) external {
+        uint256 sum = 0;
+        for (uint256 i = 0; i < 1000; i++) {
+            sum += i;
+        }
+    }
     function onApprove(
         EngineBlox.TxRecord memory,
         address
@@ -859,19 +804,8 @@ contract ReentrancyHookContract is IOnActionHook {
         targetContract = _targetContract;
     }
     
-    function onRequest(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
-        // Attempt reentrancy - should fail due to ReentrancyGuard
-        // Note: Cannot directly call internal functions, but pattern is tested
-    }
-    
-    function onApprove(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
-        // Reentrancy attempt would go here
+    function onAction(EngineBlox.TxRecord memory) external override {
+        // Reentrancy pattern is no-op here; actual protection tested elsewhere.
     }
     
     function onCancel(

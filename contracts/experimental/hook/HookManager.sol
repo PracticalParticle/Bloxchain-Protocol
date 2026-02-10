@@ -4,8 +4,8 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../../core/base/BaseStateMachine.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IOnActionHook.sol";
+import "../../core/lib/utils/SharedValidation.sol";
+import "../../experimental/hook/interface/IOnActionHook.sol";
 
 /**
  * @title HookManager
@@ -17,15 +17,16 @@ import "../../interfaces/IOnActionHook.sol";
  * - Multiple hooks per function selector (via EngineBlox.functionTargetHooks)
  * - OWNER role can set/clear hooks
  * - Hooks are executed AFTER the core state machine operation completes
- * - Hooks are best-effort: if no hook is configured, nothing happens
+ * - If no hook is configured for a selector, nothing runs for that selector
+ * - Hooks are mandatory for the transaction: if any registered hook reverts (e.g. bug, OOG, or
+ *   malicious behavior), the entire parent transaction (request/approve/cancel) will revert.
+ *   Only register trusted, non-reverting hook contracts.
  *
- * Supported hook points (via IOnActionHook):
- * - onRequest            : after _requestTransaction
- * - onApprove            : after _approveTransaction
- * - onCancel             : after _cancelTransaction
- * - onMetaApprove        : after _approveTransactionWithMetaTx
- * - onMetaCancel         : after _cancelTransactionWithMetaTx
- * - onRequestAndApprove  : after _requestAndApproveTransaction
+ * Hook integration:
+ * - BaseStateMachine provides a single _postActionHook entry point that is called
+ *   after any transaction operation that produces a TxRecord
+ * - HookManager overrides _postActionHook and forwards TxRecord to all configured
+ *   IOnActionHook implementations for the transaction's execution selector
  *
  * Security model:
  * - Core state transitions and permissions are enforced by EngineBlox
@@ -36,284 +37,67 @@ abstract contract HookManager is BaseStateMachine {
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event HookSet(
-        bytes4 indexed functionSelector,
-        address indexed hook
-    );
-
-    event HookCleared(
-        bytes4 indexed functionSelector,
-        address indexed hook
-    );
-
-    // ============ HOOK MANAGEMENT ============
+    // ============ HOOK MANAGEMENT (EXTERNAL WITH OWNER CHECK) ============
 
     /**
      * @dev Sets the hook contract for a function selector
      * @param functionSelector The function selector
      * @param hook The hook contract address
-     *
-     * @notice Only the owner address may manage hooks
-     * @notice Zero address is not allowed here; use clearHook to remove
+     * @notice Only the owner may manage hooks; zero address not allowed (use clearHook to remove)
      */
     function setHook(bytes4 functionSelector, address hook) external {
         SharedValidation.validateOwner(owner());
-        SharedValidation.validateNotZeroAddress(hook);
-
-        EngineBlox.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
-        emit HookSet(functionSelector, hook);
+        _setHook(functionSelector, hook);
     }
 
     /**
      * @dev Clears the hook contract for a function selector
      * @param functionSelector The function selector
      * @param hook The hook contract address to remove
-     *
-     * @notice Only the owner address may manage hooks
+     * @notice Only the owner may manage hooks
      */
     function clearHook(bytes4 functionSelector, address hook) external {
         SharedValidation.validateOwner(owner());
-        SharedValidation.validateNotZeroAddress(hook);
-
-        EngineBlox.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
-        emit HookCleared(functionSelector, hook);
-    }
-
-    /**
-     * @dev Returns all configured hooks for a function selector
-     * @param functionSelector The function selector
-     * @return hooks Array of hook contract addresses
-     */
-    function getHook(
-        bytes4 functionSelector
-    ) external view returns (address[] memory hooks) {
-        return EngineBlox.getFunctionHookTargets(_getSecureState(), functionSelector);
+        _clearHook(functionSelector, hook);
     }
 
     // ============ INTERNAL HELPERS ============
 
     /**
-     * @dev Executes all hooks for a function selector with onRequest callback
+     * @dev Executes all hooks for the transaction's execution selector using the unified
+     *      onAction callback. If any hook reverts, the entire parent transaction reverts;
+     *      only register trusted, non-reverting hook contracts.
+     * @param txRecord The transaction record produced by the operation
      */
-    function _executeOnRequestHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        address caller
+    function _executeActionHooks(
+        EngineBlox.TxRecord memory txRecord
     ) internal {
         EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onRequest(txRecord, caller);
-        }
-    }
-
-    /**
-     * @dev Executes all hooks for a function selector with onApprove callback
-     */
-    function _executeOnApproveHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        address caller
-    ) internal {
-        EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onApprove(txRecord, caller);
-        }
-    }
-
-    /**
-     * @dev Executes all hooks for a function selector with onCancel callback
-     */
-    function _executeOnCancelHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        address caller
-    ) internal {
-        EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onCancel(txRecord, caller);
-        }
-    }
-
-    /**
-     * @dev Executes all hooks for a function selector with onMetaApprove callback
-     */
-    function _executeOnMetaApproveHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        EngineBlox.MetaTransaction memory metaTx,
-        address caller
-    ) internal {
-        EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onMetaApprove(txRecord, metaTx, caller);
-        }
-    }
-
-    /**
-     * @dev Executes all hooks for a function selector with onMetaCancel callback
-     */
-    function _executeOnMetaCancelHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        EngineBlox.MetaTransaction memory metaTx,
-        address caller
-    ) internal {
-        EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onMetaCancel(txRecord, metaTx, caller);
-        }
-    }
-
-    /**
-     * @dev Executes all hooks for a function selector with onRequestAndApprove callback
-     */
-    function _executeOnRequestAndApproveHooks(
-        bytes4 functionSelector,
-        EngineBlox.TxRecord memory txRecord,
-        EngineBlox.MetaTransaction memory metaTx,
-        address caller
-    ) internal {
-        EngineBlox.SecureOperationState storage state = _getSecureState();
-        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[functionSelector];
-        uint256 length = hooks.length();
-        
-        for (uint256 i = 0; i < length; i++) {
-            address hook = hooks.at(i);
-            IOnActionHook(hook).onRequestAndApprove(txRecord, metaTx, caller);
-        }
-    }
-
-    // ============ OVERRIDES WITH HOOK EXECUTION ============
-
-    /**
-     * @dev Override to add onRequest hook execution
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
-     */
-    function _requestTransaction(
-        address requester,
-        address target,
-        uint256 value,
-        uint256 gasLimit,
-        bytes32 operationType,
-        bytes4 functionSelector,
-        bytes memory params
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first (Checks/Effects)
-        EngineBlox.TxRecord memory txRecord = super._requestTransaction(
-            requester,
-            target,
-            value,
-            gasLimit,
-            operationType,
-            functionSelector,
-            params
-        );
-
-        // Hook execution (Interactions)
-        _executeOnRequestHooks(functionSelector, txRecord, msg.sender);
-
-        return txRecord;
-    }
-
-    /**
-     * @dev Override to add onApprove hook execution
-     */
-    function _approveTransaction(
-        uint256 txId
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first (includes state machine reentrancy guard)
-        EngineBlox.TxRecord memory txRecord = super._approveTransaction(txId);
-
-        // Hook execution for the execution selector tied to this tx
         bytes4 executionSelector = txRecord.params.executionSelector;
-        _executeOnApproveHooks(executionSelector, txRecord, msg.sender);
-
-        return txRecord;
+        EnumerableSet.AddressSet storage hooks = state.functionTargetHooks[executionSelector];
+        uint256 length = hooks.length();
+        
+        for (uint256 i = 0; i < length; i++) {
+            address hook = hooks.at(i);
+            IOnActionHook(hook).onAction(txRecord);
+        }
     }
 
-    /**
-     * @dev Override to add onMetaApprove hook execution
-     */
-    function _approveTransactionWithMetaTx(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first
-        EngineBlox.TxRecord memory txRecord = super._approveTransactionWithMetaTx(metaTx);
-
-        // Hook execution based on signer role and execution selector
-        bytes4 executionSelector = txRecord.params.executionSelector;
-        _executeOnMetaApproveHooks(executionSelector, txRecord, metaTx, msg.sender);
-
-        return txRecord;
-    }
+    // ============ CENTRALIZED POST-ACTION HOOK ============
 
     /**
-     * @dev Override to add onCancel hook execution
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
+     * @dev Centralized post-action hook implementation.
+     *      Called by BaseStateMachine after any transaction operation that produces a TxRecord.
+     *      Forwards the TxRecord to all configured IOnActionHook implementations for the
+     *      transaction's execution selector.
      */
-    function _cancelTransaction(
-        uint256 txId
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first
-        EngineBlox.TxRecord memory txRecord = super._cancelTransaction(txId);
+    function _postActionHook(
+        EngineBlox.TxRecord memory txRecord
+    ) internal virtual override {
+        // Allow further extension in deeper hierarchies
+        super._postActionHook(txRecord);
 
-        // Hook execution
-        bytes4 executionSelector = txRecord.params.executionSelector;
-        _executeOnCancelHooks(executionSelector, txRecord, msg.sender);
-
-        return txRecord;
-    }
-
-    /**
-     * @dev Override to add onMetaCancel hook execution
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
-     */
-    function _cancelTransactionWithMetaTx(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first
-        EngineBlox.TxRecord memory txRecord = super._cancelTransactionWithMetaTx(metaTx);
-
-        // Hook execution based on signer role and execution selector
-        bytes4 executionSelector = txRecord.params.executionSelector;
-        _executeOnMetaCancelHooks(executionSelector, txRecord, metaTx, msg.sender);
-
-        return txRecord;
-    }
-
-    /**
-     * @dev Override to add onRequestAndApprove hook execution
-     */
-    function _requestAndApproveTransaction(
-        EngineBlox.MetaTransaction memory metaTx
-    ) internal virtual override nonReentrant returns (EngineBlox.TxRecord memory) {
-        // Core behavior first
-        EngineBlox.TxRecord memory txRecord = super._requestAndApproveTransaction(metaTx);
-
-        // Hook execution based on signer role and execution selector
-        bytes4 executionSelector = txRecord.params.executionSelector;
-        _executeOnRequestAndApproveHooks(executionSelector, txRecord, metaTx, msg.sender);
-
-        return txRecord;
+        // Execute configured hooks (Interactions)
+        _executeActionHooks(txRecord);
     }
 }

@@ -296,7 +296,7 @@ A comprehensive fuzz test suite has been created covering **all 207+ attack vect
 
 ### 1. Payment Update Access Control ✅
 - **Risk Mitigated**: Payment redirection attacks
-- **Implementation**: Permission-based access control with `UPDATE_PAYMENT_SELECTOR` macro
+- **Implementation**: Permission-based access control (execution + handler selector)
 - **Impact**: High - Prevents unauthorized payment updates
 - **Tests**: All 6 payment security tests passing
 

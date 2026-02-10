@@ -70,19 +70,6 @@ export class EngineBlox {
    */
   static readonly NATIVE_TRANSFER_OPERATION: Hex = keccak256("NATIVE_TRANSFER");
   
-  /**
-   * Payment update selector (reserved signature for payment detail updates)
-   * Computed as bytes4(keccak256("__bloxchain_update_payment__()"))
-   */
-  static readonly UPDATE_PAYMENT_SELECTOR: Hex = (
-    '0x' + k256(new TextEncoder().encode("__bloxchain_update_payment__()")).slice(2, 10)
-  ) as Hex;
-  
-  /**
-   * Payment update operation type hash
-   */
-  static readonly UPDATE_PAYMENT_OPERATION: Hex = keccak256("UPDATE_PAYMENT");
-
   // ============ ROLE CONSTANTS ============
   
   /**

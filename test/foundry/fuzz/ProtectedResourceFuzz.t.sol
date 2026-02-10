@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -58,7 +58,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
             
             // Transaction should be marked as FAILED with CannotModifyProtected error
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -91,7 +93,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should be marked as FAILED with CannotModifyProtected error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -125,7 +129,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
             
             // Transaction should be marked as FAILED with CannotModifyProtected error
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");

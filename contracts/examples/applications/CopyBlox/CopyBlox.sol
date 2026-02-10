@@ -4,11 +4,11 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../../core/base/BaseStateMachine.sol";
-import "../../core/base/interface/IBaseStateMachine.sol";
-import "../../core/lib/EngineBlox.sol";
-import "../../interfaces/IEventForwarder.sol";
-import "../../utils/SharedValidation.sol";
+import "../../../core/base/BaseStateMachine.sol";
+import "../../../core/base/interface/IBaseStateMachine.sol";
+import "../../../core/lib/EngineBlox.sol";
+import "../../../core/lib/interfaces/IEventForwarder.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBlox

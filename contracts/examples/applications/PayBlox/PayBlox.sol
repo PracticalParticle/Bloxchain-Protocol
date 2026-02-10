@@ -2,9 +2,9 @@
 pragma solidity 0.8.33;
 
 // Particle imports
-import "../../core/security/SecureOwnable.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../core/security/SecureOwnable.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
+import "../../../core/lib/interfaces/IDefinition.sol";
 import "./PayBloxDefinitions.sol";
 
 /**
@@ -13,8 +13,7 @@ import "./PayBloxDefinitions.sol";
  * using the payment management system from BaseStateMachine
  * 
  * This contract demonstrates:
- * - Creating payment requests with native token transfers
- * - Managing payment details using _updatePaymentForTransaction
+ * - Creating payment requests with native token transfers via _requestTransactionWithPayment
  * - Maintaining a payment table visible only to the owner role
  * - Time-delay workflow for secure payment execution
  * - Simple accounting tool for tracking payments
@@ -110,14 +109,14 @@ contract PayBlox is SecureOwnable {
      * @notice Request a payment with payment details
      * @param paymentDetails The payment details including recipient and amounts
      * @param description Optional description/memo for accounting purposes
-     * @return The transaction record
-     * @notice This creates a transaction request and immediately attaches payment details
-     *         using _updatePaymentForTransaction. All information is logged in the payment table.
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
+     * @notice This creates a transaction request with payment attached in one step via _requestTransactionWithPayment.
+     *         All information is logged in the payment table.
      */
     function requestWithPayment(
         EngineBlox.PaymentDetails memory paymentDetails,
         string memory description
-    ) public returns (EngineBlox.TxRecord memory) {
+    ) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
         if (paymentDetails.nativeTokenAmount == 0 && paymentDetails.erc20TokenAmount == 0) {
@@ -128,20 +127,17 @@ contract PayBlox is SecureOwnable {
             revert SharedValidation.NotSupported();
         }
         
-        // Create transaction request using NATIVE_TRANSFER_SELECTOR
-        // For native transfers with attached payment, we use value=0 and target=address(this)
-        EngineBlox.TxRecord memory txRecord = _requestTransaction(
+        // Create transaction request with payment attached (value=0, target=this for no-op; payment holds recipient/amount)
+        EngineBlox.TxRecord memory txRecord = _requestTransactionWithPayment(
             msg.sender,
-            address(this), // target is this contract (no-op transaction)
-            0,            // value is 0 (payment will be attached separately)
-            0,            // gas limit (0 means use gasleft())
+            address(this),
+            0,
+            0,
             PayBloxDefinitions.NATIVE_PAYMENT,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
-            ""            // empty params for native transfers
+            "",
+            paymentDetails
         );
-        
-        // Update payment details for the transaction using _updatePaymentForTransaction
-        txRecord = _updatePaymentForTransaction(txRecord.txId, paymentDetails);
         
         // Register payment in the payment table with accounting information (owner-only visibility)
         _paymentTable[txRecord.txId] = PaymentRecord({
@@ -160,15 +156,15 @@ contract PayBlox is SecureOwnable {
             block.timestamp,
             description
         );
-        return txRecord;
+        return txRecord.txId;
     }
     
     /**
      * @notice Approve a payment after the time delay has passed
      * @param txId The ID of the payment transaction to approve
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function approvePaymentAfterDelay(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function approvePaymentAfterDelay(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _approveTransaction(txId);
         
@@ -189,15 +185,15 @@ contract PayBlox is SecureOwnable {
             );
         }
         
-        return updated;
+        return updated.txId;
     }
     
     /**
      * @notice Cancel a pending payment request
      * @param txId The ID of the payment transaction to cancel
-     * @return The updated transaction record
+     * @return The transaction ID
      */
-    function cancelPayment(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function cancelPayment(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _cancelTransaction(txId);
         
@@ -214,7 +210,7 @@ contract PayBlox is SecureOwnable {
             );
         }
         
-        return updated;
+        return updated.txId;
     }
     
     /**

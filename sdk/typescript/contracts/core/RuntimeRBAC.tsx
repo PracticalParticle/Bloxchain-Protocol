@@ -1,14 +1,14 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import RuntimeRBACABIJson from '../abi/RuntimeRBAC.abi.json';
-import { TransactionOptions, TransactionResult } from '../interfaces/base.index';
-import { IRuntimeRBAC } from '../interfaces/core.access.index';
-import { TxAction } from '../types/lib.index';
-import { MetaTransaction } from '../interfaces/lib.index';
+import RuntimeRBACABIJson from '../../abi/RuntimeRBAC.abi.json';
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
+import { IRuntimeRBAC } from '../../interfaces/core.access.index';
+import { TxAction } from '../../types/lib.index';
+import { MetaTransaction } from '../../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
-import { Uint16Bitmap } from '../utils/bitmap';
-import { INTERFACE_IDS } from '../utils/interface-ids';
-import type { RoleConfigAction } from '../types/core.access.index';
-import { roleConfigBatchExecutionParams as defRoleConfigBatchExecutionParams } from '../lib/definitions/RuntimeRBACDefinitions';
+import { Uint16Bitmap } from '../../utils/bitmap';
+import { INTERFACE_IDS } from '../../utils/interface-ids';
+import type { RoleConfigAction } from '../../types/core.access.index';
+import { roleConfigBatchExecutionParams as defRoleConfigBatchExecutionParams } from '../../lib/definitions/RuntimeRBACDefinitions';
 
 /**
  * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission

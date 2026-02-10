@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.33;
 
-import "../../core/lib/EngineBlox.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../core/lib/EngineBlox.sol";
+import "../../../core/lib/interfaces/IDefinition.sol";
 
 /**
  * @title SimpleVaultDefinitions

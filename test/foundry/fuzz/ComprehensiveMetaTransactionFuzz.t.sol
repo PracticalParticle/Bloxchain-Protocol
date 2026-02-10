@@ -4,7 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -191,7 +191,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Execute transaction
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord1 = roleBlox.getTransaction(_txId1);
         
         // Transaction should succeed
         assertEq(uint8(txRecord1.status), uint8(EngineBlox.TxStatus.COMPLETED), "Transaction should succeed");
@@ -493,7 +495,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Very long deadline should be allowed (signature still requires permissions)
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should succeed if permissions are correct
         // The key is that long deadline doesn't bypass permission checks
@@ -641,7 +645,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Execute first transaction
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx1);
+        uint256 _txId1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx1);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord1 = roleBlox.getTransaction(_txId1);
         
         // First transaction should succeed
         assertEq(uint8(txRecord1.status), uint8(EngineBlox.TxStatus.COMPLETED), "First transaction should succeed");

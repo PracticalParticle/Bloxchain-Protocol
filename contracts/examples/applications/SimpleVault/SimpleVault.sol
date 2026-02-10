@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/security/SecureOwnable.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../core/security/SecureOwnable.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
+import "../../../core/lib/interfaces/IDefinition.sol";
 import "./SimpleVaultDefinitions.sol";
 
 
@@ -89,7 +89,7 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of ETH to withdraw
      */
-    function withdrawEthRequest(address to, uint256 amount) public returns (EngineBlox.TxRecord memory) {
+    function withdrawEthRequest(address to, uint256 amount) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(to);
         if (amount > getEthBalance()) revert SharedValidation.NotSupported();
@@ -103,7 +103,7 @@ contract SimpleVault is SecureOwnable {
             SimpleVaultDefinitions.WITHDRAW_ETH_SELECTOR,
             abi.encode(to, amount)
         );
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
@@ -112,7 +112,7 @@ contract SimpleVault is SecureOwnable {
      * @param to Recipient address
      * @param amount Amount of tokens to withdraw
      */
-    function withdrawTokenRequest(address token, address to, uint256 amount) public returns (EngineBlox.TxRecord memory) {
+    function withdrawTokenRequest(address token, address to, uint256 amount) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(token);
         SharedValidation.validateNotZeroAddress(to);
@@ -127,36 +127,37 @@ contract SimpleVault is SecureOwnable {
             SimpleVaultDefinitions.WITHDRAW_TOKEN_SELECTOR,
             abi.encode(token, to, amount)
         );
-        return txRecord;
+        return txRecord.txId;
     }
 
     /**
      * @notice Approve a withdrawal after the time delay has passed
      * @param txId The ID of the withdrawal transaction to approve
      */
-    function approveWithdrawalAfterDelay(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function approveWithdrawalAfterDelay(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _approveTransaction(txId);
-        return updated;
+        return updated.txId;
     }
 
     /**
      * @notice Approve withdrawal with meta transaction
      * @param metaTx Meta transaction data
      */
-    function approveWithdrawalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (EngineBlox.TxRecord memory) {
+    function approveWithdrawalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcaster(msg.sender);
-        return _approveTransactionWithMetaTx(metaTx);
+        EngineBlox.TxRecord memory txRecord = _approveTransactionWithMetaTx(metaTx);
+        return txRecord.txId;
     }
 
     /**
      * @notice Cancel a pending withdrawal request
      * @param txId The ID of the withdrawal transaction to cancel
      */
-    function cancelWithdrawal(uint256 txId) public returns (EngineBlox.TxRecord memory) {
+    function cancelWithdrawal(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
         EngineBlox.TxRecord memory updated = _cancelTransaction(txId);
-        return updated;
+        return updated.txId;
     }
 
     /**

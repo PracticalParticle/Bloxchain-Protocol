@@ -12,6 +12,7 @@ cache/
 cache_forge/
 out/
 research/
+reports/
 
 ### VS Code ###
 .vscode/
@@ -57,8 +58,6 @@ deployed-addresses.json
 # Copied by package/scripts/prepublish-contracts.cjs for @bloxchain/contracts
 package/abi/
 package/core/
-package/interfaces/
-package/utils/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/

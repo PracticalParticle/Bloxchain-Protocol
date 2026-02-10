@@ -7,9 +7,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Particle imports
-import "../../core/security/SecureOwnable.sol";
-import "../../utils/SharedValidation.sol";
-import "../../interfaces/IDefinition.sol";
+import "../../../core/security/SecureOwnable.sol";
+import "../../../core/lib/utils/SharedValidation.sol";
+import "../../../core/lib/interfaces/IDefinition.sol";
 import "./SimpleRWA20Definitions.sol";
 
 /**
@@ -54,10 +54,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
         // Initialize ERC20 state variables manually
         __ERC20_init(name, symbol);
         
-        // Initialize SecureOwnable directly
-        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+        // Initialize SecureOwnable (base + SecureOwnable definitions: ownership, broadcaster, recovery, timelock)
+        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         
-        // Load SimpleRWA20-specific definitions
+        // Load SimpleRWA20-specific definitions (mint/burn meta-tx)
         IDefinition.RolePermission memory permissions = 
             SimpleRWA20Definitions.getRolePermissions();
         _loadDefinitions(
@@ -71,29 +71,31 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
     /**
      * @notice Create a mint request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing mint parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function mintWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);
-        return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
+        EngineBlox.TxRecord memory txRecord = _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.MINT_TOKENS_META_SELECTOR, SimpleRWA20Definitions.MINT_TOKENS);
+        return txRecord.txId;
     }
 
     /**
      * @notice Create a burn request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing burn parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function burnWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
         nonReentrant
-        returns (EngineBlox.TxRecord memory) 
+        returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);
-        return _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
+        EngineBlox.TxRecord memory txRecord = _handleTokenMetaTx(metaTx, SimpleRWA20Definitions.BURN_TOKENS_META_SELECTOR, SimpleRWA20Definitions.BURN_TOKENS);
+        return txRecord.txId;
     }
 
     /**

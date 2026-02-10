@@ -44,8 +44,7 @@ contract EngineBloxTest is CommonBase {
     function test_TransactionStatus_Transitions() public {
         // Create a transaction
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
 
         // Verify PENDING status
         vm.prank(owner);
@@ -68,8 +67,7 @@ contract EngineBloxTest is CommonBase {
     function test_TransactionStatus_InvalidTransition() public {
         // Create and immediately try to approve (should fail)
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
 
         // Try to approve before timelock (should revert)
         vm.prank(recovery);

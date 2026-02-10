@@ -3,7 +3,7 @@ pragma solidity 0.8.33;
 
 import "../../../contracts/core/base/BaseStateMachine.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/utils/SharedValidation.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**

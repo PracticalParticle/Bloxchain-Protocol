@@ -3,8 +3,8 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/utils/SharedValidation.sol";
-import "../../../contracts/interfaces/IOnActionHook.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
+import "../../../contracts/experimental/hook/interface/IOnActionHook.sol";
 import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 
@@ -71,6 +71,23 @@ contract MaliciousHookContract is IOnActionHook {
     constructor(bool _shouldRevert, bool _shouldConsumeGas) {
         shouldRevert = _shouldRevert;
         shouldConsumeGas = _shouldConsumeGas;
+    }
+    
+    function onAction(EngineBlox.TxRecord memory) external override {
+        callCount++;
+        if (shouldRevert) {
+            revert("Malicious hook revert");
+        }
+        if (shouldConsumeGas) {
+            uint256 sum = 0;
+            for (uint256 i = 0; i < 10000; i++) {
+                sum += i;
+            }
+            // prevent warnings
+            if (sum == 0) {
+                revert("Gas consumed");
+            }
+        }
     }
     
     function onRequest(
@@ -160,10 +177,7 @@ contract ReentrancyHookContract is IOnActionHook {
         targetTxId = _txId;
     }
     
-    function onApprove(
-        EngineBlox.TxRecord memory,
-        address
-    ) external {
+    function onAction(EngineBlox.TxRecord memory) external override {
         // Attempt reentrancy - should fail due to ReentrancyGuard
         // Note: approveTransaction is internal, so we can't call it directly
         // This test verifies the pattern - actual reentrancy protection is tested elsewhere
