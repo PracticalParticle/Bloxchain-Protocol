@@ -50,8 +50,9 @@ contract BaseStateMachineTest is CommonBase {
     function test_GetTransaction_ReturnsCorrectTransaction() public {
         // Create a transaction first
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(owner);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         vm.prank(owner);
         EngineBlox.TxRecord memory retrievedTx = secureBlox.getTransaction(txId);
@@ -62,8 +63,9 @@ contract BaseStateMachineTest is CommonBase {
     function test_GetTransactionHistory_ReturnsRange() public {
         // Create first transaction (ownership request)
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx1 = secureBlox.transferOwnershipRequest();
-        uint256 txId1 = tx1.txId;
+        uint256 txId1 = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory tx1 = secureBlox.getTransaction(txId1);
 
         // Complete it so we can create a second request (only one secure request allowed at a time)
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -73,8 +75,9 @@ contract BaseStateMachineTest is CommonBase {
 
         // Create second transaction (broadcaster request) as new owner
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx2 = secureBlox.updateBroadcasterRequest(user1, 0);
-        uint256 txId2 = tx2.txId;
+        uint256 txId2 = secureBlox.updateBroadcasterRequest(user1, 0);
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory tx2 = secureBlox.getTransaction(txId2);
 
         // getTransactionHistory requires fromTxId < toTxId (strictly less than)
         vm.prank(recovery);

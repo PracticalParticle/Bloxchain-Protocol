@@ -24,8 +24,9 @@ contract EdgeCasesTest is CommonBase {
     function test_InvalidStateTransitions() public {
         // Create and complete a transaction
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
@@ -135,8 +136,9 @@ contract EdgeCasesTest is CommonBase {
     function test_BeforeReleaseTime() public {
         // Create request
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         // Try to approve before release time
         vm.prank(recovery);

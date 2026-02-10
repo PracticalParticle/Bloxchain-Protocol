@@ -228,7 +228,9 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // This should fail - empty bitmap should be rejected
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory result = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory result = roleBlox.getTransaction(_txId);
         
         // Should fail with empty bitmap error
         assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with empty bitmap");
@@ -461,8 +463,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             payment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             try paymentHelper.approveTransaction(txId) {
@@ -525,8 +526,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             legitimatePayment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             vm.prank(owner);
             EngineBlox.TxRecord memory record = paymentHelper.getTransaction(txId);
             assertEq(record.payment.recipient, legitimateRecipient, "Payment should be set to legitimate recipient");
@@ -582,14 +582,14 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             payment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
-            
+        ) returns (uint256 txId) {
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
-            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (uint256) {
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 // Verify payment went to correct recipient
                 if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     // Payment should have been sent to recipient1

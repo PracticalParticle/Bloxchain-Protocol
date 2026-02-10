@@ -77,7 +77,9 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
 
         // Verify transaction completed
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
@@ -140,7 +142,9 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Verify transaction completed
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));

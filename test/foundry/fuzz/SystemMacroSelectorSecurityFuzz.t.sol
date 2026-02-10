@@ -79,15 +79,16 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             payment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             assertTrue(txId > 0, "Transaction should be created");
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
             // Execution should succeed - system macro selector can target address(this)
-            EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txId);
+            paymentHelper.approveTransaction(txId);
+            vm.prank(owner);
+            EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED), "System macro selector should work");
         } catch (bytes memory reason) {
             // Handle NoPermission - permissions may not be set up
@@ -272,14 +273,15 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             systemMacroSelector,
             "",
             payment1
-        ) returns (EngineBlox.TxRecord memory txRecord1) {
-            uint256 txId1 = txRecord1.txId;
+        ) returns (uint256 txId1) {
             assertTrue(txId1 > 0, "Transaction should be created for address(this)");
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
             // Should succeed - system macro can target address(this)
-            EngineBlox.TxRecord memory result1 = paymentHelper.approveTransaction(txId1);
+            paymentHelper.approveTransaction(txId1);
+            vm.prank(owner);
+            EngineBlox.TxRecord memory result1 = paymentHelper.getTransaction(txId1);
             assertEq(
                 uint8(result1.status),
                 uint8(EngineBlox.TxStatus.COMPLETED),
@@ -313,8 +315,7 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             systemMacroSelector,
             "",
             payment2
-        ) returns (EngineBlox.TxRecord memory txRecord2) {
-            uint256 txId2 = txRecord2.txId;
+        ) returns (uint256 txId2) {
             // Advance time and attempt execution
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
@@ -364,15 +365,16 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             systemMacroSelector,
             "",
             payment3
-        ) returns (EngineBlox.TxRecord memory txRecord3) {
-            uint256 txId3 = txRecord3.txId;
+        ) returns (uint256 txId3) {
             assertTrue(txId3 > 0, "Transaction should be created for whitelisted target");
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
             
             // Should succeed - external target is whitelisted
-            EngineBlox.TxRecord memory result3 = paymentHelper.approveTransaction(txId3);
+            paymentHelper.approveTransaction(txId3);
+            vm.prank(owner);
+            EngineBlox.TxRecord memory result3 = paymentHelper.getTransaction(txId3);
             assertEq(
                 uint8(result3.status),
                 uint8(EngineBlox.TxStatus.COMPLETED),

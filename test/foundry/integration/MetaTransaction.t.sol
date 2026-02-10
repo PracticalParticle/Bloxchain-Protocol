@@ -43,8 +43,9 @@ contract MetaTransactionTest is CommonBase {
 
         // Step 2: Create the transaction request first
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         // Step 3: Generate unsigned meta-transaction for existing transaction
         // Note: We use generateUnsignedMetaTransactionForExisting since we already created the request
@@ -130,8 +131,9 @@ contract MetaTransactionTest is CommonBase {
     function test_MetaTransaction_MessageHashConsistency() public {
         // Create a transaction first to get a valid txId
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         // Create meta-tx params - need to get nonce first
         vm.prank(owner);

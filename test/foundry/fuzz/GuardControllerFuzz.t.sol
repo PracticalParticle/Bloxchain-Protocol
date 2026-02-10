@@ -64,8 +64,9 @@ contract GuardControllerFuzzTest is CommonBase {
             params,
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
+        ) returns (uint256 txId) {
             succeeded = true;
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // If it didn't revert, verify the transaction record is valid
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
             assertGt(txRecord.txId, 0);

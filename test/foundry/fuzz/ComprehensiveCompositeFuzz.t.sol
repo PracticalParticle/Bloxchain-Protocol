@@ -254,8 +254,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             }
         }
         
-        // Call succeeded - decode return value and test atomicity
-        EngineBlox.TxRecord memory txRecord = abi.decode(returnData, (EngineBlox.TxRecord));
+        // Call succeeded - decode txId (roleConfigBatchRequestAndApprove returns uint256)
+        uint256 txId = abi.decode(returnData, (uint256));
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(txId);
         
         // CRITICAL: Batch should be atomic - Action 1 should NOT execute
         // The batch should fail because Action 2 (modifying protected role) is invalid
@@ -301,8 +303,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
+            vm.prank(owner);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             uint256 releaseTime = txRecord.releaseTime;
         
         // Immediately sign meta-transaction to approve
@@ -332,7 +335,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Attempt to execute before time-lock expires
         if (block.timestamp < releaseTime) {
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory result = accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
+            accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
             
             // Should fail - time-lock not expired
             // Note: Meta-transaction approval still checks releaseTime
@@ -380,8 +383,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
         
         // Set initial payment
         EngineBlox.PaymentDetails memory initialPayment = EngineBlox.PaymentDetails({
@@ -455,7 +457,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         
         // Execute legitimate transaction first - this will increment nonce
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory legitResult = roleBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
+        uint256 legitTxId = roleBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory legitResult = roleBlox.getTransaction(legitTxId);
         
         // If legitimate transaction failed, skip test
         if (legitResult.status != EngineBlox.TxStatus.COMPLETED) {

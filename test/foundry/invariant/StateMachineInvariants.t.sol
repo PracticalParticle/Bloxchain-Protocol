@@ -63,8 +63,7 @@ contract StateMachineInvariantsTest is CommonBase {
     function invariant_TransactionCounterMonotonic() public {
         // Create a transaction to increment counter
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx1 = secureBlox.transferOwnershipRequest();
-        uint256 txId1 = tx1.txId;
+        uint256 txId1 = secureBlox.transferOwnershipRequest();
 
         // Cancel it
         vm.prank(recovery);
@@ -72,8 +71,7 @@ contract StateMachineInvariantsTest is CommonBase {
 
         // Create another transaction
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx2 = secureBlox.transferOwnershipRequest();
-        uint256 txId2 = tx2.txId;
+        uint256 txId2 = secureBlox.transferOwnershipRequest();
 
         // Counter should be monotonic
         assertGt(txId2, txId1);

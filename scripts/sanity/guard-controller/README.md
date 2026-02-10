@@ -7,14 +7,15 @@ This folder contains a comprehensive test suite for the GuardController contract
 ```
 guard-controller/
 ├── README.md                    # This file
-├── run-tests.js                 # Main test runner
-├── base-test.js                 # Base test class with common functionality
-└── guard-controller-tests.js    # Main GuardController functionality tests
+├── run-tests.cjs                # Main test runner
+├── base-test.cjs                # Base test class with common functionality
+├── guard-controller-tests.cjs   # GuardController ETH transfer tests
+└── erc20-mint-controller-tests.cjs  # ERC20 mint via controller tests
 ```
 
 ## Test Suites
 
-### GuardController Functionality Tests (`guard-controller-tests.js`)
+### GuardController Functionality Tests (`guard-controller-tests.cjs`)
 
 Comprehensive tests for the complete ETH transfer workflow:
 
@@ -22,6 +23,21 @@ Comprehensive tests for the complete ETH transfer workflow:
 2. **Add Function Permission to OWNER Role** - Grants OWNER role permission to use the bytes4(0) function for ETH transfers
 3. **Deposit ETH to Contract** - Transfers 1 ETH from owner wallet to the contract using `requestAndApproveExecution`
 4. **Withdraw ETH from Contract** - Transfers 0.5 ETH from the contract back to the owner wallet using `requestAndApproveExecution`
+
+### ERC20 Mint via Controller Tests (`erc20-mint-controller-tests.cjs`)
+
+Demonstrates operating an **external** ERC20 `mint` through the GuardController (AccountBlox): request → meta approve → execute. Uses BasicERC20 (minter = AccountBlox) and proves the controller can mint tokens to itself via RBAC and whitelist.
+
+**Steps:**
+
+1. **Create roles** – `MINT_REQUESTOR` and `MINT_APPROVER` (via `roleConfigBatch` CREATE_ROLE + ADD_WALLET).
+2. **Register ERC20 mint function schema** – `mint(address,uint256)` with all workflow permissions (request, cancel, approve, meta approve, meta cancel, request-and-approve meta).
+3. **Whitelist BasicERC20** – Add BasicERC20 address to the mint selector’s target whitelist.
+4. **Assign permissions** – `MINT_REQUESTOR`: request; `MINT_APPROVER`: meta approve + meta cancel; `BROADCASTER_ROLE`: execute (system role).
+5. **Run mint flow** – MINT_REQUESTOR is the requester; MINT_APPROVER signs meta approve; BROADCASTER calls `requestAndApproveExecution`. Mint 100 tokens (100e18) to the AccountBlox contract address.
+6. **Verify** – TxStatus COMPLETED and AccountBlox’s BasicERC20 balance increased by 100 tokens.
+
+**Requirements:** AccountBlox deployed, BasicERC20 deployed with minter = AccountBlox, `deployed-addresses.json` (or env) for BasicERC20 and AccountBlox addresses.
 
 ## Usage
 
@@ -33,7 +49,10 @@ node run-tests.js --all
 ### Run Specific Test Suites
 ```bash
 # Run only GuardController functionality tests
-node run-tests.js --guard-controller
+node run-tests.cjs --guard-controller
+
+# Run only ERC20 mint via controller tests
+node run-tests.cjs --erc20-mint-controller
 ```
 
 ### Show Help

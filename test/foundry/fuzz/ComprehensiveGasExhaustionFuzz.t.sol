@@ -183,9 +183,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
+        ) returns (uint256 txId) {
             uint256 gasUsed = gasBefore - gasleft();
-            
+            vm.prank(owner);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // Verify operation completes (permission check passed)
             assertTrue(
                 txRecord.status == EngineBlox.TxStatus.PENDING ||
@@ -254,7 +255,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory createTxRecord = roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+            uint256 _createTxId = roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory createTxRecord = roleBlox.getTransaction(_createTxId);
             
             // If role creation failed (e.g., MaxRolesExceeded), skip adding wallet
             if (createTxRecord.status == EngineBlox.TxStatus.FAILED) {
@@ -276,7 +279,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory addTxRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+            uint256 _addTxId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory addTxRecord = roleBlox.getTransaction(_addTxId);
             
             // If wallet addition succeeded, count it
             if (addTxRecord.status == EngineBlox.TxStatus.COMPLETED) {
@@ -373,9 +378,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             "",
             0,
             operationType
-        ) returns (EngineBlox.TxRecord memory txRecord) {
+        ) returns (uint256 txId) {
             uint256 gasUsed = gasBefore - gasleft();
-            
+            vm.prank(owner);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // Verify operation completes
             assertTrue(
                 txRecord.status == EngineBlox.TxStatus.PENDING ||
@@ -479,9 +485,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 gasBefore = gasleft();
         vm.prank(broadcaster);
-        try accountBlox.guardConfigBatchRequestAndApprove(metaTx) returns (EngineBlox.TxRecord memory txRecord) {
+        try accountBlox.guardConfigBatchRequestAndApprove(metaTx) returns (uint256 txId) {
             uint256 gasUsed = gasBefore - gasleft();
-            
+            vm.prank(owner);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // May succeed or fail depending on function protection
             if (txRecord.status == EngineBlox.TxStatus.FAILED) {
                 bytes4 errorSelector = bytes4(txRecord.result);
@@ -548,7 +555,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: In Foundry tests, gasleft() measurement can be inaccurate for external calls
         // We'll use a simpler approach - just verify the operation completes or fails gracefully
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Verify batch completes or fails gracefully
         assertTrue(
@@ -612,7 +621,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Should fail with BatchSizeExceeded error
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -677,7 +688,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: Gas measurement using gasleft() can be inaccurate for external calls in Foundry
         // Gas consumption is measured by Foundry's gas reporting system
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Verify batch completes or fails gracefully
         assertTrue(
@@ -867,7 +880,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
             
             // Count successfully created roles
             if (txRecord.status == EngineBlox.TxStatus.COMPLETED) {
@@ -1035,7 +1050,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -1104,7 +1121,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             metaTx.signature = abi.encodePacked(r, s, v);
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+            vm.prank(broadcaster);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             // Should fail with MaxFunctionsExceeded
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -1156,7 +1175,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: Gas measurement using gasleft() can be inaccurate for external calls in Foundry
         // Gas consumption is measured by Foundry's gas reporting system
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Verify operation completes or fails gracefully
         assertTrue(
@@ -1212,7 +1233,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }
@@ -1236,7 +1259,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }
@@ -1272,7 +1297,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }

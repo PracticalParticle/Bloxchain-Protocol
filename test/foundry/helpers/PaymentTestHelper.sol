@@ -220,7 +220,7 @@ contract PaymentTestHelper is BaseStateMachine {
      * @param executionSelector The function selector to execute
      * @param executionParams The execution parameters
      * @param paymentDetails The payment details to attach
-     * @return The transaction record with payment set
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function requestTransactionWithPayment(
         address requester,
@@ -231,8 +231,8 @@ contract PaymentTestHelper is BaseStateMachine {
         bytes4 executionSelector,
         bytes memory executionParams,
         EngineBlox.PaymentDetails memory paymentDetails
-    ) external returns (EngineBlox.TxRecord memory) {
-        return _requestTransactionWithPayment(
+    ) external returns (uint256 txId) {
+        EngineBlox.TxRecord memory txRecord = _requestTransactionWithPayment(
             requester,
             target,
             value,
@@ -242,6 +242,7 @@ contract PaymentTestHelper is BaseStateMachine {
             executionParams,
             paymentDetails
         );
+        return txRecord.txId;
     }
     
     /**
@@ -253,7 +254,7 @@ contract PaymentTestHelper is BaseStateMachine {
      * @param operationType The operation type
      * @param executionSelector The function selector to execute
      * @param executionParams The execution parameters
-     * @return The transaction record
+     * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function requestTransaction(
         address requester,
@@ -263,8 +264,8 @@ contract PaymentTestHelper is BaseStateMachine {
         bytes32 operationType,
         bytes4 executionSelector,
         bytes memory executionParams
-    ) external returns (EngineBlox.TxRecord memory) {
-        return _requestTransaction(
+    ) external returns (uint256 txId) {
+        EngineBlox.TxRecord memory txRecord = _requestTransaction(
             requester,
             target,
             value,
@@ -273,15 +274,17 @@ contract PaymentTestHelper is BaseStateMachine {
             executionSelector,
             executionParams
         );
+        return txRecord.txId;
     }
     
     /**
      * @notice Exposes _approveTransaction for testing
      * @param txId The transaction ID to approve
-     * @return The updated transaction record
+     * @return The transaction ID (use getTransaction(txId) for full record)
      */
-    function approveTransaction(uint256 txId) external returns (EngineBlox.TxRecord memory) {
-        return _approveTransaction(txId);
+    function approveTransaction(uint256 txId) external returns (uint256) {
+        EngineBlox.TxRecord memory txRecord = _approveTransaction(txId);
+        return txRecord.txId;
     }
     
     /**

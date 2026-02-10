@@ -4,12 +4,14 @@
  */
 
 import { WhitelistTests } from './whitelist-tests.ts';
+import { Erc20MintControllerSdkTests } from './erc20-mint-controller-tests.ts';
 
-type TestClass = typeof WhitelistTests;
+type TestClass = typeof WhitelistTests | typeof Erc20MintControllerSdkTests;
 
 class GuardControllerSDKTestRunner {
   private testSuites: Record<string, TestClass> = {
     whitelist: WhitelistTests,
+    'erc20-mint-controller': Erc20MintControllerSdkTests,
   };
 
   private results = {
@@ -28,6 +30,7 @@ class GuardControllerSDKTestRunner {
     console.log('Options:');
     console.log('  --all                    Run all test suites');
     console.log('  --whitelist              Run whitelist management tests only');
+    console.log('  --erc20-mint-controller  Run ERC20 mint via GuardController SDK tests only');
     console.log('  --help                   Show this help message');
     console.log();
     console.log('Examples:');
@@ -48,9 +51,10 @@ class GuardControllerSDKTestRunner {
 
     // Default to --all if no arguments provided (for master runner compatibility)
     if (args.length === 0 || args.includes('--all')) {
-      selectedSuites.push('whitelist');
+      selectedSuites.push('whitelist', 'erc20-mint-controller');
     } else {
       if (args.includes('--whitelist')) selectedSuites.push('whitelist');
+      if (args.includes('--erc20-mint-controller')) selectedSuites.push('erc20-mint-controller');
     }
 
     if (selectedSuites.length === 0) {

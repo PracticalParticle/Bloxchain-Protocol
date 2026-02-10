@@ -141,7 +141,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should fail with RoleWalletLimitReached error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -224,7 +226,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // Transaction should fail with ItemAlreadyExists error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");

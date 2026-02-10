@@ -4,11 +4,13 @@
  */
 
 const GuardControllerTests = require('./guard-controller-tests.cjs');
+const ERC20MintControllerTests = require('./erc20-mint-controller-tests.cjs');
 
 class GuardControllerTestRunner {
     constructor() {
         this.testSuites = {
-            'guard-controller': GuardControllerTests
+            'guard-controller': GuardControllerTests,
+            'erc20-mint-controller': ERC20MintControllerTests
         };
         
         this.results = {
@@ -27,12 +29,14 @@ class GuardControllerTestRunner {
         console.log();
         console.log('Options:');
         console.log('  --all                    Run all test suites');
-        console.log('  --guard-controller       Run GuardController functionality tests only');
+        console.log('  --guard-controller       Run GuardController ETH transfer tests only');
+        console.log('  --erc20-mint-controller  Run ERC20 mint via controller tests only');
         console.log('  --help                   Show this help message');
         console.log();
         console.log('Examples:');
-        console.log('  node run-tests.js --all');
-        console.log('  node run-tests.js --guard-controller');
+        console.log('  node run-tests.cjs --all');
+        console.log('  node run-tests.cjs --guard-controller');
+        console.log('  node run-tests.cjs --erc20-mint-controller');
         console.log();
     }
 
@@ -48,8 +52,10 @@ class GuardControllerTestRunner {
         
         if (args.includes('--all')) {
             selectedSuites.push('guard-controller');
+            selectedSuites.push('erc20-mint-controller');
         } else {
             if (args.includes('--guard-controller')) selectedSuites.push('guard-controller');
+            if (args.includes('--erc20-mint-controller')) selectedSuites.push('erc20-mint-controller');
         }
         
         if (selectedSuites.length === 0) {

@@ -69,7 +69,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -113,7 +115,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
                 );
 
                 vm.prank(broadcaster);
-                EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+                uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
                 
                 assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
             }
@@ -133,7 +137,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
             
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         }
@@ -162,7 +168,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -300,7 +308,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // CRITICAL: Verify batch is atomic - Action 1 should NOT succeed if Action 2 fails
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Batch with invalid action should fail");
@@ -359,7 +369,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         // All should fail
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -446,7 +458,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -521,7 +535,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -560,7 +576,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
             
             // Should fail - role already exists
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));

@@ -328,6 +328,15 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     return this.executeReadContract<Address>('getRecovery');
   }
 
+  /**
+   * @dev Returns all hook contracts registered for a function selector
+   * @param functionSelector The function selector to query hooks for
+   * @return Array of hook contract addresses
+   */
+  async getHooks(functionSelector: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getHooks', [functionSelector]);
+  }
+
   // ============ INTERFACE SUPPORT ============
 
   async supportsInterface(interfaceId: Hex): Promise<boolean> {

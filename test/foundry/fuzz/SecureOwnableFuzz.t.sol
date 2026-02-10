@@ -31,15 +31,18 @@ contract SecureOwnableFuzzTest is CommonBase {
 
         // Request ownership transfer (always transfers to recovery)
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = newContract.transferOwnershipRequest();
-        uint256 txId = requestTx.txId;
+        uint256 txId = newContract.transferOwnershipRequest();
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory requestTx = newContract.getTransaction(txId);
 
         // Advance time past timelock
         advanceTime(timelockPeriod + 1);
 
         // Approve
         vm.prank(recovery);
-        EngineBlox.TxRecord memory approvalTx = newContract.transferOwnershipDelayedApproval(txId);
+        newContract.transferOwnershipDelayedApproval(txId);
+        vm.prank(recovery);
+        EngineBlox.TxRecord memory approvalTx = newContract.getTransaction(txId);
 
         // Verify completion
         assertEq(uint8(approvalTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
@@ -53,8 +56,9 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != recovery);
 
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
-        uint256 txId = requestTx.txId;
+        uint256 txId = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        vm.prank(owner);
+        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 

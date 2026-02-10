@@ -93,8 +93,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             updatedPayment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             assertTrue(txId > 0, "Transaction should be created");
             uint256 originalBalance = originalRecipient.balance;
             uint256 newBalance = newRecipient.balance;
@@ -104,7 +103,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             vm.prank(owner);
             
             // Some recipients might be contracts that reject payments - handle gracefully
-            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (uint256) {
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 // If execution succeeded, verify payment went to new recipient
                 if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     assertEq(newRecipient.balance, newBalance + paymentAmount, "Payment should go to new recipient");
@@ -170,9 +171,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             manipulatedPayment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
-            
+        ) returns (uint256 txId) {
             // Advance time and execute
             advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
             vm.prank(owner);
@@ -187,7 +186,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 paymentHelper.approveTransaction(txId);
             } else {
                 // If amount is valid, execution should succeed
-                EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                paymentHelper.approveTransaction(txId);
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED), "Should succeed when amount is valid");
                 uint256 recipientBalance = recipient.balance;
                 assertEq(recipientBalance, manipulatedAmount, "Payment should be sent");
@@ -236,8 +237,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             payment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             uint256 initialBalance = recipient.balance;
             
             // Advance time and execute
@@ -327,8 +327,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             payment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             uint256 initialTokenBalance = tokenAddress == address(mockERC20) ? mockERC20.balanceOf(recipient) : 0;
             
             // Advance time and execute
@@ -339,7 +338,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             if (tokenAddress != address(mockERC20)) {
                 // Invalid token address should revert (non-contract or doesn't support ERC20)
                 // The execution will fail when trying to call balanceOf or transfer
-                try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+                try paymentHelper.approveTransaction(txId) returns (uint256) {
+                    EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                     // If it doesn't revert, verify it failed
                     assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with invalid token address");
                     assertTrue(result.result.length > 0, "Should have error message");
@@ -349,7 +349,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 }
             } else {
                 // Valid token should succeed
-                EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txId);
+                paymentHelper.approveTransaction(txId);
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED), "Should succeed with valid token");
                 assertEq(mockERC20.balanceOf(recipient), initialTokenBalance + paymentAmount, "Token payment should be sent");
             }
@@ -405,8 +407,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 EngineBlox.NATIVE_TRANSFER_SELECTOR,
                 "",
                 payment
-            ) returns (EngineBlox.TxRecord memory txRecord) {
-                txIds[i] = txRecord.txId;
+            ) returns (uint256 txId) {
+                txIds[i] = txId;
             } catch (bytes memory) {
                 txIds[i] = 0; // Mark as invalid
             }
@@ -423,7 +425,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             }
             
             vm.prank(owner);
-            EngineBlox.TxRecord memory result = paymentHelper.approveTransaction(txIds[i]);
+            paymentHelper.approveTransaction(txIds[i]);
+            vm.prank(owner);
+            EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txIds[i]);
             
             if (result.status == EngineBlox.TxStatus.COMPLETED) {
                 totalPaid += paymentAmount;
@@ -484,8 +488,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
             updatedPayment
-        ) returns (EngineBlox.TxRecord memory txRecord) {
-            uint256 txId = txRecord.txId;
+        ) returns (uint256 txId) {
             uint256 originalBalance = originalRecipient.balance;
             uint256 newBalance = newRecipient.balance;
             
@@ -497,7 +500,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             vm.prank(owner);
             
             // Some recipients might be contracts that reject payments - handle gracefully
-            try paymentHelper.approveTransaction(txId) returns (EngineBlox.TxRecord memory result) {
+            try paymentHelper.approveTransaction(txId) returns (uint256) {
+                vm.prank(owner);
+                EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                 // If execution succeeded, verify payment went to new recipient
                 if (result.status == EngineBlox.TxStatus.COMPLETED) {
                     // Get current balances to account for any pre-existing balance
