@@ -5,6 +5,7 @@ import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/execution/GuardController.sol";
+import "../../../contracts/core/execution/interface/IGuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
@@ -61,9 +62,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * @dev Helper to whitelist a target for a function selector on accountBlox
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(selector, target)
         });
         
@@ -450,9 +451,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Measure gas for function removal with safeRemoval
         // Use guardConfigBatch to unregister function
-        GuardControllerDefinitions.GuardConfigAction[] memory unregisterActions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        unregisterActions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION,
+        IGuardController.GuardConfigAction[] memory unregisterActions = new IGuardController.GuardConfigAction[](1);
+        unregisterActions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.UNREGISTER_FUNCTION,
             data: abi.encode(testSelector, true) // safeRemoval = true
         });
         
@@ -645,14 +646,14 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         functionsInBatch = uint8(bound(functionsInBatch, 1, EngineBlox.MAX_BATCH_SIZE));
         
         // Create batch with many function registrations
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](functionsInBatch);
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](functionsInBatch);
         EngineBlox.TxAction[] memory supportedActions = new EngineBlox.TxAction[](1);
         supportedActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         
         for (uint i = 0; i < functionsInBatch; i++) {
             string memory signature = string(abi.encodePacked("testFunction", i, "()"));
-            actions[i] = GuardControllerDefinitions.GuardConfigAction({
-                actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+            actions[i] = IGuardController.GuardConfigAction({
+                actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
                 data: abi.encode(signature, "TEST_OPERATION", supportedActions)
             });
         }
@@ -1087,9 +1088,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Attempt to register one more function - should fail if at limit
         if (registeredCount >= EngineBlox.MAX_FUNCTIONS) {
             string memory signature = "exceedLimitFunction()";
-            GuardControllerDefinitions.GuardConfigAction[] memory guardActions = new GuardControllerDefinitions.GuardConfigAction[](1);
-            guardActions[0] = GuardControllerDefinitions.GuardConfigAction({
-                actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+            IGuardController.GuardConfigAction[] memory guardActions = new IGuardController.GuardConfigAction[](1);
+            guardActions[0] = IGuardController.GuardConfigAction({
+                actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
                 data: abi.encode(signature, "TEST_OPERATION", actions)
             });
             
@@ -1312,9 +1313,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
     ) internal {
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
@@ -1372,9 +1373,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
     ) internal view returns (EngineBlox.MetaTransaction memory) {
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         

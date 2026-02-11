@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/execution/GuardController.sol";
+import "../../../contracts/core/execution/interface/IGuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
@@ -46,9 +47,9 @@ contract AccessControlTest is CommonBase {
         // Test that guardConfigBatchExecutionParams correctly encodes GuardConfigAction data
         // NOTE: This is a pure function that doesn't check authorization
         // Authorization is tested through the meta-transaction workflow
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(bytes4(keccak256("execute()")), address(mockTarget))
         });
         
@@ -56,9 +57,9 @@ contract AccessControlTest is CommonBase {
         assertGt(params.length, 0);
         
         // Verify the params can be decoded back to the original actions
-        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
+        IGuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (IGuardController.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
+        assertEq(uint8(decodedActions[0].actionType), uint8(IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST));
     }
 
     function test_Revert_ProtectedRoleModification() public {
