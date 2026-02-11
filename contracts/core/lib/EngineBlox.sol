@@ -795,6 +795,9 @@ library EngineBlox {
         uint256 maxWallets,
         bool isProtected
     ) public {
+        SharedValidation.validateRoleNameNotEmpty(roleName);
+        SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);
+
         bytes32 roleHash = keccak256(bytes(roleName));
         
         // Validate role count limit

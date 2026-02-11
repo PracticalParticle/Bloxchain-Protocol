@@ -202,9 +202,6 @@ abstract contract RuntimeRBAC is BaseStateMachine {
         uint256 maxWallets,
         EngineBlox.FunctionPermission[] memory functionPermissions
     ) internal returns (bytes32 roleHash) {
-        SharedValidation.validateRoleNameNotEmpty(roleName);
-        SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);
-
         roleHash = keccak256(bytes(roleName));
 
         // Create the role in the secure state with isProtected = false

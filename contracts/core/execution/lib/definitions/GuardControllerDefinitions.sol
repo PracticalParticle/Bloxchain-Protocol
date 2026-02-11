@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
 import "../../../lib/interfaces/IDefinition.sol";
+import "../../interface/IGuardController.sol";
 
 /**
  * @title GuardControllerDefinitions
@@ -62,24 +63,6 @@ library GuardControllerDefinitions {
     // GuardController: executeGuardConfigBatch((uint8,bytes)[])
     bytes4 public constant GUARD_CONFIG_BATCH_EXECUTE_SELECTOR =
         bytes4(keccak256("executeGuardConfigBatch((uint8,bytes)[])"));
-
-    /**
-     * @dev Action types for batched Guard configuration (matches GuardController for encoding)
-     */
-    enum GuardConfigActionType {
-        ADD_TARGET_TO_WHITELIST,
-        REMOVE_TARGET_FROM_WHITELIST,
-        REGISTER_FUNCTION,
-        UNREGISTER_FUNCTION
-    }
-
-    /**
-     * @dev Encodes a single Guard configuration action in a batch (matches GuardController for encoding)
-     */
-    struct GuardConfigAction {
-        GuardConfigActionType actionType;
-        bytes data;
-    }
 
     /**
      * @dev Returns predefined function schemas for GuardController execution functions
@@ -420,11 +403,11 @@ library GuardControllerDefinitions {
 
     /**
      * @dev Creates execution params for a Guard configuration batch (pure helper for EngineBlox).
-     * @param actions Encoded guard configuration actions (same layout as GuardControllerDefinitions.GuardConfigAction[])
+     * @param actions Encoded guard configuration actions (same layout as IGuardController.GuardConfigAction[])
      * @return The execution params for EngineBlox
      */
     function guardConfigBatchExecutionParams(
-        GuardConfigAction[] memory actions
+        IGuardController.GuardConfigAction[] memory actions
     ) public pure returns (bytes memory) {
         return abi.encode(actions);
     }
