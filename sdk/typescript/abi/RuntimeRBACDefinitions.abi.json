@@ -131,6 +131,24 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getRoleConfigActionSpecs",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "actionNames",
+        "type": "string[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "formats",
+        "type": "string[]"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "components": [
