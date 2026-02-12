@@ -402,6 +402,29 @@ library GuardControllerDefinitions {
     }
 
     /**
+     * @dev Returns all available GuardConfig action types and their decode formats for discovery.
+     * @return actionNames Human-readable action names (same order as GuardConfigActionType enum)
+     * @return formats ABI decode format for each action's data, e.g. "(bytes4 functionSelector, address target)"
+     * @notice Use with GuardConfigActionType enum: actionNames[i] and formats[i] describe enum value i
+     */
+    function getGuardConfigActionSpecs() public pure returns (string[] memory actionNames, string[] memory formats) {
+        actionNames = new string[](4);
+        formats = new string[](4);
+
+        actionNames[0] = "ADD_TARGET_TO_WHITELIST";
+        formats[0] = "(bytes4 functionSelector, address target)";
+
+        actionNames[1] = "REMOVE_TARGET_FROM_WHITELIST";
+        formats[1] = "(bytes4 functionSelector, address target)";
+
+        actionNames[2] = "REGISTER_FUNCTION";
+        formats[2] = "(string functionSignature, string operationName, TxAction[] supportedActions)";
+
+        actionNames[3] = "UNREGISTER_FUNCTION";
+        formats[3] = "(bytes4 functionSelector, bool safeRemoval)";
+    }
+
+    /**
      * @dev Creates execution params for a Guard configuration batch (pure helper for EngineBlox).
      * @param actions Encoded guard configuration actions (same layout as IGuardController.GuardConfigAction[])
      * @return The execution params for EngineBlox

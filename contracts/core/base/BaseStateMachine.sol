@@ -509,7 +509,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getWalletsInRole(bytes32 roleHash) public view virtual returns (address[] memory) {
+    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
         _validateAnyRole();
         _validateRoleExists(roleHash);
         return _getAuthorizedWallets(roleHash);
@@ -632,15 +632,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      */
     function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[] memory) {
-        EngineBlox.Role storage role = _secureState.roles[roleHash];
-        uint256 walletCount = role.walletCount;
-
-        address[] memory wallets = new address[](walletCount);
-        for (uint256 i = 0; i < walletCount; i++) {
-            wallets[i] = _getAuthorizedWalletAt(roleHash, i);
-        }
-
-        return wallets;
+        return EngineBlox._getAuthorizedWallets(_getSecureState(), roleHash);
     }
 
     /**
