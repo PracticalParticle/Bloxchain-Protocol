@@ -3,6 +3,8 @@ pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/execution/GuardController.sol";
+import "../../../contracts/core/execution/interface/IGuardController.sol";
+import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
@@ -19,23 +21,23 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(selector != bytes4(0));
 
         // Test execution params creation (now using batch config)
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
             actionType: isAdd 
-                ? GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
-                : GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
+                ? IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+                : IGuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST,
             data: abi.encode(selector, target)
         });
         
         bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
+        IGuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (IGuardController.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
         
-        GuardControllerDefinitions.GuardConfigActionType expectedType = isAdd 
-            ? GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
-            : GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
+        IGuardController.GuardConfigActionType expectedType = isAdd 
+            ? IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
+            : IGuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
         assertEq(uint8(decodedActions[0].actionType), uint8(expectedType));
         
         (bytes4 decodedSelector, address decodedTarget) = abi.decode(decodedActions[0].data, (bytes4, address));
@@ -119,9 +121,9 @@ contract GuardControllerFuzzTest is CommonBase {
         vm.assume(bytes(operationName).length > 0);
 
         // Create REGISTER_FUNCTION action
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
@@ -129,9 +131,9 @@ contract GuardControllerFuzzTest is CommonBase {
         bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
         
         // Decode the actions array
-        GuardControllerDefinitions.GuardConfigAction[] memory decodedActions = abi.decode(params, (GuardControllerDefinitions.GuardConfigAction[]));
+        IGuardController.GuardConfigAction[] memory decodedActions = abi.decode(params, (IGuardController.GuardConfigAction[]));
         assertEq(decodedActions.length, 1);
-        assertEq(uint8(decodedActions[0].actionType), uint8(GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION));
+        assertEq(uint8(decodedActions[0].actionType), uint8(IGuardController.GuardConfigActionType.REGISTER_FUNCTION));
         
         // Decode and verify the data
         (

@@ -58,6 +58,24 @@ abstract contract GuardController is BaseStateMachine {
     using EngineBlox for EngineBlox.SecureOperationState;
 
     /**
+     * @dev Action types for batched Guard configuration (must match IGuardController for encoding)
+     */
+    enum GuardConfigActionType {
+        ADD_TARGET_TO_WHITELIST,
+        REMOVE_TARGET_FROM_WHITELIST,
+        REGISTER_FUNCTION,
+        UNREGISTER_FUNCTION
+    }
+
+    /**
+     * @dev Encodes a single Guard configuration action in a batch (must match IGuardController for encoding)
+     */
+    struct GuardConfigAction {
+        GuardConfigActionType actionType;
+        bytes data;
+    }
+
+    /**
      * @notice Initializer to initialize GuardController
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
@@ -323,7 +341,7 @@ abstract contract GuardController is BaseStateMachine {
      * @dev External function that can only be called by the contract itself to execute a Guard configuration batch
      * @param actions Encoded guard configuration actions
      */
-    function executeGuardConfigBatch(GuardControllerDefinitions.GuardConfigAction[] calldata actions) external {
+    function executeGuardConfigBatch(GuardConfigAction[] calldata actions) external {
         _validateExecuteBySelf();
         _executeGuardConfigBatch(actions);
     }
@@ -334,29 +352,29 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Internal helper to execute a Guard configuration batch
      * @param actions Encoded guard configuration actions
      */
-    function _executeGuardConfigBatch(GuardControllerDefinitions.GuardConfigAction[] calldata actions) internal {
+    function _executeGuardConfigBatch(GuardConfigAction[] calldata actions) internal {
         _validateBatchSize(actions.length);
 
         for (uint256 i = 0; i < actions.length; i++) {
-            GuardControllerDefinitions.GuardConfigAction calldata action = actions[i];
+            GuardConfigAction calldata action = actions[i];
 
-            if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST) {
+            if (action.actionType == GuardConfigActionType.ADD_TARGET_TO_WHITELIST) {
                 // Decode ADD_TARGET_TO_WHITELIST action data
                 // Format: (bytes4 functionSelector, address target)
                 (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
 
                 _addTargetToFunctionWhitelist(functionSelector, target);
 
-                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target));
-            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target));
+            } else if (action.actionType == GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST) {
                 // Decode REMOVE_TARGET_FROM_WHITELIST action data
                 // Format: (bytes4 functionSelector, address target)
                 (bytes4 functionSelector, address target) = abi.decode(action.data, (bytes4, address));
 
                 _removeTargetFromFunctionWhitelist(functionSelector, target);
 
-                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target));
-            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target));
+            } else if (action.actionType == GuardConfigActionType.REGISTER_FUNCTION) {
                 // Decode REGISTER_FUNCTION action data
                 // Format: (string functionSignature, string operationName, TxAction[] supportedActions)
                 (
@@ -367,15 +385,15 @@ abstract contract GuardController is BaseStateMachine {
 
                 bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
 
-                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0)));
-            } else if (action.actionType == GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION) {
+                _logComponentEvent(_encodeGuardConfigEvent(GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0)));
+            } else if (action.actionType == GuardConfigActionType.UNREGISTER_FUNCTION) {
                 // Decode UNREGISTER_FUNCTION action data
                 // Format: (bytes4 functionSelector, bool safeRemoval)
                 (bytes4 functionSelector, bool safeRemoval) = abi.decode(action.data, (bytes4, bool));
 
                 _unregisterFunction(functionSelector, safeRemoval);
 
-                _logComponentEvent(_encodeGuardConfigEvent(GuardControllerDefinitions.GuardConfigActionType.UNREGISTER_FUNCTION, functionSelector, address(0)));
+                _logComponentEvent(_encodeGuardConfigEvent(GuardConfigActionType.UNREGISTER_FUNCTION, functionSelector, address(0)));
             } else {
                 revert SharedValidation.NotSupported();
             }
@@ -386,7 +404,7 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Encodes guard config event payload for ComponentEvent. Decode as (GuardConfigActionType, bytes4 functionSelector, address target).
      */
     function _encodeGuardConfigEvent(
-        GuardControllerDefinitions.GuardConfigActionType actionType,
+        GuardConfigActionType actionType,
         bytes4 functionSelector,
         address target
     ) internal pure returns (bytes memory) {
@@ -410,16 +428,12 @@ abstract contract GuardController is BaseStateMachine {
         // Derive function selector from signature
         functionSelector = bytes4(keccak256(bytes(functionSignature)));
 
-        // Validate that function schema doesn't already exist
-        if (functionSchemaExists(functionSelector)) {
-            revert SharedValidation.ResourceAlreadyExists(bytes32(functionSelector));
-        }
-
         // Convert actions array to bitmap
         uint16 supportedActionsBitmap = _createBitmapFromActions(supportedActions);
 
         // Create function schema directly (always non-protected)
         // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
+        // EngineBlox.createFunctionSchema validates schema doesn't already exist (ResourceAlreadyExists)
         bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
         executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
         _createFunctionSchema(
@@ -436,22 +450,9 @@ abstract contract GuardController is BaseStateMachine {
      * @dev Internal helper to unregister a function schema
      * @param functionSelector The function selector to unregister
      * @param safeRemoval If true, checks for role references before removal
+     * @notice EngineBlox.removeFunctionSchema validates schema existence (ResourceNotFound) and protected status (CannotModifyProtected)
      */
     function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        // Load schema and validate it exists
-        EngineBlox.FunctionSchema storage schema = _getSecureState().functions[functionSelector];
-        if (schema.functionSelector != functionSelector) {
-            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
-        }
-
-        // Ensure not protected
-        if (schema.isProtected) {
-            revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
-        }
-
-        // The safeRemoval check is now handled within EngineBlox.removeFunctionSchema
-        // (avoids getSupportedRolesList/getRoleFunctionPermissions which call _validateAnyRole;
-        // during meta-tx execution msg.sender is the contract, causing NoPermission)
         _removeFunctionSchema(functionSelector, safeRemoval);
     }
 

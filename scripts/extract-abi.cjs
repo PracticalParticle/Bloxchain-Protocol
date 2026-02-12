@@ -15,6 +15,7 @@ const contractsToProcess = [
   'RuntimeRBAC',
   'RuntimeRBACDefinitions',
   'GuardController',
+  'GuardControllerDefinitions',
   'IDefinition',
   'BareBlox',
   'SecureBlox',

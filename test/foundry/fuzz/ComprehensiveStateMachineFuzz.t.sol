@@ -7,6 +7,7 @@ import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/security/SecureOwnable.sol";
 import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
+import "../../../contracts/core/execution/interface/IGuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
@@ -246,9 +247,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Ensure actions array is not empty
         require(supportedActions.length > 0, "Supported actions cannot be empty");
         
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.REGISTER_FUNCTION,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
             data: abi.encode(functionSignature, operationName, supportedActions)
         });
         
@@ -291,9 +292,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
      * @dev Helper to whitelist a target for a function selector
      */
     function _whitelistTarget(address target, bytes4 selector) internal {
-        GuardControllerDefinitions.GuardConfigAction[] memory actions = new GuardControllerDefinitions.GuardConfigAction[](1);
-        actions[0] = GuardControllerDefinitions.GuardConfigAction({
-            actionType: GuardControllerDefinitions.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
             data: abi.encode(selector, target)
         });
         

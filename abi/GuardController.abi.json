@@ -140,17 +140,6 @@
         "type": "bytes32"
       }
     ],
-    "name": "ResourceAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
     "name": "ResourceNotFound",
     "type": "error"
   },
@@ -2355,7 +2344,7 @@
       {
         "components": [
           {
-            "internalType": "enum GuardControllerDefinitions.GuardConfigActionType",
+            "internalType": "enum GuardController.GuardConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -2365,7 +2354,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct GuardControllerDefinitions.GuardConfigAction[]",
+        "internalType": "struct GuardController.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

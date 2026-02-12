@@ -6,7 +6,7 @@
  */
 
 import { Hex, encodeAbiParameters, parseAbiParameters } from 'viem';
-import type { GuardConfigAction } from '../../types/core.execution.index';
+import type { GuardConfigAction } from '../../types.core.execution.index';
 
 /**
  * Builds execution params for executeGuardConfigBatch((uint8,bytes)[]).
@@ -22,4 +22,31 @@ export function guardConfigBatchExecutionParams(actions: GuardConfigAction[]): H
     parseAbiParameters('(uint8 actionType, bytes data)[]'),
     [actionsArray]
   ) as Hex;
+}
+
+/**
+ * Returns all available GuardConfig action types and their ABI decode formats.
+ * Mirrors GuardControllerDefinitions.getGuardConfigActionSpecs in Solidity.
+ *
+ * Index i in both arrays corresponds to GuardConfigActionType enum value i.
+ */
+export function getGuardConfigActionSpecs(): {
+  actionNames: string[];
+  formats: string[];
+} {
+  const actionNames = [
+    'ADD_TARGET_TO_WHITELIST',
+    'REMOVE_TARGET_FROM_WHITELIST',
+    'REGISTER_FUNCTION',
+    'UNREGISTER_FUNCTION'
+  ];
+
+  const formats = [
+    '(bytes4 functionSelector, address target)',
+    '(bytes4 functionSelector, address target)',
+    '(string functionSignature, string operationName, TxAction[] supportedActions)',
+    '(bytes4 functionSelector, bool safeRemoval)'
+  ];
+
+  return { actionNames, formats };
 }

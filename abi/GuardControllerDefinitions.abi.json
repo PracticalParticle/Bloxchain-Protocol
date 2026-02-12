@@ -1,20 +1,7 @@
 [
   {
     "inputs": [],
-    "name": "ROLE_CONFIG_BATCH",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "ROLE_CONFIG_BATCH_EXECUTE_SELECTOR",
+    "name": "APPROVE_TIMELOCK_EXECUTION_META_SELECTOR",
     "outputs": [
       {
         "internalType": "bytes4",
@@ -27,7 +14,98 @@
   },
   {
     "inputs": [],
-    "name": "ROLE_CONFIG_BATCH_META_SELECTOR",
+    "name": "APPROVE_TIMELOCK_EXECUTION_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CANCEL_TIMELOCK_EXECUTION_META_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CANCEL_TIMELOCK_EXECUTION_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CONTROLLER_OPERATION",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXECUTE_WITH_TIMELOCK_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GUARD_CONFIG_BATCH_EXECUTE_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GUARD_CONFIG_BATCH_META_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REQUEST_AND_APPROVE_EXECUTION_SELECTOR",
     "outputs": [
       {
         "internalType": "bytes4",
@@ -132,7 +210,7 @@
   },
   {
     "inputs": [],
-    "name": "getRoleConfigActionSpecs",
+    "name": "getGuardConfigActionSpecs",
     "outputs": [
       {
         "internalType": "string[]",
@@ -153,9 +231,9 @@
       {
         "components": [
           {
-            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
+            "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
-            "type": "IRuntimeRBAC.RoleConfigActionType"
+            "type": "IGuardController.GuardConfigActionType"
           },
           {
             "internalType": "bytes",
@@ -163,31 +241,12 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
+        "internalType": "struct IGuardController.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
     ],
-    "name": "roleConfigBatchExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "preEncoded",
-        "type": "bytes"
-      }
-    ],
-    "name": "roleConfigBatchExecutionParams",
+    "name": "guardConfigBatchExecutionParams",
     "outputs": [
       {
         "internalType": "bytes",
