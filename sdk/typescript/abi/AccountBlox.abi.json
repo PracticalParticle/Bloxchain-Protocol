@@ -752,7 +752,7 @@
       {
         "components": [
           {
-            "internalType": "enum GuardController.GuardConfigActionType",
+            "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -762,7 +762,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct GuardController.GuardConfigAction[]",
+        "internalType": "struct IGuardController.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -790,7 +790,7 @@
       {
         "components": [
           {
-            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
+            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -800,7 +800,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
+        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -2643,6 +2643,25 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
             "components": [
@@ -3892,25 +3911,6 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

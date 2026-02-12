@@ -35,7 +35,7 @@ abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder
-    ) public virtual override(GuardController, RuntimeRBAC, SecureOwnable) initializer {
+    ) public virtual override(GuardController, RuntimeRBAC, SecureOwnable) onlyInitializing {
         GuardController.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         RuntimeRBAC.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
         SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);

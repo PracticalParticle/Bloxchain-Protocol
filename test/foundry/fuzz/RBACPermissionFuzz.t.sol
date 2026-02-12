@@ -42,9 +42,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         // For this test, we'll use a random roleHash that likely doesn't exist
         
         // Try to add wallet to role
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         
@@ -90,10 +90,10 @@ contract RBACPermissionFuzzTest is CommonBase {
         }
         
         // Create role with maxWallets limit
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, maxWallets, permissions)
         });
         
@@ -109,9 +109,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         
         // Add wallets up to the limit
         for (uint256 i = 0; i < maxWallets; i++) {
-            RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-            addActions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+            addActions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
                 data: abi.encode(roleHash, boundedWallets[i])
             });
             
@@ -127,9 +127,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         }
         
         // Try to add one more - should fail
-        RuntimeRBAC.RoleConfigAction[] memory overflowActions = new RuntimeRBAC.RoleConfigAction[](1);
-        overflowActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory overflowActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        overflowActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, boundedWallets[maxWallets])
         });
         
@@ -177,10 +177,10 @@ contract RBACPermissionFuzzTest is CommonBase {
         vm.assume(roleHash != RECOVERY_ROLE);
         
         // Create role
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
@@ -195,9 +195,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallet first time
-        RuntimeRBAC.RoleConfigAction[] memory addActions1 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions1[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions1[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         
@@ -212,9 +212,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Try to add same wallet again - should fail
-        RuntimeRBAC.RoleConfigAction[] memory addActions2 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions2[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions2[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         

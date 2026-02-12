@@ -33,7 +33,7 @@ contract EdgeCasesFuzzTest is CommonBase {
         uint8 actionCount
     ) public {
         uint256 count = bound(actionCount, 2, 20);
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](count);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](count);
         
         // Mix valid and invalid actions
         for (uint256 i = 0; i < count; i++) {
@@ -41,14 +41,14 @@ contract EdgeCasesFuzzTest is CommonBase {
                 // Valid: Create role
                 string memory roleName = string(abi.encodePacked("ROLE_", i));
                 EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-                actions[i] = RuntimeRBAC.RoleConfigAction({
-                    actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+                actions[i] = IRuntimeRBAC.RoleConfigAction({
+                    actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                     data: abi.encode(roleName, 10, permissions)
                 });
             } else {
                 // Invalid: Try to modify protected role
-                actions[i] = RuntimeRBAC.RoleConfigAction({
-                    actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+                actions[i] = IRuntimeRBAC.RoleConfigAction({
+                    actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
                     data: abi.encode(OWNER_ROLE, address(/* forge-lint: disable-next-line(unsafe-typecast) */ uint160(i)))
                 });
             }
@@ -82,7 +82,7 @@ contract EdgeCasesFuzzTest is CommonBase {
      * @dev Fuzz test: Empty batch operations
      */
     function testFuzz_EmptyBatchOperations() public {
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](0);
         
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
@@ -106,14 +106,14 @@ contract EdgeCasesFuzzTest is CommonBase {
         uint8 batchSize
     ) public {
         uint256 size = bound(batchSize, 1, 50);
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](size);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](size);
         
         // Create multiple roles in one batch
         for (uint256 i = 0; i < size; i++) {
             string memory roleName = string(abi.encodePacked("ROLE_", i));
             EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-            actions[i] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[i] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, permissions)
             });
         }
@@ -155,10 +155,10 @@ contract EdgeCasesFuzzTest is CommonBase {
         vm.assume(roleHash != BROADCASTER_ROLE);
         vm.assume(roleHash != RECOVERY_ROLE);
         
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         

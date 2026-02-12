@@ -2344,7 +2344,7 @@
       {
         "components": [
           {
-            "internalType": "enum GuardController.GuardConfigActionType",
+            "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -2354,7 +2354,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct GuardController.GuardConfigAction[]",
+        "internalType": "struct IGuardController.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

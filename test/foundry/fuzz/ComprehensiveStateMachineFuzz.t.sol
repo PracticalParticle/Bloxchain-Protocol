@@ -93,10 +93,10 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         bytes32 roleHash = keccak256(bytes(roleName));
         
         // Step 1: Create role without permissions
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
@@ -117,9 +117,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         }
         
         // Step 2: Add owner to the role
-        RuntimeRBAC.RoleConfigAction[] memory addWalletActions = new RuntimeRBAC.RoleConfigAction[](1);
-        addWalletActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addWalletActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addWalletActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, owner)
         });
         
@@ -152,9 +152,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             handlerForSelectors: handlerForSelectors
         });
         
-        RuntimeRBAC.RoleConfigAction[] memory addPermissionActions = new RuntimeRBAC.RoleConfigAction[](1);
-        addPermissionActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory addPermissionActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addPermissionActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
             data: abi.encode(roleHash, permission)
         });
         

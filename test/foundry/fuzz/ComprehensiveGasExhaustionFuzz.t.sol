@@ -241,10 +241,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             bytes32 roleHash = keccak256(bytes(roleName));
             
             // Create role
-            RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+            IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
             EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-            createActions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            createActions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
             
@@ -266,9 +266,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             }
             
             // Add owner to role
-            RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-            addActions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+            addActions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
                 data: abi.encode(roleHash, owner)
             });
             
@@ -534,13 +534,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         uint256 uniqueOffset = block.timestamp % 1000000; // Use timestamp to make roles unique
         
         // Create batch with many role creations using unique names
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](rolesInBatch);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](rolesInBatch);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
         
         for (uint i = 0; i < rolesInBatch; i++) {
             string memory roleName = string(abi.encodePacked("BATCH_ROLE_", uniqueOffset, "_", i));
-            actions[i] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[i] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
         }
@@ -602,13 +602,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         rolesInBatch = uint16(bound(rolesInBatch, EngineBlox.MAX_BATCH_SIZE + 1, 500));
         
         // Create batch exceeding limit
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](rolesInBatch);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](rolesInBatch);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
         
         for (uint i = 0; i < rolesInBatch; i++) {
             string memory roleName = string(abi.encodePacked("BATCH_ROLE_", i));
-            actions[i] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[i] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
         }
@@ -866,10 +866,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             // Use unique role names to avoid conflicts
             string memory roleName = string(abi.encodePacked("TEST_ROLE_", uniqueOffset, "_", i));
             
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
             EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
             
@@ -1036,10 +1036,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Attempt to create one more role - should fail
         string memory roleName = "EXCEED_LIMIT_ROLE";
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
@@ -1154,13 +1154,13 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         batchSize = uint8(bound(batchSize, 1, EngineBlox.MAX_BATCH_SIZE));
         
         // Create many roles via batch
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](batchSize);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](batchSize);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
         
         for (uint i = 0; i < batchSize && i < numberOfRoles; i++) {
             string memory roleName = string(abi.encodePacked("COMPOSITE_ROLE_", i));
-            actions[i] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[i] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, emptyPermissions)
             });
         }
@@ -1219,10 +1219,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         string memory roleName = string(abi.encodePacked("TEST_ROLE_", index));
         roleHash = keccak256(bytes(roleName));
         
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
@@ -1246,9 +1246,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * @return success Whether the wallet addition succeeded
      */
     function _addWalletToRole(bytes32 roleHash, address wallet) internal returns (bool success) {
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         
@@ -1284,9 +1284,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             handlerForSelectors: handlerForSelectors
         });
         
-        RuntimeRBAC.RoleConfigAction[] memory roleActions = new RuntimeRBAC.RoleConfigAction[](1);
-        roleActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory roleActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        roleActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
             data: abi.encode(roleHash, permission)
         });
         
