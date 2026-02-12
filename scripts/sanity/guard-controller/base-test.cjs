@@ -919,16 +919,11 @@ class BaseGuardControllerTest {
         
         switch (actionType) {
             case this.RoleConfigActionType.CREATE_ROLE: {
-                // (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
-                // FunctionPermission is tuple(bytes4,uint16,bytes4[])
-                const permTuples = (data.functionPermissions || []).map(p => [
-                    p.functionSelector,
-                    typeof p.grantedActionsBitmap === 'number' ? p.grantedActionsBitmap : this.createBitmapFromActions(p.actions || []),
-                    p.handlerForSelectors || [p.functionSelector]
-                ]);
+                // New format: (string roleName, uint256 maxWallets)
+                // Function permissions must be configured separately via ADD_FUNCTION_TO_ROLE actions.
                 encodedData = this.web3.eth.abi.encodeParameters(
-                    ['string', 'uint256', 'tuple(bytes4,uint16,bytes4[])[]'],
-                    [data.roleName, data.maxWallets || 10, permTuples]
+                    ['string', 'uint256'],
+                    [data.roleName, data.maxWallets || 10]
                 );
                 break;
             }

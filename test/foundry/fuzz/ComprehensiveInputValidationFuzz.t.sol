@@ -73,10 +73,10 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
         
         // Create role first
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
@@ -91,9 +91,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Attempt to add zero address to role
-        RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, address(0)) // Zero address
         });
         
@@ -131,12 +131,12 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         arrayLength = bound(arrayLength, 1, 100);
         
         // Create batch with large array
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](arrayLength);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](arrayLength);
         
         for (uint256 i = 0; i < arrayLength; i++) {
             EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-            actions[i] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[i] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(string(abi.encodePacked("ROLE", i)), 10, permissions)
             });
         }
@@ -199,7 +199,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
      */
     function testFuzz_EmptyArrayHandled() public {
         // Create batch with empty array
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](0);
         
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(
@@ -260,10 +260,10 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
         
         // Create role with fuzzed name
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
@@ -471,10 +471,10 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         // Zero max wallets should fail
         if (maxWallets == 0) {
             string memory roleName = "TEST_ROLE";
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
             EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 0, permissions) // Zero maxWallets
             });
             

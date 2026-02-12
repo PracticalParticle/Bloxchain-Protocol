@@ -632,19 +632,11 @@ class BaseRuntimeRBACTest {
         
         switch (actionType) {
             case this.RoleConfigActionType.CREATE_ROLE:
-                // (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
-                // FunctionPermission is tuple(bytes4,uint16,bytes4[]) - includes handlerForSelectors array
-                const functionPermsArray = data.functionPermissions.map(fp => {
-                    const handlerForSelectors = fp.handlerForSelectors || (fp.handlerForSelector ? [fp.handlerForSelector] : [fp.functionSelector]);
-                    return [
-                        fp.functionSelector,
-                        fp.grantedActionsBitmap,
-                        handlerForSelectors
-                    ];
-                });
+                // New format: (string roleName, uint256 maxWallets)
+                // Function permissions must be configured separately via ADD_FUNCTION_TO_ROLE actions.
                 encodedData = this.web3.eth.abi.encodeParameters(
-                    ['string', 'uint256', 'tuple(bytes4,uint16,bytes4[])[]'],
-                    [data.roleName, data.maxWallets, functionPermsArray]
+                    ['string', 'uint256'],
+                    [data.roleName, data.maxWallets]
                 );
                 break;
             case this.RoleConfigActionType.REMOVE_ROLE:

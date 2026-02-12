@@ -42,9 +42,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
 
         for (uint256 i = 0; i < protectedRoles.length; i++) {
             // Create role config batch to add wallet
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
                 data: abi.encode(protectedRoles[i], wallet)
             });
 
@@ -79,9 +79,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
      */
     function testFuzz_CannotRevokeWalletFromProtectedRole() public {
         // Test revoking owner from OWNER_ROLE
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
             data: abi.encode(OWNER_ROLE, owner)
         });
 
@@ -115,9 +115,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         bytes32[3] memory protectedRoles = [OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE];
 
         for (uint256 i = 0; i < protectedRoles.length; i++) {
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.REMOVE_ROLE,
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE,
                 data: abi.encode(protectedRoles[i])
             });
 
@@ -168,10 +168,10 @@ contract ProtectedResourceFuzzTest is CommonBase {
         bytes32 newRoleHash = keccak256(bytes(roleName));
         
         // First create the role
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
 
@@ -186,9 +186,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
 
         // Then add wallet to the new role
-        RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(newRoleHash, wallet)
         });
 

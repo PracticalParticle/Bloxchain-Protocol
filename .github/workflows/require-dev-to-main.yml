@@ -1,0 +1,18 @@
+name: Require dev as PR source to main
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure only dev can target main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "dev" ]; then
+            echo "::error::Only the 'dev' branch can be merged into main. This PR is from '$HEAD_REF'. Please open a PR from dev to main instead."
+            exit 1
+          fi

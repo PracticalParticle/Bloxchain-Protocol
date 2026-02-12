@@ -296,17 +296,11 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
 
     switch (actionType) {
       case RoleConfigActionType.CREATE_ROLE:
-        // Format: (string roleName, uint256 maxWallets, FunctionPermission[] functionPermissions)
-        // FunctionPermission is tuple(bytes4,uint16,bytes4[])
-        // Convert FunctionPermission[] to tuple array
-        const functionPermissionsArray = data.functionPermissions.map((fp: FunctionPermission) => [
-          fp.functionSelector,
-          fp.grantedActionsBitmap,
-          fp.handlerForSelectors || [fp.functionSelector], // Default to self-reference if missing
-        ]);
+        // New format: (string roleName, uint256 maxWallets)
+        // Function permissions must be configured separately via ADD_FUNCTION_TO_ROLE actions.
         encodedData = encodeAbiParameters(
-          parseAbiParameters('string, uint256, (bytes4, uint16, bytes4[])[]'),
-          [data.roleName, BigInt(data.maxWallets), functionPermissionsArray]
+          parseAbiParameters('string, uint256'),
+          [data.roleName, BigInt(data.maxWallets)]
         ) as Hex;
         break;
 

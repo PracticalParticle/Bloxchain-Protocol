@@ -77,17 +77,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "provided",
-        "type": "uint256"
-      }
-    ],
-    "name": "MaxWalletsZero",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "caller",
         "type": "address"
@@ -146,17 +135,6 @@
   {
     "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceAlreadyExists",
     "type": "error"
   },
   {
@@ -774,7 +752,7 @@
       {
         "components": [
           {
-            "internalType": "enum GuardControllerDefinitions.GuardConfigActionType",
+            "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -784,7 +762,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct GuardControllerDefinitions.GuardConfigAction[]",
+        "internalType": "struct IGuardController.GuardConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -812,7 +790,7 @@
       {
         "components": [
           {
-            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
+            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -822,7 +800,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
+        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }
@@ -2665,6 +2643,25 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
             "components": [
@@ -3914,25 +3911,6 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

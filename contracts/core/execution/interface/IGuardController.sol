@@ -13,6 +13,24 @@ import "../../lib/EngineBlox.sol";
  */
 interface IGuardController {
     /**
+     * @dev Action types for batched Guard configuration
+     */
+    enum GuardConfigActionType {
+        ADD_TARGET_TO_WHITELIST,
+        REMOVE_TARGET_FROM_WHITELIST,
+        REGISTER_FUNCTION,
+        UNREGISTER_FUNCTION
+    }
+
+    /**
+     * @dev Encodes a single Guard configuration action in a batch
+     */
+    struct GuardConfigAction {
+        GuardConfigActionType actionType;
+        bytes data;
+    }
+
+    /**
      * @notice Initializer to initialize GuardController
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address

@@ -23,3 +23,36 @@ export function roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex
     [actionsArray]
   ) as Hex;
 }
+
+/**
+ * Returns all available RoleConfig action types and their ABI decode formats.
+ * Mirrors RuntimeRBACDefinitions.getRoleConfigActionSpecs in Solidity.
+ *
+ * Index i in both arrays corresponds to RoleConfigActionType enum value i.
+ */
+export function getRoleConfigActionSpecs(): {
+  actionNames: string[];
+  formats: string[];
+} {
+  const actionNames = [
+    'CREATE_ROLE',
+    'REMOVE_ROLE',
+    'ADD_WALLET',
+    'REVOKE_WALLET',
+    'ADD_FUNCTION_TO_ROLE',
+    'REMOVE_FUNCTION_FROM_ROLE'
+  ];
+
+  // CREATE_ROLE expects exactly (roleName, maxWallets). Some tests pass a third parameter (e.g. empty
+  // FunctionPermission[]); abi.decode ignores trailing bytes, but new code should use only 2 params.
+  const formats = [
+    '(string roleName, uint256 maxWallets)',
+    '(bytes32 roleHash)',
+    '(bytes32 roleHash, address wallet)',
+    '(bytes32 roleHash, address wallet)',
+    '(bytes32 roleHash, FunctionPermission functionPermission)',
+    '(bytes32 roleHash, bytes4 functionSelector)'
+  ];
+
+  return { actionNames, formats };
+}

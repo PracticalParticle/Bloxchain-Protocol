@@ -169,6 +169,35 @@ library RuntimeRBACDefinitions {
     }
 
     /**
+     * @dev Returns all available RoleConfig action types and their decode formats for discovery.
+     * @return actionNames Human-readable action names (same order as RoleConfigActionType enum)
+     * @return formats ABI decode format for each action's data, e.g. "(string roleName, uint256 maxWallets)"
+     * @notice Use with RoleConfigActionType enum: actionNames[i] and formats[i] describe enum value i
+     */
+    function getRoleConfigActionSpecs() public pure returns (string[] memory actionNames, string[] memory formats) {
+        actionNames = new string[](6);
+        formats = new string[](6);
+
+        actionNames[0] = "CREATE_ROLE";
+        formats[0] = "(string roleName, uint256 maxWallets)";
+
+        actionNames[1] = "REMOVE_ROLE";
+        formats[1] = "(bytes32 roleHash)";
+
+        actionNames[2] = "ADD_WALLET";
+        formats[2] = "(bytes32 roleHash, address wallet)";
+
+        actionNames[3] = "REVOKE_WALLET";
+        formats[3] = "(bytes32 roleHash, address wallet)";
+
+        actionNames[4] = "ADD_FUNCTION_TO_ROLE";
+        formats[4] = "(bytes32 roleHash, FunctionPermission functionPermission)";
+
+        actionNames[5] = "REMOVE_FUNCTION_FROM_ROLE";
+        formats[5] = "(bytes32 roleHash, bytes4 functionSelector)";
+    }
+
+    /**
      * @dev Creates execution params for a RBAC configuration batch (pure helper for EngineBlox).
      * @param actions Encoded role configuration actions (IRuntimeRBAC.RoleConfigAction[] layout)
      * @return The execution params for EngineBlox

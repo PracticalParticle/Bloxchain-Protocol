@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.33;
 
-import "../../core/execution/GuardController.sol";
-import "../../core/access/RuntimeRBAC.sol";
-import "../../core/security/SecureOwnable.sol";
-import "../../experimental/hook/HookManager.sol";
+import "../../core/pattern/Account.sol";
 import "../../core/base/BaseStateMachine.sol";
+import "../../experimental/hook/HookManager.sol";
 import "../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title MachineBlox
- * @dev Complete controller implementation with hook management capabilities
- * 
- * This contract combines:
- * - GuardController: Execution workflows and time-locked transactions
- * - RuntimeRBAC: Runtime role creation and management
- * - SecureOwnable: Secure ownership transfer and management
+ * @dev Complete controller implementation with hook management capabilities.
+ *
+ * Extends the Account pattern with:
  * - HookManager: External hook contract attachment for state machine actions
+ *
+ * ETH handling: direct receive is disabled; use deposit() to credit ETH.
  */
-contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager {
+contract MachineBlox is Account, HookManager {
     /**
-     * @notice Initializer to initialize MachineBlox
+     * @notice Initializer to initialize MachineBlox (Account + HookManager).
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
      * @param recovery The recovery address
@@ -33,27 +30,20 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
         address recovery,
         uint256 timeLockPeriodSec,
         address eventForwarder
-    ) public virtual override(GuardController, RuntimeRBAC, SecureOwnable) initializer {
-        // Initialize all parent contracts
-        // The guarded initialization ensures BaseStateMachine is only initialized once
-        GuardController.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
-        RuntimeRBAC.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
-        SecureOwnable.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+    ) public virtual override(Account) initializer {
+        Account.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(GuardController, RuntimeRBAC, SecureOwnable, BaseStateMachine) returns (bool) {
-        return GuardController.supportsInterface(interfaceId) || RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(Account, BaseStateMachine) returns (bool) {
+        return Account.supportsInterface(interfaceId) || BaseStateMachine.supportsInterface(interfaceId);
     }
-
-    // ============ INTERNAL FUNCTION OVERRIDES ============
-    // These overrides resolve conflicts by ensuring HookManager's hook execution is called
 
     /**
      * @dev Resolve ambiguity between BaseStateMachine and HookManager for post-action hook.
-     *      This ensures HookManager's external hook execution is wired into the unified
+     *      Ensures HookManager's external hook execution is wired into the unified
      *      BaseStateMachine post-transaction entry point.
      */
     function _postActionHook(
@@ -63,27 +53,27 @@ contract MachineBlox is GuardController, RuntimeRBAC, SecureOwnable, HookManager
     }
 
     /**
-     * @dev Explicit deposit function for ETH deposits
-     * @notice Users must call this function to deposit ETH to the contract
-     * @notice Direct ETH transfers to the contract will revert (no receive() function)
+     * @dev Explicit deposit function for ETH deposits.
+     * @notice Users must call this function to deposit ETH to the contract.
+     * @notice Direct ETH transfers to the contract will revert (receive/fallback revert).
      */
     event EthReceived(address indexed from, uint256 amount);
-    
+
     function deposit() external payable {
         emit EthReceived(msg.sender, msg.value);
-        // ETH is automatically added to contract balance
     }
-    
+
     /**
-     * @dev Fallback function to reject accidental calls
-     * @notice Prevents accidental ETH transfers and unknown function calls
-     * @notice Users must use deposit() function to send ETH
+     * @dev Override Account's receive to reject direct ETH; use deposit() instead.
      */
-    fallback() external payable {
+    receive() external payable override {
         revert SharedValidation.NotSupported();
     }
 
-    receive() external payable {
+    /**
+     * @dev Override Account's fallback (same behavior: reject).
+     */
+    fallback() external payable override {
         revert SharedValidation.NotSupported();
     }
 }

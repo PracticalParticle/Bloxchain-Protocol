@@ -795,6 +795,9 @@ library EngineBlox {
         uint256 maxWallets,
         bool isProtected
     ) public {
+        SharedValidation.validateRoleNameNotEmpty(roleName);
+        SharedValidation.validateMaxWalletsGreaterThanZero(maxWallets);
+
         bytes32 roleHash = keccak256(bytes(roleName));
         
         // Validate role count limit
@@ -1547,6 +1550,28 @@ library EngineBlox {
         Role storage role = self.roles[roleHash];
         SharedValidation.validateIndexInBounds(index, role.authorizedWallets.length());
         return role.authorizedWallets.at(index);
+    }
+
+    /**
+     * @dev Gets all authorized wallets for a role
+     * @param self The SecureOperationState to check
+     * @param roleHash The role hash
+     * @return Array of authorized wallet addresses
+     * @notice Access control should be enforced by the calling contract.
+     */
+    function _getAuthorizedWallets(
+        SecureOperationState storage self,
+        bytes32 roleHash
+    ) public view returns (address[] memory) {
+        Role storage role = self.roles[roleHash];
+        uint256 walletCount = role.walletCount;
+
+        address[] memory wallets = new address[](walletCount);
+        for (uint256 i = 0; i < walletCount; i++) {
+            wallets[i] = getAuthorizedWalletAt(self, roleHash, i);
+        }
+
+        return wallets;
     }
 
     /**

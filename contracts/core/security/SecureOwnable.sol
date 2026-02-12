@@ -110,7 +110,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwnerOrRecovery(owner(), getRecovery());
-        return _completeOwnershipApprove(_approveTransaction(txId));
+        return _completeApprove(_approveTransaction(txId));
     }
 
     /**
@@ -120,7 +120,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-        return _completeOwnershipApprove(_approveTransactionWithMetaTx(metaTx));
+        return _completeApprove(_approveTransactionWithMetaTx(metaTx));
     }
 
     /**
@@ -130,7 +130,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateRecovery(getRecovery());
-        return _completeOwnershipCancel(_cancelTransaction(txId));
+        return _completeCancel(_cancelTransaction(txId));
     }
 
     /**
@@ -140,7 +140,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-        return _completeOwnershipCancel(_cancelTransactionWithMetaTx(metaTx));
+        return _completeCancel(_cancelTransactionWithMetaTx(metaTx));
     }
 
     // Broadcaster Management
@@ -181,7 +181,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateBroadcasterDelayedApproval(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
-        return _completeBroadcasterApprove(_approveTransaction(txId));
+        return _completeApprove(_approveTransaction(txId));
     }
 
     /**
@@ -191,7 +191,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateBroadcasterApprovalWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-        return _completeBroadcasterApprove(_approveTransactionWithMetaTx(metaTx));
+        return _completeApprove(_approveTransactionWithMetaTx(metaTx));
     }
 
     /**
@@ -201,7 +201,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateBroadcasterCancellation(uint256 txId) public returns (uint256) {
         SharedValidation.validateOwner(owner());
-        return _completeBroadcasterCancel(_cancelTransaction(txId));
+        return _completeCancel(_cancelTransaction(txId));
     }
 
     /**
@@ -211,7 +211,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function updateBroadcasterCancellationWithMetaTx(EngineBlox.MetaTransaction memory metaTx) public returns (uint256) {
         _validateBroadcasterAndOwnerSigner(metaTx);
-        return _completeBroadcasterCancel(_cancelTransactionWithMetaTx(metaTx));
+        return _completeCancel(_cancelTransactionWithMetaTx(metaTx));
     }
 
     // Recovery Management
@@ -301,42 +301,21 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Completes ownership flow after approval: resets flag and returns txId.
+     * @dev Completes ownership/broadcaster flow after approval: resets flag and returns txId.
      * @param updatedRecord The updated transaction record from approval
      * @return txId The transaction ID
      */
-    function _completeOwnershipApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
+    function _completeApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
         return updatedRecord.txId;
     }
 
     /**
-     * @dev Completes ownership flow after cancellation: resets flag, logs txId, returns txId.
+     * @dev Completes ownership/broadcaster flow after cancellation: resets flag, logs txId, returns txId.
      * @param updatedRecord The updated transaction record from cancellation
      * @return txId The transaction ID
      */
-    function _completeOwnershipCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
-        _hasOpenRequest = false;
-        _logComponentEvent(abi.encode(updatedRecord.txId));
-        return updatedRecord.txId;
-    }
-
-    /**
-     * @dev Completes broadcaster flow after approval: resets flag and returns txId.
-     * @param updatedRecord The updated transaction record from approval
-     * @return txId The transaction ID
-     */
-    function _completeBroadcasterApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
-        _hasOpenRequest = false;
-        return updatedRecord.txId;
-    }
-
-    /**
-     * @dev Completes broadcaster flow after cancellation: resets flag, logs txId, returns txId.
-     * @param updatedRecord The updated transaction record from cancellation
-     * @return txId The transaction ID
-     */
-    function _completeBroadcasterCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
+    function _completeCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
         _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord.txId;

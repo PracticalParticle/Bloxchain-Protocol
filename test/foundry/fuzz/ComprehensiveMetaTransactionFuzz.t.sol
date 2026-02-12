@@ -47,10 +47,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         vm.assume(wrongChainId < type(uint256).max / 2); // Prevent overflow
         
         // Create valid meta-transaction
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -102,10 +102,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         vm.assume(wrongNonce != actualNonce);
         
         // Create valid action
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -172,10 +172,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         uint256 initialNonce = roleBlox.getSignerNonce(owner);
         
         // Create and execute valid meta-transaction
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -260,10 +260,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
      */
     function testFuzz_SignatureMalleabilityPrevented() public {
         // Create valid meta-transaction
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -329,10 +329,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         address manipulatedTarget = address(roleBlox);
         
         // Create valid meta-transaction
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -395,10 +395,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         uint256 offset = bound(deadlineOffset, 1, maxOffset > 365 days ? 365 days : maxOffset);
         uint256 deadline = block.timestamp - offset;
         
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -457,10 +457,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         deadlineExtension = bound(deadlineExtension, 1 days, 10 * 365 days);
         uint256 deadline = block.timestamp + deadlineExtension;
         
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -525,10 +525,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         actualGasPrice = bound(actualGasPrice, maxGasPrice + 1, 2000 gwei);
         
         // Create meta-transaction with maxGasPrice limit
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -589,10 +589,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         uint256 currentNonce = roleBlox.getSignerNonce(owner);
         
         // Create first meta-transaction
-        RuntimeRBAC.RoleConfigAction[] memory actions1 = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions1 = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions1[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions1[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("ROLE1", 10, permissions)
         });
         
@@ -607,9 +607,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         assertEq(metaTx1.params.nonce, currentNonce, "First transaction should use current nonce");
         
         // Create second meta-transaction with same nonce (before first executes)
-        RuntimeRBAC.RoleConfigAction[] memory actions2 = new RuntimeRBAC.RoleConfigAction[](1);
-        actions2[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory actions2 = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions2[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("ROLE2", 10, permissions)
         });
         
@@ -678,10 +678,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
      */
     function testFuzz_InvalidSignatureRejected() public {
         // Create meta-transaction with invalid signature (all zeros)
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         
@@ -723,10 +723,10 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         sigLength = bound(sigLength, 1, 100); // Reasonable bounds
         vm.assume(sigLength != 65); // Must be exactly 65 bytes
         
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("TEST_ROLE", 10, permissions)
         });
         

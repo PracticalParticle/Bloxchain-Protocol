@@ -55,9 +55,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         bytes32[3] memory protectedRoles = [OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE];
         bytes32 protectedRoleHash = protectedRoles[roleIndex % 3];
 
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(protectedRoleHash, wallet)
         });
 
@@ -101,9 +101,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             walletToRevoke = broadcasters[0];
             // Only test if it's the last wallet
             if (broadcasters.length == 1) {
-                RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-                actions[0] = RuntimeRBAC.RoleConfigAction({
-                    actionType: RuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
+                IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+                actions[0] = IRuntimeRBAC.RoleConfigAction({
+                    actionType: IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
                     data: abi.encode(protectedRoleHash, walletToRevoke)
                 });
 
@@ -123,9 +123,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             }
         } else if (protectedRoleHash == RECOVERY_ROLE) {
             walletToRevoke = recovery;
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
                 data: abi.encode(protectedRoleHash, walletToRevoke)
             });
 
@@ -154,9 +154,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         bytes32[3] memory protectedRoles = [OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE];
         bytes32 protectedRoleHash = protectedRoles[roleIndex % 3];
 
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.REMOVE_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE,
             data: abi.encode(protectedRoleHash)
         });
 
@@ -285,18 +285,18 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         uint256 initialRoleCount = initialRoles.length;
         
         // Create batch with valid action followed by invalid action (protected role modification)
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](2);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](2);
         
         // Action 1: Create valid role (should succeed)
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(validRoleName, 10, permissions)
         });
         
         // Action 2: Add wallet to protected role (should fail)
-        actions[1] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        actions[1] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(OWNER_ROLE, wallet)
         });
         
@@ -347,17 +347,17 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         vm.assume(wallet1 != wallet2);
         
         // Create batch with multiple protected role modification attempts
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](3);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](3);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(OWNER_ROLE, wallet1)
         });
-        actions[1] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        actions[1] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(BROADCASTER_ROLE, wallet2)
         });
-        actions[2] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        actions[2] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(RECOVERY_ROLE, wallet1)
         });
         
@@ -405,10 +405,10 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         }
         
         // Create role with maxWallets limit
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, maxWallets, permissions)
         });
         
@@ -425,9 +425,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         // Add wallets up to limit
         for (uint256 i = 0; i < maxWallets; i++) {
             address wallet = address(uint160(1000 + i));
-            RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-            addActions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+            addActions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
                 data: abi.encode(roleHash, wallet)
             });
             
@@ -444,9 +444,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Attempt to add one more wallet (should fail)
         address extraWallet = address(uint160(2000));
-        RuntimeRBAC.RoleConfigAction[] memory extraActions = new RuntimeRBAC.RoleConfigAction[](1);
-        extraActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory extraActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        extraActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, extraWallet)
         });
         
@@ -486,10 +486,10 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
         
         // Create role
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, permissions)
         });
         
@@ -504,9 +504,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallet first time (should succeed)
-        RuntimeRBAC.RoleConfigAction[] memory addActions1 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions1[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions1[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         
@@ -521,9 +521,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Attempt to add same wallet again (should fail)
-        RuntimeRBAC.RoleConfigAction[] memory addActions2 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions2[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions2[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash, wallet)
         });
         
@@ -561,10 +561,10 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         // If role name happens to hash to protected role, creation should fail
         // (protected roles already exist)
         if (roleHash == OWNER_ROLE || roleHash == BROADCASTER_ROLE || roleHash == RECOVERY_ROLE) {
-            RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+            IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
             EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-            actions[0] = RuntimeRBAC.RoleConfigAction({
-                actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            actions[0] = IRuntimeRBAC.RoleConfigAction({
+                actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
                 data: abi.encode(roleName, 10, permissions)
             });
             
@@ -602,10 +602,10 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
         
         // Create role first
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
@@ -640,10 +640,10 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
         
         // Create role
-        RuntimeRBAC.RoleConfigAction[] memory createActions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        createActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         

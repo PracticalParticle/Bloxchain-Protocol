@@ -52,12 +52,4 @@ interface IRuntimeRBAC {
     function roleConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx
     ) external returns (uint256);
-
-    /**
-     * @dev Gets all authorized wallets for a role
-     * @param roleHash The role hash to get wallets for
-     * @return Array of authorized wallet addresses
-     * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
-     */
-    function getWalletsInRole(bytes32 roleHash) external view returns (address[] memory);
 }
