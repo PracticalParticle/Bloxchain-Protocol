@@ -1628,7 +1628,7 @@
       {
         "components": [
           {
-            "internalType": "enum RuntimeRBAC.RoleConfigActionType",
+            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
             "type": "uint8"
           },
@@ -1638,7 +1638,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct RuntimeRBAC.RoleConfigAction[]",
+        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
         "type": "tuple[]"
       }

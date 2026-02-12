@@ -38,7 +38,7 @@ contract MachineBlox is Account, HookManager {
      * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(Account, BaseStateMachine) returns (bool) {
-        return Account.supportsInterface(interfaceId);
+        return Account.supportsInterface(interfaceId) || BaseStateMachine.supportsInterface(interfaceId);
     }
 
     /**

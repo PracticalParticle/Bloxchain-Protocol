@@ -43,6 +43,8 @@ export function getRoleConfigActionSpecs(): {
     'REMOVE_FUNCTION_FROM_ROLE'
   ];
 
+  // CREATE_ROLE expects exactly (roleName, maxWallets). Some tests pass a third parameter (e.g. empty
+  // FunctionPermission[]); abi.decode ignores trailing bytes, but new code should use only 2 params.
   const formats = [
     '(string roleName, uint256 maxWallets)',
     '(bytes32 roleHash)',

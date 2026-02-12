@@ -176,10 +176,10 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         string memory roleName = "TEST_ROLE_BITMAP";
         
         // Use batch operation to create role
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName, 10, emptyPermissions)
         });
         
@@ -213,9 +213,9 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         });
         
         // Attempt to add function to role via batch
-        RuntimeRBAC.RoleConfigAction[] memory addActions = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
             data: abi.encode(roleHash, permission)
         });
         

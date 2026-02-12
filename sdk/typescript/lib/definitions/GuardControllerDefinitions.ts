@@ -6,7 +6,7 @@
  */
 
 import { Hex, encodeAbiParameters, parseAbiParameters } from 'viem';
-import type { GuardConfigAction } from '../../types.core.execution.index';
+import type { GuardConfigAction } from '../../types/core.execution.index';
 
 /**
  * Builds execution params for executeGuardConfigBatch((uint8,bytes)[]).

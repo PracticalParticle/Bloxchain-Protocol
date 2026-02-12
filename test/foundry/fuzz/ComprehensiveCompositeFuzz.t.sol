@@ -92,10 +92,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // This is intentional behavior but should be tested
         
         // Create role1
-        RuntimeRBAC.RoleConfigAction[] memory createActions1 = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions1 = new EngineBlox.FunctionPermission[](0);
-        createActions1[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions1[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName1, 10, permissions1)
         });
         
@@ -110,10 +110,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx1);
         
         // Create role2
-        RuntimeRBAC.RoleConfigAction[] memory createActions2 = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions2 = new EngineBlox.FunctionPermission[](0);
-        createActions2[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        createActions2[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(roleName2, 10, permissions2)
         });
         
@@ -128,9 +128,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(createMetaTx2);
         
         // Add wallet to role1
-        RuntimeRBAC.RoleConfigAction[] memory addActions1 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions1[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions1[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash1, wallet)
         });
         
@@ -145,9 +145,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Add wallet to role2
-        RuntimeRBAC.RoleConfigAction[] memory addActions2 = new RuntimeRBAC.RoleConfigAction[](1);
-        addActions2[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
+        addActions2[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(roleHash2, wallet)
         });
         
@@ -190,18 +190,18 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         require(validRoleHash != OWNER_ROLE && validRoleHash != BROADCASTER_ROLE && validRoleHash != RECOVERY_ROLE, "Role must not be protected");
         
         // Create batch: valid action + protected role modification
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](2);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](2);
         
         // Action 1: Create valid role
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode(validRoleName, 10, permissions)
         });
         
         // Action 2: Modify protected role (should fail)
-        actions[1] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+        actions[1] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
             data: abi.encode(OWNER_ROLE, wallet)
         });
         
@@ -441,10 +441,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         uint256 currentNonce = roleBlox.getSignerNonce(owner);
         
         // Create legitimate meta-transaction (will use currentNonce)
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("LEGIT_ROLE", 10, permissions)
         });
         
@@ -487,9 +487,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Try to use the old nonce (already used)
         attackerParams.nonce = currentNonce;
         
-        RuntimeRBAC.RoleConfigAction[] memory attackerActions = new RuntimeRBAC.RoleConfigAction[](1);
-        attackerActions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        IRuntimeRBAC.RoleConfigAction[] memory attackerActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        attackerActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("ATTACKER_ROLE", 10, permissions)
         });
         

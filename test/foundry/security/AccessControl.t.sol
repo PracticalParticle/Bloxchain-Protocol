@@ -26,10 +26,10 @@ contract AccessControlTest is CommonBase {
     function test_Revert_UnauthorizedRoleCreation() public {
         // Role creation requires proper permissions through state machine
         // Direct execution is internal-only (executeRoleConfigBatch)
-        RuntimeRBAC.RoleConfigAction[] memory actions = new RuntimeRBAC.RoleConfigAction[](1);
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
         EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
-        actions[0] = RuntimeRBAC.RoleConfigAction({
-            actionType: RuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
             data: abi.encode("ATTACKER_ROLE", 10, permissions)
         });
 

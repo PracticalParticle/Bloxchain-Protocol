@@ -80,7 +80,7 @@ contract EdgeCasesTest is CommonBase {
 
     function test_EmptyArrays() public {
         // Test with empty arrays
-        RuntimeRBAC.RoleConfigAction[] memory emptyActions = new RuntimeRBAC.RoleConfigAction[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory emptyActions = new IRuntimeRBAC.RoleConfigAction[](0);
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(emptyActions));
         // Empty array encoding: offset (32) + length (32) = 64 bytes minimum
         // Plus any additional encoding overhead
