@@ -365,6 +365,11 @@ export interface PaymentFailedError extends ContractError {
   params: { recipient: string; amount: string; reason: string }
 }
 
+export interface InvalidPaymentError extends ContractError {
+  name: 'InvalidPayment'
+  params: {}
+}
+
 /**
  * Array validation errors
  */
@@ -464,6 +469,7 @@ export type GuardianContractError =
   | HandlerForSelectorMismatchError
   | InsufficientBalanceError
   | PaymentFailedError
+  | InvalidPaymentError
   | ArrayLengthMismatchError
   | IndexOutOfBoundsError
   | PatternMatchError
@@ -624,6 +630,11 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'InsufficientBalance',
     params: ['currentBalance', 'requiredAmount'],
     userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
+  },
+  '0x9da5cb63': { // InvalidPayment()
+    name: 'InvalidPayment',
+    params: [],
+    userMessage: () => `InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)`
   },
 
   // Function validation errors

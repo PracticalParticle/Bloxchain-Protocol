@@ -96,6 +96,7 @@ library SharedValidation {
     error OperationFailed();
     
     // Payment and balance errors with context
+    error InvalidPayment();
     error InsufficientBalance(uint256 currentBalance, uint256 requiredAmount);
     error PaymentFailed(address recipient, uint256 amount, bytes reason);
     
