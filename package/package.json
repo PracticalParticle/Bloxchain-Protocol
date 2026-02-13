@@ -5,6 +5,8 @@
   "files": [
     "core",
     "abi",
+    "standards",
+    "components",
     "README.md"
   ],
   "scripts": {

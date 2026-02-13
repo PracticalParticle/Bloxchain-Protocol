@@ -7,6 +7,8 @@ const path = require('path');
 const contractsDir = __dirname.replace(/[\\/]scripts$/, '');
 const copiedContractsDir = path.join(contractsDir, 'contracts');
 const copiedAbiDir = path.join(contractsDir, 'abi');
+const copiedStandardsDir = path.join(contractsDir, 'standards');
+const copiedComponentsDir = path.join(contractsDir, 'components');
 
 console.log('🧹 Cleaning up after publish...\n');
 
@@ -18,6 +20,16 @@ if (fs.existsSync(copiedContractsDir)) {
 if (fs.existsSync(copiedAbiDir)) {
   fs.rmSync(copiedAbiDir, { recursive: true, force: true });
   console.log('✅ Removed copied abi directory');
+}
+
+if (fs.existsSync(copiedStandardsDir)) {
+  fs.rmSync(copiedStandardsDir, { recursive: true, force: true });
+  console.log('✅ Removed copied standards directory');
+}
+
+if (fs.existsSync(copiedComponentsDir)) {
+  fs.rmSync(copiedComponentsDir, { recursive: true, force: true });
+  console.log('✅ Removed copied components directory');
 }
 
 console.log('\n✅ Cleanup complete!');

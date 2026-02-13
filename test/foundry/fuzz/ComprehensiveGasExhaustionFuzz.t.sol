@@ -9,7 +9,7 @@ import "../../../contracts/core/execution/interface/IGuardController.sol";
 import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
-import "../../../contracts/experimental/hook/interface/IOnActionHook.sol";
+import "../../../contracts/standards/hooks/IOnActionHook.sol";
 import "../helpers/MockContracts.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
