@@ -82,6 +82,7 @@ library SharedValidation {
     error ItemAlreadyExists(address item);
     error ItemNotFound(address item);
     error InvalidOperation(address item);
+    error DefinitionNotIDefinition(address definition);
     
     // Role and function errors with context
     error RoleWalletLimitReached(uint256 currentCount, uint256 maxWallets);
