@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
-// Migration 3: Deploy Example Contracts (SimpleVault, SimpleRWA20, ERC20Blox)
+// Migration 3: Deploy Example Contracts (SimpleVault, SimpleRWA20, ERC20Blox, FactoryBlox, BloxchainWallet)
 
 const SimpleVault = artifacts.require("SimpleVault");
 const SimpleRWA20 = artifacts.require("SimpleRWA20");
 const ERC20Blox = artifacts.require("ERC20Blox");
+const FactoryBlox = artifacts.require("FactoryBlox");
+const BloxchainWallet = artifacts.require("BloxchainWallet");
 
 // Import the deployed library artifacts to get their addresses
 const EngineBlox = artifacts.require("EngineBlox");
@@ -15,6 +17,7 @@ const GuardControllerDefinitions = artifacts.require("GuardControllerDefinitions
 const SimpleVaultDefinitions = artifacts.require("SimpleVaultDefinitions");
 const SimpleRWA20Definitions = artifacts.require("SimpleRWA20Definitions");
 const ERC20BloxDefinitions = artifacts.require("ERC20BloxDefinitions");
+const FactoryBloxDefinitions = artifacts.require("FactoryBloxDefinitions");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
 module.exports = async function(deployer, network, accounts) {
@@ -28,40 +31,52 @@ module.exports = async function(deployer, network, accounts) {
   const deploySimpleVault = process.env.DEPLOY_SIMPLE_VAULT === 'true'; // Default: false
   const deploySimpleRWA20 = process.env.DEPLOY_SIMPLE_RWA20 === 'true'; // Default: false
   const deployERC20Blox = process.env.DEPLOY_ERC20_BLOX === 'true'; // Default: false
-  
+  const deployFactoryBlox = process.env.DEPLOY_FACTORY_BLOX === 'true'; // Default: false
+  const deployWalletBlox = process.env.DEPLOY_WALLET_BLOX === 'true'; // Default: false
+
   console.log("\n🎯 Deployment Configuration:");
   console.log(`   SimpleVault: ${deploySimpleVault ? '✅ YES' : '❌ NO'}`);
   console.log(`   SimpleRWA20: ${deploySimpleRWA20 ? '✅ YES' : '❌ NO'}`);
   console.log(`   ERC20Blox: ${deployERC20Blox ? '✅ YES' : '❌ NO'}`);
+  console.log(`   FactoryBlox: ${deployFactoryBlox ? '✅ YES' : '❌ NO'}`);
+  console.log(`   BloxchainWallet: ${deployWalletBlox ? '✅ YES' : '❌ NO'}`);
 
   try {
     // Step 1: Deploy Example-Specific Definitions Libraries (only if needed)
     let simpleVaultDefinitions = null;
     let simpleRWA20Definitions = null;
     let erc20BloxDefinitions = null;
-    
-    if (deploySimpleVault || deploySimpleRWA20 || deployERC20Blox) {
+    let factoryBloxDefinitions = null;
+
+    if (deploySimpleVault || deploySimpleRWA20 || deployERC20Blox || deployFactoryBlox || deployWalletBlox) {
         console.log("\n📦 Step 1: Deploying Example-Specific Definitions Libraries...");
-        
+
         if (deploySimpleVault) {
             // Deploy SimpleVaultDefinitions
             await deployer.deploy(SimpleVaultDefinitions);
             simpleVaultDefinitions = await SimpleVaultDefinitions.deployed();
             console.log(`✅ SimpleVaultDefinitions deployed at: ${simpleVaultDefinitions.address}`);
         }
-        
+
         if (deploySimpleRWA20) {
             // Deploy SimpleRWA20Definitions
             await deployer.deploy(SimpleRWA20Definitions);
             simpleRWA20Definitions = await SimpleRWA20Definitions.deployed();
             console.log(`✅ SimpleRWA20Definitions deployed at: ${simpleRWA20Definitions.address}`);
         }
-        
+
         if (deployERC20Blox) {
             // Deploy ERC20BloxDefinitions
             await deployer.deploy(ERC20BloxDefinitions);
             erc20BloxDefinitions = await ERC20BloxDefinitions.deployed();
             console.log(`✅ ERC20BloxDefinitions deployed at: ${erc20BloxDefinitions.address}`);
+        }
+
+        if (deployFactoryBlox) {
+            // Deploy FactoryBloxDefinitions
+            await deployer.deploy(FactoryBloxDefinitions);
+            factoryBloxDefinitions = await FactoryBloxDefinitions.deployed();
+            console.log(`✅ FactoryBloxDefinitions deployed at: ${factoryBloxDefinitions.address}`);
         }
     } else {
         console.log("\n📦 Step 1: Skipping Example-Specific Definitions Libraries (no contracts enabled)");
@@ -255,11 +270,81 @@ module.exports = async function(deployer, network, accounts) {
         console.log("\n📦 Step 5: Skipping ERC20Blox deployment (disabled)");
     }
 
+    // Step 6: Deploy FactoryBlox (if enabled)
+    let factoryBlox = null;
+    if (deployFactoryBlox) {
+        console.log("\n📦 Step 6: Deploying FactoryBlox...");
+        await deployer.link(sa, FactoryBlox);
+        await deployer.link(sod, FactoryBlox);
+        await deployer.link(drbd, FactoryBlox);
+        await deployer.link(gcd, FactoryBlox);
+        await deployer.link(factoryBloxDefinitions, FactoryBlox);
+        await deployer.deploy(FactoryBlox);
+        factoryBlox = await FactoryBlox.deployed();
+        console.log(`✅ FactoryBlox deployed at: ${factoryBlox.address}`);
+        const web3Factory = factoryBlox.constructor.web3 || global.web3;
+        await saveArtifactNetwork(FactoryBlox, factoryBlox.address, web3Factory, network);
+
+        // Initialize FactoryBlox (5 params)
+        console.log("🔧 Initializing FactoryBlox...");
+        try {
+            await factoryBlox.initialize(
+                accounts[0],  // initialOwner
+                accounts[1],  // broadcaster
+                accounts[2],  // recovery
+                1,            // timeLockPeriodInSeconds (1 second for fast testing)
+                "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
+            );
+            console.log("✅ FactoryBlox initialized successfully");
+        } catch (error) {
+            console.log("❌ FactoryBlox initialize failed:", error.message);
+            console.log("⚠️  Contract deployed but not initialized.");
+        }
+    } else {
+        console.log("\n📦 Step 6: Skipping FactoryBlox deployment (disabled)");
+    }
+
+    // Step 7: Deploy BloxchainWallet (if enabled) - Account-based, no definitions library; timeLock 1–90 days
+    const ONE_DAY_SEC = 86400;
+    let bloxchainWallet = null;
+    if (deployWalletBlox) {
+        console.log("\n📦 Step 7: Deploying BloxchainWallet...");
+        await deployer.link(sa, BloxchainWallet);
+        await deployer.link(sod, BloxchainWallet);
+        await deployer.link(drbd, BloxchainWallet);
+        await deployer.link(gcd, BloxchainWallet);
+        await deployer.deploy(BloxchainWallet);
+        bloxchainWallet = await BloxchainWallet.deployed();
+        console.log(`✅ BloxchainWallet deployed at: ${bloxchainWallet.address}`);
+        const web3Wallet = bloxchainWallet.constructor.web3 || global.web3;
+        await saveArtifactNetwork(BloxchainWallet, bloxchainWallet.address, web3Wallet, network);
+
+        // Initialize BloxchainWallet (5 params); timeLock must be between 1 and 90 days
+        console.log("🔧 Initializing BloxchainWallet...");
+        try {
+            await bloxchainWallet.initialize(
+                accounts[0],  // initialOwner
+                accounts[1],  // broadcaster
+                accounts[2],  // recovery
+                ONE_DAY_SEC,  // timeLockPeriodInSeconds (min 1 day per contract)
+                "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
+            );
+            console.log("✅ BloxchainWallet initialized successfully");
+        } catch (error) {
+            console.log("❌ BloxchainWallet initialize failed:", error.message);
+            console.log("⚠️  Contract deployed but not initialized.");
+        }
+    } else {
+        console.log("\n📦 Step 7: Skipping BloxchainWallet deployment (disabled)");
+    }
+
     console.log("\n🎉 Migration 3 completed successfully!");
     console.log("📋 Example Contracts Deployed & Initialized:");
     if (simpleVault) console.log(`   SimpleVault: ${simpleVault.address}`);
     if (simpleRWA20) console.log(`   SimpleRWA20: ${simpleRWA20.address}`);
     if (erc20Blox) console.log(`   ERC20Blox: ${erc20Blox.address}`);
+    if (factoryBlox) console.log(`   FactoryBlox: ${factoryBlox.address}`);
+    if (bloxchainWallet) console.log(`   BloxchainWallet: ${bloxchainWallet.address}`);
 
     // Save deployed addresses to file for auto mode fallback
     const fs = require('fs');
@@ -293,6 +378,12 @@ module.exports = async function(deployer, network, accounts) {
             deployedAt: new Date().toISOString()
         };
     }
+    if (factoryBloxDefinitions) {
+        addresses[network].FactoryBloxDefinitions = {
+            address: factoryBloxDefinitions.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
     if (simpleVault) {
         addresses[network].SimpleVault = {
             address: simpleVault.address,
@@ -311,7 +402,19 @@ module.exports = async function(deployer, network, accounts) {
             deployedAt: new Date().toISOString()
         };
     }
-    
+    if (factoryBlox) {
+        addresses[network].FactoryBlox = {
+            address: factoryBlox.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+    if (bloxchainWallet) {
+        addresses[network].BloxchainWallet = {
+            address: bloxchainWallet.address,
+            deployedAt: new Date().toISOString()
+        };
+    }
+
     fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2));
     console.log(`\n💾 Saved addresses to ${addressesFile}`);
 
@@ -325,6 +428,7 @@ module.exports = async function(deployer, network, accounts) {
     if (simpleVaultDefinitions) console.log(`   SimpleVaultDefinitions: ${simpleVaultDefinitions.address}`);
     if (simpleRWA20Definitions) console.log(`   SimpleRWA20Definitions: ${simpleRWA20Definitions.address}`);
     if (erc20BloxDefinitions) console.log(`   ERC20BloxDefinitions: ${erc20BloxDefinitions.address}`);
+    if (factoryBloxDefinitions) console.log(`   FactoryBloxDefinitions: ${factoryBloxDefinitions.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
     console.log(`   GuardianAccountAbstraction: 0xf759A0e8F2fFBb5F5a9DD50f1106668FBE29bC93`);
     console.log(`   GuardianAccountAbstractionWithRoles: 0xA5682DF1987D214Fe4dfC3a262179eBDc205b525`);
@@ -332,6 +436,8 @@ module.exports = async function(deployer, network, accounts) {
     if (simpleVault) console.log(`   SimpleVault: ${simpleVault.address}`);
     if (simpleRWA20) console.log(`   SimpleRWA20: ${simpleRWA20.address}`);
     if (erc20Blox) console.log(`   ERC20Blox: ${erc20Blox.address}`);
+    if (factoryBlox) console.log(`   FactoryBlox: ${factoryBlox.address}`);
+    if (bloxchainWallet) console.log(`   BloxchainWallet: ${bloxchainWallet.address}`);
     console.log("\n✅ All contracts deployed and initialized successfully!");
     console.log("🎯 Ready for comprehensive analyzer testing with fully functional contracts!");
     console.log("🔧 Initialization Parameters:");
@@ -344,10 +450,12 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   Token Symbol: SRWA`);
     
     console.log("\n💡 Usage Examples:");
-    console.log("   Deploy only SimpleVault: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=false truffle migrate");
-    console.log("   Deploy only SimpleRWA20: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=false truffle migrate");
-    console.log("   Deploy only ERC20Blox: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=true truffle migrate");
-    console.log("   Deploy all example contracts: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=true truffle migrate");
+    console.log("   Deploy only SimpleVault: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=false DEPLOY_FACTORY_BLOX=false DEPLOY_WALLET_BLOX=false truffle migrate");
+    console.log("   Deploy only SimpleRWA20: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=false DEPLOY_FACTORY_BLOX=false DEPLOY_WALLET_BLOX=false truffle migrate");
+    console.log("   Deploy only ERC20Blox: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=true DEPLOY_FACTORY_BLOX=false DEPLOY_WALLET_BLOX=false truffle migrate");
+    console.log("   Deploy only FactoryBlox: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=false DEPLOY_FACTORY_BLOX=true DEPLOY_WALLET_BLOX=false truffle migrate");
+    console.log("   Deploy only BloxchainWallet: DEPLOY_SIMPLE_VAULT=false DEPLOY_SIMPLE_RWA20=false DEPLOY_ERC20_BLOX=false DEPLOY_FACTORY_BLOX=false DEPLOY_WALLET_BLOX=true truffle migrate");
+    console.log("   Deploy all example contracts: DEPLOY_SIMPLE_VAULT=true DEPLOY_SIMPLE_RWA20=true DEPLOY_ERC20_BLOX=true DEPLOY_FACTORY_BLOX=true DEPLOY_WALLET_BLOX=true truffle migrate");
     console.log("   Deploy none (default): truffle migrate");
 
   } catch (error) {
