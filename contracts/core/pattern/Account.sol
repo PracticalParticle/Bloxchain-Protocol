@@ -22,6 +22,14 @@ import "../lib/utils/SharedValidation.sol";
  */
 abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
     /**
+     * @dev Emitted when plain ETH is received (receive()).
+     * @param sender Address that sent the ETH
+     * @param value Amount of wei received
+     * @custom:security Gas-efficient so receive() stays within 2,300 gas stipend (transfer/send compatible).
+     */
+    event EthReceived(address indexed sender, uint256 value);
+
+    /**
      * @notice Initializer for the Account pattern (GuardController + RuntimeRBAC + SecureOwnable).
      * @param initialOwner The initial owner address
      * @param broadcaster The broadcaster address
@@ -51,10 +59,10 @@ abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
     /**
      * @dev Accepts plain ETH transfers (no calldata).
      * @notice General-use wallet: ETH can be sent naturally; balance is credited.
-     * @custom:security No external calls—reentrancy-safe; outgoing ETH only via GuardController execution.
+     * @custom:security No external calls—reentrancy-safe; outgoing ETH only via GuardController execution. Uses simple emit to stay within 2,300 gas stipend (transfer/send compatible).
      */
     receive() external payable virtual {
-        _logComponentEvent(abi.encode(msg.sender, msg.value));
+        emit EthReceived(msg.sender, msg.value);
     }
 
     /**

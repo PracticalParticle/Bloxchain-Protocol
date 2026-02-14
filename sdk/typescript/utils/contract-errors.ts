@@ -843,6 +843,8 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return `ItemNotFound: Item ${error.params.item} not found`
     case 'DefinitionNotIDefinition':
       return `DefinitionNotIDefinition: Address ${error.params.definition} is not an IDefinition contract`
+    case 'InvalidPayment':
+      return 'InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)'
     case 'TargetNotWhitelisted':
       return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
     case 'ResourceNotFound':

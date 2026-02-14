@@ -56,9 +56,8 @@ contract MachineBlox is Account, HookManager {
      * @dev Explicit deposit function for ETH deposits.
      * @notice Users must call this function to deposit ETH to the contract.
      * @notice Direct ETH transfers to the contract will revert (receive/fallback revert).
+     * @notice Uses inherited EthReceived(address indexed sender, uint256 value) from Account.
      */
-    event EthReceived(address indexed from, uint256 amount);
-
     function deposit() external payable {
         emit EthReceived(msg.sender, msg.value);
     }
