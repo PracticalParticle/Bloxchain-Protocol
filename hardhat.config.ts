@@ -1,13 +1,26 @@
 /**
  * Hardhat 3 config. Compiler aligned with foundry.toml.
  * For public deployment: copy env.deployment.example to .env.deployment and set DEPLOY_*.
+ *
+ * Optional — Hardhat deployment (e.g. deploy:hardhat, deploy:hardhat:foundation):
+ *   npm install --save-dev @nomicfoundation/hardhat-toolbox-viem
+ * Install the toolbox only when you need live deployment; the core library stays clean without it.
  */
 import "dotenv/config";
 import { config as loadDeploymentEnv } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import hardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
-import { defineConfig } from "hardhat/config";
+import { createRequire } from "module";
+import { defineConfig, type HardhatUserConfig } from "hardhat/config";
+
+const require = createRequire(import.meta.url);
+let hardhatToolboxViem: NonNullable<HardhatUserConfig["plugins"]>[number] | null = null;
+try {
+  const m = require("@nomicfoundation/hardhat-toolbox-viem");
+  hardhatToolboxViem = (m?.default !== undefined ? m.default : m) as NonNullable<HardhatUserConfig["plugins"]>[number];
+} catch {
+  // Toolbox not installed; install with: npm install --save-dev @nomicfoundation/hardhat-toolbox-viem
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadDeploymentEnv({ path: path.join(__dirname, ".env.deployment") });
@@ -29,7 +42,7 @@ const OPTIMIZER_RUNS = 200;
 const EVM_VERSION = "osaka";
 
 export default defineConfig({
-  plugins: [hardhatToolboxViem],
+  plugins: hardhatToolboxViem ? [hardhatToolboxViem] : [],
   paths: {
     sources: "./contracts",
     tests: "./test",

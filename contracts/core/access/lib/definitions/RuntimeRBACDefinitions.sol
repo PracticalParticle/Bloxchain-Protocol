@@ -197,6 +197,66 @@ library RuntimeRBACDefinitions {
         formats[5] = "(bytes32 roleHash, bytes4 functionSelector)";
     }
 
+    // ============ ROLE CONFIG ACTION DATA ENCODERS ============
+    // Use these helpers to build action.data for each RoleConfigActionType without reading the contract.
+    // Each encoder returns bytes suitable for RoleConfigAction(actionType, data).
+
+    /**
+     * @dev Encodes data for CREATE_ROLE. Use with RoleConfigActionType.CREATE_ROLE.
+     * @param roleName Name of the role to create
+     * @param maxWallets Maximum number of wallets that can be assigned to this role
+     */
+    function encodeCreateRole(string memory roleName, uint256 maxWallets) public pure returns (bytes memory) {
+        return abi.encode(roleName, maxWallets);
+    }
+
+    /**
+     * @dev Encodes data for REMOVE_ROLE. Use with RoleConfigActionType.REMOVE_ROLE.
+     * @param roleHash keccak256 hash of the role name
+     */
+    function encodeRemoveRole(bytes32 roleHash) public pure returns (bytes memory) {
+        return abi.encode(roleHash);
+    }
+
+    /**
+     * @dev Encodes data for ADD_WALLET. Use with RoleConfigActionType.ADD_WALLET.
+     * @param roleHash Role to add the wallet to
+     * @param wallet Address to assign to the role
+     */
+    function encodeAddWallet(bytes32 roleHash, address wallet) public pure returns (bytes memory) {
+        return abi.encode(roleHash, wallet);
+    }
+
+    /**
+     * @dev Encodes data for REVOKE_WALLET. Use with RoleConfigActionType.REVOKE_WALLET.
+     * @param roleHash Role to revoke the wallet from
+     * @param wallet Address to revoke
+     */
+    function encodeRevokeWallet(bytes32 roleHash, address wallet) public pure returns (bytes memory) {
+        return abi.encode(roleHash, wallet);
+    }
+
+    /**
+     * @dev Encodes data for ADD_FUNCTION_TO_ROLE. Use with RoleConfigActionType.ADD_FUNCTION_TO_ROLE.
+     * @param roleHash Role to grant the function permission to
+     * @param functionPermission FunctionPermission (functionSelector, grantedActionsBitmap, handlerForSelectors)
+     */
+    function encodeAddFunctionToRole(
+        bytes32 roleHash,
+        EngineBlox.FunctionPermission memory functionPermission
+    ) public pure returns (bytes memory) {
+        return abi.encode(roleHash, functionPermission);
+    }
+
+    /**
+     * @dev Encodes data for REMOVE_FUNCTION_FROM_ROLE. Use with RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE.
+     * @param roleHash Role to remove the function from
+     * @param functionSelector Selector of the function to remove
+     */
+    function encodeRemoveFunctionFromRole(bytes32 roleHash, bytes4 functionSelector) public pure returns (bytes memory) {
+        return abi.encode(roleHash, functionSelector);
+    }
+
     /**
      * @dev Creates execution params for a RBAC configuration batch (pure helper for EngineBlox).
      * @param actions Encoded role configuration actions (IRuntimeRBAC.RoleConfigAction[] layout)

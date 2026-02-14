@@ -215,10 +215,10 @@ Deployed addresses are written to **`deployed-addresses.json`** under the networ
 
 | Contract | Address |
 |----------|---------|
-| EngineBlox | [`0x69449f091f5eecdd8be9dc826bb74ec751a96ea2`](https://sepolia.etherscan.io/address/0x69449f091f5eecdd8be9dc826bb74ec751a96ea2) |
-| SecureOwnableDefinitions | [`0x9ece73a49cb5186d71ef513556ca69402dc5e681`](https://sepolia.etherscan.io/address/0x9ece73a49cb5186d71ef513556ca69402dc5e681) |
-| RuntimeRBACDefinitions | [`0xbc0980067ebb9170b2d4b341aac8d5172394c10d`](https://sepolia.etherscan.io/address/0xbc0980067ebb9170b2d4b341aac8d5172394c10d) |
-| GuardControllerDefinitions | [`0x0ad52b25df78f6af74d09bd61442a333b9a192d0`](https://sepolia.etherscan.io/address/0x0ad52b25df78f6af74d09bd61442a333b9a192d0) |
+| EngineBlox | [`0x5f91de8521fd0f5ca8b709e7f04d5c57dbcba4e1`](https://sepolia.etherscan.io/address/0x5f91de8521fd0f5ca8b709e7f04d5c57dbcba4e1) |
+| SecureOwnableDefinitions | [`0xdca4830d74b66093e29bb080d92f837b944b4001`](https://sepolia.etherscan.io/address/0xdca4830d74b66093e29bb080d92f837b944b4001) |
+| RuntimeRBACDefinitions | [`0x7b964d1878664a61ed9eec90b8354f7df307ff21`](https://sepolia.etherscan.io/address/0x7b964d1878664a61ed9eec90b8354f7df307ff21) |
+| GuardControllerDefinitions | [`0x7a5361a3b2ace07982813f0bfc3a0a684d4ea0fe`](https://sepolia.etherscan.io/address/0x7a5361a3b2ace07982813f0bfc3a0a684d4ea0fe) |
 
 
 ## 📖 Usage Examples

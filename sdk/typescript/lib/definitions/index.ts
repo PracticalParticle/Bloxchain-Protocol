@@ -8,6 +8,23 @@ export {
   updateTimeLockExecutionParams
 } from './SecureOwnableDefinitions';
 
-export { roleConfigBatchExecutionParams } from './RuntimeRBACDefinitions';
+export {
+  roleConfigBatchExecutionParams,
+  getRoleConfigActionSpecs,
+  encodeCreateRole,
+  encodeRemoveRole,
+  encodeAddWallet,
+  encodeRevokeWallet,
+  encodeAddFunctionToRole,
+  encodeRemoveFunctionFromRole
+} from './RuntimeRBACDefinitions';
+export type { FunctionPermissionForEncoding } from './RuntimeRBACDefinitions';
 
-export { guardConfigBatchExecutionParams } from './GuardControllerDefinitions';
+export {
+  guardConfigBatchExecutionParams,
+  getGuardConfigActionSpecs,
+  encodeAddTargetToWhitelist,
+  encodeRemoveTargetFromWhitelist,
+  encodeRegisterFunction,
+  encodeUnregisterFunction
+} from './GuardControllerDefinitions';

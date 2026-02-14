@@ -216,6 +216,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         uint256 paymentAmount
     ) public {
         vm.assume(recipient != address(0));
+        // Exclude the paying contract: self-transfer leaves balance unchanged and breaks the assertion
+        vm.assume(recipient != address(paymentHelper));
+        vm.assume(recipient != address(accountBlox));
         // Bound payment amount to available balance
         paymentAmount = bound(paymentAmount, 1, address(paymentHelper).balance);
         

@@ -59,6 +59,7 @@ library SharedValidation {
     error ZeroOperationTypeNotAllowed();
     error TransactionStatusMismatch(uint8 expectedStatus, uint8 currentStatus);
     error AlreadyInitialized();
+    error NotInitialized();
     error TransactionIdMismatch(uint256 expectedTxId, uint256 providedTxId);
     error PendingSecureRequest();
     

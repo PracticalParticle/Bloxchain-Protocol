@@ -12,8 +12,21 @@ export {
   updateRecoveryExecutionParams,
   updateTimeLockExecutionParams,
   roleConfigBatchExecutionParams,
-  guardConfigBatchExecutionParams
+  guardConfigBatchExecutionParams,
+  getRoleConfigActionSpecs,
+  encodeCreateRole,
+  encodeRemoveRole,
+  encodeAddWallet,
+  encodeRevokeWallet,
+  encodeAddFunctionToRole,
+  encodeRemoveFunctionFromRole,
+  getGuardConfigActionSpecs,
+  encodeAddTargetToWhitelist,
+  encodeRemoveTargetFromWhitelist,
+  encodeRegisterFunction,
+  encodeUnregisterFunction
 } from './lib/definitions';
+export type { FunctionPermissionForEncoding } from './lib/definitions';
 
 // Interfaces
 export * from './interfaces/base.index';
