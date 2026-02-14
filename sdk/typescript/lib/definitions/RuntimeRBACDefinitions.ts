@@ -101,6 +101,7 @@ export function encodeRevokeWallet(roleHash: Hex, wallet: Address): Hex {
 
 /**
  * Encodes data for ADD_FUNCTION_TO_ROLE. Use with RoleConfigActionType.ADD_FUNCTION_TO_ROLE.
+ * Uses flat parameters to match Solidity abi.decode(action.data, (bytes32, EngineBlox.FunctionPermission)).
  */
 export function encodeAddFunctionToRole(
   roleHash: Hex,
@@ -111,10 +112,9 @@ export function encodeAddFunctionToRole(
     functionPermission.grantedActionsBitmap,
     [...functionPermission.handlerForSelectors]
   ];
-  // Single top-level tuple: (bytes32, (bytes4, uint16, bytes4[]))
   return encodeAbiParameters(
-    parseAbiParameters('(bytes32, (bytes4, uint16, bytes4[]))'),
-    [[roleHash, inner]]
+    parseAbiParameters('bytes32, (bytes4, uint16, bytes4[])'),
+    [roleHash, inner]
   ) as Hex;
 }
 
