@@ -33,10 +33,4 @@ interface ICopyable {
         address eventForwarder,
         bytes calldata initData
     ) external;
-
-    /**
-     * @dev Initialize or set clone-specific data (e.g. after a minimal proxy is deployed).
-     * @param initData Custom data for this clone; semantics are defined by the implementer
-     */
-    function setCloneData(bytes calldata initData) external;
 }

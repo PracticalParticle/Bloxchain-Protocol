@@ -36,7 +36,8 @@ async function main() {
   if (!hasViem && !hasEthers) {
     throw new Error(
       "Deployment requires either Hardhat viem (conn.viem) or ethers (conn.ethers with getSigners). " +
-      "Ensure the Hardhat toolbox is configured and the network is connected."
+      "Ensure the Hardhat toolbox is configured and the network is connected. " +
+      "Install the Viem toolbox with: npm install --save-dev @nomicfoundation/hardhat-toolbox-viem"
     );
   }
 

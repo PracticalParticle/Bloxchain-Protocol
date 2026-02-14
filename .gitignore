@@ -19,6 +19,7 @@ reports/
 
 ### Environment Variables ###
 *.env
+*.env.deployment
 
 ### Test Reports ###
 scripts/sanity/reports/
@@ -58,6 +59,8 @@ deployed-addresses.json
 # Copied by package/scripts/prepublish-contracts.cjs for @bloxchain/contracts
 package/abi/
 package/core/
+package/standards/
+package/components/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/
