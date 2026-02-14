@@ -174,7 +174,7 @@ import '@bloxchain/contracts/core/security/SecureOwnable.sol';
 
 **Sepolia Testnet Support**:
 ```bash
-# Deploy to Sepolia testnet (configure hardhat.config.cjs first)
+# Deploy to Sepolia testnet (configure hardhat.config.ts / .env.deployment first)
 npm run deploy:hardhat -- --network sepolia
 
 # Or use SandBlox for interactive testing
@@ -185,6 +185,41 @@ npm run deploy:hardhat -- --network sepolia
 - **Local Development**: Hardhat Network (built-in, no setup required)
 - **Ethereum Sepolia**: Testnet deployment and testing
 - **SandBlox Platform**: Interactive testing environment
+
+## Deployment
+
+### Deploying foundation libraries (public networks)
+
+Foundation libraries (EngineBlox, SecureOwnableDefinitions, RuntimeRBACDefinitions, GuardControllerDefinitions) can be deployed to public networks using Hardhat:
+
+1. **Configure deployment env**  
+   Copy `env.deployment.example` to `.env.deployment` and set:
+   - `DEPLOY_RPC_URL` – RPC URL (e.g. [Infura](https://infura.io/) or [Alchemy](https://alchemy.com/) for Sepolia)
+   - `DEPLOY_PRIVATE_KEY` – Deployer wallet private key (no leading `0x` or with `0x`)
+   - Optionally `DEPLOY_CHAIN_ID` (Sepolia: `11155111`) and `DEPLOY_NETWORK_NAME`
+
+2. **Deploy to Sepolia**
+   ```bash
+   npm run deploy:hardhat:foundation
+   ```
+   Or with an explicit network:
+   ```bash
+   npx hardhat run scripts/deploy-foundation-libraries.js --network sepolia
+   ```
+
+Deployed addresses are written to **`deployed-addresses.json`** under the network key (e.g. `sepolia`, `development`).
+
+### Deployed addresses
+
+**Ethereum Sepolia (testnet)**
+
+| Contract | Address |
+|----------|---------|
+| EngineBlox | [`0x67295f09e36b680e0f0fe9442e316e5f6733a7bc`](https://sepolia.etherscan.io/address/0x67295f09e36b680e0f0fe9442e316e5f6733a7bc) |
+| SecureOwnableDefinitions | [`0x8d1bbb2d464aa335165791687b09dfaa95915bcf`](https://sepolia.etherscan.io/address/0x8d1bbb2d464aa335165791687b09dfaa95915bcf) |
+| RuntimeRBACDefinitions | [`0x1eb93a92515309e15c89b37087b8f91219478684`](https://sepolia.etherscan.io/address/0x1eb93a92515309e15c89b37087b8f91219478684) |
+| GuardControllerDefinitions | [`0x2c5d8697139515eb2f6000dd3df9dbd3c0f5b750`](https://sepolia.etherscan.io/address/0x2c5d8697139515eb2f6000dd3df9dbd3c0f5b750) |
+
 
 ## 📖 Usage Examples
 
@@ -775,7 +810,7 @@ npm run format
 # Deploy to local Hardhat network
 npm run deploy:hardhat
 
-# Deploy to Sepolia testnet (configure network in hardhat.config.cjs)
+# Deploy to Sepolia testnet (configure network in hardhat.config.ts or .env.deployment)
 npm run deploy:hardhat -- --network sepolia
 ```
 

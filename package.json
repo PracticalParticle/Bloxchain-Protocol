@@ -28,6 +28,7 @@
     "test:foundry:invariant": "forge test --invariant-runs 1000",
     "deploy:truffle": "npx truffle migrate --network development --reset --config truffle-config.cjs && node scripts/extract-abi.cjs",
     "deploy:hardhat": "hardhat run scripts/deploy.js",
+    "deploy:hardhat:foundation": "hardhat run scripts/deploy-foundation-libraries.js --network sepolia",
     "test:sanity": "node scripts/sanity/run-all-tests.cjs",
     "test:sanity:core": "node scripts/sanity/run-all-tests.cjs --core",
     "test:sanity:examples": "node scripts/sanity/run-all-tests.cjs --examples",
@@ -68,6 +69,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
     "dotenv": "^17.2.3",
     "hardhat": "^3.1.5",
     "husky": "^9.1.7",
