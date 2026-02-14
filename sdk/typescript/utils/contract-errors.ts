@@ -211,6 +211,11 @@ export interface AlreadyInitializedError extends ContractError {
   params: {}
 }
 
+export interface NotInitializedError extends ContractError {
+  name: 'NotInitialized'
+  params: {}
+}
+
 export interface TransactionIdMismatchError extends ContractError {
   name: 'TransactionIdMismatch'
   params: { expectedTxId: string; providedTxId: string }
@@ -445,6 +450,7 @@ export type GuardianContractError =
   | TransactionNotPendingError
   | RequestAlreadyPendingError
   | AlreadyInitializedError
+  | NotInitializedError
   | TransactionIdMismatchError
   | InvalidSignatureLengthError
   | InvalidSignatureError
