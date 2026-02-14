@@ -73,7 +73,11 @@ async function main() {
 
     let existing = {};
     if (fs.existsSync(ADDRESSES_FILE)) {
-      existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+      try {
+        existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+      } catch (e) {
+        console.warn(`⚠️ ${ADDRESSES_FILE} exists but is not valid JSON; using empty object. Error:`, e?.message ?? e);
+      }
     }
     for (const net of Object.keys(addresses)) {
       existing[net] = { ...(existing[net] || {}), ...addresses[net] };
@@ -118,7 +122,11 @@ async function main() {
 
   let existing = {};
   if (fs.existsSync(ADDRESSES_FILE)) {
-    existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+    try {
+      existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+    } catch (e) {
+      console.warn(`⚠️ ${ADDRESSES_FILE} exists but is not valid JSON; using empty object. Error:`, e?.message ?? e);
+    }
   }
   for (const net of Object.keys(addresses)) {
     existing[net] = { ...(existing[net] || {}), ...addresses[net] };

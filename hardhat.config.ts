@@ -21,6 +21,7 @@ const chainId = (rawChainId != null && String(rawChainId).trim() !== "")
 if (Number.isNaN(chainId) || chainId <= 0) {
   throw new Error(`Invalid DEPLOY_CHAIN_ID: "${rawChainId}". Must be a positive integer.`);
 }
+const deployNetworkName = process.env.DEPLOY_NETWORK_NAME?.trim();
 
 // Compiler settings aligned with foundry.toml: solc 0.8.33, optimizer 200, via_ir, evm osaka
 const SOLIDITY_VERSION = "0.8.33";
@@ -48,9 +49,9 @@ export default defineConfig({
       type: "edr-simulated",
       chainType: "l1",
     },
-    ...(DEPLOY_RPC && DEPLOY_PK
+    ...(DEPLOY_RPC && DEPLOY_PK && deployNetworkName
       ? {
-          sepolia: {
+          [deployNetworkName]: {
             type: "http" as const,
             chainType: "l1" as const,
             url: DEPLOY_RPC,
