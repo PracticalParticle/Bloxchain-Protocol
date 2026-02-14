@@ -58,6 +58,8 @@ deployed-addresses.json
 # Copied by package/scripts/prepublish-contracts.cjs for @bloxchain/contracts
 package/abi/
 package/core/
+package/standards/
+package/components/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/
