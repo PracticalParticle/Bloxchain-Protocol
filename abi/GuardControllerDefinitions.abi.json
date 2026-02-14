@@ -229,6 +229,107 @@
   {
     "inputs": [
       {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "encodeAddTargetToWhitelist",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "encodeRemoveTargetFromWhitelist",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "functionSignature",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "operationName",
+        "type": "string"
+      },
+      {
+        "internalType": "enum EngineBlox.TxAction[]",
+        "name": "supportedActions",
+        "type": "EngineBlox.TxAction[]"
+      }
+    ],
+    "name": "encodeRegisterFunction",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bool",
+        "name": "safeRemoval",
+        "type": "bool"
+      }
+    ],
+    "name": "encodeUnregisterFunction",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
             "internalType": "enum IGuardController.GuardConfigActionType",

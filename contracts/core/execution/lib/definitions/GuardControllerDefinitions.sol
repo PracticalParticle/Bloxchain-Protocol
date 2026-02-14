@@ -424,6 +424,51 @@ library GuardControllerDefinitions {
         formats[3] = "(bytes4 functionSelector, bool safeRemoval)";
     }
 
+    // ============ GUARD CONFIG ACTION DATA ENCODERS ============
+    // Use these helpers to build action.data for each GuardConfigActionType without reading the contract.
+    // Each encoder returns bytes suitable for GuardConfigAction(actionType, data).
+
+    /**
+     * @dev Encodes data for ADD_TARGET_TO_WHITELIST. Use with GuardConfigActionType.ADD_TARGET_TO_WHITELIST.
+     * @param functionSelector Function whose whitelist is updated
+     * @param target Address to add to the whitelist
+     */
+    function encodeAddTargetToWhitelist(bytes4 functionSelector, address target) public pure returns (bytes memory) {
+        return abi.encode(functionSelector, target);
+    }
+
+    /**
+     * @dev Encodes data for REMOVE_TARGET_FROM_WHITELIST. Use with GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST.
+     * @param functionSelector Function whose whitelist is updated
+     * @param target Address to remove from the whitelist
+     */
+    function encodeRemoveTargetFromWhitelist(bytes4 functionSelector, address target) public pure returns (bytes memory) {
+        return abi.encode(functionSelector, target);
+    }
+
+    /**
+     * @dev Encodes data for REGISTER_FUNCTION. Use with GuardConfigActionType.REGISTER_FUNCTION.
+     * @param functionSignature Full function signature string (e.g. "executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)")
+     * @param operationName Human-readable operation name
+     * @param supportedActions TxActions supported by this function (e.g. EXECUTE_TIME_DELAY_REQUEST)
+     */
+    function encodeRegisterFunction(
+        string memory functionSignature,
+        string memory operationName,
+        EngineBlox.TxAction[] memory supportedActions
+    ) public pure returns (bytes memory) {
+        return abi.encode(functionSignature, operationName, supportedActions);
+    }
+
+    /**
+     * @dev Encodes data for UNREGISTER_FUNCTION. Use with GuardConfigActionType.UNREGISTER_FUNCTION.
+     * @param functionSelector Selector of the function to unregister
+     * @param safeRemoval If true, reverts when the function has whitelisted targets
+     */
+    function encodeUnregisterFunction(bytes4 functionSelector, bool safeRemoval) public pure returns (bytes memory) {
+        return abi.encode(functionSelector, safeRemoval);
+    }
+
     /**
      * @dev Creates execution params for a Guard configuration batch (pure helper for EngineBlox).
      * @param actions Encoded guard configuration actions (same layout as IGuardController.GuardConfigAction[])
