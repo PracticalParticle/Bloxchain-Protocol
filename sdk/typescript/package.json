@@ -1,6 +1,6 @@
 {
   "name": "@bloxchain/sdk",
-  "version": "1.0.0-alpha.7",
+  "version": "2.0.0",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "./dist/index.js",
