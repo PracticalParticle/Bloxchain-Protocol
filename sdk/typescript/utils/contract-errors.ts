@@ -143,6 +143,11 @@ export interface ItemNotFoundError extends ContractError {
   params: { item: string }
 }
 
+export interface DefinitionNotIDefinitionError extends ContractError {
+  name: 'DefinitionNotIDefinition'
+  params: { definition: string }
+}
+
 export interface TargetNotWhitelistedError extends ContractError {
   name: 'TargetNotWhitelisted'
   params: { target: string; functionSelector: string; roleHash: string }
@@ -427,6 +432,7 @@ export type GuardianContractError =
   | OnlyCallableByContractError
   | ItemAlreadyExistsError
   | ItemNotFoundError
+  | DefinitionNotIDefinitionError
   | TargetNotWhitelistedError
   | ResourceNotFoundError
   | OperationNotSupportedError
@@ -550,6 +556,11 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'ItemNotFound',
     params: ['item'],
     userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
+  },
+  '0x9da5cb63': { // DefinitionNotIDefinition(address) - unique placeholder signature
+    name: 'DefinitionNotIDefinition',
+    params: ['definition'],
+    userMessage: (params) => `DefinitionNotIDefinition: Address ${params.definition} is not an IDefinition contract`
   },
   '0x9da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - unique placeholder signature
     name: 'TargetNotWhitelisted',
@@ -830,6 +841,8 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return `ItemAlreadyExists: Item ${error.params.item} already exists`
     case 'ItemNotFound':
       return `ItemNotFound: Item ${error.params.item} not found`
+    case 'DefinitionNotIDefinition':
+      return `DefinitionNotIDefinition: Address ${error.params.definition} is not an IDefinition contract`
     case 'TargetNotWhitelisted':
       return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
     case 'ResourceNotFound':
