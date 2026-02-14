@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./abi": {
+      "import": "./dist/abi.js",
+      "types": "./dist/abi.d.ts"
     }
   },
   "files": [
@@ -17,7 +21,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').cpSync('abi','dist/abi',{recursive:true})\"",
     "prepublishOnly": "cd ../.. && npm run release:sync-versions && cd sdk/typescript && npm run build",
     "clean": "rm -rf dist"
   },

@@ -5,10 +5,10 @@ libs = ["node_modules", "lib"]
 test = "test/foundry"
 cache_path = "cache_forge"
 
-# Solidity compiler settings - matching Truffle config for consistency
+# Solidity compiler settings
 solc = "0.8.33"
 optimizer = true
-optimizer_runs = 200  # Changed from 200 to match Truffle (faster compilation)
+optimizer_runs = 200
 via_ir = true
 evm_version = "osaka"
 
