@@ -53,7 +53,9 @@ abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
      * @notice General-use wallet: ETH can be sent naturally; balance is credited.
      * @custom:security No external calls—reentrancy-safe; outgoing ETH only via GuardController execution.
      */
-    receive() external payable virtual {}
+    receive() external payable virtual {
+        _logComponentEvent(abi.encode(msg.sender, msg.value));
+    }
 
     /**
      * @dev Rejects calls with unknown selector (with or without value).

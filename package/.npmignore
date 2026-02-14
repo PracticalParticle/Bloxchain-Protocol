@@ -1,9 +1,11 @@
 # Ignore everything except what we want to publish
 *
 
-# Include only core (all contracts live under core/) and abi
+# Include only core, abi, standards, and components
 !core/**
 !abi/**
+!standards/**
+!components/**
 !README.md
 !package.json
 !package-lock.json

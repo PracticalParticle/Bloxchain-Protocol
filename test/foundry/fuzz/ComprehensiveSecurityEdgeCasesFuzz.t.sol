@@ -8,7 +8,7 @@ import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinit
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
-import "../../../contracts/experimental/hook/interface/IOnActionHook.sol";
+import "../../../contracts/standards/hooks/IOnActionHook.sol";
 import "../../../contracts/examples/templates/MachineBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";

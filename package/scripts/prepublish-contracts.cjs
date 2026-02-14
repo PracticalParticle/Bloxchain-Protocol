@@ -51,7 +51,33 @@ if (fs.existsSync(coreDest)) {
   fs.rmSync(coreDest, { recursive: true, force: true });
 }
 copyDir(coreSrc, coreDest, excludedDirs);
-console.log('✅ Contracts copied (package/core contains all contracts)\n');
+console.log('✅ Core copied\n');
+
+// Step 2b: Copy contracts/standards to package/standards
+const standardsSrc = path.join(sourceContractsDir, 'standards');
+const standardsDest = path.join(contractsDir, 'standards');
+if (fs.existsSync(standardsSrc)) {
+  if (fs.existsSync(standardsDest)) {
+    fs.rmSync(standardsDest, { recursive: true, force: true });
+  }
+  copyDir(standardsSrc, standardsDest, []);
+  console.log('✅ Standards copied\n');
+} else {
+  console.log('⏭️  No standards directory; skipping\n');
+}
+
+// Step 2c: Copy contracts/components to package/components
+const componentsSrc = path.join(sourceContractsDir, 'components');
+const componentsDest = path.join(contractsDir, 'components');
+if (fs.existsSync(componentsSrc)) {
+  if (fs.existsSync(componentsDest)) {
+    fs.rmSync(componentsDest, { recursive: true, force: true });
+  }
+  copyDir(componentsSrc, componentsDest, []);
+  console.log('✅ Components copied\n');
+} else {
+  console.log('⏭️  No components directory; skipping\n');
+}
 
 // Step 3: Copy abi directory
 console.log('📋 Step 3: Copying ABIs...');

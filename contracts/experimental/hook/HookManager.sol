@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../../core/base/BaseStateMachine.sol";
 import "../../core/lib/utils/SharedValidation.sol";
-import "../../experimental/hook/interface/IOnActionHook.sol";
+import "../../standards/hooks/IOnActionHook.sol";
 
 /**
  * @title HookManager

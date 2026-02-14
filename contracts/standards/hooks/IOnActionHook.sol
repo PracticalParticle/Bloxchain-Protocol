@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.33;
 
-import "../../../core/lib/EngineBlox.sol";
+import "../../core/lib/EngineBlox.sol";
 
 /**
  * @title IOnActionHook
