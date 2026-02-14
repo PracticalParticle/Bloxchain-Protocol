@@ -19,7 +19,7 @@ reports/
 
 ### Environment Variables ###
 *.env
-*.env.*
+*.env.deployment
 
 ### Test Reports ###
 scripts/sanity/reports/
