@@ -143,6 +143,11 @@ export interface ItemNotFoundError extends ContractError {
   params: { item: string }
 }
 
+export interface DefinitionNotIDefinitionError extends ContractError {
+  name: 'DefinitionNotIDefinition'
+  params: { definition: string }
+}
+
 export interface TargetNotWhitelistedError extends ContractError {
   name: 'TargetNotWhitelisted'
   params: { target: string; functionSelector: string; roleHash: string }
@@ -365,6 +370,11 @@ export interface PaymentFailedError extends ContractError {
   params: { recipient: string; amount: string; reason: string }
 }
 
+export interface InvalidPaymentError extends ContractError {
+  name: 'InvalidPayment'
+  params: {}
+}
+
 /**
  * Array validation errors
  */
@@ -422,6 +432,7 @@ export type GuardianContractError =
   | OnlyCallableByContractError
   | ItemAlreadyExistsError
   | ItemNotFoundError
+  | DefinitionNotIDefinitionError
   | TargetNotWhitelistedError
   | ResourceNotFoundError
   | OperationNotSupportedError
@@ -464,6 +475,7 @@ export type GuardianContractError =
   | HandlerForSelectorMismatchError
   | InsufficientBalanceError
   | PaymentFailedError
+  | InvalidPaymentError
   | ArrayLengthMismatchError
   | IndexOutOfBoundsError
   | PatternMatchError
@@ -545,6 +557,11 @@ export const ERROR_SIGNATURES: Record<string, {
     params: ['item'],
     userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
   },
+  '0x9da5cb63': { // DefinitionNotIDefinition(address) - unique placeholder signature
+    name: 'DefinitionNotIDefinition',
+    params: ['definition'],
+    userMessage: (params) => `DefinitionNotIDefinition: Address ${params.definition} is not an IDefinition contract`
+  },
   '0x9da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - unique placeholder signature
     name: 'TargetNotWhitelisted',
     params: ['target', 'functionSelector', 'roleHash'],
@@ -624,6 +641,11 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'InsufficientBalance',
     params: ['currentBalance', 'requiredAmount'],
     userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
+  },
+  '0x3c6b4b28': { // InvalidPayment()
+    name: 'InvalidPayment',
+    params: [],
+    userMessage: () => `InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)`
   },
 
   // Function validation errors
@@ -819,6 +841,10 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
       return `ItemAlreadyExists: Item ${error.params.item} already exists`
     case 'ItemNotFound':
       return `ItemNotFound: Item ${error.params.item} not found`
+    case 'DefinitionNotIDefinition':
+      return `DefinitionNotIDefinition: Address ${error.params.definition} is not an IDefinition contract`
+    case 'InvalidPayment':
+      return 'InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)'
     case 'TargetNotWhitelisted':
       return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
     case 'ResourceNotFound':
