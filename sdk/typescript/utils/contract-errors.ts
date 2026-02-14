@@ -631,7 +631,7 @@ export const ERROR_SIGNATURES: Record<string, {
     params: ['currentBalance', 'requiredAmount'],
     userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
   },
-  '0x9da5cb63': { // InvalidPayment()
+  '0x3c6b4b28': { // InvalidPayment()
     name: 'InvalidPayment',
     params: [],
     userMessage: () => `InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)`

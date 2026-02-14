@@ -8,12 +8,12 @@ pragma solidity 0.8.33;
  * Bloxes implementing this interface can be cloned by factory patterns (e.g. CopyBlox,
  * FactoryBlox) and initialized in one call with owner/broadcaster/recovery/timelock/
  * eventForwarder plus arbitrary init data, or have clone-specific data set via
- * initializeCloneData.
+ * setCloneData.
  *
  * Use cases:
  * - Clone and init in one step: factory calls initializeWithData(..., initData).
  * - Clone with standard init then set clone data: factory calls initialize(...)
- *   then the deployer or factory calls initializeCloneData(initData).
+ *   then the deployer or factory calls setCloneData(initData).
  */
 interface ICopyable {
     /**

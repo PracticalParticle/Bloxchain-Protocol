@@ -31,6 +31,15 @@ async function main() {
   const viem = conn.viem;
   const ethers = conn.ethers;
 
+  const hasViem = Boolean(viem);
+  const hasEthers = Boolean(ethers && typeof ethers.getSigners === "function");
+  if (!hasViem && !hasEthers) {
+    throw new Error(
+      "Deployment requires either Hardhat viem (conn.viem) or ethers (conn.ethers with getSigners). " +
+      "Ensure the Hardhat toolbox is configured and the network is connected."
+    );
+  }
+
   let deployerAddress = "N/A";
   if (viem) {
     const wallet = await viem.getWalletClient();

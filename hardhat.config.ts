@@ -14,7 +14,13 @@ loadDeploymentEnv({ path: path.join(__dirname, ".env.deployment") });
 
 const DEPLOY_RPC = process.env.DEPLOY_RPC_URL;
 const DEPLOY_PK = process.env.DEPLOY_PRIVATE_KEY;
-const chainId = parseInt(process.env.DEPLOY_CHAIN_ID ?? "11155111", 10);
+const rawChainId = process.env.DEPLOY_CHAIN_ID;
+const chainId = (rawChainId != null && String(rawChainId).trim() !== "")
+  ? parseInt(String(rawChainId).trim(), 10)
+  : 11155111;
+if (Number.isNaN(chainId) || chainId <= 0) {
+  throw new Error(`Invalid DEPLOY_CHAIN_ID: "${rawChainId}". Must be a positive integer.`);
+}
 
 // Compiler settings aligned with foundry.toml: solc 0.8.33, optimizer 200, via_ir, evm osaka
 const SOLIDITY_VERSION = "0.8.33";
