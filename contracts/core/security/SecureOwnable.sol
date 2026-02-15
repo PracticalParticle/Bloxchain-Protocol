@@ -54,11 +54,8 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         uint256 timeLockPeriodSec,    
         address eventForwarder
     ) public virtual onlyInitializing {
-        // Initialize base state machine (only if not already initialized)
-        if (!_secureState.initialized) {
-            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
-        }
-        
+        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+
         // Load SecureOwnable-specific definitions
         IDefinition.RolePermission memory secureOwnablePermissions = SecureOwnableDefinitions.getRolePermissions();
         _loadDefinitions(

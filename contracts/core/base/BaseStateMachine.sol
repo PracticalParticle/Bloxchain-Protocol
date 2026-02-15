@@ -65,12 +65,15 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         uint256 timeLockPeriodSec,
         address eventForwarder
     ) internal onlyInitializing {
-        __ERC165_init();
-        __ReentrancyGuard_init();
-        
-        _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
+        // Skip if already initialized (e.g. when multiple components call from Account.initialize)
+        if (!_secureState.initialized) {
+            __ERC165_init();
+            __ReentrancyGuard_init();
 
-        _secureState.setEventForwarder(eventForwarder);
+            _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
+
+            _secureState.setEventForwarder(eventForwarder);
+        }
     }
 
     // ============ SYSTEM ROLE QUERY FUNCTIONS ============
