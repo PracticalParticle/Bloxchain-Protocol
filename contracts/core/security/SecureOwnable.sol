@@ -99,7 +99,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
 
         _hasOpenRequest = true;
-        _logComponentEvent(abi.encode(owner(), getRecovery()));
+        _logAddressPairEvent(owner(), getRecovery());
         return txRecord.txId;
     }
 
@@ -170,7 +170,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         );
 
         _hasOpenRequest = true;
-        _logComponentEvent(abi.encode(currentBroadcaster, newBroadcaster));
+        _logAddressPairEvent(currentBroadcaster, newBroadcaster);
         return txRecord.txId;
     }
 
@@ -317,7 +317,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function _completeCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
         _hasOpenRequest = false;
-        _logComponentEvent(abi.encode(updatedRecord.txId));
         return updatedRecord.txId;
     }
 
@@ -328,7 +327,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function _transferOwnership(address newOwner) internal virtual {
         address oldOwner = owner();
         _updateAssignedWallet(EngineBlox.OWNER_ROLE, newOwner, oldOwner);
-        _logComponentEvent(abi.encode(oldOwner, newOwner));
+        _logAddressPairEvent(oldOwner, newOwner);
     }
 
     /**
@@ -360,7 +359,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         if (newBroadcaster == address(0)) {
             if (oldBroadcaster != address(0)) {
                 _revokeWallet(EngineBlox.BROADCASTER_ROLE, oldBroadcaster);
-                _logComponentEvent(abi.encode(oldBroadcaster, address(0)));
+                _logAddressPairEvent(oldBroadcaster, address(0));
             }
             return;
         }
@@ -368,13 +367,13 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         // Case 2: Update existing broadcaster at location
         if (oldBroadcaster != address(0)) {
             _updateAssignedWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
-            _logComponentEvent(abi.encode(oldBroadcaster, newBroadcaster));
+            _logAddressPairEvent(oldBroadcaster, newBroadcaster);
             return;
         }
 
         // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
         _assignWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster);
-        _logComponentEvent(abi.encode(address(0), newBroadcaster));
+        _logAddressPairEvent(address(0), newBroadcaster);
     }
 
     /**
@@ -384,7 +383,15 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     function _updateRecoveryAddress(address newRecoveryAddress) internal virtual {
         address oldRecovery = getRecovery();
         _updateAssignedWallet(EngineBlox.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
-        _logComponentEvent(abi.encode(oldRecovery, newRecoveryAddress));
+        _logAddressPairEvent(oldRecovery, newRecoveryAddress);
     }
 
+    /**
+     * @dev Emits ComponentEvent with ABI-encoded (address, address) payload. Reused to reduce contract size.
+     * @param a First address
+     * @param b Second address
+     */
+    function _logAddressPairEvent(address a, address b) internal {
+        _logComponentEvent(abi.encode(a, b));
+    }
 }
