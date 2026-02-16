@@ -1,6 +1,6 @@
 {
   "name": "Bloxchain",
-  "version": "1.0.0-alpha.11",
+  "version": "1.0.0-alpha.12",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "truffle-config.cjs",
@@ -44,8 +44,8 @@
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
     "release:prepare": "node scripts/release-prepare.cjs",
-    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.11",
-    "publish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.11",
+    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.12",
+    "publish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.12",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\"",
