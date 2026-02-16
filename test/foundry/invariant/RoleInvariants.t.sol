@@ -2,6 +2,7 @@
 pragma solidity 0.8.33;
 
 import "../CommonBase.sol";
+import "forge-std/StdInvariant.sol";
 
 /**
  * @title RoleInvariantsTest
@@ -10,6 +11,18 @@ import "../CommonBase.sol";
 contract RoleInvariantsTest is CommonBase {
     function setUp() public override {
         super.setUp();
+        // Exclude SecureOwnable execution functions from fuzz so the invariant "protected roles
+        // never modified via RuntimeRBAC" is not violated by legitimate time-delay/meta execution.
+        // The fuzzer may only call other functions (e.g. RuntimeRBAC); recovery/owner/broadcaster
+        // must not change via those paths.
+        bytes4[] memory secureOwnableExecutionSelectors = new bytes4[](4);
+        secureOwnableExecutionSelectors[0] = TRANSFER_OWNERSHIP_SELECTOR;
+        secureOwnableExecutionSelectors[1] = UPDATE_BROADCASTER_SELECTOR;
+        secureOwnableExecutionSelectors[2] = UPDATE_RECOVERY_SELECTOR;
+        secureOwnableExecutionSelectors[3] = UPDATE_TIMELOCK_SELECTOR;
+        excludeSelector(
+            StdInvariant.FuzzSelector({ addr: address(roleBlox), selectors: secureOwnableExecutionSelectors })
+        );
     }
 
     function invariant_RoleWalletLimits() public {

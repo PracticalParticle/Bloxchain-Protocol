@@ -52,13 +52,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   }
 
   /**
-   * Get contract address from environment
+   * Get contract address from environment (single account contract)
    */
   protected getContractAddressFromEnv(): Address | null {
-    const address = getTestConfig().contractAddresses.guardController || 
-                    process.env.ACCOUNTBLOX_ADDRESS;
+    const address = getTestConfig().contractAddresses.accountBlox;
     if (!address) {
-      throw new Error('GUARDCONTROLLER_ADDRESS or ACCOUNTBLOX_ADDRESS not set in environment variables');
+      throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
     }
     return address as Address;
   }

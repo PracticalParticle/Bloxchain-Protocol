@@ -13,7 +13,7 @@ import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { keccak256, toBytes } from 'viem';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
-import RoleBloxABIJson from '../../../sdk/typescript/abi/RoleBlox.abi.json';
+import AccountBloxABIJson from '../../../sdk/typescript/abi/AccountBlox.abi.json';
 
 export interface RuntimeRBACRoles {
   owner: Address;
@@ -83,26 +83,26 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
   }
 
   /**
-   * Get contract address from artifacts
+   * Get contract address from artifacts (AccountBlox is the single account contract)
    */
   protected async getContractAddress(): Promise<Address | null> {
-    return getContractAddressFromArtifacts('RoleBlox');
+    return getContractAddressFromArtifacts('AccountBlox');
   }
 
   /**
    * Get contract address from environment
    */
   protected getContractAddressFromEnv(): Address | null {
-    const address = getTestConfig().contractAddresses.runtimeRBAC;
+    const address = getTestConfig().contractAddresses.accountBlox;
     if (!address) {
-      throw new Error('RUNTIMERBAC_ADDRESS or ROLEBLOX_ADDRESS not set in environment variables');
+      throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
     }
     return address as Address;
   }
 
   /**
    * Initialize RuntimeRBAC SDK instance
-   * Note: We use RuntimeRBAC SDK but need to access RoleBlox ABI functions
+   * AccountBlox implements RuntimeRBAC; we use AccountBlox ABI for full function coverage.
    */
   protected async initializeSDK(): Promise<void> {
     if (!this.contractAddress) {
@@ -119,10 +119,10 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       this.chain
     );
 
-    // Override the ABI to use RoleBlox ABI which includes all functions
-    (this.runtimeRBAC as any).abi = RoleBloxABIJson;
+    // Override the ABI to use AccountBlox ABI which includes all RuntimeRBAC + GuardController + SecureOwnable functions
+    (this.runtimeRBAC as any).abi = AccountBloxABIJson;
 
-    console.log('✅ RuntimeRBAC SDK initialized');
+    console.log('✅ RuntimeRBAC SDK initialized (AccountBlox)');
   }
 
   /**

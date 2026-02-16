@@ -440,7 +440,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Verify transaction is completed (use recovery wallet since owner has changed)
             // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '5', 'Transaction completed successfully');
+            this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully');
 
             console.log('  🎉 Step 6 completed: Meta approve executed');
 
@@ -658,7 +658,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Verify transaction is completed (use recovery wallet since owner has changed)
             // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('recovery'));
-            this.assertTest(tx.status === '5', 'Transaction completed successfully');
+            this.assertTest(Number(tx.status) === 5, 'Transaction completed successfully');
 
             console.log('  🎉 Step 10 completed: Time delay approve executed');
 
