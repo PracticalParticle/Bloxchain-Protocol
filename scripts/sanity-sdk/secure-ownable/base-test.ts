@@ -34,19 +34,19 @@ export abstract class BaseSecureOwnableTest extends BaseSDKTest {
   }
 
   /**
-   * Get contract address from artifacts
+   * Get contract address from artifacts (AccountBlox is the single account contract)
    */
   protected async getContractAddress(): Promise<Address | null> {
-    return getContractAddressFromArtifacts('SecureBlox');
+    return getContractAddressFromArtifacts('AccountBlox');
   }
 
   /**
    * Get contract address from environment
    */
   protected getContractAddressFromEnv(): Address | null {
-    const address = getTestConfig().contractAddresses.secureBlox;
+    const address = getTestConfig().contractAddresses.accountBlox;
     if (!address) {
-      throw new Error('SECUREBLOX_ADDRESS not set in environment variables');
+      throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
     }
     return address as Address;
   }

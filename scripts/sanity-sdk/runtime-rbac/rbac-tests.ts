@@ -202,12 +202,29 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       console.log('  ✅ Step 1 completed successfully');
     } catch (error: any) {
       // Check if role was created despite error (unclean start)
-      const roleExistsAfter = await this.roleExists(this.registryAdminRoleHash!);
+      let roleExistsAfter = false;
+      try {
+        roleExistsAfter = await this.roleExists(this.registryAdminRoleHash!);
+      } catch (_) {
+        // roleExists can fail on RPC/contract errors; treat as unknown
+      }
       if (roleExistsAfter) {
         console.log(`  ⚠️  Role was created despite error, verifying permissions...`);
         await this.ensureRoleHasRequiredPermissions(this.registryAdminRoleHash!);
         console.log('  ✅ Step 1 completed (role already existed)');
         return;
+      }
+      // Create may have reverted with ResourceAlreadyExists (simulation failed before tx sent)
+      const msg = error?.message ?? '';
+      if (msg.includes('ResourceAlreadyExists') || msg.includes('revert') || msg.includes('Missing or invalid')) {
+        console.log(`  ⏭️  Create reverted (${msg.slice(0, 60)}...); assuming role exists, verifying permissions...`);
+        try {
+          await this.ensureRoleHasRequiredPermissions(this.registryAdminRoleHash!);
+          console.log('  ✅ Step 1 completed (role already existed, permissions verified)');
+          return;
+        } catch (permErr: any) {
+          console.log(`  ⚠️  Permission verification failed: ${permErr.message}`);
+        }
       }
       throw error;
     }

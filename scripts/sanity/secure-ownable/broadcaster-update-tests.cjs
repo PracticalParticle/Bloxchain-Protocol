@@ -268,10 +268,31 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log('  ✅ Meta-transaction approval executed successfully');
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
+            // Allow state to settle before reading transaction record
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
             // Verify transaction is completed
             // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
-            this.assertTest(tx.status === '5', 'Transaction completed successfully');
+            const statusVal = tx.status !== undefined ? tx.status : tx[2]; // Web3 may return struct as object or array
+            const statusNum = typeof statusVal === 'object' && statusVal != null && typeof statusVal.toNumber === 'function'
+                ? statusVal.toNumber() : Number(statusVal);
+            // Status 6 = FAILED: internal execution reverted. record.result contains revert payload (see scripts/sanity/DEBUGGING.md).
+            if (statusNum === 6) {
+                const rawResult = tx.result !== undefined ? tx.result : tx[5];
+                if (rawResult) {
+                    const resultHex = typeof rawResult === 'string' ? rawResult : (rawResult.length && typeof rawResult.slice === 'function') ? '0x' + Buffer.from(rawResult).toString('hex') : '0x';
+                    const errorSelector = resultHex.length >= 10 ? resultHex.slice(0, 10) : resultHex;
+                    console.log(`  📋 Revert data (first 200 chars): ${resultHex.slice(0, 200)}`);
+                    console.log(`  📋 Error selector: ${errorSelector} (decode: cast 4byte ${errorSelector} or openchain.xyz/signatures)`);
+                }
+            }
+            this.assertTest(
+                statusNum === 5,
+                statusNum === 6
+                    ? 'Transaction execution failed on-chain (status 6 FAILED). Check contract execution path and permissions. Revert data logged above.'
+                    : `Transaction completed (expected status 5 COMPLETED, got ${statusNum})`
+            );
 
             // Verify broadcaster address changed (check primary broadcaster)
             const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
@@ -333,7 +354,10 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             // Verify transaction is completed (use owner wallet since broadcaster has changed)
             // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
             const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('owner'));
-            this.assertTest(tx.status === '5', 'Transaction completed successfully');
+            const statusVal = tx.status !== undefined ? tx.status : tx[2];
+            const statusNum = typeof statusVal === 'object' && statusVal != null && typeof statusVal.toNumber === 'function'
+                ? statusVal.toNumber() : Number(statusVal);
+            this.assertTest(statusNum === 5, 'Transaction completed successfully');
 
             // Verify primary broadcaster address changed to target
             const broadcastersAfter = await this.callContractMethod(this.contract.methods.getBroadcasters());
@@ -356,12 +380,11 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     }
 
     async createBroadcasterRequestAndDeriveTxId() {
-        // Get current primary broadcaster address
+        // Get all current broadcaster addresses (role can have multiple)
         const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
         const currentBroadcaster = broadcasters[0];
-        
-        // Find first unused wallet for broadcaster update
-        const newBroadcaster = this.findUnusedWalletForBroadcaster(currentBroadcaster);
+        // Pick a new broadcaster not already in the role (avoids OperationFailed from duplicate add)
+        const newBroadcaster = this.findUnusedWalletForBroadcaster(broadcasters);
         console.log(`  📡 Current broadcaster: ${currentBroadcaster}`);
         console.log(`  📡 New broadcaster: ${newBroadcaster}`);
 
@@ -437,13 +460,10 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     }
 
     async createBroadcasterRequestForTimeDelayApproval() {
-        // Get current primary broadcaster address
+        // Get all current broadcaster addresses
         const broadcasters = await this.callContractMethod(this.contract.methods.getBroadcasters());
         const currentBroadcaster = broadcasters[0];
-        
-        // For time delay approval, we want to change to any unused address
-        // Use the dynamic wallet selection to find an unused wallet
-        const targetBroadcaster = this.findUnusedWalletForBroadcaster(currentBroadcaster);
+        const targetBroadcaster = this.findUnusedWalletForBroadcaster(broadcasters);
         console.log(`  📡 Current broadcaster: ${currentBroadcaster}`);
         console.log(`  📡 Target broadcaster: ${targetBroadcaster}`);
 
@@ -470,11 +490,13 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     }
 
     /**
-     * Find the first unused wallet for broadcaster update
-     * @param {string} currentBroadcaster - Current broadcaster address
-     * @returns {string} Address of unused wallet
+     * Find the first wallet not already in the broadcaster role (avoids OperationFailed when
+     * updateAssignedWallet tries to add an address already in the role).
+     * @param {string[]} currentBroadcasters - All current broadcaster addresses from getBroadcasters()
+     * @returns {string} Address of a wallet not in the role
      */
-    findUnusedWalletForBroadcaster(currentBroadcaster) {
+    findUnusedWalletForBroadcaster(currentBroadcasters) {
+        const set = new Set((currentBroadcasters || []).map(a => a.toLowerCase()));
         const availableWallets = [
             this.wallets.wallet1.address,
             this.wallets.wallet2.address,
@@ -483,11 +505,8 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             this.wallets.wallet5.address
         ];
 
-        // Find first wallet that's different from current broadcaster
         for (const wallet of availableWallets) {
-            if (wallet.toLowerCase() !== currentBroadcaster.toLowerCase()) {
-                return wallet;
-            }
+            if (!set.has(wallet.toLowerCase())) return wallet;
         }
 
         throw new Error('No unused wallet found for broadcaster update');

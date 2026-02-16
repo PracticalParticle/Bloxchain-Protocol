@@ -58,8 +58,10 @@ function getProviderUrl() {
 
 // Helper function to create network configuration
 function createNetworkConfig() {
+  // Use "*" so Truffle accepts whatever network id the provider returns (Ganache uses dynamic ids).
+  // Set REMOTE_NETWORK_ID only if you need to pin a specific chain for non-migrate tooling.
   const config = {
-    network_id: process.env.REMOTE_NETWORK_ID || "*",
+    network_id: "*",
     gas: process.env.REMOTE_GAS ? parseInt(process.env.REMOTE_GAS) : undefined,
     gasPrice: process.env.REMOTE_GAS_PRICE ? parseInt(process.env.REMOTE_GAS_PRICE) : undefined,
     from: process.env.REMOTE_FROM || undefined,
