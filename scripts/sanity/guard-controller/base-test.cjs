@@ -242,10 +242,10 @@ class BaseGuardControllerTest {
         
         try {
             // Get contract address from environment
-            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS || process.env.GUARD_CONTROLLER_ADDRESS;
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
             
             if (!this.contractAddress) {
-                throw new Error('ACCOUNTBLOX_ADDRESS or GUARD_CONTROLLER_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);

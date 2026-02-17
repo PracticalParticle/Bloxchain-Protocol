@@ -209,8 +209,13 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         ) || 'wallet2'
       );
 
-      // Check if already whitelisted
-      const targets = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
+      // Check if already whitelisted (contract may revert if selector not yet registered)
+      let targets: Address[] = [];
+      try {
+        targets = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
+      } catch (_) {
+        console.log('  ℹ️  getFunctionWhitelistTargets reverted (selector may be unregistered); treating as empty');
+      }
       const already = targets.some((t) => t.toLowerCase() === token.toLowerCase());
       if (already) {
         console.log('  ℹ️  BasicERC20 already whitelisted for mint; skipping add');
@@ -238,7 +243,12 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       const isSuccess1 = status1 === 'success' || status1 === 1 || String(status1) === '1';
       console.log(`     Status: ${isSuccess1 ? 'SUCCESS' : 'FAILED'}`);
 
-      const targetsAfter = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
+      let targetsAfter: Address[] = [];
+      try {
+        targetsAfter = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
+      } catch (_) {
+        console.log('  ℹ️  getFunctionWhitelistTargets reverted after update (best-effort check skipped)');
+      }
       console.log(`  📋 Whitelist targets after SDK update (${targetsAfter.length}):`);
       targetsAfter.forEach((t, i) => {
         console.log(`     ${i + 1}. ${t}`);

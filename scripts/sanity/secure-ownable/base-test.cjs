@@ -38,7 +38,7 @@ class BaseSecureOwnableTest {
         
         // Initialize contract address and ABI
         this.contractAddress = null; // Will be set during initialization
-        this.contractABI = this.loadABI('SecureBlox');
+        this.contractABI = this.loadABI('AccountBlox'); // AccountBlox is the single account contract (includes SecureOwnable)
         
         // Initialize test wallets - will be populated during initialization
         this.wallets = {};
@@ -76,11 +76,11 @@ class BaseSecureOwnableTest {
         console.log('🤖 AUTO MODE: Fetching contract addresses and Ganache accounts...');
         
         try {
-            // Get contract addresses from Truffle artifacts
-            this.contractAddress = await this.getContractAddressFromArtifacts('SecureBlox');
+            // Get contract addresses from Truffle artifacts (AccountBlox is the single account contract)
+            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
             
             if (!this.contractAddress) {
-                throw new Error('Could not find SecureBlox address in Truffle artifacts');
+                throw new Error('Could not find AccountBlox address in Truffle artifacts');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -100,11 +100,11 @@ class BaseSecureOwnableTest {
         console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
         
         try {
-            // Get contract address from environment
-            this.contractAddress = process.env.SECUREBLOX_ADDRESS;
+            // Get contract address from environment (single account contract)
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
             
             if (!this.contractAddress) {
-                throw new Error('SECUREBLOX_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);

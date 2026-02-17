@@ -43,6 +43,10 @@ node scripts/sanity/run-all-tests.cjs --simple-rwa20
 - **simple-vault**: Vault withdrawal and deposit tests
 - **simple-rwa20**: Token minting and burning tests
 
+## Contract Configuration
+
+All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from Truffle artifacts (AccountBlox). SecureBlox and RoleBlox are no longer used by sanity tests.
+
 ## Individual Test Suites
 
 Each test suite can also be run individually:

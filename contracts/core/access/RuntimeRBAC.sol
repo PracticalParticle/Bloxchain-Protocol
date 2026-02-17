@@ -44,11 +44,8 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
         uint256 timeLockPeriodSec,
         address eventForwarder
     ) public virtual onlyInitializing {
-        // Initialize base state machine (only if not already initialized)
-        if (!_secureState.initialized) {
-            _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
-        }
-        
+        _initializeBaseStateMachine(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder);
+
         // Load RuntimeRBAC-specific definitions
         IDefinition.RolePermission memory permissions = RuntimeRBACDefinitions.getRolePermissions();
         _loadDefinitions(
@@ -117,58 +114,17 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
             IRuntimeRBAC.RoleConfigAction calldata action = actions[i];
 
             if (action.actionType == IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE) {
-                // Decode CREATE_ROLE action data
-                // Format: (string roleName, uint256 maxWallets)
-                (
-                    string memory roleName,
-                    uint256 maxWallets
-                ) = abi.decode(action.data, (string, uint256));
-
-                // Create the role in the secure state with isProtected = false
-                bytes32 roleHash = _createRole(roleName, maxWallets, false);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0)));
+                _executeCreateRole(action.data);
             } else if (action.actionType == IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE) {
-                // Decode REMOVE_ROLE action data
-                // Format: (bytes32 roleHash)
-                (bytes32 roleHash) = abi.decode(action.data, (bytes32));
-                _removeRole(roleHash);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0)));
+                _executeRemoveRole(action.data);
             } else if (action.actionType == IRuntimeRBAC.RoleConfigActionType.ADD_WALLET) {
-                // Decode ADD_WALLET action data
-                // Format: (bytes32 roleHash, address wallet)
-                (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
-                _requireRoleNotProtected(roleHash);
-                _assignWallet(roleHash, wallet);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0)));
+                _executeAddWallet(action.data);
             } else if (action.actionType == IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET) {
-                // Decode REVOKE_WALLET action data
-                // Format: (bytes32 roleHash, address wallet)
-                (bytes32 roleHash, address wallet) = abi.decode(action.data, (bytes32, address));
-                _requireRoleNotProtected(roleHash);
-                _revokeWallet(roleHash, wallet);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0)));
+                _executeRevokeWallet(action.data);
             } else if (action.actionType == IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE) {
-                // Decode ADD_FUNCTION_TO_ROLE action data
-                // Format: (bytes32 roleHash, FunctionPermission functionPermission)
-                (
-                    bytes32 roleHash,
-                    EngineBlox.FunctionPermission memory functionPermission
-                ) = abi.decode(action.data, (bytes32, EngineBlox.FunctionPermission));
-
-                _addFunctionToRole(roleHash, functionPermission);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector));
+                _executeAddFunctionToRole(action.data);
             } else if (action.actionType == IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE) {
-                // Decode REMOVE_FUNCTION_FROM_ROLE action data
-                // Format: (bytes32 roleHash, bytes4 functionSelector)
-                (bytes32 roleHash, bytes4 functionSelector) = abi.decode(action.data, (bytes32, bytes4));
-                _removeFunctionFromRole(roleHash, functionSelector);
-
-                _logComponentEvent(_encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector));
+                _executeRemoveFunctionFromRole(action.data);
             } else {
                 revert SharedValidation.NotSupported();
             }
@@ -176,9 +132,78 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     }
 
     /**
-     * @dev Encodes RBAC config event payload for ComponentEvent. Decode as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector).
+     * @dev Executes CREATE_ROLE: creates a new non-protected role
+     * @param data ABI-encoded (string roleName, uint256 maxWallets)
      */
-    function _encodeRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType action, bytes32 roleHash, bytes4 selector) internal pure returns (bytes memory) {
-        return abi.encode(action, roleHash, selector);
+    function _executeCreateRole(bytes calldata data) internal {
+        (string memory roleName, uint256 maxWallets) = abi.decode(data, (string, uint256));
+        bytes32 roleHash = _createRole(roleName, maxWallets, false);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0), address(0));
+    }
+
+    /**
+     * @dev Executes REMOVE_ROLE: removes a role by hash
+     * @param data ABI-encoded (bytes32 roleHash)
+     */
+    function _executeRemoveRole(bytes calldata data) internal {
+        (bytes32 roleHash) = abi.decode(data, (bytes32));
+        _removeRole(roleHash);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0), address(0));
+    }
+
+    /**
+     * @dev Executes ADD_WALLET: assigns a wallet to a role (role must not be protected)
+     * @param data ABI-encoded (bytes32 roleHash, address wallet)
+     */
+    function _executeAddWallet(bytes calldata data) internal {
+        (bytes32 roleHash, address wallet) = abi.decode(data, (bytes32, address));
+        _requireRoleNotProtected(roleHash);
+        _assignWallet(roleHash, wallet);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0), wallet);
+    }
+
+    /**
+     * @dev Executes REVOKE_WALLET: revokes a wallet from a role (role must not be protected)
+     * @param data ABI-encoded (bytes32 roleHash, address wallet)
+     */
+    function _executeRevokeWallet(bytes calldata data) internal {
+        (bytes32 roleHash, address wallet) = abi.decode(data, (bytes32, address));
+        _requireRoleNotProtected(roleHash);
+        _revokeWallet(roleHash, wallet);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0), wallet);
+    }
+
+    /**
+     * @dev Executes ADD_FUNCTION_TO_ROLE: adds a function permission to a role
+     * @param data ABI-encoded (bytes32 roleHash, FunctionPermission functionPermission)
+     */
+    function _executeAddFunctionToRole(bytes calldata data) internal {
+        (
+            bytes32 roleHash,
+            EngineBlox.FunctionPermission memory functionPermission
+        ) = abi.decode(data, (bytes32, EngineBlox.FunctionPermission));
+        _addFunctionToRole(roleHash, functionPermission);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector, address(0));
+    }
+
+    /**
+     * @dev Executes REMOVE_FUNCTION_FROM_ROLE: removes a function permission from a role
+     * @param data ABI-encoded (bytes32 roleHash, bytes4 functionSelector)
+     */
+    function _executeRemoveFunctionFromRole(bytes calldata data) internal {
+        (bytes32 roleHash, bytes4 functionSelector) = abi.decode(data, (bytes32, bytes4));
+        _removeFunctionFromRole(roleHash, functionSelector);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector, address(0));
+    }
+
+    /**
+     * @dev Encodes and logs a role config event via ComponentEvent. Payload decodes as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, address wallet).
+     * @param action The role config action type
+     * @param roleHash The role hash
+     * @param selector The function selector (or zero for N/A)
+     * @param wallet The wallet address (or zero for actions that do not apply to a wallet)
+     */
+    function _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType action, bytes32 roleHash, bytes4 selector, address wallet) internal {
+        _logComponentEvent(abi.encode(action, roleHash, selector, wallet));
     }
 }

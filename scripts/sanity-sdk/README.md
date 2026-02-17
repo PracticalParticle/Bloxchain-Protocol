@@ -41,6 +41,10 @@ npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-t
 ### Example Tests (Optional)
 - **workflow**: Workflow integration tests
 
+## Contract Configuration
+
+All sanity tests use a **single account contract** (AccountBlox). Set `ACCOUNTBLOX_ADDRESS` in `.env` for manual mode; in auto mode the address is read from Truffle artifacts.
+
 ## Individual Test Suites
 
 Each test suite can also be run individually:

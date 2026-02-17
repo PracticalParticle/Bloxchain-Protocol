@@ -38,7 +38,7 @@ class BaseRuntimeRBACTest {
         
         // Initialize contract address and ABI
         this.contractAddress = null; // Will be set during initialization
-        this.contractABI = this.loadABI('RoleBlox'); // RoleBlox is the concrete implementation of RuntimeRBAC
+        this.contractABI = this.loadABI('AccountBlox'); // AccountBlox is the single account contract (includes RuntimeRBAC)
         
         // Initialize test wallets - will be populated during initialization
         this.wallets = {};
@@ -131,12 +131,11 @@ class BaseRuntimeRBACTest {
         console.log('🤖 AUTO MODE: Fetching contract addresses and Ganache accounts...');
         
         try {
-            // Get contract addresses from Truffle artifacts
-            // RoleBlox is the concrete implementation of RuntimeRBAC
-            this.contractAddress = await this.getContractAddressFromArtifacts('RoleBlox');
+            // Get contract addresses from Truffle artifacts (AccountBlox is the single account contract)
+            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
             
             if (!this.contractAddress) {
-                throw new Error('Could not find RoleBlox address in Truffle artifacts');
+                throw new Error('Could not find AccountBlox address in Truffle artifacts');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -156,12 +155,11 @@ class BaseRuntimeRBACTest {
         console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
         
         try {
-            // Get contract address from environment
-            // Try RUNTIME_RBAC_ADDRESS first, then ROLEBLOX_ADDRESS
-            this.contractAddress = process.env.RUNTIME_RBAC_ADDRESS || process.env.ROLEBLOX_ADDRESS;
+            // Get contract address from environment (single account contract)
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
             
             if (!this.contractAddress) {
-                throw new Error('RUNTIME_RBAC_ADDRESS or ROLEBLOX_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
