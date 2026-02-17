@@ -485,13 +485,29 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                                 }
                             }
                         } else {
-                            // No txId - try to get transaction record from receipt transaction hash or recent transactions
+                            // No txId in receipt - try expectedTxId from meta-transaction first, then fall back to scan
                             console.log(`  ⚠️  No txId found in receipt, attempting to find transaction record...`);
                             let txRecord = null;
                             let foundTxId = null;
                             
+                            // Prefer expected txId from meta-transaction (correct tx) over scanning
+                            if (expectedTxId) {
+                                try {
+                                    const expectedRecord = await this.callContractMethod(
+                                        this.contract.methods.getTransaction(expectedTxId)
+                                    );
+                                    if (expectedRecord && expectedRecord.status !== undefined) {
+                                        txRecord = expectedRecord;
+                                        foundTxId = expectedTxId;
+                                        console.log(`  📋 Using expected txId from meta-transaction: ${expectedTxId}, status=${txRecord.status}`);
+                                    }
+                                } catch (e) {
+                                    // Ignore and fall through to scan
+                                }
+                            }
+                            
                             // Try to get transaction record by checking recent transactions
-                            if (receipt && receipt.transactionHash) {
+                            if ((!txRecord || !foundTxId) && receipt && receipt.transactionHash) {
                                 try {
                                     // Get pending transactions and check the most recent one
                                     const pendingTxs = await this.callContractMethod(

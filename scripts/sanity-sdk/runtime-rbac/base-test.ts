@@ -671,6 +671,21 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
   }
 
   /**
+   * Detect if a thrown error is a contract revert with ResourceAlreadyExists.
+   * Used when executeRoleConfigBatch throws (e.g. simulateContract reverts) before a receipt is produced.
+   */
+  protected isResourceAlreadyExistsRevert(error: any): boolean {
+    if (!error) return false;
+    const msg = (error.shortMessage || error.message || '').toString();
+    if (/ResourceAlreadyExists/i.test(msg)) return true;
+    const data = error.data ?? error.cause?.data;
+    if (data?.errorName === 'ResourceAlreadyExists') return true;
+    const selector = this.decodeErrorSelector(data?.data ?? data);
+    if (selector && this.getErrorName(selector) === 'ResourceAlreadyExists') return true;
+    return false;
+  }
+
+  /**
    * Check transaction record status and decode errors
    */
   protected async checkTransactionRecordStatus(
