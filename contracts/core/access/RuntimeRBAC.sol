@@ -138,7 +138,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     function _executeCreateRole(bytes calldata data) internal {
         (string memory roleName, uint256 maxWallets) = abi.decode(data, (string, uint256));
         bytes32 roleHash = _createRole(roleName, maxWallets, false);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0));
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE, roleHash, bytes4(0), address(0));
     }
 
     /**
@@ -148,7 +148,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     function _executeRemoveRole(bytes calldata data) internal {
         (bytes32 roleHash) = abi.decode(data, (bytes32));
         _removeRole(roleHash);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0));
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_ROLE, roleHash, bytes4(0), address(0));
     }
 
     /**
@@ -159,7 +159,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
         (bytes32 roleHash, address wallet) = abi.decode(data, (bytes32, address));
         _requireRoleNotProtected(roleHash);
         _assignWallet(roleHash, wallet);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0));
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_WALLET, roleHash, bytes4(0), wallet);
     }
 
     /**
@@ -170,7 +170,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
         (bytes32 roleHash, address wallet) = abi.decode(data, (bytes32, address));
         _requireRoleNotProtected(roleHash);
         _revokeWallet(roleHash, wallet);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0));
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET, roleHash, bytes4(0), wallet);
     }
 
     /**
@@ -183,7 +183,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
             EngineBlox.FunctionPermission memory functionPermission
         ) = abi.decode(data, (bytes32, EngineBlox.FunctionPermission));
         _addFunctionToRole(roleHash, functionPermission);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE, roleHash, functionPermission.functionSelector, address(0));
     }
 
     /**
@@ -193,16 +193,17 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     function _executeRemoveFunctionFromRole(bytes calldata data) internal {
         (bytes32 roleHash, bytes4 functionSelector) = abi.decode(data, (bytes32, bytes4));
         _removeFunctionFromRole(roleHash, functionSelector);
-        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector);
+        _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE, roleHash, functionSelector, address(0));
     }
 
     /**
-     * @dev Encodes and logs a role config event via ComponentEvent. Payload decodes as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector).
+     * @dev Encodes and logs a role config event via ComponentEvent. Payload decodes as (RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, address wallet).
      * @param action The role config action type
      * @param roleHash The role hash
      * @param selector The function selector (or zero for N/A)
+     * @param wallet The wallet address (or zero for actions that do not apply to a wallet)
      */
-    function _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType action, bytes32 roleHash, bytes4 selector) internal {
-        _logComponentEvent(abi.encode(action, roleHash, selector));
+    function _logRoleConfigEvent(IRuntimeRBAC.RoleConfigActionType action, bytes32 roleHash, bytes4 selector, address wallet) internal {
+        _logComponentEvent(abi.encode(action, roleHash, selector, wallet));
     }
 }

@@ -29,3 +29,12 @@ remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
     "forge-std/=lib/forge-std/src/",
 ]
+
+# Suppress common compiler warnings (lint-style) so build output is clean
+# Codes: 2072=unused-var, 5667=unused-param, 2018=func-mutability, 1878=license, 2519=shadowing, 2462=constructor-visibility, 3628=missing-receive-ether, 6321=unnamed-return
+ignored_error_codes = [2072, 5667, 2018, 1878, 2519, 2462, 3628, 6321]
+
+# Do not run forge-lint during build (no unaliased-plain-import / unsafe-typecast / etc. output)
+# Run `forge lint` separately when you want lint feedback.
+[lint]
+lint_on_build = false

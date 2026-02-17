@@ -1300,6 +1300,8 @@ library EngineBlox {
         bytes4 functionSelector,
         address target
     ) public {
+        SharedValidation.validateNotZeroAddress(target);
+
         EnumerableSet.AddressSet storage set = self.functionTargetWhitelist[functionSelector];
         if (!set.remove(target)) {
             revert SharedValidation.ItemNotFound(target);

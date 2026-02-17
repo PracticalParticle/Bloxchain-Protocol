@@ -159,7 +159,7 @@ module.exports = {
       settings: {          // See the solidity docs for advice about optimization and evmVersion
        optimizer: {
          enabled: true,
-         runs: 1
+         runs: 200
        },
        viaIR: true,  // Enable IR-based code generator to handle deep stack issues
        evmVersion: "shanghai"  // Compatible with Truffle 5.11.5 (osaka not supported by Truffle)
