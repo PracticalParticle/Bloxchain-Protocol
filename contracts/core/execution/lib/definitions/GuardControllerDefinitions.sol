@@ -38,6 +38,9 @@ library GuardControllerDefinitions {
     // GuardController: executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)
     bytes4 public constant EXECUTE_WITH_TIMELOCK_SELECTOR = bytes4(keccak256("executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)"));
     
+    // GuardController: executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))
+    bytes4 public constant EXECUTE_WITH_PAYMENT_SELECTOR = bytes4(keccak256("executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))"));
+    
     // GuardController: approveTimeLockExecution(uint256)
     bytes4 public constant APPROVE_TIMELOCK_EXECUTION_SELECTOR = bytes4(keccak256("approveTimeLockExecution(uint256)"));
     
