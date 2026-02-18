@@ -6,13 +6,14 @@
 import { Address, Hex } from 'viem';
 import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
-import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
+import { getContractAddressFromArtifacts, getDefinitionAddress } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { keccak256, toBytes } from 'viem';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
+import { roleConfigBatchExecutionParams } from '../../../sdk/typescript/lib/definitions/RuntimeRBACDefinitions';
 import AccountBloxABIJson from '../../../sdk/typescript/abi/AccountBlox.abi.json';
 
 export interface RuntimeRBACRoles {
@@ -54,6 +55,8 @@ export interface RoleConfigAction {
 
 export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
   protected runtimeRBAC: RuntimeRBAC | null = null;
+  /** Deployed RuntimeRBACDefinitions library address (for execution params) */
+  protected runtimeRBACDefinitionsAddress: Address | null = null;
   protected roles: RuntimeRBACRoles = {
     owner: '0x' as Address,
     broadcaster: '0x' as Address,
@@ -108,6 +111,8 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     if (!this.contractAddress) {
       throw new Error('Contract address not set');
     }
+
+    this.runtimeRBACDefinitionsAddress = await getDefinitionAddress('RuntimeRBACDefinitions');
 
     // Create a wallet client for the owner (default)
     const walletClient = this.createWalletClient('wallet1');
@@ -378,8 +383,11 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       throw new Error(`Wallet not found: ${signerWalletName}`);
     }
 
-    // Create execution params
-    const executionParams = await this.runtimeRBAC.roleConfigBatchExecutionParams(actions);
+    // Create execution params (via definition contract)
+    if (!this.runtimeRBACDefinitionsAddress) {
+      throw new Error('RuntimeRBACDefinitions address not set');
+    }
+    const executionParams = await roleConfigBatchExecutionParams(this.publicClient, this.runtimeRBACDefinitionsAddress, actions);
 
     // Create meta-tx params
     const metaTxParams = await this.createMetaTxParams(

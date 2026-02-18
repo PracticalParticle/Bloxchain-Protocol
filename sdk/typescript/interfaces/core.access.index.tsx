@@ -11,11 +11,6 @@ import type { RoleConfigAction } from '../types/core.access.index';
  */
 export interface IRuntimeRBAC {
   /**
-   * @dev Creates execution params for a RBAC configuration batch (definition helper; no contract call)
-   */
-  roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex;
-
-  /**
    * @dev Requests and approves a RBAC configuration batch using a meta-transaction
    */
   roleConfigBatchRequestAndApprove(

@@ -112,8 +112,9 @@ const registerAction = {
   )
 }
 
-// Create execution params
-const executionParams = await guardController.guardConfigBatchExecutionParams([registerAction])
+// Create execution params (call deployed GuardControllerDefinitions contract; use address from deployed-addresses.json for your chain)
+const guardControllerDefinitionsAddress = '0x...' // e.g. deployedAddresses.sepolia.GuardControllerDefinitions.address
+const executionParams = await guardController.guardConfigBatchExecutionParams(guardControllerDefinitionsAddress, [registerAction])
 
 // Create meta-transaction
 const metaTxParams = await guardController.createMetaTxParams(
@@ -188,8 +189,8 @@ const actions = [
   }
 ]
 
-// Execute batch atomically
-const executionParams = await guardController.guardConfigBatchExecutionParams(actions)
+// Execute batch atomically (definitionAddress from deployed-addresses.json for your chain)
+const executionParams = await guardController.guardConfigBatchExecutionParams(guardControllerDefinitionsAddress, actions)
 // ... create and execute meta-transaction
 ```
 

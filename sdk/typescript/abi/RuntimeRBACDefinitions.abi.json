@@ -311,7 +311,7 @@
           {
             "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
             "name": "actionType",
-            "type": "IRuntimeRBAC.RoleConfigActionType"
+            "type": "uint8"
           },
           {
             "internalType": "bytes",

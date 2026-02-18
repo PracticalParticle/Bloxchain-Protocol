@@ -293,7 +293,8 @@ class GuardianManager {
         [roleHash, account]
       )
     }]
-    const executionParams = this.runtimeRBAC.roleConfigBatchExecutionParams(actions);
+    const definitionAddress = '0x...'; // RuntimeRBACDefinitions address from deployed-addresses.json for your chain
+    const executionParams = await this.runtimeRBAC.roleConfigBatchExecutionParams(definitionAddress, actions);
     // Then use meta-transaction to execute
   }
 

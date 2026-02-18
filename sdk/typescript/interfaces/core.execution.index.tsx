@@ -57,15 +57,6 @@ export interface IGuardController extends IBaseStateMachine {
 
   // Guard Configuration Batch
   /**
-   * @dev Creates execution params for a guard configuration batch
-   * @param actions Encoded guard configuration actions
-   * @return Promise<Hex> The execution params to be used in a meta-transaction
-   */
-  guardConfigBatchExecutionParams(
-    actions: Array<{ actionType: number; data: Hex }>
-  ): Promise<Hex>;
-
-  /**
    * @dev Requests and approves a guard configuration batch using a meta-transaction
    * @param metaTx The meta-transaction describing the guard configuration batch
    * @param options Transaction options including from address

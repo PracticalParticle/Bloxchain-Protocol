@@ -6,7 +6,7 @@
 import { Address, Hex } from 'viem';
 import { SecureOwnable } from '../../../sdk/typescript/contracts/core/SecureOwnable.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
-import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
+import { getContractAddressFromArtifacts, getDefinitionAddress } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
@@ -21,6 +21,8 @@ export interface SecureOwnableRoles {
 
 export abstract class BaseSecureOwnableTest extends BaseSDKTest {
   protected secureOwnable: SecureOwnable | null = null;
+  /** Deployed SecureOwnableDefinitions library address (for execution params) */
+  protected secureOwnableDefinitionsAddress: Address | null = null;
   protected roles: SecureOwnableRoles = {
     owner: '0x' as Address,
     broadcaster: '0x' as Address,
@@ -58,6 +60,8 @@ export abstract class BaseSecureOwnableTest extends BaseSDKTest {
     if (!this.contractAddress) {
       throw new Error('Contract address not set');
     }
+
+    this.secureOwnableDefinitionsAddress = await getDefinitionAddress('SecureOwnableDefinitions');
 
     // Create a wallet client for the owner (default)
     const walletClient = this.createWalletClient('wallet1');

@@ -193,13 +193,13 @@ const txHash = await runtimeRBAC.roleConfigBatchRequestAndApprove(
 )
 ```
 
-##### `roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex`
-Builds execution params locally (definition helper; no contract call).
-Creates execution params for a RBAC configuration batch.
+##### `roleConfigBatchExecutionParams(definitionAddress: Address, actions: RoleConfigAction[]): Promise<Hex>`
+Calls the deployed RuntimeRBACDefinitions contract to build execution params (single source of truth with Solidity).
 
 ```typescript
-const executionParams = runtimeRBAC.roleConfigBatchExecutionParams(actions);
-// Or use definition helper directly: import { roleConfigBatchExecutionParams } from '@bloxchain/sdk'; const executionParams = roleConfigBatchExecutionParams(actions);
+const definitionAddress = deployedAddresses.sepolia.RuntimeRBACDefinitions.address; // from deployed-addresses.json for your chain
+const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(definitionAddress, actions);
+// Or use definition helper: import { roleConfigBatchExecutionParams } from '@bloxchain/sdk'; const executionParams = await roleConfigBatchExecutionParams(client, definitionAddress, actions);
 ```
 
 

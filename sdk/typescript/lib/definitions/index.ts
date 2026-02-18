@@ -1,6 +1,7 @@
 /**
- * Definition modules: pure helpers for building execution params.
- * Mirror Solidity definition libraries; no contract calls.
+ * Definition modules: call deployed definition contracts for execution params and specs.
+ * Single source of truth: encoding and specs come from Solidity definition libraries.
+ * Pass PublicClient and definition contract address (e.g. from deployed-addresses.json per chain).
  */
 
 export {

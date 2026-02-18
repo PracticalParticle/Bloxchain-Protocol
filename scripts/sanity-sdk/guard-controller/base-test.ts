@@ -6,12 +6,13 @@
 import { Address, Hex } from 'viem';
 import { GuardController } from '../../../sdk/typescript/contracts/core/GuardController.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
-import { getContractAddressFromArtifacts } from '../base/test-helpers.ts';
+import { getContractAddressFromArtifacts, getDefinitionAddress } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { GuardConfigActionType, GuardConfigAction } from '../../../sdk/typescript/types/core.execution.index.tsx';
+import { guardConfigBatchExecutionParams } from '../../../sdk/typescript/lib/definitions/GuardControllerDefinitions';
 import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 
 export interface GuardControllerRoles {
@@ -22,6 +23,8 @@ export interface GuardControllerRoles {
 
 export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected guardController: GuardController | null = null;
+  /** Deployed GuardControllerDefinitions library address (for execution params) */
+  protected guardControllerDefinitionsAddress: Address | null = null;
   protected roles: GuardControllerRoles = {
     owner: '0x' as Address,
     broadcaster: '0x' as Address,
@@ -69,6 +72,8 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     if (!this.contractAddress) {
       throw new Error('Contract address not set');
     }
+
+    this.guardControllerDefinitionsAddress = await getDefinitionAddress('GuardControllerDefinitions');
 
     // Create a wallet client for the owner (default)
     const walletClient = this.createWalletClient('wallet1');
@@ -298,9 +303,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       },
     ];
 
-    // Get execution params using the new batch method
+    // Get execution params using the new batch method (via definition contract)
+    if (!this.guardControllerDefinitionsAddress) {
+      throw new Error('GuardControllerDefinitions address not set');
+    }
     console.log(`    📋 Getting execution params for guard config batch...`);
-    const executionParams = await this.guardController.guardConfigBatchExecutionParams(actions);
+    const executionParams = await guardConfigBatchExecutionParams(this.publicClient, this.guardControllerDefinitionsAddress!, actions);
     console.log(`    ✅ Execution params obtained`);
 
     // Create meta-tx params
@@ -381,9 +389,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       },
     ];
 
-    // Get execution params using the new batch method
+    // Get execution params using the new batch method (via definition contract)
+    if (!this.guardControllerDefinitionsAddress) {
+      throw new Error('GuardControllerDefinitions address not set');
+    }
     console.log(`    📋 Getting execution params for guard config batch (function registration)...`);
-    const executionParams = await this.guardController.guardConfigBatchExecutionParams(actions);
+    const executionParams = await guardConfigBatchExecutionParams(this.publicClient, this.guardControllerDefinitionsAddress!, actions);
     console.log(`    ✅ Execution params obtained`);
 
     // Create meta-tx params

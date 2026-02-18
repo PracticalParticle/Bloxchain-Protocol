@@ -55,6 +55,32 @@ export async function getContractAddressFromArtifacts(
 }
 
 /**
+ * Get definition library address.
+ * Prefer deployed-addresses.json (development) so that after a Hardhat redeploy we use the new addresses.
+ * Fall back to Truffle artifacts (e.g. after truffle migrate).
+ * This avoids VM revert when artifacts point to an old/stale address on a redeployed chain.
+ */
+export async function getDefinitionAddress(contractName: string): Promise<Address> {
+  const deployedPath = path.join(__dirname, '../../../deployed-addresses.json');
+  if (fs.existsSync(deployedPath)) {
+    const deployed = JSON.parse(fs.readFileSync(deployedPath, 'utf8'));
+    const dev = deployed.development;
+    if (dev && dev[contractName]?.address) {
+      console.log(`📋 Using ${contractName} from deployed-addresses.json (development): ${dev[contractName].address}`);
+      return dev[contractName].address as Address;
+    }
+  }
+
+  const fromArtifacts = await getContractAddressFromArtifacts(contractName);
+  if (fromArtifacts) return fromArtifacts;
+
+  throw new Error(
+    `Definition contract address not found for ${contractName}. ` +
+    `Run deploy (truffle migrate or hardhat deploy-foundation-libraries) and ensure deployed-addresses.json or build/contracts has the address.`
+  );
+}
+
+/**
  * Advance blockchain time (for local Ganache)
  */
 export async function advanceBlockchainTime(

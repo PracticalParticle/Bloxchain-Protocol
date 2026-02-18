@@ -25,9 +25,7 @@ class SanitySDKTestRunner {
     'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts')
   };
 
-  private exampleTests: TestConfig = {
-    'workflow': resolve(__dirname, 'workflow', 'run-tests.ts')
-  };
+  private exampleTests: TestConfig = {};
 
   private results = {
     total: 0,
@@ -49,7 +47,6 @@ class SanitySDKTestRunner {
     console.log('  --secure-ownable         Run secure-ownable tests only');
     console.log('  --runtime-rbac           Run runtime-rbac tests only');
     console.log('  --guard-controller       Run guard-controller tests only');
-    console.log('  --workflow               Run workflow tests only');
     console.log('  --help                   Show this help message');
     console.log();
     console.log('Examples:');

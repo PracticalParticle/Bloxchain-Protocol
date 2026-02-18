@@ -1,15 +1,18 @@
 /**
  * RuntimeRBACDefinitions
- * Pure helpers for building execution params for RuntimeRBAC operations.
- * Mirrors RuntimeRBACDefinitions.sol; no contract calls.
- * Uses parseAbiParameters + array-of-[actionType,data] to match web3 encodeParameter('tuple(uint8,bytes)[]', ...).
+ * Calls the deployed RuntimeRBACDefinitions contract for specs and encoding.
+ * Single source of truth: action names, formats, and encoding come from the contract.
+ * @see contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol
  */
 
-import { type Address, type Hex, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { type Address, type Hex, type PublicClient } from 'viem';
+import RuntimeRBACDefinitionsAbi from '../../abi/RuntimeRBACDefinitions.abi.json';
 import type { RoleConfigAction } from '../../types/core.access.index';
 
+const ABI = RuntimeRBACDefinitionsAbi as readonly unknown[];
+
 /**
- * FunctionPermission shape for encoding ADD_FUNCTION_TO_ROLE action data.
+ * FunctionPermission shape for encodeAddFunctionToRole.
  * Matches Solidity EngineBlox.FunctionPermission (functionSelector, grantedActionsBitmap, handlerForSelectors).
  */
 export interface FunctionPermissionForEncoding {
@@ -19,108 +22,144 @@ export interface FunctionPermissionForEncoding {
 }
 
 /**
- * Builds execution params for executeRoleConfigBatch((uint8,bytes)[]).
+ * Builds execution params for executeRoleConfigBatch((uint8,bytes)[]) by calling the definition contract.
  * Equivalent to RuntimeRBACDefinitions.roleConfigBatchExecutionParams in Solidity.
- * Same encoding as web3.eth.abi.encodeParameter('tuple(uint8,bytes)[]', actionsArray).
  */
-export function roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex {
-  const actionsArray = actions.map((a) => ({
+export async function roleConfigBatchExecutionParams(
+  client: PublicClient,
+  definitionAddress: Address,
+  actions: RoleConfigAction[]
+): Promise<Hex> {
+  const actionsTuple = actions.map((a) => ({
     actionType: Number(a.actionType),
     data: a.data
   }));
-  return encodeAbiParameters(
-    parseAbiParameters('(uint8 actionType, bytes data)[]'),
-    [actionsArray]
-  ) as Hex;
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'roleConfigBatchExecutionParams',
+    args: [actionsTuple]
+  }) as Promise<Hex>;
 }
 
 /**
- * Returns all available RoleConfig action types and their ABI decode formats.
- * Mirrors RuntimeRBACDefinitions.getRoleConfigActionSpecs in Solidity.
- *
+ * Returns all available RoleConfig action types and their ABI decode formats from the contract.
  * Index i in both arrays corresponds to RoleConfigActionType enum value i.
  */
-export function getRoleConfigActionSpecs(): {
-  actionNames: string[];
-  formats: string[];
-} {
-  const actionNames = [
-    'CREATE_ROLE',
-    'REMOVE_ROLE',
-    'ADD_WALLET',
-    'REVOKE_WALLET',
-    'ADD_FUNCTION_TO_ROLE',
-    'REMOVE_FUNCTION_FROM_ROLE'
-  ];
-
-  // CREATE_ROLE expects exactly (roleName, maxWallets). Some tests pass a third parameter (e.g. empty
-  // FunctionPermission[]); abi.decode ignores trailing bytes, but new code should use only 2 params.
-  const formats = [
-    '(string roleName, uint256 maxWallets)',
-    '(bytes32 roleHash)',
-    '(bytes32 roleHash, address wallet)',
-    '(bytes32 roleHash, address wallet)',
-    '(bytes32 roleHash, FunctionPermission functionPermission)',
-    '(bytes32 roleHash, bytes4 functionSelector)'
-  ];
-
-  return { actionNames, formats };
-}
-
-// ============ Role config action data encoders ============
-// Use these helpers to build action.data for each RoleConfigActionType without reading the contract.
-// Each encoder returns Hex (bytes) suitable for RoleConfigAction(actionType, data).
-
-/**
- * Encodes data for CREATE_ROLE. Use with RoleConfigActionType.CREATE_ROLE.
- */
-export function encodeCreateRole(roleName: string, maxWallets: bigint): Hex {
-  return encodeAbiParameters(parseAbiParameters('string, uint256'), [roleName, maxWallets]) as Hex;
+export async function getRoleConfigActionSpecs(
+  client: PublicClient,
+  definitionAddress: Address
+): Promise<{ actionNames: string[]; formats: string[] }> {
+  const result = (await client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'getRoleConfigActionSpecs'
+  })) as [string[], string[]];
+  return { actionNames: result[0], formats: result[1] };
 }
 
 /**
- * Encodes data for REMOVE_ROLE. Use with RoleConfigActionType.REMOVE_ROLE.
+ * Encodes data for CREATE_ROLE by calling the definition contract.
  */
-export function encodeRemoveRole(roleHash: Hex): Hex {
-  return encodeAbiParameters(parseAbiParameters('bytes32'), [roleHash]) as Hex;
+export async function encodeCreateRole(
+  client: PublicClient,
+  definitionAddress: Address,
+  roleName: string,
+  maxWallets: bigint
+): Promise<Hex> {
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeCreateRole',
+    args: [roleName, maxWallets]
+  }) as Promise<Hex>;
 }
 
 /**
- * Encodes data for ADD_WALLET. Use with RoleConfigActionType.ADD_WALLET.
+ * Encodes data for REMOVE_ROLE by calling the definition contract.
  */
-export function encodeAddWallet(roleHash: Hex, wallet: Address): Hex {
-  return encodeAbiParameters(parseAbiParameters('bytes32, address'), [roleHash, wallet]) as Hex;
+export async function encodeRemoveRole(
+  client: PublicClient,
+  definitionAddress: Address,
+  roleHash: Hex
+): Promise<Hex> {
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeRemoveRole',
+    args: [roleHash]
+  }) as Promise<Hex>;
 }
 
 /**
- * Encodes data for REVOKE_WALLET. Use with RoleConfigActionType.REVOKE_WALLET.
+ * Encodes data for ADD_WALLET by calling the definition contract.
  */
-export function encodeRevokeWallet(roleHash: Hex, wallet: Address): Hex {
-  return encodeAbiParameters(parseAbiParameters('bytes32, address'), [roleHash, wallet]) as Hex;
+export async function encodeAddWallet(
+  client: PublicClient,
+  definitionAddress: Address,
+  roleHash: Hex,
+  wallet: Address
+): Promise<Hex> {
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeAddWallet',
+    args: [roleHash, wallet]
+  }) as Promise<Hex>;
 }
 
 /**
- * Encodes data for ADD_FUNCTION_TO_ROLE. Use with RoleConfigActionType.ADD_FUNCTION_TO_ROLE.
- * Uses flat parameters to match Solidity abi.decode(action.data, (bytes32, EngineBlox.FunctionPermission)).
+ * Encodes data for REVOKE_WALLET by calling the definition contract.
  */
-export function encodeAddFunctionToRole(
+export async function encodeRevokeWallet(
+  client: PublicClient,
+  definitionAddress: Address,
+  roleHash: Hex,
+  wallet: Address
+): Promise<Hex> {
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeRevokeWallet',
+    args: [roleHash, wallet]
+  }) as Promise<Hex>;
+}
+
+/**
+ * Encodes data for ADD_FUNCTION_TO_ROLE by calling the definition contract.
+ */
+export async function encodeAddFunctionToRole(
+  client: PublicClient,
+  definitionAddress: Address,
   roleHash: Hex,
   functionPermission: FunctionPermissionForEncoding
-): Hex {
-  const inner: readonly [Hex, number, readonly Hex[]] = [
+): Promise<Hex> {
+  const tuple = [
     functionPermission.functionSelector,
     functionPermission.grantedActionsBitmap,
     [...functionPermission.handlerForSelectors]
-  ];
-  return encodeAbiParameters(
-    parseAbiParameters('bytes32, (bytes4, uint16, bytes4[])'),
-    [roleHash, inner]
-  ) as Hex;
+  ] as const;
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeAddFunctionToRole',
+    args: [roleHash, tuple]
+  }) as Promise<Hex>;
 }
 
 /**
- * Encodes data for REMOVE_FUNCTION_FROM_ROLE. Use with RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE.
+ * Encodes data for REMOVE_FUNCTION_FROM_ROLE by calling the definition contract.
  */
-export function encodeRemoveFunctionFromRole(roleHash: Hex, functionSelector: Hex): Hex {
-  return encodeAbiParameters(parseAbiParameters('bytes32, bytes4'), [roleHash, functionSelector]) as Hex;
+export async function encodeRemoveFunctionFromRole(
+  client: PublicClient,
+  definitionAddress: Address,
+  roleHash: Hex,
+  functionSelector: Hex
+): Promise<Hex> {
+  return client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'encodeRemoveFunctionFromRole',
+    args: [roleHash, functionSelector]
+  }) as Promise<Hex>;
 }
