@@ -754,6 +754,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     retries: number = 3,
     delayMs: number = 1000
   ): Promise<Address[]> {
+    if (retries <= 0) {
+      throw new Error('getFunctionWhitelistTargetsAsOwner: retries must be positive');
+    }
     const ownerWallet = this.getRoleWallet('owner');
     const ownerWalletName =
       Object.keys(this.wallets).find(

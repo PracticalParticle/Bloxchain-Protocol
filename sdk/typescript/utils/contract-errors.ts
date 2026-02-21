@@ -995,6 +995,7 @@ export function extractErrorInfo(revertData: string): {
 
 export default {
   ERROR_SIGNATURES,
+  ERROR_DECODE_TYPES,
   COMMON_ERROR_PATTERNS,
   decodeRevertReason,
   getUserFriendlyErrorMessage,

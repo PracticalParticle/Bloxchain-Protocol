@@ -67,7 +67,7 @@ A comprehensive reference of all test functions with:
 - **For Test Development**: Identify gaps and required new tests
 - **For Coverage Analysis**: Map tests to attack vectors
 
-[Protocol-vulnerabilities-index](https://github.com/community/protocol-vulnerabilities-index) derived vectors are now in the Codex: see [§18 Protocol-Vulnerabilities-Index Derived Vectors](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors).
+Protocol-vulnerabilities-index derived vectors are documented in the Codex: see [§18 Protocol-Vulnerabilities-Index Derived Vectors](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors).
 
 ### 🚀 [Test Execution Guide](./TEST_EXECUTION_GUIDE.md)
 **Purpose**: Complete guide for running the test suite
@@ -116,6 +116,8 @@ A practical guide for executing tests with:
 - [ComprehensiveInitializationFuzz](./TEST_DOCUMENTATION.md) - 9 tests
 - [ComprehensiveHookSystemFuzz](./TEST_DOCUMENTATION.md) - 2 tests
 - [ComprehensiveEventForwardingFuzz](./TEST_DOCUMENTATION.md) - 2 tests
+- [ComprehensiveGasExhaustionFuzz](./TEST_DOCUMENTATION.md) - 17 tests
+- [ComprehensiveSecurityEdgeCasesFuzz](./TEST_DOCUMENTATION.md) - 10 tests
 - [ComprehensiveWhitelistSchemaFuzz](./TEST_DOCUMENTATION.md) - 8 tests
 - [ComprehensiveEIP712AndViewFuzz](./TEST_DOCUMENTATION.md) - 4 tests
 - [ComprehensiveDefinitionSecurityFuzz](./TEST_DOCUMENTATION.md) - 20 tests

@@ -38,7 +38,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 ## Test Coverage by Attack Vector Category
 
 ### Access Control & Authorization (28 vectors)
-- ✅ **100% coverage** - 13/13 tests passing
+- ✅ **100% coverage** - 14/14 tests passing
 - ✅ Protected role modification (all paths)
 - ✅ Batch operation atomicity
 - ✅ Permission escalation prevention
@@ -46,7 +46,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Role management security
 
 ### Meta-Transaction Security (26 vectors)
-- ✅ **100% coverage** - 11/11 tests passing
+- ✅ **100% coverage** - 14/14 tests passing
 - ✅ Cross-chain replay prevention
 - ✅ Nonce management (all scenarios)
 - ✅ Signature security (malleability, manipulation)
@@ -54,7 +54,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Gas price limits
 
 ### State Machine & Transaction Lifecycle (37 vectors)
-- ✅ **100% coverage** - 11/11 tests passing
+- ✅ **100% coverage** - 23/23 tests passing
 - ✅ Reentrancy prevention (all types)
 - ✅ Status manipulation prevention
 - ✅ Time-lock security
@@ -62,7 +62,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Concurrent transaction handling
 
 ### Payment & Economic Security (21 vectors)
-- ✅ **100% coverage** - 6/6 tests passing
+- ✅ **100% coverage** - 7/7 tests passing
 - ✅ Payment manipulation prevention
 - ✅ Balance draining prevention
 - ✅ Access control verification
@@ -81,7 +81,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Combined exploit prevention
 
 ### Initialization & Upgrade (3 vectors)
-- ✅ **100% coverage** - 8/8 tests passing
+- ✅ **100% coverage** - 9/9 tests passing
 - ✅ Multiple initialization prevention
 - ✅ Uninitialized state exploitation prevention
 - ✅ Initialization parameter manipulation prevention
@@ -98,7 +98,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Gas exhaustion handling
 
 ### Target Whitelist & Function Schema (6 vectors)
-- ✅ **100% coverage** - 6/6 tests passing
+- ✅ **100% coverage** - 8/8 tests passing
 - ✅ Empty whitelist denial
 - ✅ Whitelist removal prevention
 - ✅ Handler selector validation
@@ -145,24 +145,24 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 
 | Category | Vectors | Tests | Coverage |
 |----------|---------|-------|----------|
-| Access Control | 28 | 13 | 100% |
-| Meta-Transactions | 26 | 11 | 100% |
-| State Machine | 37 | 11 | 100% |
-| Payment Security | 21 | 6 | 100% |
+| Access Control | 28 | 14 | 100% |
+| Meta-Transactions | 26 | 14 | 100% |
+| State Machine | 37 | 23 | 100% |
+| Payment Security | 21 | 7 | 100% |
 | Input Validation | 30 | 13 | 100% |
 | Composite Attacks | 23 | 5 | 100% |
-| Initialization | 3 | 8 | 100% |
+| Initialization | 3 | 9 | 100% |
 | Hook System | 4 | 2 | 100% |
 | Event Forwarding | 2 | 2 | 100% |
-| Whitelist/Schema | 6 | 6 | 100% |
+| Whitelist/Schema | 6 | 8 | 100% |
 | Time-Based | 3 | 1* | 100%* |
 | Role Management | 3 | 3* | 100%* |
 | Security Edge Cases | 10 | 10 | 100% |
 | Gas Exhaustion | 17 | 17 | 100% |
-| Protocol-Vulnerabilities-Index (§18) | 21 | 19 covered, 4 N/A | 100%* |
+| Protocol-Vulnerabilities-Index (§18) | 21 | 17 covered, 4 N/A | 100%* |
 | **TOTAL** | **207+** | **309 tests (37 suites)** | **100%** |
 
-*Covered in other test files. §18: 19 vectors covered by comprehensive suite; 4 N/A (no delegatecall/approve-before-call/proxy pattern).
+*Covered in other test files. §18: 17 vectors covered by comprehensive suite; 4 N/A (no delegatecall/approve-before-call/proxy pattern).
 
 ---
 
@@ -172,7 +172,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ **37 test suites**, **309 tests** (all passing; includes 14 comprehensive fuzz files with 148 tests)
 - ✅ **All critical attack vectors** covered
 - ✅ **All high-priority attack vectors** covered
-- ✅ **Protocol-vulnerabilities-index-derived vectors**: 19 covered/partial, 4 N/A — see [Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)
+- ✅ **Protocol-vulnerabilities-index-derived vectors**: 17 covered/partial, 4 N/A — see [Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)
 - ✅ **Gas exhaustion** and **system limit enforcement** verified
 - ✅ **Direct mapping** to [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
 
@@ -316,10 +316,10 @@ A comprehensive fuzz test suite has been successfully created covering **100% of
 - ✅ 309 total tests across 37 suites (comprehensive + fuzz + invariant + unit)
 - ✅ 100% attack vector coverage (Codex + protocol-vulnerabilities-index §18)
 - ✅ Direct mapping to [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
-- ✅ Protocol-vulnerabilities-index: 19 covered/partial, 4 N/A (see Codex §18)
+- ✅ Protocol-vulnerabilities-index: 17 covered/partial, 4 N/A (see Codex §18)
 
 **Status**: ✅ **COMPLETE** - Ready for Audit  
-**Coverage**: 100% of 207+ codex vectors + 21 protocol-vulnerabilities-index vectors (19 covered, 4 N/A)  
+**Coverage**: 100% of 207+ codex vectors + 21 protocol-vulnerabilities-index vectors (17 covered, 4 N/A)  
 **Test Count**: 309 tests in 37 suites (148 in comprehensive fuzz files)  
 **System Limits**: MAX_ROLES=1000, MAX_BATCH_SIZE=200, MAX_FUNCTIONS=2000, MAX_HOOKS_PER_SELECTOR=100  
 **Run**: `forge test --summary` from repo root to verify
