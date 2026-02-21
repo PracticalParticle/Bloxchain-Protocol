@@ -908,6 +908,7 @@ export const ERROR_SIGNATURES: Record<string, {
 /**
  * ABI parameter types for decoding custom error args (selector -> viem parseAbiParameters string).
  * Keys match ERROR_SIGNATURES; values are canonical ABI type strings for decodeAbiParameters.
+ * viem/abitype parseAbiParameters accepts type-only strings (e.g. 'address, bytes4'); names are optional.
  */
 export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0x8e4c8aa6': 'address',
