@@ -152,7 +152,7 @@ export interface DefinitionNotIDefinitionError extends ContractError {
 
 export interface TargetNotWhitelistedError extends ContractError {
   name: 'TargetNotWhitelisted'
-  params: { target: string; functionSelector: string; roleHash: string }
+  params: { target: string; functionSelector: string }
 }
 
 export interface ResourceNotFoundError extends ContractError {
@@ -413,6 +413,77 @@ export interface CustomErrorError extends ContractError {
   params: { message: string }
 }
 
+/** Errors from SharedValidation.sol not previously in the union */
+export interface NoPermissionForFunctionError extends ContractError {
+  name: 'NoPermissionForFunction'
+  params: { caller: string; functionSelector: string }
+}
+
+export interface NotSupportedError extends ContractError {
+  name: 'NotSupported'
+  params: {}
+}
+
+export interface TransactionStatusMismatchError extends ContractError {
+  name: 'TransactionStatusMismatch'
+  params: { expectedStatus: string; currentStatus: string }
+}
+
+export interface PendingSecureRequestError extends ContractError {
+  name: 'PendingSecureRequest'
+  params: {}
+}
+
+export interface ResourceAlreadyExistsError extends ContractError {
+  name: 'ResourceAlreadyExists'
+  params: { resourceId: string }
+}
+
+export interface InvalidOperationError extends ContractError {
+  name: 'InvalidOperation'
+  params: { item: string }
+}
+
+export interface InternalFunctionNotAccessibleError extends ContractError {
+  name: 'InternalFunctionNotAccessible'
+  params: { functionSelector: string }
+}
+
+export interface FunctionSelectorMismatchError extends ContractError {
+  name: 'FunctionSelectorMismatch'
+  params: { providedSelector: string; derivedSelector: string }
+}
+
+export interface OperationFailedError extends ContractError {
+  name: 'OperationFailed'
+  params: {}
+}
+
+export interface BatchSizeExceededError extends ContractError {
+  name: 'BatchSizeExceeded'
+  params: { currentSize: string; maxSize: string }
+}
+
+export interface MaxRolesExceededError extends ContractError {
+  name: 'MaxRolesExceeded'
+  params: { currentCount: string; maxRoles: string }
+}
+
+export interface MaxHooksExceededError extends ContractError {
+  name: 'MaxHooksExceeded'
+  params: { currentCount: string; maxHooks: string }
+}
+
+export interface MaxFunctionsExceededError extends ContractError {
+  name: 'MaxFunctionsExceeded'
+  params: { currentCount: string; maxFunctions: string }
+}
+
+export interface RangeSizeExceededError extends ContractError {
+  name: 'RangeSizeExceeded'
+  params: { rangeSize: string; maxRangeSize: string }
+}
+
 /**
  * Union type for all contract errors
  */
@@ -489,6 +560,20 @@ export type GuardianContractError =
   | PatternMatchError
   | ReadableTextError
   | CustomErrorError
+  | NoPermissionForFunctionError
+  | NotSupportedError
+  | TransactionStatusMismatchError
+  | PendingSecureRequestError
+  | ResourceAlreadyExistsError
+  | InvalidOperationError
+  | InternalFunctionNotAccessibleError
+  | FunctionSelectorMismatchError
+  | OperationFailedError
+  | BatchSizeExceededError
+  | MaxRolesExceededError
+  | MaxHooksExceededError
+  | MaxFunctionsExceededError
+  | RangeSizeExceededError
 
 /**
  * Error signature mapping for quick lookup.
@@ -677,8 +762,8 @@ export const ERROR_SIGNATURES: Record<string, {
   // Resource and item (SharedValidation.sol)
   '0x474d3baf': {
     name: 'ResourceNotFound',
-    params: ['resourceId'],
-    userMessage: (params) => `ResourceNotFound: Resource ${params.resourceId} not found`
+    params: ['resource'],
+    userMessage: (params) => `ResourceNotFound: Resource ${params.resource} not found`
   },
   '0x430fab94': {
     name: 'ResourceAlreadyExists',
@@ -923,10 +1008,11 @@ export const COMMON_ERROR_PATTERNS = [
  */
 export function decodeRevertReason(data: string): GuardianContractError | null {
   try {
-    // Ensure data is hex string without 0x prefix
+    // Ensure data is hex string without 0x prefix (normalize to lowercase for lookup)
     if (data.startsWith('0x')) {
       data = data.slice(2)
     }
+    data = data.toLowerCase()
 
     // Try known custom error by 4-byte selector (before Error(string))
     if (data.length >= 8) {
@@ -960,7 +1046,7 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
       }
     }
 
-    // Check if it starts with Error(string) selector (0x08c379a0)
+    // Check if it starts with Error(string) selector (0x08c379a0); data already lowercased
     if (data.length >= 8 && data.startsWith('08c379a0')) {
       const stringData = data.slice(8) // Remove selector
       if (stringData.length < 64) return null
@@ -1065,8 +1151,9 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
  * @returns User-friendly error message
  */
 export function getUserFriendlyErrorMessage(error: GuardianContractError): string {
-  // Check if it's a known error signature
-  const errorSignature = ERROR_SIGNATURES[error.signature]
+  // Check if it's a known error signature (normalize selector to lowercase for lookup)
+  const selectorKey = (error.signature as string).toLowerCase()
+  const errorSignature = ERROR_SIGNATURES[selectorKey]
   if (errorSignature) {
     return errorSignature.userMessage(error.params)
   }
@@ -1092,7 +1179,7 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
     case 'InvalidPayment':
       return 'InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)'
     case 'TargetNotWhitelisted':
-      return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
+      return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector}`
     case 'ResourceNotFound':
       return `ResourceNotFound: Resource ${error.params.resource} not found`
     case 'HandlerForSelectorMismatch':
@@ -1151,7 +1238,7 @@ export function extractErrorInfo(revertData: string): {
   }
 
   const userMessage = getUserFriendlyErrorMessage(error)
-  const isKnownError = ERROR_SIGNATURES[error.signature] !== undefined
+  const isKnownError = ERROR_SIGNATURES[(error.signature as string).toLowerCase()] !== undefined
 
   return {
     error,
