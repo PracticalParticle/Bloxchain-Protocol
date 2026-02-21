@@ -43,8 +43,8 @@ if (Number.isNaN(chainId) || chainId <= 0) {
 }
 const deployNetworkName = process.env.DEPLOY_NETWORK_NAME?.trim();
 
-// Compiler settings aligned with foundry.toml: solc 0.8.33, optimizer 200, via_ir, evm osaka
-const SOLIDITY_VERSION = "0.8.33";
+// Compiler settings aligned with foundry.toml: solc 0.8.34, optimizer 200, via_ir, evm osaka
+const SOLIDITY_VERSION = "0.8.34";
 const OPTIMIZER_RUNS = 200;
 const EVM_VERSION = "osaka";
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -452,7 +452,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             assertTrue(true, "Zero time-lock period validation exists");
         } else {
             // Very large time-lock should be handled
-            // Solidity 0.8.33 prevents overflow
+            // Solidity 0.8.34 prevents overflow
             timeLockPeriod = bound(timeLockPeriod, 1, type(uint256).max / 2);
             
             // Test with various time-lock periods

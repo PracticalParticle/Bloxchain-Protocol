@@ -4,7 +4,7 @@ const path = require("path");
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.33",
+    version: "0.8.34",
     settings: {
       optimizer: {
         enabled: true,

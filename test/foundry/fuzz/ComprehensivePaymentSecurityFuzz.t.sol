@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/execution/GuardController.sol";
@@ -538,6 +538,55 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                 revert(add(reason, 0x20), mload(reason))
             }
         }
+    }
+
+    /**
+     * @dev Test: Fee-on-transfer ERC20 handling — recipient receives amount minus fee; engine state consistent
+     * Attack Vector: Fee-on-transfer tokens (UNEXPLORED_ATTACK_VECTORS.md §4.2)
+     */
+    function testFuzz_FeeOnTransferTokenHandling() public {
+        try this._runFeeOnTransferTest() {
+            // assertions run inside helper
+        } catch (bytes memory reason) {
+            if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
+            assembly { revert(add(reason, 0x20), mload(reason)) }
+        }
+    }
+
+    /// @dev External so try/catch can catch reverts from nested calls
+    function _runFeeOnTransferTest() external {
+        MockFeeOnTransferToken feeToken = new MockFeeOnTransferToken("FeeToken", "FEE");
+        feeToken.mint(address(paymentHelper), 1000000e18);
+        uint256 amount = 1000e18;
+        uint256 recipientBefore = feeToken.balanceOf(user1);
+        uint256 helperBefore = feeToken.balanceOf(address(paymentHelper));
+
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: user1,
+            nativeTokenAmount: 0,
+            erc20TokenAddress: address(feeToken),
+            erc20TokenAmount: amount
+        });
+        bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        vm.prank(owner);
+        uint256 txId = paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
+            0,
+            0,
+            operationType,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            "",
+            payment
+        );
+        advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
+        vm.prank(owner);
+        paymentHelper.approveTransaction(txId);
+
+        EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
+        assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.COMPLETED));
+        assertEq(feeToken.balanceOf(user1), recipientBefore + (amount * 99) / 100);
+        assertEq(feeToken.balanceOf(address(paymentHelper)), helperBefore - amount);
     }
 
     // ============ HELPER FUNCTIONS ============

@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@bloxchain/contracts.svg)](https://www.npmjs.com/package/@bloxchain/contracts)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.33-blue.svg)](https://soliditylang.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.34-blue.svg)](https://soliditylang.org/)
 
 Bloxchain Protocol smart contracts – state abstraction and core components for building on the Bloxchain Protocol.
 
@@ -12,7 +12,7 @@ Bloxchain Protocol smart contracts – state abstraction and core components for
 ## Requirements
 
 - **Node.js**: >= 18.0.0 (for tooling; Solidity has no runtime dependency)
-- **Solidity**: 0.8.x (0.8.33 recommended)
+- **Solidity**: 0.8.x (0.8.34 recommended)
 - **Compilers**: Foundry, Hardhat, or Truffle
 
 ## Installation

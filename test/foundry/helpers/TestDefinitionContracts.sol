@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/core/lib/interfaces/IDefinition.sol";

@@ -3,7 +3,6 @@ import SecureOwnableABIJson from '../../abi/SecureOwnable.abi.json';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
 import { ISecureOwnable } from '../../interfaces/core.security.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
-import { TxAction } from '../../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
 
@@ -82,22 +81,6 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   async supportsSecureOwnableInterface(): Promise<boolean> {
     return this.supportsInterface(INTERFACE_IDS.ISecureOwnable);
   }
-
-  // Note: The following methods are available through BaseStateMachine inheritance:
-  // - owner()
-  // - getBroadcasters()
-  // - getRecovery()
-  // - getTimeLockPeriodSec()
-  // - getSupportedOperationTypes()
-  // - getSupportedRoles()
-  // - getSupportedFunctions()
-  // - hasRole()
-  // - isActionSupportedByFunction()
-  // - getSignerNonce()
-  // - getActiveRolePermissions()
-  // - initialized()
-  // - supportsInterface(interfaceId)
-  // - functionSchemaExists()
 }
 
 export default SecureOwnable;
