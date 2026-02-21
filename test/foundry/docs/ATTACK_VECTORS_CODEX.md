@@ -1299,7 +1299,7 @@ updateTimeLockPeriod(type(uint256).max); // Overflow risk
 ```
 
 **Current Protection**:
-- ✅ Solidity 0.8.33 overflow protection
+- ✅ Solidity 0.8.34 overflow protection
 - ✅ Reasonable bounds in tests
 
 **Verification**:

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
