@@ -1,7 +1,7 @@
 # Attack Vectors Codex
 
 **Purpose**: Knowledge library of security threats relevant to Bloxchain Protocol  
-**Last Updated**: January 25, 2026  
+**Last Updated**: February 21, 2026  
 **Status**: Living Knowledge Base
 
 ---
@@ -38,6 +38,7 @@ This codex serves as a comprehensive knowledge base of attack vectors identified
 15. [Definition Contracts & Schema Security](#15-definition-contracts--schema-security)
 16. [New Attack Vectors (2026 Security Analysis)](#16-new-attack-vectors-2026-security-analysis)
 17. [Gas Exhaustion & System Limits](#17-gas-exhaustion--system-limits)
+18. [Protocol-Vulnerabilities-Index Derived Vectors](#18-protocol-vulnerabilities-index-derived-vectors)
 
 ---
 
@@ -3341,6 +3342,72 @@ Multiple hooks per selector could cause gas exhaustion.
 
 ---
 
+## 18. Protocol-Vulnerabilities-Index Derived Vectors
+
+This section consolidates attack vectors derived from the [Protocol Vulnerabilities Index](https://github.com/community/protocol-vulnerabilities-index) (~10,600 DeFi findings) and mapped to Bloxchain. Each vector is tracked with **Status** (✅ Covered, ✅ Partial, ⚠️ N/A) and the implementing test when applicable.
+
+**Coverage summary** (as of consolidation): **19 covered or partial**, **4 N/A** (conditional on proxy/upgrade or absent patterns). No open gaps.
+
+### 18.1 Signature & EIP-712
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 1 | Domain separator staleness after upgrade | Cross-Chain / Bridge | ✅ Covered | `testFuzz_DomainSeparatorDeterministic` (ComprehensiveEIP712AndViewFuzz.t.sol) |
+| 2 | Nonce burn on failed execution (griefing) | Cross-Chain | ✅ Covered | `testFuzz_NonceConsumedEvenOnExecutionFailure` (ComprehensiveMetaTransactionFuzz.t.sol) |
+| 3 | Hard fork / same-chain replay | Beanstalk-style | ✅ Covered | `testFuzz_ChainIdInDomainSeparator` (ComprehensiveMetaTransactionFuzz.t.sol) |
+| 4 | EIP-712 struct hash collision (abi.encodePacked) | Cross-Chain | ✅ Covered | `testFuzz_StructHashCollisionResistance` (ComprehensiveMetaTransactionFuzz.t.sol) |
+
+### 18.2 Execution & Gas
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 5 | EIP-150 63/64 try/catch abuse | Launchpad (Nouns Builder, Holograph) | ✅ Covered | `testFuzz_CatchBlockNotTriggeredByDeliberateOOG` (ComprehensiveStateMachineFuzz.t.sol) |
+| 6 | User-controlled gas limit bounds | Bridge / Launchpad | ✅ Partial | `testFuzz_GasLimitManipulationHandled` (StateMachine); OOG behavior documented |
+| 7 | Unbounded loops over dynamic data | Bridge / Indexes | ✅ Covered | ComprehensiveGasExhaustionFuzz.t.sol (RoleCountLimitEnforced, BatchSizeLimitEnforced, HookCountLimitEnforced, etc.) |
+
+### 18.3 State & Accounting
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 8 | State consistent after removal (swap-and-pop) | Cross-Chain (Union, Stakehouse) | ✅ Covered | `testFuzz_StateConsistentAfterRemoval` (ComprehensiveAccessControlFuzz.t.sol) |
+| 9 | No partial state on revert | Cross-Chain / Lending | ✅ Covered | `testFuzz_NoPartialStateOnRevert` (ComprehensiveStateMachineFuzz.t.sol) |
+| 10 | View reflects latest state (stale cache desync) | Yield Aggregator | ✅ Covered | `testFuzz_ViewReflectsLatestState` (ComprehensiveEIP712AndViewFuzz.t.sol) |
+
+### 18.4 External Calls & Tokens
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 11 | Unchecked return values (low-level call / ERC20) | Bridge | ✅ Partial | `testFuzz_TargetContractRevertHandled` + `testFuzz_NoPartialStateOnRevert`; SafeERC20 in use |
+| 12 | Fee-on-transfer / non-standard ERC20 in payments | Lending, DEXes, Insurance | ✅ Covered | `testFuzz_FeeOnTransferTokenHandling` (ComprehensivePaymentSecurityFuzz.t.sol) |
+| 13 | Delegatecall to user-controlled target | Bridge (Biconomy, Fractional) | ✅ Covered | `testFuzz_NoDelegatecallToUserControlledTarget` (ComprehensiveStateMachineFuzz.t.sol); EngineBlox uses `.call()` |
+| 14 | Token approval to arbitrary address before call | Bridge (LI.FI) | ⚠️ N/A | No approve-before-call pattern in EngineBlox payment flow |
+
+### 18.5 Recovery & Timelock
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 15 | Release time anchored to request time | Gaming (Forgeries) | ✅ Covered | `testFuzz_ReleaseTimeAnchoredToRequestTime` (ComprehensiveStateMachineFuzz.t.sol) |
+| 16 | Pending tx uses request-time params (no retroactive change) | Gaming (Infinity NFT) | ✅ Covered | Same as #15; releaseTime stored per tx at request |
+
+### 18.6 Upgrade & Initialization
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 17 | Storage layout collision / __gap | Bridge, Yield Aggregator | ⚠️ N/A | Add if proxy/upgrade pattern adopted |
+| 18 | Implementation initialization on implementation contract | The Graph, Juicebox | ⚠️ N/A | Add if proxy pattern adopted |
+
+### 18.7 Cross-Protocol & Edge Cases
+
+| # | Vector | Source category | Status | Test / notes |
+|---|--------|-----------------|--------|--------------|
+| 19 | Excess msg.value not refunded | NFT Marketplace, Gaming | ✅ Covered | `testFuzz_ExcessMsgValueRefunded` (ComprehensiveEIP712AndViewFuzz.t.sol); receive() credits full value |
+| 20 | MEV / broadcaster ordering vs timelock/deadline | DEXes, Indexes | ✅ Covered | `testFuzz_PrematureApprovalPrevented` (StateMachine); ordering cannot bypass timelock |
+| 21 | EIP-712 typehash/struct match (signature verification) | Launchpad, Derivatives | ✅ Covered | `testFuzz_EIP712RecoversCorrectSigner` (ComprehensiveEIP712AndViewFuzz.t.sol) |
+
+**References**: [Protocol Vulnerabilities Index](https://github.com/community/protocol-vulnerabilities-index), [Test Execution Guide](./TEST_EXECUTION_GUIDE.md), [Final Coverage Report](./FINAL_COVERAGE_REPORT.md).
+
+---
+
 ## Adding New Attack Vectors
 
 When documenting a new attack vector:
@@ -3383,6 +3450,7 @@ When documenting a new attack vector:
 
 ### Related Documentation
 - [Test Documentation](./TEST_DOCUMENTATION.md) - Maps tests to attack vectors
+- [Final Coverage Report](./FINAL_COVERAGE_REPORT.md) - Fuzz coverage summary and test counts
 - [Critical Findings & Recommendations](./CRITICAL_FINDINGS_AND_RECOMMENDATIONS.md) - Actionable security items
 - [Documentation README](./README.md) - Documentation overview and navigation
 

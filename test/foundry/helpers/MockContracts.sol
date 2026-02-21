@@ -18,6 +18,36 @@ contract MockERC20 is ERC20 {
 }
 
 /**
+ * @title MockFeeOnTransferToken
+ * @dev ERC20 that deducts a fee (1%) on transfer; recipient receives 99% of amount.
+ *      Used to test fee-on-transfer token handling (UNEXPLORED_ATTACK_VECTORS.md §4.2).
+ */
+contract MockFeeOnTransferToken is ERC20 {
+    uint256 public constant FEE_BPS = 100; // 1%
+    address public feeRecipient;
+
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+        _mint(msg.sender, 1000000 * 10**18);
+        feeRecipient = msg.sender;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
+    function _update(address from, address to, uint256 value) internal override {
+        if (from == address(0) || to == address(0)) {
+            super._update(from, to, value);
+            return;
+        }
+        uint256 fee = (value * FEE_BPS) / 10000;
+        uint256 toAmount = value - fee;
+        super._update(from, feeRecipient, fee);
+        super._update(from, to, toAmount);
+    }
+}
+
+/**
  * @title MockTarget
  * @dev Mock contract for testing execution functionality
  */
@@ -44,6 +74,19 @@ contract MockTarget {
 
     function revertOnCall() external pure {
         revert("MockTarget: Revert requested");
+    }
+}
+
+/**
+ * @title MockStorageWriter
+ * @dev Target that writes to its own storage in execute(). Used to verify engine uses call() not delegatecall.
+ *      If engine used delegatecall, engine's storage could be overwritten (UNEXPLORED_ATTACK_VECTORS.md §4.1).
+ */
+contract MockStorageWriter {
+    bytes32 public slot0;
+
+    function execute() external payable {
+        slot0 = 0x0000000000000000000000000000000000000000000000000000000000000bad;
     }
 }
 

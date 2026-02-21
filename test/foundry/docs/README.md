@@ -1,7 +1,7 @@
 # Bloxchain Protocol Security Documentation
 
 **Purpose**: Comprehensive knowledge base of security threats and test coverage  
-**Last Updated**: January 27, 2026  
+**Last Updated**: February 21, 2026  
 **Status**: Production Ready
 
 ---
@@ -14,7 +14,7 @@ This documentation serves as both a **security knowledge base** and **test refer
 
 ## Documentation Structure
 
-### 📚 [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
+### ðŸ“š [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
 **Purpose**: Knowledge library of security threats relevant to this project
 
 A comprehensive catalog of attack vectors organized by category, including:
@@ -44,7 +44,7 @@ A comprehensive catalog of attack vectors organized by category, including:
 
 ---
 
-### 🧪 [Test Documentation](./TEST_DOCUMENTATION.md)
+### ðŸ§ª [Test Documentation](./TEST_DOCUMENTATION.md)
 **Purpose**: Complete documentation of all existing tests
 
 A comprehensive reference of all test functions with:
@@ -55,7 +55,7 @@ A comprehensive reference of all test functions with:
 - **Test status** and coverage metrics
 
 **Test Categories**:
-1. Comprehensive Fuzz Tests (70+ tests)
+1. Comprehensive Fuzz Tests (148 tests in 14 files; 309 total tests in 37 suites)
 2. Unit Tests
 3. Integration Tests
 4. Security Tests
@@ -66,6 +66,8 @@ A comprehensive reference of all test functions with:
 - **For Test Maintenance**: Know which tests cover which attack vectors
 - **For Test Development**: Identify gaps and required new tests
 - **For Coverage Analysis**: Map tests to attack vectors
+
+[Protocol-vulnerabilities-index](https://github.com/kadenzipfel/protocol-vulnerabilities-index) derived vectors are now in the Codex: see [§18 Protocol-Vulnerabilities-Index Derived Vectors](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors).
 
 ### 🚀 [Test Execution Guide](./TEST_EXECUTION_GUIDE.md)
 **Purpose**: Complete guide for running the test suite
@@ -105,16 +107,18 @@ A practical guide for executing tests with:
 - [Event Forwarding](./ATTACK_VECTORS_CODEX.md#14-event-forwarding--monitoring) - Multiple vectors
 
 ### By Test File
-- [ComprehensiveAccessControlFuzz](./TEST_DOCUMENTATION.md#comprehensiveaccesscontrolfuzztsol) - 13 tests
-- [ComprehensiveStateMachineFuzz](./TEST_DOCUMENTATION.md#comprehensivestatemachinefuzztsol) - 11 tests
-- [ComprehensiveMetaTransactionFuzz](./TEST_DOCUMENTATION.md#comprehensivemetatransactionfuzztsol) - 11 tests
-- [ComprehensivePaymentSecurityFuzz](./TEST_DOCUMENTATION.md#comprehensivepaymentsecurityfuzztsol) - 6 tests
+- [ComprehensiveAccessControlFuzz](./TEST_DOCUMENTATION.md#comprehensiveaccesscontrolfuzztsol) - 14 tests
+- [ComprehensiveStateMachineFuzz](./TEST_DOCUMENTATION.md#comprehensivestatemachinefuzztsol) - 23 tests
+- [ComprehensiveMetaTransactionFuzz](./TEST_DOCUMENTATION.md#comprehensivemetatransactionfuzztsol) - 14 tests
+- [ComprehensivePaymentSecurityFuzz](./TEST_DOCUMENTATION.md#comprehensivepaymentsecurityfuzztsol) - 7 tests
 - [ComprehensiveInputValidationFuzz](./TEST_DOCUMENTATION.md#comprehensiveinputvalidationfuzztsol) - 13 tests
 - [ComprehensiveCompositeFuzz](./TEST_DOCUMENTATION.md#comprehensivecompositefuzztsol) - 5 tests
-- [ComprehensiveInitializationFuzz](./TEST_DOCUMENTATION.md) - 8 tests
+- [ComprehensiveInitializationFuzz](./TEST_DOCUMENTATION.md) - 9 tests
 - [ComprehensiveHookSystemFuzz](./TEST_DOCUMENTATION.md) - 2 tests
 - [ComprehensiveEventForwardingFuzz](./TEST_DOCUMENTATION.md) - 2 tests
-- [ComprehensiveWhitelistSchemaFuzz](./TEST_DOCUMENTATION.md) - 6 tests
+- [ComprehensiveWhitelistSchemaFuzz](./TEST_DOCUMENTATION.md) - 8 tests
+- [ComprehensiveEIP712AndViewFuzz](./TEST_DOCUMENTATION.md) - 4 tests
+- [ComprehensiveDefinitionSecurityFuzz](./TEST_DOCUMENTATION.md) - 20 tests
 
 ### By Severity
 - [Critical Attack Vectors](./ATTACK_VECTORS_CODEX.md) - 12 critical vectors
@@ -197,7 +201,7 @@ When contributing to this documentation:
 
 This documentation folder contains the essential security and testing documentation:
 
-- **[Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)** - Comprehensive catalog of all security threats and mitigations
+- **[Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)** - Comprehensive catalog of all security threats and mitigations (includes Â§18 Protocol-Vulnerabilities-Index derived vectors)
 - **[Test Documentation](./TEST_DOCUMENTATION.md)** - Complete reference of all test functions
 - **[Test Execution Guide](./TEST_EXECUTION_GUIDE.md)** - Guide for running the test suite
 - **[Final Coverage Report](./FINAL_COVERAGE_REPORT.md)** - Test coverage summary and statistics
