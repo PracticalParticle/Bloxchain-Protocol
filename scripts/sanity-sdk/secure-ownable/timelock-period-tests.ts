@@ -180,7 +180,7 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const result = await secureOwnableBroadcaster.updateTimeLockRequestAndApprove(
         fullMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
 
       this.assertTest(!!result.hash, 'Timelock update transaction created');
@@ -203,6 +203,9 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       console.log(`    📊 New timelock period: ${updatedTimelock.toString()} seconds`);
     } catch (error: any) {
       console.log(`    ❌ Timelock change to ${description} failed: ${error.message}`);
+      if (error.details) console.log(`    📋 Details: ${error.details}`);
+      if (error.cause?.message) console.log(`    📋 Cause: ${error.cause.message}`);
+      if (error.cause?.data) console.log(`    📋 Revert data: ${error.cause.data}`);
       throw error;
     }
   }

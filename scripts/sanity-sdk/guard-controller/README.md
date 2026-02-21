@@ -69,11 +69,12 @@ TEST_WALLET_3_PRIVATE_KEY=0x...
 TEST_WALLET_4_PRIVATE_KEY=0x...
 TEST_WALLET_5_PRIVATE_KEY=0x...
 
-# RPC Configuration
-RPC_URL=http://localhost:8545
-# or
-REMOTE_HOST=your-host
-REMOTE_PORT=8545
+# RPC Configuration (required; no localhost fallback)
+# Option 1: full URL
+RPC_URL=https://your-remote-host:443
+# Option 2: remote host (defaults: REMOTE_PROTOCOL=https, REMOTE_PORT=443)
+REMOTE_HOST=your-remote-host
+REMOTE_PORT=443
 REMOTE_PROTOCOL=https
 ```
 

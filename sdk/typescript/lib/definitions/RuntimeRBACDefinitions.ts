@@ -5,11 +5,25 @@
  * @see contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol
  */
 
-import { type Address, type Hex, type PublicClient } from 'viem';
+import { type Abi, type Address, type Hex, type PublicClient, encodeAbiParameters, parseAbiParameters, bytesToHex } from 'viem';
 import RuntimeRBACDefinitionsAbi from '../../abi/RuntimeRBACDefinitions.abi.json';
 import type { RoleConfigAction } from '../../types/core.access.index';
 
-const ABI = RuntimeRBACDefinitionsAbi as readonly unknown[];
+const ABI = RuntimeRBACDefinitionsAbi as Abi;
+
+/**
+ * Selector for roleConfigBatchExecutionParams(IRuntimeRBAC.RoleConfigAction[]).
+ * Solidity uses the full type name in the signature, so the selector is 0xd20ac677, not (uint8,bytes)[].
+ * Verify with: forge inspect RuntimeRBACDefinitions methodIdentifiers
+ */
+const ROLE_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR = '0xd20ac677';
+
+/** Normalize bytes to ABI Hex (0x-prefixed); empty -> '0x'. */
+function normalizeData(data: Hex | Uint8Array | undefined | null): Hex {
+  if (data === undefined || data === null) return '0x';
+  if (typeof data === 'string') return data.startsWith('0x') ? (data as Hex) : (`0x${data}` as Hex);
+  return bytesToHex(data as Uint8Array) as Hex;
+}
 
 /**
  * FunctionPermission shape for encodeAddFunctionToRole.
@@ -23,7 +37,8 @@ export interface FunctionPermissionForEncoding {
 
 /**
  * Builds execution params for executeRoleConfigBatch((uint8,bytes)[]) by calling the definition contract.
- * Equivalent to RuntimeRBACDefinitions.roleConfigBatchExecutionParams in Solidity.
+ * Equivalent to RuntimeRBACDefinitions.roleConfigBatchExecutionParams(RoleConfigAction[]) in Solidity.
+ * Requires the RuntimeRBACDefinitions contract to be deployed at definitionAddress; throws on failure.
  */
 export async function roleConfigBatchExecutionParams(
   client: PublicClient,
@@ -32,14 +47,24 @@ export async function roleConfigBatchExecutionParams(
 ): Promise<Hex> {
   const actionsTuple = actions.map((a) => ({
     actionType: Number(a.actionType),
-    data: a.data
+    data: normalizeData(a.data)
   }));
-  return client.readContract({
-    address: definitionAddress,
-    abi: ABI,
-    functionName: 'roleConfigBatchExecutionParams',
-    args: [actionsTuple]
-  }) as Promise<Hex>;
+
+  const paramsEncoded = encodeAbiParameters(
+    parseAbiParameters('(uint8 actionType, bytes data)[]'),
+    [actionsTuple]
+  );
+  const calldata = (ROLE_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR + paramsEncoded.slice(2)) as Hex;
+
+  const result = await client.call({
+    to: definitionAddress,
+    data: calldata
+  });
+
+  if (!result.data) {
+    throw new Error('No data');
+  }
+  return result.data;
 }
 
 /**

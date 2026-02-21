@@ -18,12 +18,12 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
       }
     ],
-    "name": "CannotModifyProtected",
+    "name": "ContractFunctionMustBeProtected",
     "type": "error"
   },
   {

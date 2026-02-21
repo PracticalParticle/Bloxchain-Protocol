@@ -84,9 +84,9 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     if (!walletClientAccount || walletClientAccount.toLowerCase() !== requestedAccount) {
       writeContractParams.account = options.from;
     }
-    
+
     try {
-      // First, simulate the contract call to get better error messages
+      // First, simulate the contract call to get better error messages (no gas params for eth_call)
       try {
         await this.client.simulateContract({
           ...writeContractParams,
@@ -96,7 +96,14 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
         // Re-throw to get better error handling
         throw simulateError;
       }
-      
+
+      // Add gas override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
+      if (options.gasPrice !== undefined && options.gasPrice !== '') {
+        const gasPriceWei = BigInt(options.gasPrice);
+        writeContractParams.maxFeePerGas = gasPriceWei;
+        writeContractParams.maxPriorityFeePerGas = gasPriceWei;
+      }
+
       const hash = await this.walletClient!.writeContract(writeContractParams);
 
       return {

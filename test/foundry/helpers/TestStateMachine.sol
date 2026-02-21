@@ -47,21 +47,15 @@ contract TestStateMachine is BaseStateMachine {
     /**
      * @dev Public function to load definitions for testing
      * This exposes _loadDefinitions so we can test it with various definition contracts
-     * @param allowProtectedSchemas Whether to allow protected function schemas (default: true for factory settings)
+     * @param enforceProtectedSchemas When true, all function schemas must be protected
      */
     function loadDefinitionsForTesting(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
         EngineBlox.FunctionPermission[] memory functionPermissions,
-        bool allowProtectedSchemas
+        bool enforceProtectedSchemas
     ) external {
-        _loadDefinitions(functionSchemas, roleHashes, functionPermissions, allowProtectedSchemas);
+        _loadDefinitions(functionSchemas, roleHashes, functionPermissions, enforceProtectedSchemas);
     }
     
-    /**
-     * @dev Helper to check if a selector exists in this contract's bytecode
-     */
-    function checkSelectorExists(bytes4 selector) external view returns (bool) {
-        return EngineBlox.selectorExistsInContract(address(this), selector);
-    }
 }

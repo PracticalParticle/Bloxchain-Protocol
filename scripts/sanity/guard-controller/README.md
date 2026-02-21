@@ -39,6 +39,10 @@ Demonstrates operating an **external** ERC20 `mint` through the GuardController 
 
 **Requirements:** AccountBlox deployed, BasicERC20 deployed with minter = AccountBlox, `deployed-addresses.json` (or env) for BasicERC20 and AccountBlox addresses.
 
+### Network and address sync (development remote)
+
+For the development remote network, tests use **only** `deployed-addresses.json` under the key **`development`** (or `NETWORK_NAME` / `GUARDIAN_NETWORK` if set). AccountBlox is read from `deployed-addresses.json["development"].AccountBlox` first so it stays in sync with BasicERC20, which is read from the same key. BasicERC20’s `minter` must equal the AccountBlox address (migrations set this when both are deployed in the same run). If they differ, the suite fails with a clear “out of sync” error. Do not rely on Truffle artifact “highest network id” for AccountBlox when running against the development remote.
+
 ## Usage
 
 ### Run All Tests

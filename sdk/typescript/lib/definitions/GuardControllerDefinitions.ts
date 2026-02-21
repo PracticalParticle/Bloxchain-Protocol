@@ -6,69 +6,56 @@
  * @see scripts/sanity/guard-controller/base-test.cjs createGuardConfigBatchMetaTx (actionsArray = [actionType, data] per element)
  */
 
-import { type Address, type Hex, type PublicClient, encodeFunctionData, encodeAbiParameters, parseAbiParameters, bytesToHex } from 'viem';
+import { type Abi, type Address, type Hex, type PublicClient, encodeAbiParameters, parseAbiParameters, bytesToHex } from 'viem';
 import GuardControllerDefinitionsAbi from '../../abi/GuardControllerDefinitions.abi.json';
 import type { GuardConfigAction } from '../../types/core.execution.index';
 import type { TxAction } from '../../types/lib.index';
 
-const ABI = GuardControllerDefinitionsAbi as readonly unknown[];
+const ABI = GuardControllerDefinitionsAbi as Abi;
 
-/** Normalize bytes to ABI Hex (0x-prefixed); empty -> '0x'. Matches CJS data shape. */
-function normalizeData(data: Hex | Uint8Array | undefined): Hex {
+/**
+ * Selector for guardConfigBatchExecutionParams(IGuardController.GuardConfigAction[]).
+ * Solidity uses the full type name in the signature, so the selector is 0xf87332aa, not (uint8,bytes)[].
+ * Verify with: forge inspect GuardControllerDefinitions methodIdentifiers
+ */
+const GUARD_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR = '0xf87332aa';
+
+/** Normalize bytes to ABI Hex (0x-prefixed); empty -> '0x'. */
+function normalizeData(data: Hex | Uint8Array | undefined | null): Hex {
   if (data === undefined || data === null) return '0x';
   if (typeof data === 'string') return data.startsWith('0x') ? (data as Hex) : (`0x${data}` as Hex);
-  return (bytesToHex(data as Uint8Array) as Hex) || '0x';
-}
-
-/** Same encoding as web3.eth.abi.encodeParameter('tuple(uint8,bytes)[]', actionsArray) in direct CJS sanity. */
-function encodeGuardConfigBatchLocal(actions: GuardConfigAction[]): Hex {
-  const actionsArray = actions.map((a) => ({
-    actionType: Number(a.actionType),
-    data: normalizeData(a.data)
-  }));
-  return encodeAbiParameters(
-    parseAbiParameters('(uint8 actionType, bytes data)[]'),
-    [actionsArray]
-  ) as Hex;
+  return bytesToHex(data as Uint8Array) as Hex;
 }
 
 /**
  * Builds execution params for executeGuardConfigBatch((uint8,bytes)[]) by calling the definition contract.
- * If the contract call reverts (e.g. library not callable via CALL), falls back to local encoding matching direct CJS sanity.
+ * Requires the GuardControllerDefinitions contract to be deployed at definitionAddress; throws on failure.
  */
 export async function guardConfigBatchExecutionParams(
   client: PublicClient,
   definitionAddress: Address,
   actions: GuardConfigAction[]
 ): Promise<Hex> {
-  const actionsArray: [number, Hex][] = actions.map((a) => [
-    Number(a.actionType),
-    normalizeData(a.data)
-  ]);
+  const actionsTuple = actions.map((a) => ({
+    actionType: Number(a.actionType),
+    data: normalizeData(a.data)
+  }));
 
-  const calldata = encodeFunctionData({
-    abi: ABI,
-    functionName: 'guardConfigBatchExecutionParams',
-    args: [actionsArray]
+  const paramsEncoded = encodeAbiParameters(
+    parseAbiParameters('(uint8 actionType, bytes data)[]'),
+    [actionsTuple]
+  );
+  const calldata = (GUARD_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR + paramsEncoded.slice(2)) as Hex;
+
+  const result = await client.call({
+    to: definitionAddress,
+    data: calldata
   });
 
-  try {
-    const result = await client.call({
-      to: definitionAddress,
-      data: calldata
-    });
-
-    if (!result.data) {
-      throw new Error('No data');
-    }
-    return result.data;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('revert') || msg.includes('Missing or invalid') || msg.includes('VM Exception') || msg.includes('No data')) {
-      return encodeGuardConfigBatchLocal(actions);
-    }
-    throw err;
+  if (!result.data) {
+    throw new Error('No data');
   }
+  return result.data;
 }
 
 /**

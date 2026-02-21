@@ -347,7 +347,7 @@
           {
             "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
-            "type": "uint8"
+            "type": "IGuardController.GuardConfigActionType"
           },
           {
             "internalType": "bytes",

@@ -451,9 +451,7 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     }
 
     const broadcasterRuntimeRBAC = this.createRuntimeRBACWithWallet(broadcasterWalletName);
-    const result = await broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(signedMetaTx, {
-      from: broadcasterWallet.address,
-    });
+    const result = await broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(signedMetaTx, this.getTxOptions(broadcasterWallet.address));
 
     return result;
   }
@@ -488,8 +486,35 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       }
       return exists;
     } catch (error: any) {
-      // If getRole throws, role doesn't exist
-      console.log(`  🔍 Role check failed: ${error.message}`);
+      // If getRole throws, role doesn't exist (contract reverts for unknown role)
+      const msg = (error?.cause?.shortMessage ?? error?.message ?? 'revert').toString();
+      if (msg.length > 80) {
+        console.log(`  🔍 Role check failed: ${msg.slice(0, 77)}...`);
+      } else {
+        console.log(`  🔍 Role check failed: ${msg}`);
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Check if role exists and has the exact expected values (for skip-only-when-already-correct rule).
+   * Returns false if getRole throws or if any field does not match.
+   */
+  protected async roleExistsWithExpectedValues(
+    roleHash: Hex,
+    expected: { roleName: string; maxWallets: number }
+  ): Promise<boolean> {
+    if (!this.runtimeRBAC) {
+      return false;
+    }
+    try {
+      const role = await this.runtimeRBAC.getRole(roleHash);
+      const maxMatch =
+        Number(role.maxWallets) === expected.maxWallets ||
+        role.maxWallets === BigInt(expected.maxWallets);
+      return role.roleName === expected.roleName && maxMatch;
+    } catch {
       return false;
     }
   }
@@ -542,13 +567,12 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
 
       await this.assertTransactionSuccess(result, 'Remove role');
 
-      // Check transaction record status
+      // Check transaction record status (TxStatus 6 = failed test)
       const receipt = await result.wait();
       const txStatus = await this.checkTransactionRecordStatus(receipt, 'Remove role');
 
       if (!txStatus.success && txStatus.status === 6) {
-        console.log(`  ⚠️  Role removal failed internally (status 6), but role might still be removed`);
-        return false;
+        throw new Error(`Remove role failed (TxStatus 6). Error: ${txStatus.error || 'Unknown'}`);
       }
 
       // Wait for transaction to be fully mined and verify

@@ -203,7 +203,7 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const result = await secureOwnableBroadcaster.updateRecoveryRequestAndApprove(
         fullMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
 
       this.assertTest(!!result.hash, 'Recovery update transaction created');

@@ -105,14 +105,21 @@ class SanitySDKTestRunner {
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       this.results.total++;
       this.results.failed++;
-      
-      // exec provides stdout/stderr in the error object
-      if (error.stderr) {
-        console.error(`\n❌ ${testName} tests failed (${duration}s)`);
-        // stderr is already shown via exec, but log it for clarity
-      } else {
-        console.error(`\n❌ ${testName} tests failed:`, error.message);
-        console.error(`   Command: ${command}`);
+      console.error(`\n❌ ${testName} tests failed (${duration}s)`);
+      if (error.message) {
+        console.error(`   Error: ${error.message}`);
+      }
+      // Print child stdout so we see the suite's own assertions and revert reasons
+      if (error.stdout && String(error.stdout).trim()) {
+        console.error('\n--- Failed suite output (stdout) ---');
+        console.error(String(error.stdout).trim());
+        console.error('--- End failed suite output ---\n');
+      }
+      if (error.stderr && String(error.stderr).trim()) {
+        const stderr = String(error.stderr).trim();
+        if (!stderr.includes('injecting env') && !stderr.match(/^\[dotenv@[\d.]+\]/)) {
+          console.error('   Stderr:', stderr);
+        }
       }
       return false;
     }

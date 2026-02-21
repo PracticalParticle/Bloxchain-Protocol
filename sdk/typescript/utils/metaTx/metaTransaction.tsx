@@ -87,7 +87,7 @@ export class MetaTransactionSigner {
       params: result.params,
       message: result.message,
       signature: result.signature as Hex,
-      data: result.data as Hex
+      data: (result.data != null ? result.data : '0x') as Hex
     };
   }
 
@@ -227,7 +227,7 @@ export class MetaTransactionSigner {
       params: metaTx.params,
       message: metaTx.message,
       signature: metaTx.signature as Hex,
-      data: metaTx.data as Hex
+      data: (metaTx.data != null ? metaTx.data : '0x') as Hex
     };
   }
 
@@ -263,7 +263,7 @@ export class MetaTransactionSigner {
       params: metaTx.params,
       message: metaTx.message,
       signature: metaTx.signature as Hex,
-      data: metaTx.data as Hex
+      data: (metaTx.data != null ? metaTx.data : '0x') as Hex
     };
   }
 
