@@ -67,7 +67,7 @@ A comprehensive reference of all test functions with:
 - **For Test Development**: Identify gaps and required new tests
 - **For Coverage Analysis**: Map tests to attack vectors
 
-Protocol-vulnerabilities-index derived vectors are documented in the Codex: see [§18 Protocol-Vulnerabilities-Index Derived Vectors](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors).
+Protocol-vulnerabilities-index-derived vectors are documented in the Codex: see [§18 Protocol-Vulnerabilities-Index-Derived Vectors](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors).
 
 ### 🚀 [Test Execution Guide](./TEST_EXECUTION_GUIDE.md)
 **Purpose**: Complete guide for running the test suite
@@ -203,7 +203,7 @@ When contributing to this documentation:
 
 This documentation folder contains the essential security and testing documentation:
 
-- **[Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)** - Comprehensive catalog of all security threats and mitigations (includes §18 Protocol-Vulnerabilities-Index derived vectors)
+- **[Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)** - Comprehensive catalog of all security threats and mitigations (includes §18 Protocol-Vulnerabilities-Index-derived vectors)
 - **[Test Documentation](./TEST_DOCUMENTATION.md)** - Complete reference of all test functions
 - **[Test Execution Guide](./TEST_EXECUTION_GUIDE.md)** - Guide for running the test suite
 - **[Final Coverage Report](./FINAL_COVERAGE_REPORT.md)** - Test coverage summary and statistics
