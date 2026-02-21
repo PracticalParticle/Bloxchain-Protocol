@@ -2,34 +2,10 @@ import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
 import RuntimeRBACABIJson from '../../abi/RuntimeRBAC.abi.json';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
 import { IRuntimeRBAC } from '../../interfaces/core.access.index';
-import { TxAction } from '../../types/lib.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
-import { Uint16Bitmap } from '../../utils/bitmap';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
 import type { RoleConfigAction } from '../../types/core.access.index';
-
-/**
- * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission
- */
-interface EngineBloxFunctionPermission {
-  functionSelector: Hex;
-  grantedActionsBitmap: Uint16Bitmap; // uint16
-  handlerForSelectors: Hex[]; // Array of execution selectors this function can access
-}
-
-/**
- * FunctionSchema structure matching Solidity EngineBlox.FunctionSchema for loadDefinitions
- */
-interface EngineBloxFunctionSchema {
-  functionSignature: string;
-  functionSelector: Hex;
-  operationType: Hex;
-  operationName: string;
-  supportedActionsBitmap: Uint16Bitmap; // uint16
-  isProtected: boolean;
-  handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
-}
 
 /**
  * @title RuntimeRBAC
@@ -62,13 +38,19 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   }
 
   /**
-   * @dev Gets all authorized wallets for a role
-   * @param roleHash The role hash to get wallets for
-   * @return Array of authorized wallet addresses
-   * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
+   * @dev Executes a role configuration batch (callable only by the contract itself, e.g. after meta-tx execution).
+   * @param actions Array of RoleConfigAction { actionType, data }
+   * @param options Transaction options including from address
    */
-  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getWalletsInRole', [roleHash]);
+  async executeRoleConfigBatch(
+    actions: RoleConfigAction[],
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
+    const actionsTuple = actions.map((a) => ({
+      actionType: typeof a.actionType === 'number' ? a.actionType : Number(a.actionType),
+      data: a.data
+    }));
+    return this.executeWriteContract('executeRoleConfigBatch', [actionsTuple], options);
   }
 
   // ============ INTERFACE SUPPORT ============

@@ -367,12 +367,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     console.log(`       Chain ID: ${metaTxParams.chainId}`);
     console.log(`       Deadline: ${metaTxParams.deadline}`);
 
-    // Create TxParams for the new transaction
+    // Create TxParams for the new transaction (gasLimit matches CJS createGuardConfigBatchMetaTx: 1000000)
     const txParams = {
       requester: signerWallet.address,
       target: this.contractAddress!,
       value: BigInt(0),
-      gasLimit: BigInt(200000),
+      gasLimit: BigInt(1000000),
       operationType: this.CONTROLLER_OPERATION_TYPE,
       executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams: executionParams
@@ -453,12 +453,12 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     console.log(`       Chain ID: ${metaTxParams.chainId}`);
     console.log(`       Deadline: ${metaTxParams.deadline}`);
 
-    // Create TxParams for the new transaction
+    // Create TxParams for the new transaction (gasLimit matches CJS createGuardConfigBatchMetaTx: 1000000)
     const txParams = {
       requester: signerWallet.address,
       target: this.contractAddress!,
       value: BigInt(0),
-      gasLimit: BigInt(200000),
+      gasLimit: BigInt(1000000),
       operationType: this.CONTROLLER_OPERATION_TYPE,
       executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams: executionParams
@@ -695,6 +695,36 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   }
 
   /**
+   * CJS-style pre-check: skip registration if selector already has a schema or is in supportedFunctionsSet.
+   * Mirrors scripts/sanity/guard-controller (getFunctionSchema + getSupportedFunctions).
+   * @returns true if we should skip registration (schema exists with matching selector, or selector in getSupportedFunctions).
+   */
+  protected async schemaOrSupportedSetPreCheck(selector: Hex): Promise<boolean> {
+    if (!this.guardController) return false;
+    const norm = (s: string | Hex) => String(s).toLowerCase();
+    try {
+      const schema = await this.guardController.getFunctionSchema(selector);
+      const returnedSelector = (schema as any)?.functionSelector ?? (schema as any)?.[1];
+      if (returnedSelector != null && norm(returnedSelector) === norm(selector)) {
+        console.log(`  📋 getFunctionSchema: selector ${selector} already registered`);
+        return true;
+      }
+    } catch {
+      // ResourceNotFound or any revert => schema not present
+    }
+    try {
+      const list = await this.guardController.getSupportedFunctions();
+      if (Array.isArray(list) && list.some((f: Hex) => norm(f) === norm(selector))) {
+        console.log(`  📋 getSupportedFunctions: selector ${selector} in supported set`);
+        return true;
+      }
+    } catch {
+      // Ignore
+    }
+    return false;
+  }
+
+  /**
    * Get transaction record from contract (GuardController/AccountBlox has getTransaction).
    * getTransaction requires _validateAnyRole(), so we use the owner wallet for the read.
    */
@@ -712,6 +742,36 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       console.log(`  ⚠️  Could not get transaction record: ${e?.message}`);
       return null;
     }
+  }
+
+  /**
+   * Get function whitelist targets using the owner wallet (required for _validateAnyRole on some contracts).
+   * Retries up to retries times with delayMs between attempts for idempotent runs where state may be updating.
+   */
+  protected async getFunctionWhitelistTargetsAsOwner(
+    functionSelector: Hex,
+    retries: number = 3,
+    delayMs: number = 1000
+  ): Promise<Address[]> {
+    const ownerWallet = this.getRoleWallet('owner');
+    const ownerWalletName =
+      Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) ?? 'wallet1';
+    const client = this.createGuardControllerWithWallet(ownerWalletName);
+    let lastError: any;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await client.getFunctionWhitelistTargets(functionSelector);
+      } catch (e: any) {
+        lastError = e;
+        if (attempt < retries) {
+          console.log(`  ⏳ getFunctionWhitelistTargets attempt ${attempt}/${retries}: ${e?.message ?? e}; retrying in ${delayMs}ms...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
+    }
+    throw lastError;
   }
 
   /**
@@ -748,6 +808,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       console.log(`  🔍 Revert selector: ${errorSelector ?? 'none'} (${errorName})`);
       if (!errorSelector || errorName.startsWith('Unknown')) {
         console.log(`  🔍 Raw revert data (first 66 chars): ${resultHex.slice(0, 66)}`);
+        if (!resultHex || resultHex === '0x' || resultHex.length <= 4) {
+          console.log(`  ℹ️  Revert data empty — caller may still pass if verification (e.g. functionSchemaExists) succeeds`);
+        }
       }
       throw new Error(
         `Guard config batch failed (TxStatus 6) for ${operationName}. Revert: ${errorName}`

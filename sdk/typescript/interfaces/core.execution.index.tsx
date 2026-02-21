@@ -30,6 +30,22 @@ export interface IGuardController extends IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
+  executeWithPayment(
+    target: Address,
+    value: bigint,
+    functionSelector: Hex,
+    params: Hex,
+    gasLimit: bigint,
+    operationType: Hex,
+    paymentDetails: {
+      recipient: Address;
+      nativeTokenAmount: bigint;
+      erc20TokenAddress: Address;
+      erc20TokenAmount: bigint;
+    },
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
   approveTimeLockExecution(
     txId: bigint,
     options: TransactionOptions
@@ -66,6 +82,11 @@ export interface IGuardController extends IBaseStateMachine {
    */
   guardConfigBatchRequestAndApprove(
     metaTx: MetaTransaction,
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
+  executeGuardConfigBatch(
+    actions: { actionType: number; data: Hex }[],
     options: TransactionOptions
   ): Promise<TransactionResult>;
 

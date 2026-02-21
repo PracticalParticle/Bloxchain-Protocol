@@ -11,6 +11,8 @@
  * @version 1.0.0
  */
 
+import { decodeAbiParameters, parseAbiParameters } from 'viem'
+
 /**
  * Custom error interfaces matching SharedValidation.sol definitions
  */
@@ -680,6 +682,45 @@ export const ERROR_SIGNATURES: Record<string, {
 }
 
 /**
+ * ABI parameter types for decoding custom error args (selector -> viem parseAbiParameters string).
+ * Used to decode revert data after the 4-byte selector.
+ */
+export const ERROR_DECODE_TYPES: Record<string, string> = {
+  '0x2c7b6e7f': 'address',
+  '0x8c5be1e6': 'address',
+  '0x5c60da1c': 'address',
+  '0x8da5cb5c': 'address',
+  '0x8c5be1e7': 'address',
+  '0x5c60da1d': 'address, address',
+  '0x8da5cb5d': 'address',
+  '0x8c5be1e8': 'address, address',
+  '0x5c60da1e': 'address, address',
+  '0x8da5cb5e': 'address',
+  '0x9da5cb5f': 'address',
+  '0x9da5cb60': 'address',
+  '0x9da5cb63': 'address',
+  '0x9da5cb61': 'address, bytes4, bytes32',
+  '0x9da5cb62': 'bytes32',
+  '0x8c5be1e9': '',
+  '0x5c60da1f': 'uint256',
+  '0x8da5cb5f': 'uint256',
+  '0x8c5be1ea': 'uint256, uint256',
+  '0x5c60da20': 'uint256, uint256',
+  '0x8da5cb60': '',
+  '0x8c5be1eb': 'address',
+  '0x5c60da21': 'uint256, uint256',
+  '0x8da5cb61': 'uint256, uint256',
+  '0x8c5be1ec': 'uint256, uint256',
+  '0x5c60da22': 'uint256, uint256',
+  '0x8da5cb62': 'uint256, uint256',
+  '0x3c6b4b28': '',
+  '0x8c5be1ee': 'bytes4, bytes4',
+  '0x11269582': 'bytes4',
+  '0x8c5be1ed': 'uint256, uint256',
+  '0x5c60da23': 'uint256, uint256'
+}
+
+/**
  * Common error patterns that can be extracted from revert data
  */
 export const COMMON_ERROR_PATTERNS = [
@@ -718,6 +759,35 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
     // Ensure data is hex string without 0x prefix
     if (data.startsWith('0x')) {
       data = data.slice(2)
+    }
+
+    // Try known custom error by 4-byte selector (before Error(string))
+    if (data.length >= 8) {
+      const selector = ('0x' + data.slice(0, 8)) as keyof typeof ERROR_SIGNATURES
+      const sig = ERROR_SIGNATURES[selector]
+      const types = ERROR_DECODE_TYPES[selector]
+      if (sig && (types === '' || types)) {
+        const paramNames = sig.params
+        let params: Record<string, any> = {}
+        if (types) {
+          try {
+            const argsHex = '0x' + data.slice(8)
+            const decoded = decodeAbiParameters(parseAbiParameters(types), argsHex as `0x${string}`)
+            paramNames.forEach((name, i) => {
+              params[name] = decoded[i] !== undefined ? String(decoded[i]) : ''
+            })
+          } catch (_) {
+            return null
+          }
+        }
+        const message = sig.userMessage(params)
+        return {
+          name: sig.name,
+          signature: selector,
+          params,
+          message
+        } as unknown as GuardianContractError
+      }
     }
 
     // Check if it starts with Error(string) selector (0x08c379a0)

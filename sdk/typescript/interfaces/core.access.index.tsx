@@ -18,8 +18,13 @@ export interface IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
+  executeRoleConfigBatch(
+    actions: RoleConfigAction[],
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
   /**
-   * @dev Gets all authorized wallets for a role
+   * @dev Gets all authorized wallets for a role (inherited from BaseStateMachine)
    * @param roleHash The role hash to get wallets for
    * @return Array of authorized wallet addresses
    */
