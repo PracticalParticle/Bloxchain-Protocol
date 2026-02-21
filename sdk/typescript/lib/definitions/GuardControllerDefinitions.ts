@@ -6,19 +6,12 @@
  * @see scripts/sanity/guard-controller/base-test.cjs createGuardConfigBatchMetaTx (actionsArray = [actionType, data] per element)
  */
 
-import { type Abi, type Address, type Hex, type PublicClient, encodeAbiParameters, parseAbiParameters, bytesToHex } from 'viem';
+import { type Abi, type Address, type Hex, type PublicClient, bytesToHex, encodeAbiParameters, parseAbiParameters } from 'viem';
 import GuardControllerDefinitionsAbi from '../../abi/GuardControllerDefinitions.abi.json';
 import type { GuardConfigAction } from '../../types/core.execution.index';
 import type { TxAction } from '../../types/lib.index';
 
 const ABI = GuardControllerDefinitionsAbi as Abi;
-
-/**
- * Selector for guardConfigBatchExecutionParams(IGuardController.GuardConfigAction[]).
- * Solidity uses the full type name in the signature, so the selector is 0xf87332aa, not (uint8,bytes)[].
- * Verify with: forge inspect GuardControllerDefinitions methodIdentifiers
- */
-const GUARD_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR = '0xf87332aa';
 
 /** Normalize bytes to ABI Hex (0x-prefixed); empty -> '0x'. */
 function normalizeData(data: Hex | Uint8Array | undefined | null): Hex {
@@ -28,34 +21,23 @@ function normalizeData(data: Hex | Uint8Array | undefined | null): Hex {
 }
 
 /**
- * Builds execution params for executeGuardConfigBatch((uint8,bytes)[]) by calling the definition contract.
- * Requires the GuardControllerDefinitions contract to be deployed at definitionAddress; throws on failure.
+ * Builds execution params for executeGuardConfigBatch((uint8,bytes)[]).
+ * Encoding matches GuardControllerDefinitions.sol guardConfigBatchExecutionParams (abi.encode(actions)).
+ * Same format as scripts/sanity (direct contract tests); single source of truth in this module.
  */
-export async function guardConfigBatchExecutionParams(
-  client: PublicClient,
-  definitionAddress: Address,
+export function guardConfigBatchExecutionParams(
+  _client: PublicClient,
+  _definitionAddress: Address,
   actions: GuardConfigAction[]
-): Promise<Hex> {
+): Hex {
   const actionsTuple = actions.map((a) => ({
     actionType: Number(a.actionType),
     data: normalizeData(a.data)
   }));
-
-  const paramsEncoded = encodeAbiParameters(
+  return encodeAbiParameters(
     parseAbiParameters('(uint8 actionType, bytes data)[]'),
     [actionsTuple]
-  );
-  const calldata = (GUARD_CONFIG_BATCH_EXECUTION_PARAMS_SELECTOR + paramsEncoded.slice(2)) as Hex;
-
-  const result = await client.call({
-    to: definitionAddress,
-    data: calldata
-  });
-
-  if (!result.data) {
-    throw new Error('No data');
-  }
-  return result.data;
+  ) as Hex;
 }
 
 /**
@@ -75,71 +57,55 @@ export async function getGuardConfigActionSpecs(
 }
 
 /**
- * Encodes data for ADD_TARGET_TO_WHITELIST by calling the definition contract.
+ * Encodes data for ADD_TARGET_TO_WHITELIST. Matches GuardControllerDefinitions.sol encodeAddTargetToWhitelist (abi.encode(functionSelector, target)).
  */
-export async function encodeAddTargetToWhitelist(
-  client: PublicClient,
-  definitionAddress: Address,
+export function encodeAddTargetToWhitelist(
+  _client: PublicClient,
+  _definitionAddress: Address,
   functionSelector: Hex,
   target: Address
-): Promise<Hex> {
-  return client.readContract({
-    address: definitionAddress,
-    abi: ABI,
-    functionName: 'encodeAddTargetToWhitelist',
-    args: [functionSelector, target]
-  }) as Promise<Hex>;
+): Hex {
+  return encodeAbiParameters(parseAbiParameters('bytes4, address'), [functionSelector, target]) as Hex;
 }
 
 /**
- * Encodes data for REMOVE_TARGET_FROM_WHITELIST by calling the definition contract.
+ * Encodes data for REMOVE_TARGET_FROM_WHITELIST. Matches GuardControllerDefinitions.sol encodeRemoveTargetFromWhitelist (abi.encode(functionSelector, target)).
  */
-export async function encodeRemoveTargetFromWhitelist(
-  client: PublicClient,
-  definitionAddress: Address,
+export function encodeRemoveTargetFromWhitelist(
+  _client: PublicClient,
+  _definitionAddress: Address,
   functionSelector: Hex,
   target: Address
-): Promise<Hex> {
-  return client.readContract({
-    address: definitionAddress,
-    abi: ABI,
-    functionName: 'encodeRemoveTargetFromWhitelist',
-    args: [functionSelector, target]
-  }) as Promise<Hex>;
+): Hex {
+  return encodeAbiParameters(parseAbiParameters('bytes4, address'), [functionSelector, target]) as Hex;
 }
 
 /**
- * Encodes data for REGISTER_FUNCTION by calling the definition contract.
+ * Encodes data for REGISTER_FUNCTION. Matches GuardControllerDefinitions.sol encodeRegisterFunction (abi.encode(functionSignature, operationName, supportedActions)).
  * supportedActions: array of TxAction enum values (e.g. TxAction.EXECUTE_TIME_DELAY_REQUEST).
  */
-export async function encodeRegisterFunction(
-  client: PublicClient,
-  definitionAddress: Address,
+export function encodeRegisterFunction(
+  _client: PublicClient,
+  _definitionAddress: Address,
   functionSignature: string,
   operationName: string,
   supportedActions: TxAction[]
-): Promise<Hex> {
-  return client.readContract({
-    address: definitionAddress,
-    abi: ABI,
-    functionName: 'encodeRegisterFunction',
-    args: [functionSignature, operationName, supportedActions.map((a) => Number(a))]
-  }) as Promise<Hex>;
+): Hex {
+  return encodeAbiParameters(parseAbiParameters('string, string, uint8[]'), [
+    functionSignature,
+    operationName,
+    supportedActions.map((a) => Number(a))
+  ]) as Hex;
 }
 
 /**
- * Encodes data for UNREGISTER_FUNCTION by calling the definition contract.
+ * Encodes data for UNREGISTER_FUNCTION. Matches GuardControllerDefinitions.sol encodeUnregisterFunction (abi.encode(functionSelector, safeRemoval)).
  */
-export async function encodeUnregisterFunction(
-  client: PublicClient,
-  definitionAddress: Address,
+export function encodeUnregisterFunction(
+  _client: PublicClient,
+  _definitionAddress: Address,
   functionSelector: Hex,
   safeRemoval: boolean
-): Promise<Hex> {
-  return client.readContract({
-    address: definitionAddress,
-    abi: ABI,
-    functionName: 'encodeUnregisterFunction',
-    args: [functionSelector, safeRemoval]
-  }) as Promise<Hex>;
+): Hex {
+  return encodeAbiParameters(parseAbiParameters('bytes4, bool'), [functionSelector, safeRemoval]) as Hex;
 }

@@ -14,10 +14,21 @@ import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/meta
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { GuardConfigActionType, GuardConfigAction } from '../../../sdk/typescript/types/core.execution.index.tsx';
-import { guardConfigBatchExecutionParams } from '../../../sdk/typescript/lib/definitions/GuardControllerDefinitions';
-import { roleConfigBatchExecutionParams } from '../../../sdk/typescript/lib/definitions/RuntimeRBACDefinitions';
+import {
+  guardConfigBatchExecutionParams,
+  encodeAddTargetToWhitelist,
+  encodeRemoveTargetFromWhitelist,
+  encodeRegisterFunction,
+  encodeUnregisterFunction,
+} from '../../../sdk/typescript/lib/definitions/GuardControllerDefinitions';
+import {
+  roleConfigBatchExecutionParams,
+  encodeCreateRole,
+  encodeAddWallet,
+  encodeAddFunctionToRole,
+} from '../../../sdk/typescript/lib/definitions/RuntimeRBACDefinitions';
 import { RoleConfigActionType, RoleConfigAction, FunctionPermission } from '../runtime-rbac/base-test.ts';
-import { keccak256, encodeAbiParameters, parseAbiParameters, toBytes } from 'viem';
+import { keccak256, toBytes } from 'viem';
 
 export interface GuardControllerRoles {
   owner: Address;
@@ -249,10 +260,8 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     );
   }
 
-  /**
-   * Encode guard config action data
-   */
-  protected encodeGuardConfigAction(
+  /** Encode guard config action data using the deployed GuardControllerDefinitions contract. */
+  protected async encodeGuardConfigAction(
     actionType: GuardConfigActionType,
     data: {
       functionSelector?: Hex;
@@ -263,36 +272,35 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       supportedActions?: number[];
       safeRemoval?: boolean;
     }
-  ): Hex {
+  ): Promise<Hex> {
+    if (!this.publicClient || !this.guardControllerDefinitionsAddress) {
+      throw new Error('publicClient and guardControllerDefinitionsAddress required for definition encoding');
+    }
+    const client = this.publicClient;
+    const def = this.guardControllerDefinitionsAddress;
     switch (actionType) {
       case GuardConfigActionType.ADD_TARGET_TO_WHITELIST:
+        if (!data.functionSelector || !data.target) throw new Error('Missing required data for whitelist action');
+        return encodeAddTargetToWhitelist(client, def, data.functionSelector, data.target);
       case GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST:
-        if (!data.functionSelector || !data.target) {
-          throw new Error('Missing required data for whitelist action');
-        }
-        return encodeAbiParameters(
-          parseAbiParameters('bytes4, address'),
-          [data.functionSelector, data.target]
-        ) as Hex;
-
+        if (!data.functionSelector || !data.target) throw new Error('Missing required data for whitelist action');
+        return encodeRemoveTargetFromWhitelist(client, def, data.functionSelector, data.target);
       case GuardConfigActionType.REGISTER_FUNCTION:
         if (!data.functionSignature || !data.operationName || !data.supportedActions) {
           throw new Error('Missing required data for register function action');
         }
-        return encodeAbiParameters(
-          parseAbiParameters('string, string, uint8[]'),
-          [data.functionSignature, data.operationName, data.supportedActions]
-        ) as Hex;
-
+        return encodeRegisterFunction(
+          client,
+          def,
+          data.functionSignature,
+          data.operationName,
+          data.supportedActions as TxAction[]
+        );
       case GuardConfigActionType.UNREGISTER_FUNCTION:
         if (!data.functionSelector || data.safeRemoval === undefined) {
           throw new Error('Missing required data for unregister function action');
         }
-        return encodeAbiParameters(
-          parseAbiParameters('bytes4, bool'),
-          [data.functionSelector, data.safeRemoval]
-        ) as Hex;
-
+        return encodeUnregisterFunction(client, def, data.functionSelector, data.safeRemoval);
       default:
         throw new Error(`Unknown action type: ${actionType}`);
     }
@@ -321,7 +329,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       ? GuardConfigActionType.ADD_TARGET_TO_WHITELIST 
       : GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST;
     
-    const actionData = this.encodeGuardConfigAction(actionType, {
+    const actionData = await this.encodeGuardConfigAction(actionType, {
       functionSelector,
       target,
       isAdd,
@@ -407,7 +415,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     }
 
     // Create guard config action for function registration
-    const actionData = this.encodeGuardConfigAction(GuardConfigActionType.REGISTER_FUNCTION, {
+    const actionData = await this.encodeGuardConfigAction(GuardConfigActionType.REGISTER_FUNCTION, {
       functionSignature,
       operationName,
       supportedActions,
@@ -513,33 +521,27 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     };
   }
 
-  protected encodeRoleConfigAction(actionType: RoleConfigActionType, data: any): RoleConfigAction {
+  /** Encode role config action data using the deployed RuntimeRBACDefinitions contract. */
+  protected async encodeRoleConfigAction(actionType: RoleConfigActionType, data: any): Promise<RoleConfigAction> {
+    if (!this.publicClient || !this.runtimeRBACDefinitionsAddress) {
+      throw new Error('publicClient and runtimeRBACDefinitionsAddress required for definition encoding');
+    }
+    const client = this.publicClient;
+    const def = this.runtimeRBACDefinitionsAddress;
     let encodedData: Hex;
     switch (actionType) {
       case RoleConfigActionType.CREATE_ROLE:
-        encodedData = encodeAbiParameters(
-          parseAbiParameters('string, uint256'),
-          [data.roleName, BigInt(data.maxWallets)]
-        ) as Hex;
+        encodedData = await encodeCreateRole(client, def, data.roleName, BigInt(data.maxWallets));
         break;
       case RoleConfigActionType.ADD_WALLET:
-        encodedData = encodeAbiParameters(
-          parseAbiParameters('bytes32, address'),
-          [data.roleHash, data.wallet]
-        ) as Hex;
+        encodedData = await encodeAddWallet(client, def, data.roleHash, data.wallet);
         break;
       case RoleConfigActionType.ADD_FUNCTION_TO_ROLE:
-        encodedData = encodeAbiParameters(
-          parseAbiParameters('bytes32, (bytes4, uint16, bytes4[])'),
-          [
-            data.roleHash,
-            [
-              data.functionPermission.functionSelector,
-              data.functionPermission.grantedActionsBitmap,
-              data.functionPermission.handlerForSelectors ?? [data.functionPermission.functionSelector],
-            ] as [Hex, number, Hex[]],
-          ]
-        ) as Hex;
+        encodedData = await encodeAddFunctionToRole(client, def, data.roleHash, {
+          functionSelector: data.functionPermission.functionSelector,
+          grantedActionsBitmap: data.functionPermission.grantedActionsBitmap,
+          handlerForSelectors: data.functionPermission.handlerForSelectors ?? [data.functionPermission.functionSelector],
+        });
         break;
       default:
         throw new Error(`Unsupported role config action type: ${actionType}`);
@@ -618,6 +620,24 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     );
     (rbac as any).abi = AccountBloxABIJson;
     return rbac;
+  }
+
+  /**
+   * Detect if a thrown error is a contract revert with ResourceAlreadyExists / ItemAlreadyExists.
+   * Used for idempotent permission setup (e.g. ADD_FUNCTION_TO_ROLE when already present).
+   */
+  protected isResourceAlreadyExistsRevert(error: any): boolean {
+    if (!error) return false;
+    const msg = (error.shortMessage ?? error.message ?? error.cause?.shortMessage ?? error.cause?.message ?? '').toString();
+    if (/ResourceAlreadyExists|ItemAlreadyExists|Item already exists/i.test(msg)) return true;
+    const data = error.data ?? error.cause?.data;
+    if (data?.errorName === 'ResourceAlreadyExists' || data?.errorName === 'ItemAlreadyExists') return true;
+    const selector = this.decodeErrorSelector(data?.data ?? data);
+    if (selector) {
+      const name = this.getErrorName(selector);
+      if (name === 'ResourceAlreadyExists' || name === 'ItemAlreadyExists') return true;
+    }
+    return false;
   }
 
   /**

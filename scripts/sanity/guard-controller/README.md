@@ -106,6 +106,7 @@ node run-tests.js --help
   - `TEST_WALLET_1_PRIVATE_KEY` through `TEST_WALLET_5_PRIVATE_KEY`
   - `REMOTE_HOST` and `REMOTE_PORT` (if using remote blockchain)
   - `RPC_URL` (optional, defaults to localhost:8545)
+  - `NETWORK_NAME` or `GUARDIAN_NETWORK` (key for `deployed-addresses.json`, e.g. `development`; see "Network and address sync" above)
 
 ## Test Mode
 

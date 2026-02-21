@@ -116,7 +116,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     // Permissions are added later in ensureRoleHasRequiredPermissions via dedicated
     // ADD_FUNCTION_TO_ROLE actions. This matches the CJS test approach and avoids
     // validation issues when creating roles with permissions attached.
-    const createRoleAction = this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, {
+    const createRoleAction = await this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, {
       roleName,
       maxWallets: 10,
       functionPermissions: [], // Empty - permissions added separately
@@ -141,14 +141,12 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
           broadcasterWalletName
         );
       } catch (batchError: any) {
-        // Contract may revert with ResourceAlreadyExists (simulateContract or writeContract)
-        const msg = (batchError?.cause?.shortMessage ?? batchError?.cause?.message ?? batchError?.shortMessage ?? batchError?.message ?? '').toString();
+        // Contract may revert with ResourceAlreadyExists (simulateContract or writeContract).
+        // Only treat as role-already-exists when we have a specific duplicate signal or confirmed on-chain state.
         const isAlreadyExists = this.isResourceAlreadyExistsRevert(batchError);
-        const isRevert = /revert|VM Exception|Contract error|Contract execution/i.test(msg);
-        const mentionsRole = /REGISTRY_ADMIN/i.test(msg);
         await new Promise((resolve) => setTimeout(resolve, 500));
         const roleExistsNow = await this.roleExists(this.registryAdminRoleHash!);
-        if (isAlreadyExists || isRevert || mentionsRole || roleExistsNow) {
+        if (isAlreadyExists || roleExistsNow) {
           console.log(`  ⏭️  Create reverted (treating as role-already-exists path)`);
           if (roleExistsNow) {
             try {
@@ -280,12 +278,10 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
         console.log('  ✅ Step 1 completed (role already existed)');
         return;
       }
-      // Create may have reverted; error can be in cause/shortMessage (viem) or assertTest message
-      const msg = (error?.cause?.shortMessage ?? error?.cause?.message ?? error?.shortMessage ?? error?.message ?? '').toString();
-      const isRevert = /revert|VM Exception|Contract error|ResourceAlreadyExists|Missing or invalid|Test assertion failed|status: reverted/i.test(msg);
-      const mentionsRole = /REGISTRY_ADMIN/i.test(msg);
+      // Create may have reverted with ResourceAlreadyExists, or role may already exist on-chain.
+      // Only skip when we have a specific duplicate signal or confirmed on-chain state to avoid swallowing real failures.
       const roleExistsCheck = await this.roleExists(this.registryAdminRoleHash!);
-      if (isRevert || this.isResourceAlreadyExistsRevert(error) || mentionsRole || roleExistsCheck) {
+      if (this.isResourceAlreadyExistsRevert(error) || roleExistsCheck) {
         console.log(`  ⏭️  Create reverted; assuming role exists and continuing workflow.`);
         if (roleExistsCheck) {
           try {
@@ -346,7 +342,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       // Role might not exist or wallet not in role, continue
     }
 
-    const addWalletAction = this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+    const addWalletAction = await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
       roleHash: this.registryAdminRoleHash,
       wallet: this.registryAdminWallet,
     });
@@ -483,7 +479,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
 
     // Check if function already in role
     try {
-      const permissions = await this.runtimeRBAC.getActiveRolePermissions(
+      const permissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(
         this.registryAdminRoleHash
       );
       const mintInRole = permissions.some(
@@ -502,7 +498,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       TxAction.SIGN_META_REQUEST_AND_APPROVE,
     ]);
 
-    const addFunctionAction = this.encodeRoleConfigAction(
+    const addFunctionAction = await this.encodeRoleConfigAction(
       RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
       {
         roleHash: this.registryAdminRoleHash,
@@ -540,7 +536,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Verify function was added
-      const permissions = await this.runtimeRBAC.getActiveRolePermissions(
+      const permissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(
         this.registryAdminRoleHash
       );
       const mintInRole = permissions.some(
@@ -572,7 +568,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
 
     // Check if function is already removed
     try {
-      const permissions = await this.runtimeRBAC.getActiveRolePermissions(
+      const permissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(
         this.registryAdminRoleHash
       );
       const mintInRole = permissions.some(
@@ -587,7 +583,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       // Continue if check fails
     }
 
-    const removeFunctionAction = this.encodeRoleConfigAction(
+    const removeFunctionAction = await this.encodeRoleConfigAction(
       RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
       {
         roleHash: this.registryAdminRoleHash,
@@ -625,7 +621,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Verify function was removed
-      const permissions = await this.runtimeRBAC.getActiveRolePermissions(
+      const permissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(
         this.registryAdminRoleHash
       );
       const mintInRole = permissions.some(
@@ -724,7 +720,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     // Verify we have at least one wallet in the role before revoking
     // If this is the last wallet and role is protected, it will fail
     try {
-      const wallets = await this.runtimeRBAC.getWalletsInRole(this.registryAdminRoleHash);
+      const wallets = await this.getRuntimeRBACForRoleQueries().getWalletsInRole(this.registryAdminRoleHash);
       if (wallets.length <= 1) {
         console.log(`  ⚠️  Only one wallet in role - cannot revoke last wallet from protected role`);
         console.log('  ✅ Step 7 skipped - cannot revoke last wallet');
@@ -734,7 +730,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       // Continue if we can't get wallets
     }
 
-    const revokeWalletAction = this.encodeRoleConfigAction(RoleConfigActionType.REVOKE_WALLET, {
+    const revokeWalletAction = await this.encodeRoleConfigAction(RoleConfigActionType.REVOKE_WALLET, {
       roleHash: this.registryAdminRoleHash,
       wallet: this.registryAdminWallet,
     });
@@ -893,7 +889,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       return;
     }
 
-    const removeRoleAction = this.encodeRoleConfigAction(RoleConfigActionType.REMOVE_ROLE, {
+    const removeRoleAction = await this.encodeRoleConfigAction(RoleConfigActionType.REMOVE_ROLE, {
       roleHash: this.registryAdminRoleHash,
     });
 
@@ -961,7 +957,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
 
       let permissions: any[];
       try {
-        permissions = await this.runtimeRBAC.getActiveRolePermissions(roleHash);
+        permissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(roleHash);
       } catch (error: any) {
         // If getActiveRolePermissions fails with ResourceNotFound, role exists in supportedRolesSet
         // but not in roles mapping - this is an inconsistent state
@@ -997,7 +993,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
             [TxAction.SIGN_META_REQUEST_AND_APPROVE]
           );
           actionsToAdd.push(
-            this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
               roleHash,
               functionPermission: handlerPermission,
             })
@@ -1010,7 +1006,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
             [TxAction.SIGN_META_REQUEST_AND_APPROVE]
           );
           actionsToAdd.push(
-            this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
               roleHash,
               functionPermission: executionPermission,
             })
@@ -1062,7 +1058,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
           let verifyExecution = false;
           for (let retry = 0; retry < 3; retry++) {
             try {
-              const verifyPermissions = await this.runtimeRBAC.getActiveRolePermissions(roleHash);
+              const verifyPermissions = await this.getRuntimeRBACForRoleQueries().getActiveRolePermissions(roleHash);
               
               for (const perm of verifyPermissions) {
                 if (perm.functionSelector.toLowerCase() === this.ROLE_CONFIG_BATCH_META_SELECTOR.toLowerCase()) {

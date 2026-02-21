@@ -1,4 +1,4 @@
-import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
+import { Address, PublicClient, WalletClient, Chain, Hex, parseGwei } from 'viem';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
 import { IBaseStateMachine } from '../../interfaces/base.state.machine.index';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../../interfaces/lib.index';
@@ -99,9 +99,21 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
       // Add gas override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
       if (options.gasPrice !== undefined && options.gasPrice !== '') {
-        const gasPriceWei = BigInt(options.gasPrice);
+        const raw = options.gasPrice;
+        let gasPriceWei: bigint;
+        if (typeof raw === 'bigint') {
+          gasPriceWei = raw;
+        } else {
+          const s = String(raw).trim();
+          if (!/^\d+$/.test(s)) {
+            throw new Error(`Invalid gas price: must be a non-negative integer (got "${options.gasPrice}"). Use wei as a string or bigint.`);
+          }
+          gasPriceWei = BigInt(s);
+        }
         writeContractParams.maxFeePerGas = gasPriceWei;
-        writeContractParams.maxPriorityFeePerGas = gasPriceWei;
+        // Use a separate priority fee so when base fee is high the tip does not go to zero (avoids tx stalling).
+        const oneGwei = parseGwei('1');
+        writeContractParams.maxPriorityFeePerGas = gasPriceWei <= oneGwei ? gasPriceWei : oneGwei;
       }
 
       const hash = await this.walletClient!.writeContract(writeContractParams);

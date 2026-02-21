@@ -19,7 +19,7 @@ export interface TestConfig {
   chainId: number;
   /** Gas price in Gwei for writes (set SANITY_SDK_GAS_PRICE_GWEI if you see "transaction underpriced"). */
   gasPriceGwei?: number;
-  /** RPC request timeout in ms (remote Ganache may need longer). Default 30_000 for remote, 10_000 for local. */
+  /** RPC request timeout in ms (remote Ganache may need longer). Default 30_000. */
   rpcTimeoutMs: number;
   contractAddresses: {
     /** Single account contract used for all sanity tests (SecureOwnable, RuntimeRBAC, GuardController) */
@@ -47,7 +47,8 @@ export interface TestConfig {
 export function getRPCUrl(): string {
   if (process.env.REMOTE_HOST) {
     const protocol = process.env.REMOTE_PROTOCOL || 'https';
-    const port = process.env.REMOTE_PORT || '443';
+    // Default 8545 for consistency with other sanity scripts (scripts/sanity/*/base-test.cjs). Use REMOTE_PORT=443 for remote HTTPS.
+    const port = process.env.REMOTE_PORT || '8545';
     return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
   }
   if (process.env.RPC_URL) {

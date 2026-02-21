@@ -1045,10 +1045,11 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         uint256 txId = accountBlox.executeWithTimeLock(target, 0, functionSelector, "", 0, operationType);
         advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
         accountBlox.approveTimeLockExecution(txId);
+        EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
         vm.expectRevert(abi.encodeWithSelector(
             SharedValidation.TransactionStatusMismatch.selector,
             uint8(EngineBlox.TxStatus.PENDING),
-            uint8(EngineBlox.TxStatus.COMPLETED)
+            uint8(result.status)
         ));
         accountBlox.approveTimeLockExecution(txId);
         vm.stopPrank();

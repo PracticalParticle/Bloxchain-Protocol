@@ -317,8 +317,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         const actions: import('../runtime-rbac/base-test.ts').RoleConfigAction[] = [];
         if (!requestorExists) {
           actions.push(
-            this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_REQUESTOR', maxWallets: 10 }),
-            this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+            await this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_REQUESTOR', maxWallets: 10 }),
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
               roleHash: requestorHash,
               wallet: this.wallets.wallet3!.address,
             })
@@ -326,8 +326,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         }
         if (!approverExists) {
           actions.push(
-            this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_APPROVER', maxWallets: 10 }),
-            this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+            await this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_APPROVER', maxWallets: 10 }),
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
               roleHash: approverHash,
               wallet: this.wallets.wallet4!.address,
             })
@@ -344,24 +344,32 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       const broadcasterActions = [TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
 
       const batch1 = [
-        this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: requestorHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, requestorActions),
         }),
-        this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: approverHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, approverActions),
         }),
-        this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: approverHash,
           functionPermission: this.createFunctionPermission(this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, approverActions, [ERC20_MINT_SELECTOR]),
         }),
-        this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: broadcasterHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, broadcasterActions),
         }),
       ];
-      await this.executeRoleConfigBatch(batch1, ownerWalletName, broadcasterWalletName);
+      try {
+        await this.executeRoleConfigBatch(batch1, ownerWalletName, broadcasterWalletName);
+      } catch (batchError: any) {
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Mint permissions already present (ResourceAlreadyExists/ItemAlreadyExists), continuing');
+        } else {
+          throw batchError;
+        }
+      }
       await new Promise((r) => setTimeout(r, 1500));
       console.log('  ✅ Mint roles and permissions ensured');
     } catch (error: any) {
