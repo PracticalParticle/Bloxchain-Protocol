@@ -66,6 +66,19 @@
   },
   {
     "inputs": [],
+    "name": "EXECUTE_WITH_PAYMENT_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "EXECUTE_WITH_TIMELOCK_SELECTOR",
     "outputs": [
       {

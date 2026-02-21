@@ -35,7 +35,8 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             throw new Error('BasicERC20 address not set (BASICERC20_ADDRESS) and deployed-addresses.json not found');
         }
         const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
-        const network = process.env.NETWORK_NAME || 'development';
+        // Use development only for remote dev; keeps AccountBlox and BasicERC20 in sync (same deployed-addresses.json key)
+        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
         const info = addresses[network]?.BasicERC20;
         if (!info?.address) {
             throw new Error(`BasicERC20 not in deployed-addresses.json for network "${network}"`);
@@ -53,6 +54,28 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         console.log('   4. Add function to roles: MINT_REQUESTOR=request, MINT_APPROVER=meta approve+cancel, BROADCASTER=execute');
         console.log('   5. Request (requester=MINT_REQUESTOR) → Sign (MINT_APPROVER) → Execute (BROADCASTER)');
         console.log('   6. Verify TxStatus COMPLETED and 100 tokens minted to AccountBlox');
+
+        // Ensure AccountBlox and BasicERC20 are in sync (BasicERC20.minter must be this AccountBlox)
+        const tokenAddress = this.getBasicErc20Address();
+        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
+        const addressesPath = path.join(__dirname, '../../../deployed-addresses.json');
+        if (fs.existsSync(addressesPath)) {
+            const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
+            const basicInfo = addresses[network]?.BasicERC20;
+            const expectedMinter = basicInfo?.minter;
+            if (expectedMinter && this.contractAddress) {
+                const minterNorm = expectedMinter.toLowerCase();
+                const accountNorm = this.contractAddress.toLowerCase();
+                if (minterNorm !== accountNorm) {
+                    throw new Error(
+                        `AccountBlox and BasicERC20 are out of sync for network "${network}". ` +
+                        `AccountBlox is ${this.contractAddress} but BasicERC20 minter is ${expectedMinter}. ` +
+                        `Use deployed-addresses.json["${network}"] for both (re-run migrations to that network).`
+                    );
+                }
+                console.log(`  ✅ AccountBlox and BasicERC20 in sync (minter = AccountBlox for network ${network})`);
+            }
+        }
 
         this.erc20MintOperationTypeHash = this.web3.utils.keccak256(ERC20_MINT_OPERATION_TYPE);
         this.mintRequestorWallet = this.wallets.wallet3;
@@ -470,8 +493,20 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         await this.startTest('Verify TxStatus COMPLETED and token balance');
         try {
             let txId = this._mintTxId;
-            // Verify tx status COMPLETED from receipt logs (avoids getTransaction ABI decode issues with enum/uint8)
-            const receipt = this._mintReceipt;
+            let receipt = this._mintReceipt;
+            // If receipt was from decode-error path or chain was restarted, logs can be missing. Re-fetch once by tx hash.
+            if (receipt && receipt.transactionHash && (!receipt.logs || receipt.logs.length === 0)) {
+                await new Promise(r => setTimeout(r, 1500));
+                try {
+                    const refetched = await this.web3.eth.getTransactionReceipt(receipt.transactionHash);
+                    if (refetched && refetched.logs && refetched.logs.length > 0) {
+                        receipt = refetched;
+                        this._mintReceipt = receipt;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
             const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)');
             let statusFromLog = null;
             if (receipt && receipt.logs) {
@@ -494,29 +529,33 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                             ? decoded.status.toNumber()
                             : (decoded.status || 0);
 
-                        // If we didn't successfully extract txId in step 5, adopt the first TransactionEvent
-                        // we see here as the mint txId (tests only run one mint meta-tx).
                         if (!txId && decodedTxId) {
                             txId = decodedTxId;
                             this._mintTxId = decodedTxId;
                         }
 
+                        // Keep the last TransactionEvent for this txId (final status: COMPLETED/FAILED, not PENDING/EXECUTING)
                         if (txId && decodedTxId && decodedTxId.toString() === txId.toString()) {
                             statusFromLog = decodedStatus;
-                            break;
                         }
                     }
                 }
             }
             if (statusFromLog !== null && statusFromLog !== undefined) {
-                this.assertTest(statusFromLog === this.TxStatus.COMPLETED, `TxStatus COMPLETED (got ${statusFromLog})`);
+                const statusNum = typeof statusFromLog === 'object' && statusFromLog != null && typeof statusFromLog.toNumber === 'function'
+                    ? statusFromLog.toNumber()
+                    : Number(statusFromLog);
+                if (statusNum === this.TxStatus.FAILED) {
+                    this.assertTest(false, `TxStatus COMPLETED (got FAILED). Mint execution reverted on-chain. If the chain was restarted, re-run the full test suite.`);
+                } else {
+                    this.assertTest(statusNum === this.TxStatus.COMPLETED, `TxStatus COMPLETED (got ${statusNum})`);
+                }
             } else {
                 console.warn('  [WARN] No TransactionEvent found for mint tx; skipping explicit TxStatus assertion');
             }
 
             // Verify balance increased by exactly 100e18 from step 5 before
             const tokenAddress = this.getBasicErc20Address();
-            // Use the same raw eth_call pattern as in step 5 for balanceAfter
             const balanceOfCallData = this.web3.eth.abi.encodeFunctionCall(
                 {
                     name: 'balanceOf',
@@ -525,16 +564,33 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 },
                 [this.contractAddress]
             );
-            const balanceAfterHex = await this.web3.eth.call({
+            const expectedIncrease = this.web3.utils.toBN('100000000000000000000');
+            const balanceBefore = this._balanceBeforeMint != null ? this._balanceBeforeMint : this.web3.utils.toBN(0);
+
+            let balanceAfterHex = await this.web3.eth.call({
                 to: tokenAddress,
                 data: balanceOfCallData
             });
-            const balanceAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceAfterHex);
-            const balanceAfter = this.web3.utils.toBN(balanceAfterDecoded);
-            const expectedIncrease = this.web3.utils.toBN('100000000000000000000');
-            const balanceBefore = this._balanceBeforeMint != null ? this._balanceBeforeMint : this.web3.utils.toBN(0);
-            const actualIncrease = balanceAfter.sub(balanceBefore);
-            this.assertTest(actualIncrease.eq(expectedIncrease), `Balance increased by 100e18 (got +${this.web3.utils.fromWei(actualIncrease.toString(), 'ether')})`);
+            let balanceAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceAfterHex);
+            let balanceAfter = this.web3.utils.toBN(balanceAfterDecoded);
+            let actualIncrease = balanceAfter.sub(balanceBefore);
+            // After chain restart or slow node, balance may not be visible immediately; retry once after short delay
+            if (actualIncrease.lt(expectedIncrease)) {
+                await new Promise(r => setTimeout(r, 2000));
+                balanceAfterHex = await this.web3.eth.call({
+                    to: tokenAddress,
+                    data: balanceOfCallData
+                });
+                balanceAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceAfterHex);
+                balanceAfter = this.web3.utils.toBN(balanceAfterDecoded);
+                actualIncrease = balanceAfter.sub(balanceBefore);
+            }
+            if (!actualIncrease.eq(expectedIncrease)) {
+                const hint = (receipt && (receipt.status === true || receipt.status === 1 || receipt.status === '0x1'))
+                    ? ' Tx succeeded but balance did not change. If the chain was restarted, re-run the full test suite from the start.'
+                    : '';
+                this.assertTest(false, `Balance increased by 100e18 (got +${this.web3.utils.fromWei(actualIncrease.toString(), 'ether')})${hint}`);
+            }
             this.assertTest(balanceAfter.gte(expectedIncrease), `AccountBlox token balance >= 100 (got ${this.web3.utils.fromWei(balanceAfter.toString(), 'ether')})`);
 
             await this.passTest('Verify TxStatus and balance', `Status=COMPLETED, balance+=100 BASIC`);

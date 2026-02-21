@@ -15,11 +15,18 @@ import { defineConfig, type HardhatUserConfig } from "hardhat/config";
 
 const require = createRequire(import.meta.url);
 let hardhatToolboxViem: NonNullable<HardhatUserConfig["plugins"]>[number] | null = null;
+let hardhatEthers: NonNullable<HardhatUserConfig["plugins"]>[number] | null = null;
 try {
   const m = require("@nomicfoundation/hardhat-toolbox-viem");
   hardhatToolboxViem = (m?.default !== undefined ? m.default : m) as NonNullable<HardhatUserConfig["plugins"]>[number];
 } catch {
   // Toolbox not installed; install with: npm install --save-dev @nomicfoundation/hardhat-toolbox-viem
+}
+try {
+  const m = require("@nomicfoundation/hardhat-ethers");
+  hardhatEthers = (m?.default !== undefined ? m.default : m) as NonNullable<HardhatUserConfig["plugins"]>[number];
+} catch {
+  // For blox deploy with library linking: npm install --save-dev @nomicfoundation/hardhat-ethers ethers
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,7 +49,7 @@ const OPTIMIZER_RUNS = 200;
 const EVM_VERSION = "osaka";
 
 export default defineConfig({
-  plugins: hardhatToolboxViem ? [hardhatToolboxViem] : [],
+  plugins: [hardhatToolboxViem, hardhatEthers].filter(Boolean) as HardhatUserConfig["plugins"],
   paths: {
     sources: "./contracts",
     tests: "./test",

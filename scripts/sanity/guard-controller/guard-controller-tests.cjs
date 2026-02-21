@@ -220,29 +220,8 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
             ];
             
-            // Check if selector exists in contract bytecode (this would require isProtected=true)
-            console.log('  🔍 Checking if selector exists in contract bytecode...');
-            let selectorExistsInBytecode = false;
-            try {
-                // selectorExistsInContract is a public view function in EngineBlox
-                selectorExistsInBytecode = await this.callContractMethod(
-                    this.contract.methods.selectorExistsInContract(this.contractAddress, this.NATIVE_TRANSFER_SELECTOR)
-                );
-                console.log(`  📋 Selector ${this.NATIVE_TRANSFER_SELECTOR} exists in bytecode: ${selectorExistsInBytecode}`);
-                if (selectorExistsInBytecode) {
-                    console.log(`  ⚠️  WARNING: Selector exists in contract bytecode!`);
-                    console.log(`     Registration with isProtected=false will fail with ContractFunctionMustBeProtected.`);
-                    console.log(`     GuardController._registerFunction always uses isProtected=false, so this registration will fail.`);
-                    console.log(`     The function may already be registered or may need to be registered with isProtected=true.`);
-                    throw new Error(`Cannot register function: selector ${this.NATIVE_TRANSFER_SELECTOR} exists in contract bytecode and requires isProtected=true, but GuardController._registerFunction uses isProtected=false`);
-                }
-            } catch (checkError) {
-                if (checkError.message.includes('Cannot register function')) {
-                    throw checkError; // Re-throw our custom error
-                }
-                console.log(`  ⚠️  Could not check if selector exists in bytecode: ${checkError.message}`);
-                console.log(`     This might mean selectorExistsInContract is not exposed or there's an ABI issue`);
-            }
+            // Bytecode-based selector existence check has been removed from EngineBlox
+            console.log('  🔍 Skipping selectorExistsInContract bytecode check (helper removed from EngineBlox)...');
             
             console.log('  🔍 Preparing to register function...');
             console.log(`     Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);

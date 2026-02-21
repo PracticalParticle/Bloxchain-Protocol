@@ -50,6 +50,17 @@
         "type": "bytes4"
       }
     ],
+    "name": "ContractFunctionMustBeProtected",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
     "name": "InternalFunctionNotAccessible",
     "type": "error"
   },

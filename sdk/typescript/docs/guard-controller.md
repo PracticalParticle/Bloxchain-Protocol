@@ -94,7 +94,13 @@ enum GuardConfigActionType {
 
 ```typescript
 import { encodeAbiParameters } from 'viem'
-import { GuardConfigActionType, TxAction } from '@bloxchain/sdk/typescript'
+import {
+  GuardConfigActionType,
+  TxAction,
+  guardConfigBatchExecutionParams,
+  GUARD_CONTROLLER_FUNCTION_SELECTORS,
+  GUARD_CONTROLLER_OPERATION_TYPES
+} from '@bloxchain/sdk/typescript'
 
 const registerAction = {
   actionType: GuardConfigActionType.REGISTER_FUNCTION,
@@ -112,8 +118,9 @@ const registerAction = {
   )
 }
 
-// Create execution params
-const executionParams = await guardController.guardConfigBatchExecutionParams([registerAction])
+// Create execution params (call deployed GuardControllerDefinitions contract; use address from deployed-addresses.json for your chain)
+const guardControllerDefinitionsAddress = '0x...' // e.g. deployedAddresses.sepolia.GuardControllerDefinitions.address
+const executionParams = await guardConfigBatchExecutionParams(publicClient, guardControllerDefinitionsAddress, [registerAction])
 
 // Create meta-transaction
 const metaTxParams = await guardController.createMetaTxParams(
@@ -188,8 +195,8 @@ const actions = [
   }
 ]
 
-// Execute batch atomically
-const executionParams = await guardController.guardConfigBatchExecutionParams(actions)
+// Execute batch atomically (publicClient and definitionAddress from your setup; see Quick Start)
+const executionParams = await guardConfigBatchExecutionParams(publicClient, guardControllerDefinitionsAddress, actions)
 // ... create and execute meta-transaction
 ```
 

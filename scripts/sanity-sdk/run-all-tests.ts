@@ -25,9 +25,7 @@ class SanitySDKTestRunner {
     'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts')
   };
 
-  private exampleTests: TestConfig = {
-    'workflow': resolve(__dirname, 'workflow', 'run-tests.ts')
-  };
+  private exampleTests: TestConfig = {};
 
   private results = {
     total: 0,
@@ -49,7 +47,6 @@ class SanitySDKTestRunner {
     console.log('  --secure-ownable         Run secure-ownable tests only');
     console.log('  --runtime-rbac           Run runtime-rbac tests only');
     console.log('  --guard-controller       Run guard-controller tests only');
-    console.log('  --workflow               Run workflow tests only');
     console.log('  --help                   Show this help message');
     console.log();
     console.log('Examples:');
@@ -108,14 +105,21 @@ class SanitySDKTestRunner {
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       this.results.total++;
       this.results.failed++;
-      
-      // exec provides stdout/stderr in the error object
-      if (error.stderr) {
-        console.error(`\n❌ ${testName} tests failed (${duration}s)`);
-        // stderr is already shown via exec, but log it for clarity
-      } else {
-        console.error(`\n❌ ${testName} tests failed:`, error.message);
-        console.error(`   Command: ${command}`);
+      console.error(`\n❌ ${testName} tests failed (${duration}s)`);
+      if (error.message) {
+        console.error(`   Error: ${error.message}`);
+      }
+      // Print child stdout so we see the suite's own assertions and revert reasons
+      if (error.stdout && String(error.stdout).trim()) {
+        console.error('\n--- Failed suite output (stdout) ---');
+        console.error(String(error.stdout).trim());
+        console.error('--- End failed suite output ---\n');
+      }
+      if (error.stderr && String(error.stderr).trim()) {
+        const stderr = String(error.stderr).trim();
+        if (!stderr.includes('injecting env') && !stderr.match(/^\[dotenv@[\d.]+\]/)) {
+          console.error('   Stderr:', stderr);
+        }
       }
       return false;
     }

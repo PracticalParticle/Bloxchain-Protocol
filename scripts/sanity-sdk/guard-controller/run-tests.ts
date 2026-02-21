@@ -2,7 +2,7 @@
  * GuardController SDK Test Runner
  * Main file to run all or selective tests of the GuardController SDK
  */
-
+import '../load-env';
 import { WhitelistTests } from './whitelist-tests.ts';
 import { Erc20MintControllerSdkTests } from './erc20-mint-controller-tests.ts';
 

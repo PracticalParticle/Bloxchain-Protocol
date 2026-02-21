@@ -3,9 +3,11 @@
  * Tests updating the timelock period via meta-transaction
  */
 
+import { Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { updateTimeLockExecutionParams } from '../../../sdk/typescript/lib/definitions/SecureOwnableDefinitions';
 
 export class TimelockPeriodTests extends BaseSecureOwnableTest {
   constructor() {
@@ -85,10 +87,13 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
 
-      // Get execution params for timelock update
+      // Get execution params for timelock update (via definition contract)
+      if (!this.secureOwnableDefinitionsAddress) {
+        throw new Error('SecureOwnableDefinitions address not set');
+      }
       let executionOptions: Hex;
       try {
-        executionOptions = await this.secureOwnable.updateTimeLockExecutionParams(newTimelockSeconds);
+        executionOptions = await updateTimeLockExecutionParams(this.publicClient, this.secureOwnableDefinitionsAddress, newTimelockSeconds);
         this.assertTest(!!executionOptions && typeof executionOptions === 'string' && executionOptions.startsWith('0x'), 'Execution params created successfully');
         console.log(`    ✅ Execution params created for ${description}`);
       } catch (error: any) {
@@ -175,7 +180,7 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const result = await secureOwnableBroadcaster.updateTimeLockRequestAndApprove(
         fullMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
 
       this.assertTest(!!result.hash, 'Timelock update transaction created');
@@ -198,6 +203,9 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       console.log(`    📊 New timelock period: ${updatedTimelock.toString()} seconds`);
     } catch (error: any) {
       console.log(`    ❌ Timelock change to ${description} failed: ${error.message}`);
+      if (error.details) console.log(`    📋 Details: ${error.details}`);
+      if (error.cause?.message) console.log(`    📋 Cause: ${error.cause.message}`);
+      if (error.cause?.data) console.log(`    📋 Revert data: ${error.cause.data}`);
       throw error;
     }
   }

@@ -74,11 +74,9 @@ export interface ISecureOwnable {
   updateBroadcasterCancellationWithMetaTx(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
 
   // Recovery Management
-  updateRecoveryExecutionOptions(newRecoveryAddress: Address): Promise<Hex>;
   updateRecoveryRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
 
   // TimeLock Management
-  updateTimeLockExecutionOptions(newTimeLockPeriodSec: bigint): Promise<Hex>;
   updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult>;
 
   // Meta Transaction Management

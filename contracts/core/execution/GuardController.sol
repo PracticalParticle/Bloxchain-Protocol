@@ -80,7 +80,7 @@ abstract contract GuardController is BaseStateMachine {
             GuardControllerDefinitions.getFunctionSchemas(),
             guardControllerPermissions.roleHashes,
             guardControllerPermissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 
