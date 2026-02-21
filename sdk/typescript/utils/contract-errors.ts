@@ -769,6 +769,7 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
       if (sig && (types === '' || types)) {
         const paramNames = sig.params
         let params: Record<string, any> = {}
+        let decodeOk = true
         if (types) {
           try {
             const argsHex = '0x' + data.slice(8)
@@ -777,16 +778,18 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
               params[name] = decoded[i] !== undefined ? String(decoded[i]) : ''
             })
           } catch (_) {
-            return null
+            decodeOk = false
           }
         }
-        const message = sig.userMessage(params)
-        return {
-          name: sig.name,
-          signature: selector,
-          params,
-          message
-        } as unknown as GuardianContractError
+        if (decodeOk) {
+          const message = sig.userMessage(params)
+          return {
+            name: sig.name,
+            signature: selector,
+            params,
+            message
+          } as unknown as GuardianContractError
+        }
       }
     }
 

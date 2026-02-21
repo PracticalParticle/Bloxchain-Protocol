@@ -704,7 +704,8 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     const norm = (s: string | Hex) => String(s).toLowerCase();
     try {
       const schema = await this.guardController.getFunctionSchema(selector);
-      const returnedSelector = (schema as any)?.functionSelector ?? (schema as any)?.[1];
+      const returnedSelector =
+        (schema as any)?.functionSelector ?? (schema as any)?.functionSelectorReturn ?? (schema as any)?.[1];
       if (returnedSelector != null && norm(returnedSelector) === norm(selector)) {
         console.log(`  📋 getFunctionSchema: selector ${selector} already registered`);
         return true;

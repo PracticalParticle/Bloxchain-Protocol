@@ -539,6 +539,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         assertFalse(roleBlox.hasRole(roleHash, user1));
         vm.prank(owner);
         assertTrue(roleBlox.hasRole(roleHash, user2));
+        vm.prank(owner);
         address[] memory wallets = roleBlox.getWalletsInRole(roleHash);
         assertEq(wallets.length, 1);
         assertEq(wallets[0], user2);

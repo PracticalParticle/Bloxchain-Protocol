@@ -556,6 +556,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     const toHex = (v: unknown): string => {
       if (typeof v === 'string' && v.startsWith('0x')) return v;
       if (v instanceof Uint8Array) return bytesToHex(v);
+      if (typeof v !== 'string' && typeof v !== 'undefined') {
+        console.warn('normalizeMetaTxToHex: unexpected type for hex field', typeof v, v);
+      }
       return v as string;
     };
     // Normalize message to 66-char hex (0x + 64 hex digits) like CJS eip712-signing._normalizeMessageHex
@@ -563,7 +566,15 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     if (messageHex != null) {
       const raw = typeof messageHex === 'string' ? messageHex : bytesToHex(messageHex as Uint8Array);
       const body = (raw.startsWith('0x') ? raw.slice(2) : raw).replace(/[^0-9a-fA-F]/g, '') || '0';
-      messageHex = '0x' + (body.length > 64 ? body.slice(-64) : body.padStart(64, '0'));
+      if (body.length > 64) {
+        throw new Error(
+          `normalizeMetaTxToHex: message hash must be 64 hex chars (32 bytes), got ${body.length}; truncation would corrupt data`
+        );
+      }
+      if (body.length !== 64) {
+        console.warn(`normalizeMetaTxToHex: message body length ${body.length}, expected 64; padding to 64`);
+      }
+      messageHex = '0x' + body.padStart(64, '0');
     }
     return {
       ...metaTx,

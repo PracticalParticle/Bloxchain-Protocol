@@ -5,7 +5,6 @@ import { IRuntimeRBAC } from '../../interfaces/core.access.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
-import type { RoleConfigAction } from '../../types/core.access.index';
 
 /**
  * @title RuntimeRBAC
@@ -35,22 +34,6 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract('roleConfigBatchRequestAndApprove', [metaTx], options);
-  }
-
-  /**
-   * @dev Executes a role configuration batch (callable only by the contract itself, e.g. after meta-tx execution).
-   * @param actions Array of RoleConfigAction { actionType, data }
-   * @param options Transaction options including from address
-   */
-  async executeRoleConfigBatch(
-    actions: RoleConfigAction[],
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    const actionsTuple = actions.map((a) => ({
-      actionType: typeof a.actionType === 'number' ? a.actionType : Number(a.actionType),
-      data: a.data
-    }));
-    return this.executeWriteContract('executeRoleConfigBatch', [actionsTuple], options);
   }
 
   // ============ INTERFACE SUPPORT ============

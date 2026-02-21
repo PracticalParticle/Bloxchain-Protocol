@@ -8,7 +8,7 @@
 
 ## Summary
 
-A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in the security analysis, plus **21 protocol-vulnerabilities-index derived vectors** (see [Attack Vectors Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)). The suite consists of **14 comprehensive fuzz files** with **148 tests**, plus additional fuzz, invariant, and unit tests: **37 test suites, 309 tests** (all passing as of last full run).
+A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in the security analysis, plus **21 protocol-vulnerabilities-index-derived vectors** (see [Attack Vectors Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)). The suite consists of **14 comprehensive fuzz files** with **148 tests**, plus additional fuzz, invariant, and unit tests: **37 test suites, 309 tests** (all passing as of last full run).
 
 ---
 
@@ -172,7 +172,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ **37 test suites**, **309 tests** (all passing; includes 14 comprehensive fuzz files with 148 tests)
 - ✅ **All critical attack vectors** covered
 - ✅ **All high-priority attack vectors** covered
-- ✅ **Protocol-vulnerabilities-index derived vectors**: 19 covered/partial, 4 N/A — see [Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)
+- ✅ **Protocol-vulnerabilities-index-derived vectors**: 19 covered/partial, 4 N/A — see [Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)
 - ✅ **Gas exhaustion** and **system limit enforcement** verified
 - ✅ **Direct mapping** to [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
 
@@ -201,7 +201,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 
 ### ✅ Complete Test Coverage Structure
 
-1. **12 comprehensive test files** organized by attack category
+1. **14 comprehensive test files** organized by attack category
 2. **309 test functions** covering all attack vectors
 3. **Direct mapping** to security analysis documents
 4. **Clear documentation** with execution guides

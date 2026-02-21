@@ -230,18 +230,6 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   }
 
   /**
-   * @dev Executes a guard configuration batch (callable only by the contract itself, e.g. after meta-tx execution).
-   * @param actions Array of GuardConfigAction { actionType, data }
-   * @param options Transaction options including from address
-   */
-  async executeGuardConfigBatch(
-    actions: { actionType: number; data: Hex }[],
-    options: TransactionOptions
-  ): Promise<TransactionResult> {
-    return this.executeWriteContract('executeGuardConfigBatch', [actions], options);
-  }
-
-  /**
    * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine).
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses

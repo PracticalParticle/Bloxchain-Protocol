@@ -85,11 +85,6 @@ export interface IGuardController extends IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
-  executeGuardConfigBatch(
-    actions: { actionType: number; data: Hex }[],
-    options: TransactionOptions
-  ): Promise<TransactionResult>;
-
   /**
    * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine)
    * @param functionSelector The function selector
