@@ -217,11 +217,14 @@ class BaseGuardControllerTest {
         console.log('🤖 AUTO MODE: Fetching contract addresses and Ganache accounts...');
         
         try {
-            // Get contract addresses from Truffle artifacts
-            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
-            
+            // Prefer deployed-addresses.json so AccountBlox and BasicERC20 stay in sync (same minter); use development for remote dev
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
+            this.contractAddress = this.getAccountBloxFromDeployedAddresses(networkName);
             if (!this.contractAddress) {
-                throw new Error('Could not find AccountBlox address in Truffle artifacts');
+                this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
+            }
+            if (!this.contractAddress) {
+                throw new Error(`Could not find AccountBlox (deployed-addresses.json["${networkName}"] or Truffle artifacts)`);
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -269,6 +272,30 @@ class BaseGuardControllerTest {
         } catch (error) {
             console.error('❌ Manual mode initialization failed:', error.message);
             throw new Error(`Manual mode failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get AccountBlox address from deployed-addresses.json for the given network key.
+     * Use this so AccountBlox and BasicERC20 (which also uses deployed-addresses.json[network])
+     * stay in sync (BasicERC20.minter === AccountBlox when deployed in same run).
+     * @param {string} networkName - e.g. 'development'
+     * @returns {string|null} AccountBlox address or null if not found
+     */
+    getAccountBloxFromDeployedAddresses(networkName) {
+        try {
+            const addressesPath = path.join(__dirname, '../../../deployed-addresses.json');
+            if (!fs.existsSync(addressesPath)) return null;
+            const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
+            const entry = addresses[networkName]?.AccountBlox;
+            const addr = entry?.address || entry;
+            if (addr) {
+                console.log(`📋 Found AccountBlox at ${addr} from deployed-addresses.json (network: ${networkName})`);
+                return addr;
+            }
+            return null;
+        } catch (e) {
+            return null;
         }
     }
 

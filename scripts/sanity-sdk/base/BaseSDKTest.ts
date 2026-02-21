@@ -6,7 +6,7 @@
 import { Address, Hex, Account } from 'viem';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { TransactionResult } from '../../../sdk/typescript/interfaces/base.index';
+import { TransactionResult, TransactionOptions } from '../../../sdk/typescript/interfaces/base.index';
 import { getTestConfig, GANACHE_PRIVATE_KEYS } from './test-config';
 import {
   getContractAddressFromArtifacts,
@@ -47,11 +47,13 @@ export abstract class BaseSDKTest {
   constructor(testName: string) {
     this.testName = testName;
     console.log(`🔧 Test Mode: ${this.config.testMode.toUpperCase()}`);
+    console.log(`  📡 RPC: ${this.config.rpcUrl}`);
 
-    // Initialize public client first to query actual chain ID
-    this.publicClient = createPublicClient({
-      transport: http(this.config.rpcUrl),
-    }) as any;
+    // Initialize public client first to query actual chain ID (timeout for remote RPC)
+    const transport = http(this.config.rpcUrl, {
+      timeout: this.config.rpcTimeoutMs ?? 30_000,
+    });
+    this.publicClient = createPublicClient({ transport }) as any;
   }
 
   /**
@@ -226,6 +228,18 @@ export abstract class BaseSDKTest {
   }
 
   /**
+   * Build transaction options for writes (from + optional gas price for remote dev nodes).
+   * Use this for all writeContract/executeWriteContract calls so SANITY_SDK_GAS_PRICE_GWEI is applied.
+   */
+  protected getTxOptions(from: Address, overrides?: Partial<TransactionOptions>): TransactionOptions {
+    const opts: TransactionOptions = { from };
+    if (this.config.gasPriceGwei != null && this.config.gasPriceGwei > 0) {
+      opts.gasPrice = String(BigInt(this.config.gasPriceGwei) * BigInt(1e9));
+    }
+    return { ...opts, ...overrides };
+  }
+
+  /**
    * Create wallet client for a specific wallet
    */
   protected createWalletClient(walletName: string): any {
@@ -234,10 +248,13 @@ export abstract class BaseSDKTest {
       throw new Error(`Wallet not found: ${walletName}`);
     }
 
+    const transport = http(this.config.rpcUrl, {
+      timeout: this.config.rpcTimeoutMs ?? 30_000,
+    });
     return createWalletClient({
       account: wallet.account,
       chain: this.chain,
-      transport: http(this.config.rpcUrl),
+      transport,
     }) as any;
   }
 

@@ -15,6 +15,7 @@ export interface TransactionResult {
 export interface TransactionOptions {
   from: Address;
   gas?: number;
-  gasPrice?: string;
+  /** Max fee per gas (EIP-1559) in wei. Prefer bigint; string must be a non-negative integer. */
+  gasPrice?: string | bigint;
   value?: string;
 }

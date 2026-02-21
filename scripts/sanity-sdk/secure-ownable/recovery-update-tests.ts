@@ -7,6 +7,7 @@ import { Address, Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { updateRecoveryExecutionParams } from '../../../sdk/typescript/lib/definitions/SecureOwnableDefinitions';
 
 export class RecoveryUpdateTests extends BaseSecureOwnableTest {
   constructor() {
@@ -86,10 +87,13 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
 
-      // Get execution params for recovery update
+      // Get execution params for recovery update (via definition contract)
+      if (!this.secureOwnableDefinitionsAddress) {
+        throw new Error('SecureOwnableDefinitions address not set');
+      }
       let executionOptions: Hex;
       try {
-        const result = await this.secureOwnable.updateRecoveryExecutionParams(newRecoveryAddress);
+        const result = await updateRecoveryExecutionParams(this.publicClient, this.secureOwnableDefinitionsAddress, newRecoveryAddress);
         console.log(`    🔍 Raw execution params result:`, result, `(type: ${typeof result})`);
         executionOptions = result;
         this.assertTest(!!executionOptions && typeof executionOptions === 'string' && executionOptions.startsWith('0x'), 'Execution params created successfully');
@@ -199,7 +203,7 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const result = await secureOwnableBroadcaster.updateRecoveryRequestAndApprove(
         fullMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
 
       this.assertTest(!!result.hash, 'Recovery update transaction created');

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // Contract imports
 import "../base/BaseStateMachine.sol";
@@ -52,7 +52,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
             RuntimeRBACDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 

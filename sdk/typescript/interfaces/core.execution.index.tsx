@@ -30,6 +30,22 @@ export interface IGuardController extends IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult>;
 
+  executeWithPayment(
+    target: Address,
+    value: bigint,
+    functionSelector: Hex,
+    params: Hex,
+    gasLimit: bigint,
+    operationType: Hex,
+    paymentDetails: {
+      recipient: Address;
+      nativeTokenAmount: bigint;
+      erc20TokenAddress: Address;
+      erc20TokenAmount: bigint;
+    },
+    options: TransactionOptions
+  ): Promise<TransactionResult>;
+
   approveTimeLockExecution(
     txId: bigint,
     options: TransactionOptions
@@ -56,15 +72,6 @@ export interface IGuardController extends IBaseStateMachine {
   ): Promise<TransactionResult>;
 
   // Guard Configuration Batch
-  /**
-   * @dev Creates execution params for a guard configuration batch
-   * @param actions Encoded guard configuration actions
-   * @return Promise<Hex> The execution params to be used in a meta-transaction
-   */
-  guardConfigBatchExecutionParams(
-    actions: Array<{ actionType: number; data: Hex }>
-  ): Promise<Hex>;
-
   /**
    * @dev Requests and approves a guard configuration batch using a meta-transaction
    * @param metaTx The meta-transaction describing the guard configuration batch

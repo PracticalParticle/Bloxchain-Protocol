@@ -2,7 +2,9 @@
  * Hardhat deployment script: Foundation libraries (production / public network).
  * Deploys: EngineBlox, SecureOwnableDefinitions, RuntimeRBACDefinitions, GuardControllerDefinitions.
  * Aligns with migrations/1_deploy_foundation_libraries.cjs and foundry.toml compiler config.
- * Uses viem (Hardhat 3 default); fallback to ethers if available.
+ * Uses viem (Hardhat 3 default) for deployment.
+ *
+ * Output: Writes deployed addresses to deployed-addresses.json (merged by network).
  *
  * Usage:
  *   Copy env.deployment.example to .env.deployment and set DEPLOY_RPC_URL, DEPLOY_PRIVATE_KEY.
@@ -29,76 +31,17 @@ async function main() {
   const conn = await network.connect();
   const { networkName } = conn;
   const viem = conn.viem;
-  const ethers = conn.ethers;
-
-  const hasViem = Boolean(viem);
-  const hasEthers = Boolean(ethers && typeof ethers.getSigners === "function");
-  if (!hasViem && !hasEthers) {
+  if (!viem) {
     throw new Error(
-      "Deployment requires either Hardhat viem (conn.viem) or ethers (conn.ethers with getSigners). " +
-      "Ensure the Hardhat toolbox is configured and the network is connected. " +
-      "Install the Viem toolbox with: npm install --save-dev @nomicfoundation/hardhat-toolbox-viem"
+      "Deployment requires Hardhat viem (conn.viem). " +
+      "Ensure the Hardhat viem toolbox is configured and the network is connected. " +
+      "Install it with: npm install --save-dev @nomicfoundation/hardhat-toolbox-viem"
     );
   }
 
-  let deployerAddress = "N/A";
-  if (viem) {
-    const wallet = await viem.getWalletClient();
-    if (wallet?.account) deployerAddress = wallet.account.address;
-    console.log(`\n🚀 Deploying Foundation Libraries on ${networkName} (viem)`);
-    console.log(`📋 Deployer: ${deployerAddress}\n`);
-
-    const addresses = {};
-    const deployed = {};
-
-    for (const contractName of FOUNDATION_CONTRACTS) {
-      console.log(`📦 Deploying ${contractName}...`);
-      const lib = await viem.deployContract(contractName);
-      if (!lib) {
-        throw new Error(`deployContract("${contractName}") returned undefined. Run "npx hardhat compile" and ensure the contract artifact exists.`);
-      }
-      const addr = lib.address ?? lib.contractAddress;
-      if (!addr) {
-        throw new Error(`deployContract("${contractName}") returned contract with no address. Keys: ${Object.keys(lib).join(", ")}`);
-      }
-      deployed[contractName] = addr;
-      console.log(`   ✅ ${contractName}: ${addr}`);
-    }
-
-    const now = new Date().toISOString();
-    const networkKey = networkName;
-    for (const [name, address] of Object.entries(deployed)) {
-      if (!addresses[networkKey]) addresses[networkKey] = {};
-      addresses[networkKey][name] = { address, deployedAt: now };
-    }
-
-    let existing = {};
-    if (fs.existsSync(ADDRESSES_FILE)) {
-      try {
-        existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
-      } catch (e) {
-        console.warn(`⚠️ ${ADDRESSES_FILE} exists but is not valid JSON; using empty object. Error:`, e?.message ?? e);
-      }
-    }
-    for (const net of Object.keys(addresses)) {
-      existing[net] = { ...(existing[net] || {}), ...addresses[net] };
-    }
-    fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
-
-    console.log("\n🎉 Foundation libraries deployment complete.");
-    console.log("📋 Addresses:");
-    for (const [name, addr] of Object.entries(deployed)) {
-      console.log(`   ${name}: ${addr}`);
-    }
-    console.log(`\n💾 Saved to ${ADDRESSES_FILE}`);
-    return;
-  }
-
-  if (ethers && typeof ethers.getSigners === "function") {
-    const deployer = (await ethers.getSigners())[0];
-    deployerAddress = await deployer.getAddress();
-  }
-  console.log(`\n🚀 Deploying Foundation Libraries on ${networkName}`);
+  const wallet = await viem.getWalletClient();
+  const deployerAddress = wallet?.account ? wallet.account.address : "N/A";
+  console.log(`\n🚀 Deploying Foundation Libraries on ${networkName} (viem)`);
   console.log(`📋 Deployer: ${deployerAddress}\n`);
 
   const addresses = {};
@@ -106,9 +49,14 @@ async function main() {
 
   for (const contractName of FOUNDATION_CONTRACTS) {
     console.log(`📦 Deploying ${contractName}...`);
-    const lib = await ethers.deployContract(contractName);
-    await lib.waitForDeployment();
-    const addr = await lib.getAddress();
+    const lib = await viem.deployContract(contractName);
+    if (!lib) {
+      throw new Error(`deployContract("${contractName}") returned undefined. Run "npx hardhat compile" and ensure the contract artifact exists.`);
+    }
+    const addr = lib.address ?? lib.contractAddress;
+    if (!addr) {
+      throw new Error(`deployContract("${contractName}") returned contract with no address. Keys: ${Object.keys(lib).join(", ")}`);
+    }
     deployed[contractName] = addr;
     console.log(`   ✅ ${contractName}: ${addr}`);
   }
@@ -135,11 +83,11 @@ async function main() {
   fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
 
   console.log("\n🎉 Foundation libraries deployment complete.");
-  console.log("📋 Addresses:");
+  console.log("📋 Deployed addresses (logged to deployed-addresses.json):");
   for (const [name, addr] of Object.entries(deployed)) {
     console.log(`   ${name}: ${addr}`);
   }
-  console.log(`\n💾 Saved to ${ADDRESSES_FILE}`);
+  console.log(`\n💾 All deployed addresses saved to: ${path.resolve(ADDRESSES_FILE)}`);
 }
 
 main().catch((err) => {

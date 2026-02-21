@@ -5,7 +5,6 @@ import { IGuardController } from '../../interfaces/core.execution.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
-import { guardConfigBatchExecutionParams as defGuardConfigBatchExecutionParams } from '../../lib/definitions/GuardControllerDefinitions';
 
 /**
  * @title GuardController
@@ -84,6 +83,39 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
     return this.executeWriteContract(
       'executeWithTimeLock',
       [target, value, functionSelector, params, gasLimit, operationType],
+      options
+    );
+  }
+
+  /**
+   * @dev Requests a time-locked execution with payment details
+   * @param target The address of the target contract
+   * @param value The ETH value to send
+   * @param functionSelector The function selector to execute
+   * @param params The encoded parameters for the function
+   * @param gasLimit The gas limit for execution
+   * @param operationType The operation type hash
+   * @param paymentDetails Payment details (recipient, nativeTokenAmount, erc20TokenAddress, erc20TokenAmount)
+   * @param options Transaction options including from address
+   */
+  async executeWithPayment(
+    target: Address,
+    value: bigint,
+    functionSelector: Hex,
+    params: Hex,
+    gasLimit: bigint,
+    operationType: Hex,
+    paymentDetails: {
+      recipient: Address;
+      nativeTokenAmount: bigint;
+      erc20TokenAddress: Address;
+      erc20TokenAmount: bigint;
+    },
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
+    return this.executeWriteContract(
+      'executeWithPayment',
+      [target, value, functionSelector, params, gasLimit, operationType, paymentDetails],
       options
     );
   }
@@ -183,17 +215,6 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   // ============ GUARD CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution params for a guard configuration batch (definition helper; no contract call)
-   * @param actions Guard configuration actions
-   * @return Promise<Hex> The execution params to be used in a meta-transaction
-   */
-  async guardConfigBatchExecutionParams(
-    actions: Array<{ actionType: number; data: Hex }>
-  ): Promise<Hex> {
-    return Promise.resolve(defGuardConfigBatchExecutionParams(actions));
-  }
-
-  /**
    * @dev Requests and approves a guard configuration batch using a meta-transaction
    * @param metaTx The meta-transaction describing the guard configuration batch
    * @param options Transaction options including from address
@@ -212,20 +233,9 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
    * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine).
    * @param functionSelector The function selector
    * @return Promise<Address[]> Array of whitelisted target addresses
-   * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
    */
-  async getFunctionWhitelistTargets(
-    functionSelector: Hex
-  ): Promise<Address[]> {
-    const result = await this.executeReadContract<Address[]>('getFunctionWhitelistTargets', [
-      functionSelector
-    ]);
-    
-    if (!Array.isArray(result)) {
-      throw new Error(`Unexpected return type from getFunctionWhitelistTargets: ${typeof result}`);
-    }
-    
-    return result;
+  async getFunctionWhitelistTargets(functionSelector: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getFunctionWhitelistTargets', [functionSelector]);
   }
 
   // ============ INTERFACE SUPPORT ============
@@ -237,15 +247,6 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   async supportsGuardControllerInterface(): Promise<boolean> {
     return this.supportsInterface(INTERFACE_IDS.IGuardController);
   }
-
-  // Note: Function schema query (functionSchemaExists) and registration are available through:
-  // - functionSchemaExists(): inherited from BaseStateMachine
-  // - Function registration: use guardConfigBatchRequestAndApprove with REGISTER_FUNCTION action
-  // Note: Meta-transaction utility functions (createMetaTxParams,
-  // generateUnsignedMetaTransactionForNew, generateUnsignedMetaTransactionForExisting)
-  // are already available through inheritance from BaseStateMachine
-  // Note: For role management, combine with RuntimeRBAC
-  // Note: Target whitelist management now uses guardConfigBatchRequestAndApprove with ADD/REMOVE_TARGET_TO_WHITELIST actions
 }
 
 export default GuardController;

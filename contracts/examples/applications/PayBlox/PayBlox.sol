@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // Particle imports
 import "../../../core/security/SecureOwnable.sol";
@@ -87,7 +87,7 @@ contract PayBlox is SecureOwnable {
             PayBloxDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
     

@@ -7,7 +7,7 @@
 import { Address } from 'viem';
 import { BaseSecureOwnableTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index.tsx';
 
 export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
   constructor() {
@@ -23,10 +23,50 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
     console.log('   3. Meta-transaction Approval (immediate)');
     console.log('   4. Time Delay Approval (requires wait)');
 
+    await this.clearPendingSecureRequests();
     await this.testMetaTransactionCancellation();
     await this.testTimeDelayCancellation();
     await this.testMetaTransactionApproval();
     await this.testTimeDelayApproval();
+  }
+
+  /**
+   * Clear any pending secure requests so updateBroadcasterRequest() does not revert with PendingSecureRequest.
+   */
+  private async clearPendingSecureRequests(): Promise<void> {
+    if (!this.secureOwnable) return;
+    try {
+      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      if (pendingTxs.length === 0) return;
+      for (const txId of pendingTxs) {
+        try {
+          const tx = await this.secureOwnable.getTransaction(txId);
+          const op = tx.params?.operationType?.toLowerCase?.();
+          if (op === OPERATION_TYPES.OWNERSHIP_TRANSFER.toLowerCase()) {
+            const recoveryWallet = this.getRoleWallet('recovery');
+            const recoveryWalletName = Object.keys(this.wallets).find(
+              (k) => this.wallets[k].address.toLowerCase() === recoveryWallet.address.toLowerCase()
+            ) || 'wallet1';
+            await this.waitForTimelockWithTxId(txId);
+            await this.createSecureOwnableWithWallet(recoveryWalletName).transferOwnershipCancellation(
+              txId,
+              this.getTxOptions(recoveryWallet.address)
+            );
+          } else if (op === OPERATION_TYPES.BROADCASTER_UPDATE.toLowerCase()) {
+            const ownerWallet = this.getRoleWallet('owner');
+            const ownerWalletName = Object.keys(this.wallets).find(
+              (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+            ) || 'wallet1';
+            await this.waitForTimelockWithTxId(txId);
+            await this.createSecureOwnableWithWallet(ownerWalletName).updateBroadcasterCancellation(
+              txId,
+              this.getTxOptions(ownerWallet.address)
+            );
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   async testMetaTransactionCancellation(): Promise<void> {
@@ -52,9 +92,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
-        from: ownerWallet.address,
-      });
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -84,7 +122,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const executeResult = await secureOwnableBroadcaster.updateBroadcasterCancellationWithMetaTx(
         signedMetaTx,
-        { from: this.roles.broadcaster }
+        this.getTxOptions(this.roles.broadcaster)
       );
 
       await executeResult.wait();
@@ -121,9 +159,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
-        from: ownerWallet.address,
-      });
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -136,9 +172,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await this.waitForTimelockWithTxId(txId);
 
       // Owner cancels after timelock
-      const cancelResult = await secureOwnableOwner.updateBroadcasterCancellation(txId, {
-        from: ownerWallet.address,
-      });
+      const cancelResult = await secureOwnableOwner.updateBroadcasterCancellation(txId, this.getTxOptions(ownerWallet.address));
 
       await cancelResult.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -174,9 +208,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
-        from: ownerWallet.address,
-      });
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -205,7 +237,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const executeResult = await secureOwnableBroadcaster.updateBroadcasterApprovalWithMetaTx(
         signedMetaTx,
-        { from: this.roles.broadcaster }
+        this.getTxOptions(this.roles.broadcaster)
       );
 
       await executeResult.wait();
@@ -259,9 +291,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
-        from: ownerWallet.address,
-      });
+      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -274,9 +304,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await this.waitForTimelockWithTxId(txId);
 
       // Owner approves after timelock
-      const approveResult = await secureOwnableOwner.updateBroadcasterDelayedApproval(txId, {
-        from: ownerWallet.address,
-      });
+      const approveResult = await secureOwnableOwner.updateBroadcasterDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
 
       await approveResult.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));

@@ -43,9 +43,7 @@ export class MetaTxExecutionTests extends BaseSecureOwnableTest {
     ) || 'wallet1';
 
     const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-    const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, {
-      from: ownerWallet.address,
-    });
+    const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
 
     await result.wait();
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -72,7 +70,7 @@ export class MetaTxExecutionTests extends BaseSecureOwnableTest {
     const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
     const executeResult = await secureOwnableBroadcaster.updateBroadcasterApprovalWithMetaTx(
       signedMetaTx,
-      { from: this.roles.broadcaster }
+      this.getTxOptions(this.roles.broadcaster)
     );
 
     await executeResult.wait();

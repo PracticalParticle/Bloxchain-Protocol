@@ -2,7 +2,7 @@
  * SecureOwnable SDK Test Runner
  * Main file to run all or selective tests of the SecureOwnable SDK
  */
-
+import '../load-env';
 import { OwnershipTransferTests } from './ownership-transfer-tests.ts';
 import { BroadcasterUpdateTests } from './broadcaster-update-tests.ts';
 import { RecoveryUpdateTests } from './recovery-update-tests.ts';

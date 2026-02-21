@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../base/BaseStateMachine.sol";
 import "../lib/utils/SharedValidation.sol";
@@ -80,7 +80,7 @@ abstract contract GuardController is BaseStateMachine {
             GuardControllerDefinitions.getFunctionSchemas(),
             guardControllerPermissions.roleHashes,
             guardControllerPermissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 

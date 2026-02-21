@@ -14,10 +14,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { Address, Hex } from 'viem';
-import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { keccak256, encodeAbiParameters, parseAbiParameters, decodeErrorResult, stringToHex, bytesToHex } from 'viem';
 
 import { BaseGuardControllerTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
+import { RoleConfigActionType } from '../runtime-rbac/base-test.ts';
+import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.ts';
 
 const ERC20_MINT_SELECTOR = '0x40c10f19' as Hex; // mint(address,uint256)
 const ERC20_MINT_SIGNATURE = 'mint(address,uint256)';
@@ -46,11 +48,13 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     console.log('==================================================');
     console.log('   1. Ensure mint(address,uint256) schema exists');
     console.log('   2. Ensure BasicERC20 is whitelisted for mint selector');
-    console.log('   3. Mint 100 BASIC to AccountBlox via meta-transaction');
-    console.log('   4. Verify BASIC balance increased by 100e18\n');
+    console.log('   3. Ensure mint roles and permissions (MINT_REQUESTOR, MINT_APPROVER, BROADCASTER)');
+    console.log('   4. Mint 100 BASIC to AccountBlox via meta-transaction');
+    console.log('   5. Verify BASIC balance increased by 100e18\n');
 
     await this.step0RegisterMintSchemaIfNeeded();
     await this.step1WhitelistBasicErc20IfNeeded();
+    await this.step1bEnsureMintRolesAndPermissions();
     await this.step2Mint100ToAccountBloxViaMetaTx();
     await this.step3VerifyBalanceIncrease();
   }
@@ -113,9 +117,15 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     try {
       if (!this.guardController) throw new Error('GuardController not initialized');
 
+      // CJS-style pre-check: getFunctionSchema + getSupportedFunctions (scripts/sanity/guard-controller)
+      if (await this.schemaOrSupportedSetPreCheck(ERC20_MINT_SELECTOR)) {
+        console.log('  ℹ️  mint(address,uint256) schema already registered (getFunctionSchema or getSupportedFunctions); skipping');
+        this.assertTest(true, 'Mint schema already registered');
+        return;
+      }
       const already = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
       if (already) {
-        console.log('  ℹ️  mint(address,uint256) schema already registered; skipping registration');
+        console.log('  ℹ️  mint(address,uint256) schema already registered (functionSchemaExists); skipping registration');
         this.assertTest(true, 'Mint schema already registered');
         return;
       }
@@ -155,7 +165,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
       const receipt = await result.wait();
 
@@ -165,26 +175,38 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       const isSuccess0 = status0 === 'success' || status0 === 1 || String(status0) === '1';
       console.log(`     Status: ${isSuccess0 ? 'SUCCESS' : 'FAILED'}`);
 
-      // Best-effort verification (do not fail hard if remote node quirks exist).
-      // The core CJS sanity tests already perform a deep verification of the ERC20 mint
-      // function schema, so here we only log the SDK-side visibility instead of failing
-      // the whole suite if functionSchemaExists behaves differently in some environments.
       try {
-        const existsNow = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
-        if (!existsNow) {
-          console.warn(
-            '  ⚠️  Mint schema did not report as existing via functionSchemaExists after registration (best-effort check only).'
-          );
-        } else {
-          console.log('  ✅ Mint schema is visible via functionSchemaExists after registration');
+        await this.assertGuardConfigBatchSucceeded(receipt, 'Register ERC20 mint schema');
+      } catch (e: any) {
+        if (e?.message?.includes('TxStatus 6')) {
+          if (e?.message?.includes('ResourceAlreadyExists')) {
+            console.log('  ⚠️  ResourceAlreadyExists — mint schema may already be registered (CJS-style: verify then pass)');
+          }
+          const verified = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
+          if (verified) {
+            console.log('  ℹ️  Register returned TxStatus 6; verified mint schema already exists via functionSchemaExists — step passed');
+            return;
+          }
         }
-      } catch (checkError: any) {
-        console.warn(
-          `  ⚠️  functionSchemaExists check failed after registration (best-effort only): ${
-            checkError?.message || checkError
-          }`
-        );
+        throw e;
       }
+
+      const maxRetries = 10;
+      const retryDelayMs = 3000;
+      let existsNow = false;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        try {
+          existsNow = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
+          if (existsNow) {
+            console.log('  ✅ Mint schema is visible via functionSchemaExists after registration');
+            break;
+          }
+        } catch (checkError: any) {
+          console.warn(`  ⏳ functionSchemaExists attempt ${attempt}/${maxRetries}: ${checkError?.message || checkError}`);
+        }
+      }
+      this.assertTest(existsNow, 'Mint schema must be visible via functionSchemaExists after registration');
     } catch (error: any) {
       this.handleTestError('Ensure ERC20 mint schema', error);
       throw error;
@@ -212,7 +234,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       // Check if already whitelisted (contract may revert if selector not yet registered)
       let targets: Address[] = [];
       try {
-        targets = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
+        targets = await this.getFunctionWhitelistTargetsAsOwner(ERC20_MINT_SELECTOR, 2, 500);
       } catch (_) {
         console.log('  ℹ️  getFunctionWhitelistTargets reverted (selector may be unregistered); treating as empty');
       }
@@ -233,7 +255,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        { from: broadcasterWallet.address }
+        this.getTxOptions(broadcasterWallet.address)
       );
       const receipt = await result.wait();
 
@@ -243,12 +265,37 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       const isSuccess1 = status1 === 'success' || status1 === 1 || String(status1) === '1';
       console.log(`     Status: ${isSuccess1 ? 'SUCCESS' : 'FAILED'}`);
 
-      let targetsAfter: Address[] = [];
       try {
-        targetsAfter = await this.guardController.getFunctionWhitelistTargets(ERC20_MINT_SELECTOR);
-      } catch (_) {
-        console.log('  ℹ️  getFunctionWhitelistTargets reverted after update (best-effort check skipped)');
+        await this.assertGuardConfigBatchSucceeded(receipt, 'Add BasicERC20 to mint whitelist');
+      } catch (e: any) {
+        if (!e?.message?.includes('TxStatus 6')) throw e;
+        const isItemAlreadyExists = /ItemAlreadyExists/i.test(e?.message ?? '');
+        let isInList = false;
+        try {
+          const targetsCheck = await this.getFunctionWhitelistTargetsAsOwner(ERC20_MINT_SELECTOR, 3, 1000);
+          isInList = targetsCheck.some((t) => t.toLowerCase() === token.toLowerCase());
+        } catch (verifyErr: any) {
+          if (isItemAlreadyExists) {
+            console.log('  ℹ️  Add returned TxStatus 6 (ItemAlreadyExists); verification failed but revert implies already whitelisted — step passed');
+            this.assertTest(true, 'BasicERC20 is whitelisted for mint selector (verified after TxStatus 6)');
+            return;
+          }
+          throw new Error(
+            `Add BasicERC20 returned TxStatus 6 and getFunctionWhitelistTargets failed; cannot verify. ${e.message}`
+          );
+        }
+        if (!isInList) {
+          throw new Error(
+            `Add BasicERC20 returned TxStatus 6 and token is not in whitelist (verified). Step must succeed or data must already be in place. ${e.message}`
+          );
+        }
+        console.log('  ℹ️  Add returned TxStatus 6; verified BasicERC20 is already in whitelist — step passed');
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        this.assertTest(true, 'BasicERC20 is whitelisted for mint selector (verified after TxStatus 6)');
+        return;
       }
+
+      const targetsAfter = await this.getFunctionWhitelistTargetsAsOwner(ERC20_MINT_SELECTOR);
       console.log(`  📋 Whitelist targets after SDK update (${targetsAfter.length}):`);
       targetsAfter.forEach((t, i) => {
         console.log(`     ${i + 1}. ${t}`);
@@ -260,21 +307,108 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
           true,
           `BasicERC20 ${token} is whitelisted for mint selector after SDK step`
         );
-      } else {
-        console.warn(
-          `  ⚠️  BasicERC20 ${token} did not appear in getFunctionWhitelistTargets after SDK whitelist update (best-effort check only).`
-        );
-        console.warn(
-          '     Treating this as a visibility issue in the SDK helper; core CJS sanity tests verify the whitelist behavior in depth.'
-        );
-        this.assertTest(true, 'BasicERC20 whitelist verification treated as best-effort (SDK helper)');
       }
+      // Allow chain state to settle before mint step (whitelist visibility).
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      this.assertTest(nowWhitelisted, `BasicERC20 ${token} must be whitelisted for mint selector after update`);
     } catch (error: any) {
       this.handleTestError('Ensure BasicERC20 whitelisted for mint', error);
       throw error;
     }
   }
 
+  /**
+   * Ensure MINT_REQUESTOR, MINT_APPROVER roles exist and have correct function permissions;
+   * BROADCASTER_ROLE must have EXECUTE_META_REQUEST_AND_APPROVE for mint. Aligns with CJS steps 1 and 4.
+   */
+  private async step1bEnsureMintRolesAndPermissions(): Promise<void> {
+    console.log('\n🧪 SDK Step 1b: Ensure mint roles and permissions');
+    try {
+      const ownerWalletName =
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === this.getRoleWallet('owner').address.toLowerCase()
+        ) || 'wallet1';
+      const broadcasterWalletName =
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === this.getRoleWallet('broadcaster').address.toLowerCase()
+        ) || 'wallet2';
+      const requestorHash = this.getRoleHash('MINT_REQUESTOR');
+      const approverHash = this.getRoleHash('MINT_APPROVER');
+      const broadcasterHash = this.getRoleHash('BROADCASTER_ROLE');
+
+      const requestorExists = await this.roleExists(requestorHash);
+      const approverExists = await this.roleExists(approverHash);
+      if (!requestorExists || !approverExists) {
+        const actions: import('../runtime-rbac/base-test.ts').RoleConfigAction[] = [];
+        if (!requestorExists) {
+          actions.push(
+            await this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_REQUESTOR', maxWallets: 10 }),
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+              roleHash: requestorHash,
+              wallet: this.wallets.wallet3!.address,
+            })
+          );
+        }
+        if (!approverExists) {
+          actions.push(
+            await this.encodeRoleConfigAction(RoleConfigActionType.CREATE_ROLE, { roleName: 'MINT_APPROVER', maxWallets: 10 }),
+            await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+              roleHash: approverHash,
+              wallet: this.wallets.wallet4!.address,
+            })
+          );
+        }
+        if (actions.length > 0) {
+          await this.executeRoleConfigBatch(actions, ownerWalletName, broadcasterWalletName);
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+
+      const requestorActions = [TxAction.EXECUTE_TIME_DELAY_REQUEST];
+      const approverActions = [TxAction.SIGN_META_APPROVE, TxAction.SIGN_META_CANCEL];
+      const broadcasterActions = [TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+
+      const batch1 = [
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: requestorHash,
+          functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, requestorActions),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: approverHash,
+          functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, approverActions),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: approverHash,
+          functionPermission: this.createFunctionPermission(this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, approverActions, [ERC20_MINT_SELECTOR]),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: broadcasterHash,
+          functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, broadcasterActions),
+        }),
+      ];
+      try {
+        await this.executeRoleConfigBatch(batch1, ownerWalletName, broadcasterWalletName);
+      } catch (batchError: any) {
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Mint permissions already present (ResourceAlreadyExists/ItemAlreadyExists), continuing');
+        } else {
+          throw batchError;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+      console.log('  ✅ Mint roles and permissions ensured');
+    } catch (error: any) {
+      this.handleTestError('Ensure mint roles and permissions', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mint 100 BASIC to AccountBlox via requestAndApproveExecution.
+   * Flow mirrors sanity direct (100% working reference):
+   *   scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs (testStep5MintFlow)
+   * Run CJS on same RPC to compare: node scripts/sanity/guard-controller/run-tests.cjs --erc20-mint-controller
+   */
   private async step2Mint100ToAccountBloxViaMetaTx(): Promise<void> {
     console.log('\n🧪 SDK Step 2: Mint 100 BASIC to AccountBlox via meta-transaction');
     try {
@@ -304,8 +438,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         [accountBlox, amount]
       ) as Hex;
 
-      // Build TxParams for new ERC20_MINT operation
-      const operationType = keccak256(new TextEncoder().encode('ERC20_MINT')) as Hex;
+      // Build TxParams for new ERC20_MINT operation (match CJS: web3.utils.keccak256('ERC20_MINT'))
+      const operationType = keccak256(stringToHex('ERC20_MINT')) as Hex;
       const txParams = {
         requester: mintRequestor.address as Address,
         target: token,
@@ -316,21 +450,27 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         executionParams,
       };
 
-      // Meta-tx params: use mint selector as handlerSelector so signer auth path
-      // only depends on mint permissions (matches direct sanity fix).
+      // Meta-tx params: match CJS createExternalExecutionMetaTx (handlerContract=AccountBlox,
+      // handlerSelector=executionSelector=mint, action=SIGN_META_APPROVE, deadline=3600, maxGasPrice=0).
       const metaTxParams = await this.createMetaTxParams(
         ERC20_MINT_SELECTOR,
         TxAction.SIGN_META_APPROVE,
-        mintApprover.address as Address
+        mintApprover.address as Address,
+        3600
       );
 
-      console.log('  📝 Generating and signing ERC20 mint meta-transaction via SDK...');
-      const signedMetaTx = await this.metaTxSigner.createSignedMetaTransactionForNew(
-        txParams,
-        metaTxParams,
+      // Flow mirrors sanity direct: scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs
+      // testStep5MintFlow (createExternalExecutionMetaTx → signMetaTransaction → requestAndApproveExecution).
+      // Reference: run "node scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs" on same RPC to compare.
+      console.log('  📋 Generating unsigned meta-transaction from contract (nonce + txRecord)...');
+      const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
+      console.log('  🔐 Signing meta-transaction...');
+      let signedMetaTx = await this.metaTxSigner.signMetaTransaction(
+        unsignedMetaTx,
         mintApprover.address as Address,
         mintApprover.privateKey
       );
+      signedMetaTx = this.normalizeMetaTxToHex(signedMetaTx);
 
       const broadcasterWallet = this.getRoleWallet('broadcaster');
       const broadcasterGuardController = this.createGuardControllerWithWallet(
@@ -340,40 +480,119 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       );
 
       console.log('  📤 Calling requestAndApproveExecution(metaTx) via broadcaster wallet...');
+      const result = await broadcasterGuardController.requestAndApproveExecution(signedMetaTx, this.getTxOptions(broadcasterWallet.address));
+      const receipt = await result.wait();
 
-      try {
-        const result = await broadcasterGuardController.requestAndApproveExecution(signedMetaTx, {
-          from: broadcasterWallet.address,
-        });
-        const receipt = await result.wait();
+      console.log('  ✅ requestAndApproveExecution meta-tx sent');
+      console.log(`     Tx hash: ${result.hash}`);
+      const status2 = receipt.status as any;
+      const isSuccess2 = status2 === 'success' || status2 === 1 || String(status2) === '1';
+      console.log(`     Status: ${isSuccess2 ? 'SUCCESS' : 'FAILED'}`);
 
-        console.log('  ✅ requestAndApproveExecution meta-tx sent');
-        console.log(`     Tx hash: ${result.hash}`);
-        const status2 = receipt.status as any;
-        const isSuccess2 = status2 === 'success' || status2 === 1 || String(status2) === '1';
-        console.log(`     Status: ${isSuccess2 ? 'SUCCESS' : 'FAILED'}`);
-
-        this.assertTest(
-          isSuccess2,
-          'Mint meta-transaction executed successfully'
-        );
-      } catch (execError: any) {
-        console.error(
-          '  [SDK mint] requestAndApproveExecution reverted or failed during simulation (soft-failure).'
-        );
-        console.error(`     Details: ${execError?.message || execError}`);
-        console.warn(
-          '     Treating this as a best-effort execution check for the SDK wrapper. ' +
-            'Core CJS sanity tests validate the full GuardController mint flow (roles, permissions, and balance change).'
-        );
-        // Soft-failure: surface in CI via console.error above; test still passes so environment-specific
-        // permission or simulation issues do not fail the entire sanity-sdk core suite.
-        this.assertTest(true, 'Mint meta-transaction treated as best-effort (SDK helper)');
-      }
+      this.assertTest(isSuccess2, 'Mint meta-transaction must execute successfully');
     } catch (error: any) {
+      this.logRevertReason(error);
       this.handleTestError('Mint 100 BASIC via GuardController meta-tx', error);
       throw error;
     }
+  }
+
+  /** Decode and log contract revert data when present (supports EnhancedViemError and nested cause). */
+  private logRevertReason(error: any): void {
+    try {
+      let errData: unknown =
+        error?.errorData ??
+        error?.data ??
+        error?.cause?.data ??
+        error?.cause?.cause?.data ??
+        error?.originalError?.data ??
+        error?.originalError?.cause?.data ??
+        (typeof error?.details === 'string' ? error.details : error?.details?.data);
+      if (errData && typeof errData === 'object' && (errData as any)?.data) errData = (errData as any).data;
+      let hexData: string | null =
+        typeof errData === 'string' && errData.startsWith('0x') ? errData : null;
+      // Only use hex from message if short (revert data is selector + args; avoid using full calldata)
+      if (!hexData && error?.message && typeof error.message === 'string') {
+        const m = error.message.match(/0x[0-9a-fA-F]{8,}/);
+        if (m && m[0].length >= 10 && m[0].length <= 600) hexData = m[0];
+      }
+      if (!hexData || hexData.length <= 10) return;
+      const abiDir = path.join(__dirname, '../../../sdk/typescript/abi');
+      const abis: { name: string; path: string }[] = [
+        { name: 'GuardController', path: path.join(abiDir, 'GuardController.abi.json') },
+        { name: 'AccountBlox', path: path.join(abiDir, 'AccountBlox.abi.json') },
+      ];
+      // Prefer ABI decode so we get exact error name and args (revert data is usually from contract)
+      for (const { name, path: abiPath } of abis) {
+        try {
+          const abi = JSON.parse(fs.readFileSync(abiPath, 'utf8')) as any[];
+          const decoded = decodeErrorResult({ abi, data: hexData as `0x${string}` });
+          const { userMessage } = extractErrorInfo(hexData);
+          const clearMsg = userMessage && userMessage !== 'Transaction reverted with unknown error'
+            ? userMessage
+            : `${decoded.errorName}(${JSON.stringify(decoded.args)})`;
+          console.error(`  🔍 Contract revert (${name}): ${clearMsg}`);
+          return;
+        } catch (_) {
+          /* try next ABI */
+        }
+      }
+      const { userMessage, error: decodedError, isKnownError } = extractErrorInfo(hexData);
+      if (decodedError && userMessage && userMessage !== 'Transaction reverted with unknown error') {
+        console.error(`  🔍 Contract revert: ${userMessage}`);
+        if (isKnownError && decodedError.params && Object.keys(decodedError.params).length > 0) {
+          console.error(`     Decoded: ${decodedError.name}(${JSON.stringify(decodedError.params)})`);
+        }
+      } else if (userMessage) {
+        console.error(`  🔍 Contract revert: ${userMessage}`);
+      }
+    } catch (_) {
+      /* ignore decode failure */
+    }
+  }
+
+  /** Ensure bytes/hex fields are normalized (match CJS _normalizeMessageHex / raw hex for encoding). */
+  private normalizeMetaTxToHex(metaTx: any): any {
+    const toHex = (v: unknown): string => {
+      if (typeof v === 'string' && v.startsWith('0x')) return v;
+      if (v instanceof Uint8Array) return bytesToHex(v);
+      if (typeof v !== 'string' && typeof v !== 'undefined') {
+        console.warn('normalizeMetaTxToHex: unexpected type for hex field', typeof v, v);
+      }
+      return v as string;
+    };
+    // Normalize message to 66-char hex (0x + 64 hex digits) like CJS eip712-signing._normalizeMessageHex
+    let messageHex = metaTx.message;
+    if (messageHex != null) {
+      const raw = typeof messageHex === 'string' ? messageHex : bytesToHex(messageHex as Uint8Array);
+      const body = (raw.startsWith('0x') ? raw.slice(2) : raw).replace(/[^0-9a-fA-F]/g, '') || '0';
+      if (body.length > 64) {
+        throw new Error(
+          `normalizeMetaTxToHex: message hash must be 64 hex chars (32 bytes), got ${body.length}; truncation would corrupt data`
+        );
+      }
+      if (body.length !== 64) {
+        console.warn(`normalizeMetaTxToHex: message body length ${body.length}, expected 64; padding to 64`);
+      }
+      messageHex = '0x' + body.padStart(64, '0');
+    }
+    return {
+      ...metaTx,
+      message: messageHex ?? metaTx.message,
+      signature: toHex(metaTx.signature),
+      data: toHex(metaTx.data),
+      txRecord: {
+        ...metaTx.txRecord,
+        message: metaTx.txRecord?.message != null ? toHex(metaTx.txRecord.message) : metaTx.txRecord?.message,
+        params: metaTx.txRecord?.params
+          ? {
+              ...metaTx.txRecord.params,
+              executionParams: toHex(metaTx.txRecord.params.executionParams),
+            }
+          : metaTx.txRecord?.params,
+        result: metaTx.txRecord?.result != null ? toHex(metaTx.txRecord.result) : metaTx.txRecord?.result,
+      },
+    };
   }
 
   private async step3VerifyBalanceIncrease(): Promise<void> {
@@ -387,25 +606,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       const delta = balanceAfter - this.balanceBefore;
       const expected = 100n * 10n ** 18n;
 
-      if (delta === expected) {
-        this.assertTest(
-          true,
-          `BASIC balance increased by exactly 100e18 (delta=${delta.toString()})`
-        );
-        this.assertTest(
-          balanceAfter >= expected,
-          `AccountBlox BASIC balance >= 100 (after=${balanceAfter.toString()})`
-        );
-      } else {
-        console.error(
-          `  [SDK mint] BASIC balance delta after mint flow was ${delta.toString()} (expected 100e18) (soft-failure).`
-        );
-        console.warn(
-          '     Treating this as a best-effort verification for the SDK wrapper. ' +
-            'The underlying CJS GuardController sanity tests already assert the exact balance change.'
-        );
-        this.assertTest(true, 'BASIC balance verification treated as best-effort (SDK helper)');
-      }
+      this.assertTest(delta === expected, `BASIC balance must increase by 100e18 (delta=${delta.toString()}, expected=${expected.toString()})`);
+      this.assertTest(balanceAfter >= expected, `AccountBlox BASIC balance >= 100 (after=${balanceAfter.toString()})`);
     } catch (error: any) {
       this.handleTestError('Verify BASIC balance after mint', error);
       throw error;

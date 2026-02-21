@@ -1,15 +1,25 @@
 /**
  * RuntimeRBACDefinitions
- * Pure helpers for building execution params for RuntimeRBAC operations.
- * Mirrors RuntimeRBACDefinitions.sol; no contract calls.
- * Uses parseAbiParameters + array-of-[actionType,data] to match web3 encodeParameter('tuple(uint8,bytes)[]', ...).
+ * Calls the deployed RuntimeRBACDefinitions contract for specs and encoding.
+ * Single source of truth: action names, formats, and encoding come from the contract.
+ * @see contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol
  */
 
-import { type Address, type Hex, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { type Abi, type Address, type Hex, type PublicClient, bytesToHex, encodeAbiParameters, parseAbiParameters } from 'viem';
+import RuntimeRBACDefinitionsAbi from '../../abi/RuntimeRBACDefinitions.abi.json';
 import type { RoleConfigAction } from '../../types/core.access.index';
 
+const ABI = RuntimeRBACDefinitionsAbi as Abi;
+
+/** Normalize bytes to ABI Hex (0x-prefixed); empty -> '0x'. */
+function normalizeData(data: Hex | Uint8Array | undefined | null): Hex {
+  if (data === undefined || data === null) return '0x';
+  if (typeof data === 'string') return data.startsWith('0x') ? (data as Hex) : (`0x${data}` as Hex);
+  return bytesToHex(data as Uint8Array) as Hex;
+}
+
 /**
- * FunctionPermission shape for encoding ADD_FUNCTION_TO_ROLE action data.
+ * FunctionPermission shape for encodeAddFunctionToRole.
  * Matches Solidity EngineBlox.FunctionPermission (functionSelector, grantedActionsBitmap, handlerForSelectors).
  */
 export interface FunctionPermissionForEncoding {
@@ -20,107 +30,115 @@ export interface FunctionPermissionForEncoding {
 
 /**
  * Builds execution params for executeRoleConfigBatch((uint8,bytes)[]).
- * Equivalent to RuntimeRBACDefinitions.roleConfigBatchExecutionParams in Solidity.
- * Same encoding as web3.eth.abi.encodeParameter('tuple(uint8,bytes)[]', actionsArray).
+ * Encoding matches RuntimeRBACDefinitions.sol roleConfigBatchExecutionParams (abi.encode(actions)).
+ * Same format as scripts/sanity (direct contract tests); single source of truth in this module.
  */
-export function roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex {
-  const actionsArray = actions.map((a) => ({
+export function roleConfigBatchExecutionParams(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  actions: RoleConfigAction[]
+): Hex {
+  const actionsTuple = actions.map((a) => ({
     actionType: Number(a.actionType),
-    data: a.data
+    data: normalizeData(a.data)
   }));
   return encodeAbiParameters(
     parseAbiParameters('(uint8 actionType, bytes data)[]'),
-    [actionsArray]
+    [actionsTuple]
   ) as Hex;
 }
 
 /**
- * Returns all available RoleConfig action types and their ABI decode formats.
- * Mirrors RuntimeRBACDefinitions.getRoleConfigActionSpecs in Solidity.
- *
+ * Returns all available RoleConfig action types and their ABI decode formats from the contract.
  * Index i in both arrays corresponds to RoleConfigActionType enum value i.
  */
-export function getRoleConfigActionSpecs(): {
-  actionNames: string[];
-  formats: string[];
-} {
-  const actionNames = [
-    'CREATE_ROLE',
-    'REMOVE_ROLE',
-    'ADD_WALLET',
-    'REVOKE_WALLET',
-    'ADD_FUNCTION_TO_ROLE',
-    'REMOVE_FUNCTION_FROM_ROLE'
-  ];
-
-  // CREATE_ROLE expects exactly (roleName, maxWallets). Some tests pass a third parameter (e.g. empty
-  // FunctionPermission[]); abi.decode ignores trailing bytes, but new code should use only 2 params.
-  const formats = [
-    '(string roleName, uint256 maxWallets)',
-    '(bytes32 roleHash)',
-    '(bytes32 roleHash, address wallet)',
-    '(bytes32 roleHash, address wallet)',
-    '(bytes32 roleHash, FunctionPermission functionPermission)',
-    '(bytes32 roleHash, bytes4 functionSelector)'
-  ];
-
-  return { actionNames, formats };
+export async function getRoleConfigActionSpecs(
+  client: PublicClient,
+  definitionAddress: Address
+): Promise<{ actionNames: string[]; formats: string[] }> {
+  const result = (await client.readContract({
+    address: definitionAddress,
+    abi: ABI,
+    functionName: 'getRoleConfigActionSpecs'
+  })) as [string[], string[]];
+  return { actionNames: result[0], formats: result[1] };
 }
 
-// ============ Role config action data encoders ============
-// Use these helpers to build action.data for each RoleConfigActionType without reading the contract.
-// Each encoder returns Hex (bytes) suitable for RoleConfigAction(actionType, data).
-
 /**
- * Encodes data for CREATE_ROLE. Use with RoleConfigActionType.CREATE_ROLE.
+ * Encodes data for CREATE_ROLE. Matches RuntimeRBACDefinitions.sol encodeCreateRole (abi.encode(roleName, maxWallets)).
  */
-export function encodeCreateRole(roleName: string, maxWallets: bigint): Hex {
+export function encodeCreateRole(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  roleName: string,
+  maxWallets: bigint
+): Hex {
   return encodeAbiParameters(parseAbiParameters('string, uint256'), [roleName, maxWallets]) as Hex;
 }
 
 /**
- * Encodes data for REMOVE_ROLE. Use with RoleConfigActionType.REMOVE_ROLE.
+ * Encodes data for REMOVE_ROLE. Matches RuntimeRBACDefinitions.sol encodeRemoveRole (abi.encode(roleHash)).
  */
-export function encodeRemoveRole(roleHash: Hex): Hex {
+export function encodeRemoveRole(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  roleHash: Hex
+): Hex {
   return encodeAbiParameters(parseAbiParameters('bytes32'), [roleHash]) as Hex;
 }
 
 /**
- * Encodes data for ADD_WALLET. Use with RoleConfigActionType.ADD_WALLET.
+ * Encodes data for ADD_WALLET. Matches RuntimeRBACDefinitions.sol encodeAddWallet (abi.encode(roleHash, wallet)).
  */
-export function encodeAddWallet(roleHash: Hex, wallet: Address): Hex {
+export function encodeAddWallet(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  roleHash: Hex,
+  wallet: Address
+): Hex {
   return encodeAbiParameters(parseAbiParameters('bytes32, address'), [roleHash, wallet]) as Hex;
 }
 
 /**
- * Encodes data for REVOKE_WALLET. Use with RoleConfigActionType.REVOKE_WALLET.
+ * Encodes data for REVOKE_WALLET. Matches RuntimeRBACDefinitions.sol encodeRevokeWallet (abi.encode(roleHash, wallet)).
  */
-export function encodeRevokeWallet(roleHash: Hex, wallet: Address): Hex {
+export function encodeRevokeWallet(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  roleHash: Hex,
+  wallet: Address
+): Hex {
   return encodeAbiParameters(parseAbiParameters('bytes32, address'), [roleHash, wallet]) as Hex;
 }
 
 /**
- * Encodes data for ADD_FUNCTION_TO_ROLE. Use with RoleConfigActionType.ADD_FUNCTION_TO_ROLE.
- * Uses flat parameters to match Solidity abi.decode(action.data, (bytes32, EngineBlox.FunctionPermission)).
+ * Encodes data for ADD_FUNCTION_TO_ROLE. Matches RuntimeRBACDefinitions.sol encodeAddFunctionToRole (abi.encode(roleHash, functionPermission)).
  */
 export function encodeAddFunctionToRole(
+  _client: PublicClient,
+  _definitionAddress: Address,
   roleHash: Hex,
   functionPermission: FunctionPermissionForEncoding
 ): Hex {
-  const inner: readonly [Hex, number, readonly Hex[]] = [
+  const tuple: [Hex, number, readonly Hex[]] = [
     functionPermission.functionSelector,
     functionPermission.grantedActionsBitmap,
     [...functionPermission.handlerForSelectors]
   ];
   return encodeAbiParameters(
     parseAbiParameters('bytes32, (bytes4, uint16, bytes4[])'),
-    [roleHash, inner]
+    [roleHash, tuple]
   ) as Hex;
 }
 
 /**
- * Encodes data for REMOVE_FUNCTION_FROM_ROLE. Use with RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE.
+ * Encodes data for REMOVE_FUNCTION_FROM_ROLE. Matches RuntimeRBACDefinitions.sol encodeRemoveFunctionFromRole (abi.encode(roleHash, functionSelector)).
  */
-export function encodeRemoveFunctionFromRole(roleHash: Hex, functionSelector: Hex): Hex {
+export function encodeRemoveFunctionFromRole(
+  _client: PublicClient,
+  _definitionAddress: Address,
+  roleHash: Hex,
+  functionSelector: Hex
+): Hex {
   return encodeAbiParameters(parseAbiParameters('bytes32, bytes4'), [roleHash, functionSelector]) as Hex;
 }

@@ -2,35 +2,9 @@ import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
 import RuntimeRBACABIJson from '../../abi/RuntimeRBAC.abi.json';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
 import { IRuntimeRBAC } from '../../interfaces/core.access.index';
-import { TxAction } from '../../types/lib.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
-import { Uint16Bitmap } from '../../utils/bitmap';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
-import type { RoleConfigAction } from '../../types/core.access.index';
-import { roleConfigBatchExecutionParams as defRoleConfigBatchExecutionParams } from '../../lib/definitions/RuntimeRBACDefinitions';
-
-/**
- * FunctionPermission structure matching Solidity EngineBlox.FunctionPermission
- */
-interface EngineBloxFunctionPermission {
-  functionSelector: Hex;
-  grantedActionsBitmap: Uint16Bitmap; // uint16
-  handlerForSelectors: Hex[]; // Array of execution selectors this function can access
-}
-
-/**
- * FunctionSchema structure matching Solidity EngineBlox.FunctionSchema for loadDefinitions
- */
-interface EngineBloxFunctionSchema {
-  functionSignature: string;
-  functionSelector: Hex;
-  operationType: Hex;
-  operationName: string;
-  supportedActionsBitmap: Uint16Bitmap; // uint16
-  isProtected: boolean;
-  handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
-}
 
 /**
  * @title RuntimeRBAC
@@ -51,14 +25,6 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
   // ============ ROLE CONFIGURATION BATCH ============
 
   /**
-   * @dev Creates execution params for a RBAC configuration batch (definition helper; no contract call)
-   * @param actions Role configuration actions
-   */
-  roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex {
-    return defRoleConfigBatchExecutionParams(actions);
-  }
-
-  /**
    * @dev Requests and approves a RBAC configuration batch using a meta-transaction
    * @param metaTx The meta-transaction
    * @param options Transaction options
@@ -68,16 +34,6 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
     options: TransactionOptions
   ): Promise<TransactionResult> {
     return this.executeWriteContract('roleConfigBatchRequestAndApprove', [metaTx], options);
-  }
-
-  /**
-   * @dev Gets all authorized wallets for a role
-   * @param roleHash The role hash to get wallets for
-   * @return Array of authorized wallet addresses
-   * @notice Requires caller to have any role (via _validateAnyRole) for privacy protection
-   */
-  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getWalletsInRole', [roleHash]);
   }
 
   // ============ INTERFACE SUPPORT ============

@@ -91,9 +91,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Wait for timelock if needed
             await this.waitForTimelockWithTxId(txId);
             
-            await secureOwnableRecovery.transferOwnershipCancellation(txId, {
-              from: recoveryWallet.address,
-            });
+            await secureOwnableRecovery.transferOwnershipCancellation(txId, this.getTxOptions(recoveryWallet.address));
           } else if (operationType.toLowerCase() === OPERATION_TYPES.BROADCASTER_UPDATE.toLowerCase()) {
             // Owner can cancel broadcaster update
             const ownerWallet = this.getRoleWallet('owner');
@@ -105,9 +103,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Wait for timelock if needed
             await this.waitForTimelockWithTxId(txId);
             
-            await secureOwnableOwner.updateBroadcasterCancellation(txId, {
-              from: ownerWallet.address,
-            });
+            await secureOwnableOwner.updateBroadcasterCancellation(txId, this.getTxOptions(ownerWallet.address));
           }
 
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -163,9 +159,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       }
 
       // Request ownership transfer
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
+      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
 
       this.assertTest(!!result.hash, 'Ownership transfer request transaction created');
       console.log(`  📋 Transaction Hash: ${result.hash}`);
@@ -230,9 +224,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
       const secureOwnableRecovery = this.createSecureOwnableWithWallet(recoveryWalletName);
 
-      const result = await secureOwnableRecovery.transferOwnershipCancellation(txId, {
-        from: recoveryWallet.address,
-      });
+      const result = await secureOwnableRecovery.transferOwnershipCancellation(txId, this.getTxOptions(recoveryWallet.address));
 
       this.assertTest(!!result.hash, 'Cancellation transaction created');
       await result.wait();
@@ -268,9 +260,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       );
 
       // Request ownership transfer
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
+      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
 
       this.assertTest(!!result.hash, 'New ownership transfer request created');
       await result.wait();
@@ -376,9 +366,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
 
-      const result = await secureOwnableOwner.transferOwnershipDelayedApproval(txId, {
-        from: ownerWallet.address,
-      });
+      const result = await secureOwnableOwner.transferOwnershipDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
 
       this.assertTest(!!result.hash, 'Approval transaction created');
       await result.wait();
@@ -509,7 +497,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         // Cancel the transaction
         const cancelResult = await secureOwnableRecovery.transferOwnershipCancellation(
           ownershipTransferTxId,
-          { from: recoveryWallet.address }
+          this.getTxOptions(recoveryWallet.address)
         );
         await cancelResult.wait();
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -521,9 +509,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       }
 
       console.log('  📋 Creating new ownership transfer request for meta-transaction cancellation test...');
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
+      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
 
       this.assertTest(!!result.hash, 'Ownership transfer request created');
       await result.wait();
@@ -606,7 +592,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const executeResult = await secureOwnableBroadcaster.transferOwnershipCancellationWithMetaTx(
         signedMetaTx,
-        { from: this.roles.broadcaster }
+        this.getTxOptions(this.roles.broadcaster)
       );
 
       this.assertTest(!!executeResult.hash, 'Meta-transaction execution transaction created');
@@ -688,7 +674,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         // Cancel the transaction
         const cancelResult = await secureOwnableRecovery.transferOwnershipCancellation(
           ownershipTransferTxId,
-          { from: recoveryWallet.address }
+          this.getTxOptions(recoveryWallet.address)
         );
         await cancelResult.wait();
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -700,9 +686,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       }
 
       console.log('  📋 Creating new ownership transfer request for meta-transaction approval test...');
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
+      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
 
       this.assertTest(!!result.hash, 'Ownership transfer request created');
       await result.wait();
@@ -772,7 +756,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const executeResult = await secureOwnableBroadcaster.transferOwnershipApprovalWithMetaTx(
         signedMetaTx,
-        { from: this.roles.broadcaster }
+        this.getTxOptions(this.roles.broadcaster)
       );
 
       this.assertTest(!!executeResult.hash, 'Meta-transaction execution transaction created');

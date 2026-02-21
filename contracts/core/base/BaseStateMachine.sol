@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
@@ -881,22 +881,21 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionSchemas Array of function schema definitions  
      * @param roleHashes Array of role hashes
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @param allowProtectedSchemas Whether to allow protected function schemas (default: true for factory settings)
-     * @notice When allowProtectedSchemas is false, reverts if any function schema is protected
-     * @notice This allows custom definitions to be restricted from creating protected schemas
+     * @param enforceProtectedSchemas When true, all function schemas must be protected; reverts if any is not
+     * @notice When enforceProtectedSchemas is true, every function schema must have isProtected == true
      */
     function _loadDefinitions(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
         EngineBlox.FunctionPermission[] memory functionPermissions,
-        bool allowProtectedSchemas
+        bool enforceProtectedSchemas
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
-            // Validate protected schemas if not allowed (for custom definitions)
-            if (!allowProtectedSchemas && functionSchemas[i].isProtected) {
-                revert SharedValidation.CannotModifyProtected(
-                    bytes32(functionSchemas[i].functionSelector)
+            // When enforcing, require every schema to be protected
+            if (enforceProtectedSchemas && !functionSchemas[i].isProtected) {
+                revert SharedValidation.ContractFunctionMustBeProtected(
+                    functionSchemas[i].functionSelector
                 );
             }
             EngineBlox.createFunctionSchema(

@@ -1,7 +1,7 @@
 # Bloxchain Protocol: Enterprise-Grade Blockchain Security Framework
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.33-blue.svg)](https://soliditylang.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.34-blue.svg)](https://soliditylang.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-green.svg)](./sdk/typescript/)
 [![Hardhat](https://img.shields.io/badge/Hardhat-v3-yellow.svg)](https://hardhat.org/)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
@@ -463,28 +463,29 @@ library SimpleVaultDefinitions {
 
 ## 🧪 Comprehensive Fuzz Testing
 
-Bloxchain Protocol includes **comprehensive fuzz testing** with **22 test files** and **152 fuzz test functions** (plus 16 regular test functions, totaling **168+ test functions**) covering all security-critical components and edge cases.
+Bloxchain Protocol includes **comprehensive fuzz testing** with **37 test suites** and **309 tests** (all passing) covering all security-critical components and edge cases. See [test/foundry/docs](test/foundry/docs/) for the Attack Vectors Codex and coverage report.
 
 ### Test Coverage
 
 | Test Suite | Coverage Area | Test Count |
 |------------|---------------|------------|
-| **ComprehensiveStateMachineFuzz** | State machine security, reentrancy protection | 11 tests |
+| **ComprehensiveStateMachineFuzz** | State machine security, reentrancy protection, EIP-150 OOG, no delegatecall | 23 tests |
 | **ComprehensiveSecurityEdgeCasesFuzz** | Bitmap attacks, hook vulnerabilities, payment race conditions | 10 tests |
-| **ComprehensiveMetaTransactionFuzz** | Meta-transaction security, signature validation | 11 tests |
+| **ComprehensiveMetaTransactionFuzz** | Meta-transaction security, signature validation, nonce, chainId | 14 tests |
 | **ComprehensiveInputValidationFuzz** | Input validation, array manipulation, edge cases | 13 tests |
-| **ComprehensivePaymentSecurityFuzz** | Payment management, race conditions | 6 tests |
+| **ComprehensivePaymentSecurityFuzz** | Payment management, race conditions, fee-on-transfer tokens | 7 tests |
 | **ComprehensiveHookSystemFuzz** | Hook execution, interface compliance | 2 tests |
-| **ComprehensiveAccessControlFuzz** | Access control, permission validation | 13 tests |
-| **ComprehensiveDefinitionSecurityFuzz** | Definition loading, schema validation | 15 tests (6 fuzz + 9 regular) |
+| **ComprehensiveAccessControlFuzz** | Access control, permission validation, state after removal | 14 tests |
+| **ComprehensiveDefinitionSecurityFuzz** | Definition loading, schema validation | 20 tests |
 | **ComprehensiveGasExhaustionFuzz** | Gas limits, batch operations | 17 tests |
-| **ComprehensiveWhitelistSchemaFuzz** | Target whitelisting, function schemas | 15 tests (9 fuzz + 6 regular) |
-| **ComprehensiveCompositeFuzz** | Composite attack vectors | 5 tests (4 fuzz + 1 regular) |
+| **ComprehensiveWhitelistSchemaFuzz** | Target whitelisting, function schemas | 8 tests |
+| **ComprehensiveEIP712AndViewFuzz** | EIP-712 domain determinism, view consistency, signer recovery, excess msg.value | 4 tests |
+| **ComprehensiveCompositeFuzz** | Composite attack vectors | 5 tests |
 | **ComprehensiveInitializationFuzz** | Initialization security, reentrancy | 9 tests |
 | **ComprehensiveEventForwardingFuzz** | Event forwarding, external integrations | 2 tests |
 | **GuardControllerFuzz** | Guard controller workflows | 4 tests |
 | **SecureOwnableFuzz** | Ownership management security | 5 tests |
-| **RuntimeRBACFuzz** | Runtime RBAC operations | 2 tests |
+| **RuntimeRBACFuzz** | Runtime RBAC operations | 3 tests |
 | **StateMachineWorkflowFuzz** | Workflow state transitions | 5 tests |
 | **MetaTransactionSecurityFuzz** | Meta-transaction security | 6 tests |
 | **ProtectedResourceFuzz** | Protected resource access | 4 tests |
@@ -701,7 +702,7 @@ abstract contract HookManager is BaseStateMachine {
 ```
 
 **Technical Features**:
-- **Solidity Version**: 0.8.33 (fixed version for reproducible builds)
+- **Solidity Version**: 0.8.34 (fixed version for reproducible builds)
 - **OpenZeppelin**: ^5.4.0 (with upgradeable contracts)
 - **Contract Size**: < 24KB (optimized for mainnet deployment)
 - **Gas Optimization**: Library-based architecture with modular definitions

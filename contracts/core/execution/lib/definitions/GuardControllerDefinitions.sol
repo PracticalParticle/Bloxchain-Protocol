@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
@@ -35,8 +35,11 @@ library GuardControllerDefinitions {
     bytes32 public constant CONTROLLER_OPERATION = keccak256("CONTROLLER_OPERATION");
     
     // Function Selector Constants
-    // GuardController: executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)
-    bytes4 public constant EXECUTE_WITH_TIMELOCK_SELECTOR = bytes4(keccak256("executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)"));
+    // GuardController: executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)
+    bytes4 public constant EXECUTE_WITH_TIMELOCK_SELECTOR = bytes4(keccak256("executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)"));
+    
+    // GuardController: executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))
+    bytes4 public constant EXECUTE_WITH_PAYMENT_SELECTOR = bytes4(keccak256("executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))"));
     
     // GuardController: approveTimeLockExecution(uint256)
     bytes4 public constant APPROVE_TIMELOCK_EXECUTION_SELECTOR = bytes4(keccak256("approveTimeLockExecution(uint256)"));
@@ -135,7 +138,7 @@ library GuardControllerDefinitions {
         
         // Schema 0: GuardController.executeWithTimeLock
         schemas[0] = EngineBlox.FunctionSchema({
-            functionSignature: "executeWithTimeLock(address,bytes4,bytes,uint256,bytes32)",
+            functionSignature: "executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)",
             functionSelector: EXECUTE_WITH_TIMELOCK_SELECTOR,
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -753,6 +753,128 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         roleBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies signature length validation works ✅
+    }
+
+    // ============ UNEXPLORED VECTORS (protocol-vulnerabilities-index) ============
+
+    /**
+     * @dev Test: Nonce is consumed even when execution fails (replay prevention)
+     * Attack Vector: Failed meta-tx nonce burn / griefing (UNEXPLORED_ATTACK_VECTORS.md §1.2)
+     * Ensures that after a meta-tx whose execution fails (e.g. batch action reverts internally),
+     * the signer's nonce is still incremented so the same signature cannot be replayed.
+     */
+    function testFuzz_NonceConsumedEvenOnExecutionFailure() public {
+        vm.prank(owner);
+        uint256 nonceBefore = roleBlox.getSignerNonce(owner);
+
+        // Meta-tx that will pass verification but fail during execution (ADD_WALLET to protected role)
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(OWNER_ROLE, attacker)
+        });
+        bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(owner, executionParams, 1 hours);
+
+        // Execute: signature valid, but batch execution fails (CannotModifyProtected)
+        vm.prank(broadcaster);
+        uint256 txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(txId);
+
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Execution should fail");
+        vm.prank(owner);
+        uint256 nonceAfter = roleBlox.getSignerNonce(owner);
+        assertEq(nonceAfter, nonceBefore + 1, "Nonce must be consumed even when execution fails");
+
+        // Replay same meta-tx: must revert with InvalidNonce (replay prevented)
+        vm.prank(broadcaster);
+        vm.expectRevert(
+            abi.encodeWithSelector(SharedValidation.InvalidNonce.selector, nonceBefore, nonceAfter)
+        );
+        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+    }
+
+    /**
+     * @dev Test: Domain separator includes chainId (hard fork / cross-chain replay)
+     * Attack Vector: ChainId in domain (UNEXPLORED_ATTACK_VECTORS.md §1.3)
+     * Two meta-tx structs that differ only by chainId must produce different message hashes.
+     */
+    function testFuzz_ChainIdInDomainSeparator(uint256 chainIdA, uint256 chainIdB) public {
+        vm.assume(chainIdA != chainIdB);
+        vm.assume(chainIdA < type(uint256).max / 2);
+        vm.assume(chainIdB < type(uint256).max / 2);
+
+        EngineBlox.MetaTxParams memory p = roleBlox.createMetaTxParams(
+            address(roleBlox),
+            ROLE_CONFIG_BATCH_META_SELECTOR,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            1 hours,
+            0,
+            owner
+        );
+        p.chainId = chainIdA;
+        EngineBlox.MetaTransaction memory metaTxA;
+        metaTxA.params = p;
+        metaTxA.txRecord.txId = 1;
+        metaTxA.txRecord.params.requester = owner;
+        metaTxA.txRecord.params.target = address(roleBlox);
+        metaTxA.txRecord.params.value = 0;
+        metaTxA.txRecord.params.gasLimit = 0;
+        metaTxA.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
+        metaTxA.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+        metaTxA.txRecord.params.executionParams = "";
+
+        bytes32 hashA = metaTxSigner.generateMessageHash(metaTxA, address(roleBlox));
+        p.chainId = chainIdB;
+        metaTxA.params = p;
+        bytes32 hashB = metaTxSigner.generateMessageHash(metaTxA, address(roleBlox));
+        assertTrue(hashA != hashB, "Message hash must depend on chainId");
+    }
+
+    /**
+     * @dev Test: Distinct meta-tx structs yield distinct message hashes (no collision)
+     * Attack Vector: EIP-712 struct hash collision (UNEXPLORED_ATTACK_VECTORS.md §1.4)
+     */
+    function testFuzz_StructHashCollisionResistance(
+        uint256 txId1,
+        uint256 txId2,
+        uint256 nonce1,
+        uint256 nonce2
+    ) public {
+        vm.assume(txId1 != txId2 || nonce1 != nonce2);
+        EngineBlox.MetaTxParams memory p = roleBlox.createMetaTxParams(
+            address(roleBlox),
+            ROLE_CONFIG_BATCH_META_SELECTOR,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            1 hours,
+            0,
+            owner
+        );
+        p.nonce = nonce1;
+        EngineBlox.MetaTransaction memory m1;
+        m1.params = p;
+        m1.txRecord.txId = txId1;
+        m1.txRecord.params.requester = owner;
+        m1.txRecord.params.target = address(roleBlox);
+        m1.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
+        m1.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+
+        p.nonce = nonce2;
+        EngineBlox.MetaTransaction memory m2;
+        m2.params = p;
+        m2.txRecord.txId = txId2;
+        m2.txRecord.params.requester = owner;
+        m2.txRecord.params.target = address(roleBlox);
+        m2.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
+        m2.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
+
+        bytes32 h1 = metaTxSigner.generateMessageHash(m1, address(roleBlox));
+        bytes32 h2 = metaTxSigner.generateMessageHash(m2, address(roleBlox));
+        // Require both txId and nonce to differ so the structs differ in multiple hashed fields
+        if (txId1 != txId2 && nonce1 != nonce2) {
+            assertTrue(h1 != h2, "Distinct structs must not collide");
+        }
     }
 
     // ============ HELPER FUNCTIONS ============

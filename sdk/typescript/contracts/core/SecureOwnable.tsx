@@ -3,10 +3,8 @@ import SecureOwnableABIJson from '../../abi/SecureOwnable.abi.json';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
 import { ISecureOwnable } from '../../interfaces/core.security.index';
 import { MetaTransaction } from '../../interfaces/lib.index';
-import { TxAction } from '../../types/lib.index';
 import { BaseStateMachine } from './BaseStateMachine';
 import { INTERFACE_IDS } from '../../utils/interface-ids';
-import { updateRecoveryExecutionParams as defUpdateRecoveryExecutionParams, updateTimeLockExecutionParams as defUpdateTimeLockExecutionParams } from '../../lib/definitions/SecureOwnableDefinitions';
 
 /**
  * @title SecureOwnable
@@ -65,33 +63,11 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   }
 
   // Recovery Management
-  /**
-   * @dev Wrapper matching ISecureOwnable interface; delegates to definition helper (no contract call)
-   */
-  async updateRecoveryExecutionOptions(newRecoveryAddress: Address): Promise<Hex> {
-    return this.updateRecoveryExecutionParams(newRecoveryAddress);
-  }
-
-  async updateRecoveryExecutionParams(newRecoveryAddress: Address): Promise<Hex> {
-    return Promise.resolve(defUpdateRecoveryExecutionParams(newRecoveryAddress));
-  }
-
   async updateRecoveryRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
     return this.executeWriteContract('updateRecoveryRequestAndApprove', [metaTx], options);
   }
 
   // TimeLock Management
-  /**
-   * @dev Wrapper matching ISecureOwnable interface; delegates to definition helper (no contract call)
-   */
-  async updateTimeLockExecutionOptions(newTimeLockPeriodSec: bigint): Promise<Hex> {
-    return this.updateTimeLockExecutionParams(newTimeLockPeriodSec);
-  }
-
-  async updateTimeLockExecutionParams(newTimeLockPeriodSec: bigint): Promise<Hex> {
-    return Promise.resolve(defUpdateTimeLockExecutionParams(newTimeLockPeriodSec));
-  }
-
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
     return this.executeWriteContract('updateTimeLockRequestAndApprove', [metaTx], options);
   }
@@ -105,22 +81,6 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
   async supportsSecureOwnableInterface(): Promise<boolean> {
     return this.supportsInterface(INTERFACE_IDS.ISecureOwnable);
   }
-
-  // Note: The following methods are available through BaseStateMachine inheritance:
-  // - owner()
-  // - getBroadcasters()
-  // - getRecovery()
-  // - getTimeLockPeriodSec()
-  // - getSupportedOperationTypes()
-  // - getSupportedRoles()
-  // - getSupportedFunctions()
-  // - hasRole()
-  // - isActionSupportedByFunction()
-  // - getSignerNonce()
-  // - getActiveRolePermissions()
-  // - initialized()
-  // - supportsInterface(interfaceId)
-  // - functionSchemaExists()
 }
 
 export default SecureOwnable;

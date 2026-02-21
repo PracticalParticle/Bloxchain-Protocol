@@ -11,11 +11,6 @@ import type { RoleConfigAction } from '../types/core.access.index';
  */
 export interface IRuntimeRBAC {
   /**
-   * @dev Creates execution params for a RBAC configuration batch (definition helper; no contract call)
-   */
-  roleConfigBatchExecutionParams(actions: RoleConfigAction[]): Hex;
-
-  /**
    * @dev Requests and approves a RBAC configuration batch using a meta-transaction
    */
   roleConfigBatchRequestAndApprove(
@@ -24,7 +19,7 @@ export interface IRuntimeRBAC {
   ): Promise<TransactionResult>;
 
   /**
-   * @dev Gets all authorized wallets for a role
+   * @dev Gets all authorized wallets for a role (inherited from BaseStateMachine)
    * @param roleHash The role hash to get wallets for
    * @return Array of authorized wallet addresses
    */

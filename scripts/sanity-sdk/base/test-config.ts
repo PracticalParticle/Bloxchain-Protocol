@@ -1,21 +1,26 @@
 /**
  * Test Configuration
- * Handles environment variable loading and configuration setup
+ * Connection uses only .env (RPC_URL or REMOTE_HOST/REMOTE_PROTOCOL/REMOTE_PORT),
+ * matching scripts/sanity behavior. load-env.ts is imported first in each run-tests.ts
+ * so .env is loaded before any other code.
  */
-
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load environment variables from project root
+// Load .env from project root (override: true so .env wins over inherited env e.g. RPC_URL from parent)
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env'), override: true });
 
 export interface TestConfig {
   testMode: 'auto' | 'manual';
   rpcUrl: string;
   chainId: number;
+  /** Gas price in Gwei for writes (set SANITY_SDK_GAS_PRICE_GWEI if you see "transaction underpriced"). */
+  gasPriceGwei?: number;
+  /** RPC request timeout in ms (remote Ganache may need longer). Default 30_000. */
+  rpcTimeoutMs: number;
   contractAddresses: {
     /** Single account contract used for all sanity tests (SecureOwnable, RuntimeRBAC, GuardController) */
     accountBlox?: string;
@@ -36,21 +41,22 @@ export interface TestConfig {
 }
 
 /**
- * Get RPC URL from environment variables
+ * Get RPC URL from .env only (no localhost fallback).
+ * Prefer REMOTE_* when set so .env remote config wins over any inherited RPC_URL (e.g. from parent process).
  */
 export function getRPCUrl(): string {
-  if (process.env.RPC_URL) {
-    return process.env.RPC_URL;
-  }
-
   if (process.env.REMOTE_HOST) {
     const protocol = process.env.REMOTE_PROTOCOL || 'https';
+    // Default 8545 for consistency with other sanity scripts (scripts/sanity/*/base-test.cjs). Use REMOTE_PORT=443 for remote HTTPS.
     const port = process.env.REMOTE_PORT || '8545';
     return `${protocol}://${process.env.REMOTE_HOST}:${port}`;
   }
-
-  // Default to http for localhost
-  return 'http://localhost:8545';
+  if (process.env.RPC_URL) {
+    return process.env.RPC_URL;
+  }
+  throw new Error(
+    'RPC URL not set. In .env set REMOTE_HOST (and optionally REMOTE_PROTOCOL, REMOTE_PORT) or RPC_URL.'
+  );
 }
 
 /**
@@ -73,10 +79,22 @@ export function getChainId(): number {
 export function getTestConfig(): TestConfig {
   const testMode = (process.env.TEST_MODE || 'manual') as 'auto' | 'manual';
 
+  const rpcUrl = getRPCUrl();
+  let gasPriceGwei: number | undefined;
+  if (process.env.SANITY_SDK_GAS_PRICE_GWEI) {
+    const parsed = parseInt(process.env.SANITY_SDK_GAS_PRICE_GWEI, 10);
+    gasPriceGwei = Number.isNaN(parsed) ? undefined : parsed;
+  }
+  const rpcTimeoutMs = process.env.SANITY_SDK_RPC_TIMEOUT_MS
+    ? parseInt(process.env.SANITY_SDK_RPC_TIMEOUT_MS, 10)
+    : 30_000;
+
   return {
     testMode,
-    rpcUrl: getRPCUrl(),
+    rpcUrl,
     chainId: getChainId(),
+    gasPriceGwei,
+    rpcTimeoutMs: Number.isNaN(rpcTimeoutMs) ? 30_000 : rpcTimeoutMs,
     contractAddresses: {
       accountBlox: process.env.ACCOUNTBLOX_ADDRESS,
       secureBlox: process.env.ACCOUNTBLOX_ADDRESS,

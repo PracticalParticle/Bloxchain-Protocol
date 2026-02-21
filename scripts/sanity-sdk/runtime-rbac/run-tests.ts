@@ -2,7 +2,7 @@
  * RuntimeRBAC SDK Test Runner
  * Main file to run all RuntimeRBAC SDK tests
  */
-
+import '../load-env';
 import { pathToFileURL } from 'url';
 import { RuntimeRBACTests } from './rbac-tests.ts';
 

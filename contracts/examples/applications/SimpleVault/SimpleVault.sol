@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // OpenZeppelin imports
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -58,7 +58,7 @@ contract SimpleVault is SecureOwnable {
             SimpleVaultDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 

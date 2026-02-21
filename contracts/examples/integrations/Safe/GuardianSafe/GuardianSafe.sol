@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../../../../core/security/SecureOwnable.sol";
 import "../../../../core/lib/utils/SharedValidation.sol";
@@ -119,7 +119,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
             GuardianSafeDefinitions.getFunctionSchemas(),
             permissions.roleHashes,
             permissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 

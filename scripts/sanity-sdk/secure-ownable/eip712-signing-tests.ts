@@ -55,39 +55,30 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
     }
 
     try {
-      // Create a test ownership transfer request to get a real txId
-      // Must use recovery role (not owner) for ownership transfer requests
+      // Create a test ownership transfer request to get a real txId.
+      // Contract requires recovery role to call transferOwnershipRequest().
       const recoveryWallet = this.getRoleWallet('recovery');
-      const ownerWallet = this.getRoleWallet('owner');
-      
-      // Check if recovery == owner (not allowed for ownership transfers)
-      if (recoveryWallet.address.toLowerCase() === ownerWallet.address.toLowerCase()) {
-        console.log('  ⚠️  Recovery equals owner - skipping ownership transfer test');
-        console.log('  ℹ️  This test requires recovery ≠ owner');
-        return;
-      }
-
       const recoveryWalletName = Object.keys(this.wallets).find(
         (k) => this.wallets[k].address.toLowerCase() === recoveryWallet.address.toLowerCase()
       ) || 'wallet1';
-
-      const secureOwnableRecovery = this.createSecureOwnableWithWallet(recoveryWalletName);
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
-
-      await result.wait();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
-      this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
-      const txId = pendingTxs[pendingTxs.length - 1];
-      console.log(`  📋 Using transaction ID: ${txId}`);
+      const ownerWallet = this.getRoleWallet('owner');
       const ownerWalletName = Object.keys(this.wallets).find(
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
 
-      // Create meta-transaction parameters
+      const secureOwnableRecovery = this.createSecureOwnableWithWallet(recoveryWalletName);
+      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
+
+      await result.wait();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // getPendingTransactions() may require owner/recovery; use recovery-scoped client
+      const pendingTxs = await secureOwnableRecovery.getPendingTransactions();
+      this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
+      const txId = pendingTxs[pendingTxs.length - 1];
+      console.log(`  📋 Using transaction ID: ${txId}`);
+
+      // Create meta-transaction parameters (owner signs approval)
       const metaTxParams = await this.createMetaTxParams(
         FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
         TxAction.SIGN_META_APPROVE,
@@ -136,31 +127,25 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
     }
 
     try {
-      // Create a test ownership transfer request
-      // Check if recovery == owner (not allowed for ownership transfers)
       const recoveryWallet = this.getRoleWallet('recovery');
-      const ownerWallet = this.getRoleWallet('owner');
-      
-      if (recoveryWallet.address.toLowerCase() === ownerWallet.address.toLowerCase()) {
-        console.log('  ⚠️  Recovery equals owner - skipping signature verification test');
-        console.log('  ℹ️  This test requires recovery ≠ owner');
-        console.log('  ℹ️  Please run recovery-update tests first to set recovery ≠ owner');
-        return;
-      }
-
       const recoveryWalletName = Object.keys(this.wallets).find(
         (k) => this.wallets[k].address.toLowerCase() === recoveryWallet.address.toLowerCase()
       ) || 'wallet1';
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName = Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
 
       const secureOwnableRecovery = this.createSecureOwnableWithWallet(recoveryWalletName);
-      const result = await secureOwnableRecovery.transferOwnershipRequest({
-        from: recoveryWallet.address,
-      });
-
-      await result.wait();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      // getPendingTransactions() may require owner/recovery; use recovery-scoped client
+      let pendingTxs = await secureOwnableRecovery.getPendingTransactions();
+      if (pendingTxs.length === 0) {
+        // Create a test ownership transfer request (contract requires recovery to call transferOwnershipRequest())
+        const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
+        await result.wait();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        pendingTxs = await secureOwnableRecovery.getPendingTransactions();
+      }
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
       const txId = pendingTxs[pendingTxs.length - 1];
 

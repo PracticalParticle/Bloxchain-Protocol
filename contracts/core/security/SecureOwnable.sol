@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // Contracts imports
 import "../base/BaseStateMachine.sol";
@@ -62,7 +62,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             SecureOwnableDefinitions.getFunctionSchemas(),
             secureOwnablePermissions.roleHashes,
             secureOwnablePermissions.functionPermissions,
-            true // Allow protected schemas for factory settings
+            true // Enforce all function schemas are protected
         );
     }
 
