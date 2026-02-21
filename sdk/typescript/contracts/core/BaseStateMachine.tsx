@@ -45,32 +45,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     // Otherwise, let Viem use the WalletClient's account automatically
     const walletClientAccount = this.walletClient!.account?.address;
     const requestedAccount = options.from.toLowerCase();
-    
-    // For meta-transaction functions, ensure the structure is correct
-    if (functionName.includes('RequestAndApprove') || functionName.includes('MetaTx')) {
-      if (args.length > 0 && args[0] && typeof args[0] === 'object' && 'txRecord' in args[0]) {
-        const metaTx = args[0];
-        
-        // Ensure all nested structures are properly formatted
-        if (metaTx.txRecord && typeof metaTx.txRecord === 'object') {
-          // Ensure txRecord.params exists and is an object
-          if (!metaTx.txRecord.params || typeof metaTx.txRecord.params !== 'object') {
-            throw new Error('Invalid meta-transaction: txRecord.params must be an object');
-          }
-          // Ensure txRecord.payment exists and is an object
-          if (!metaTx.txRecord.payment || typeof metaTx.txRecord.payment !== 'object') {
-            throw new Error('Invalid meta-transaction: txRecord.payment must be an object');
-          }
-        }
-        if (metaTx.params && typeof metaTx.params === 'object') {
-          // Ensure params is properly formatted
-          if (typeof metaTx.params.action !== 'number') {
-            throw new Error('Invalid meta-transaction: params.action must be a number');
-          }
-        }
-      }
-    }
-    
+
     const writeContractParams: any = {
       chain: this.chain,
       address: this.contractAddress,

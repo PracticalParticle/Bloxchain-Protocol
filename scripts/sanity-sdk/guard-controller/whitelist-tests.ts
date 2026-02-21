@@ -9,8 +9,8 @@ import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 
 export class WhitelistTests extends BaseGuardControllerTest {
   private testTarget: Address | null = null;
-  /** Set when step 1 add was treated as success due to TxStatus 6 (idempotent); step 2 may then skip verify if target not in list */
-  private _addTreatedAsIdempotent = false;
+  /** Set when step 1 add returned TxStatus 6 but we verified target is in whitelist (data already in place) */
+  private _addVerifiedInPlace = false;
 
   constructor() {
     super('Whitelist Management Tests');
@@ -66,7 +66,13 @@ export class WhitelistTests extends BaseGuardControllerTest {
       console.log(`   Function Signature: __bloxchain_native_transfer__()`);
       console.log(`   Operation Name: NATIVE_TRANSFER`);
 
-      // Check if function is already registered (best-effort, do not fail hard here)
+      // CJS-style pre-check: getFunctionSchema + getSupportedFunctions (scripts/sanity/guard-controller)
+      if (await this.schemaOrSupportedSetPreCheck(this.NATIVE_TRANSFER_SELECTOR)) {
+        console.log('  ℹ️  Function already registered (getFunctionSchema or getSupportedFunctions), skipping registration');
+        this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered`);
+        return;
+      }
+      // Fallback: functionSchemaExists
       let alreadyRegistered = false;
       try {
         alreadyRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
@@ -77,9 +83,8 @@ export class WhitelistTests extends BaseGuardControllerTest {
           }`
         );
       }
-
       if (alreadyRegistered) {
-        console.log('  ℹ️  Function selector already registered, skipping registration');
+        console.log('  ℹ️  Function selector already registered (functionSchemaExists), skipping registration');
         this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered`);
         return;
       }
@@ -97,7 +102,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       const signedMetaTx = await this.createSignedMetaTxForFunctionRegistration(
         '__bloxchain_native_transfer__()',
         'NATIVE_TRANSFER',
-        [TxAction.EXECUTE_META_REQUEST_AND_APPROVE], // Supported actions
+        [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.EXECUTE_META_REQUEST_AND_APPROVE], // Match CJS: sign + execute
         ownerWalletName
       );
 
@@ -124,7 +129,21 @@ export class WhitelistTests extends BaseGuardControllerTest {
       console.log(`     Transaction Hash: ${result.hash}`);
       console.log(`     Transaction Status: ${receipt.status === 'success' ? 'SUCCESS' : 'FAILED'}`);
 
-      await this.assertGuardConfigBatchSucceeded(receipt, 'Register function selector');
+      try {
+        await this.assertGuardConfigBatchSucceeded(receipt, 'Register function selector');
+      } catch (e: any) {
+        if (e?.message?.includes('TxStatus 6')) {
+          if (e?.message?.includes('ResourceAlreadyExists')) {
+            console.log('  ⚠️  ResourceAlreadyExists — function may already be registered (CJS-style: verify then pass)');
+          }
+          const verified = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+          if (verified) {
+            console.log('  ℹ️  Register returned TxStatus 6; verified selector is already registered via functionSchemaExists — step passed');
+            return;
+          }
+        }
+        throw e;
+      }
 
       const maxRetries = 10;
       const retryDelayMs = 3000;
@@ -171,8 +190,10 @@ export class WhitelistTests extends BaseGuardControllerTest {
       // If target is already whitelisted (e.g. from a previous test run), skip add
       let alreadyWhitelisted = false;
       try {
-        const currentTargets = await this.guardController.getFunctionWhitelistTargets(
-          this.NATIVE_TRANSFER_SELECTOR
+        const currentTargets = await this.getFunctionWhitelistTargetsAsOwner(
+          this.NATIVE_TRANSFER_SELECTOR,
+          2,
+          500
         );
         alreadyWhitelisted = currentTargets.some(
           (t) => t.toLowerCase() === this.testTarget!.toLowerCase()
@@ -229,26 +250,36 @@ export class WhitelistTests extends BaseGuardControllerTest {
       try {
         await this.assertGuardConfigBatchSucceeded(receipt, 'Add target to whitelist');
       } catch (batchError: any) {
-        // Batch may fail with TxStatus 6 if target was already in whitelist (e.g. ItemAlreadyExists).
-        // When running multiple tests on the same contract, whitelist may already contain the target.
+        if (!batchError?.message?.includes('TxStatus 6')) throw batchError;
+        // TxStatus 6: pass if we verify target is in whitelist (data already in place), or revert is ItemAlreadyExists (skip when already done).
+        const isItemAlreadyExists = /ItemAlreadyExists/i.test(batchError?.message ?? '');
         let isInList = false;
         try {
-          const targetsNow = await this.guardController.getFunctionWhitelistTargets(
-            this.NATIVE_TRANSFER_SELECTOR
+          const targetsNow = await this.getFunctionWhitelistTargetsAsOwner(
+            this.NATIVE_TRANSFER_SELECTOR,
+            3,
+            1000
           );
           isInList = targetsNow.some(
             (t) => t.toLowerCase() === this.testTarget!.toLowerCase()
           );
-        } catch (_) {
-          // getFunctionWhitelistTargets may revert or use different scope; assume already present
+        } catch (verifyErr: any) {
+          if (isItemAlreadyExists) {
+            console.log('  ℹ️  Add returned TxStatus 6 (ItemAlreadyExists); verification call failed but revert implies target already in whitelist — step passed');
+            this._addVerifiedInPlace = true;
+            return;
+          }
+          throw new Error(
+            `Add target returned TxStatus 6 and getFunctionWhitelistTargets failed; cannot verify target is whitelisted. ${batchError.message}`
+          );
         }
-        this._addTreatedAsIdempotent = true;
-        if (isInList) {
-          console.log('  ℹ️  Add reverted but target is in whitelist; treating as success (idempotent)');
-        } else {
-          console.log('  ℹ️  Add reported TxStatus 6 (e.g. already whitelisted); treating as success for idempotent runs');
+        if (!isInList && !isItemAlreadyExists) {
+          throw new Error(
+            `Add target returned TxStatus 6 and target is not in whitelist (verified). Step must succeed or data must already be in place. ${batchError.message}`
+          );
         }
-        this.assertTest(true, `Target ${this.testTarget} add step (already whitelisted or idempotent)`);
+        this._addVerifiedInPlace = true;
+        console.log('  ℹ️  Add returned TxStatus 6; verified target is already in whitelist — step passed');
         return;
       }
 
@@ -282,9 +313,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       const ownerWalletName = Object.keys(this.wallets).find(
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
-      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
-
-      const allowedTargetsVerify = await ownerGuardController.getFunctionWhitelistTargets(
+      const allowedTargetsVerify = await this.getFunctionWhitelistTargetsAsOwner(
         this.NATIVE_TRANSFER_SELECTOR
       );
       console.log(`  📋 Allowed targets: ${allowedTargetsVerify.length} found`);
@@ -295,12 +324,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       const isWhitelisted = allowedTargetsVerify.some(
         (target) => target.toLowerCase() === this.testTarget!.toLowerCase()
       );
-      if (this._addTreatedAsIdempotent && !isWhitelisted) {
-        console.log('  ℹ️  Add was treated as idempotent (TxStatus 6); target not in list (scope may differ); skipping verify');
-        this.assertTest(true, 'Verify skipped (add was idempotent)');
-      } else {
-        this.assertTest(isWhitelisted === true, `Target must be whitelisted (expected: true, actual: ${isWhitelisted})`);
-      }
+      this.assertTest(isWhitelisted === true, `Target must be whitelisted (expected: true, actual: ${isWhitelisted})`);
       console.log('  ✅ Target verified as whitelisted');
     } catch (error: any) {
       this.handleTestError('Verify target is whitelisted', error);
@@ -319,15 +343,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       console.log('📋 Step 3: Query all allowed targets for function selector');
 
-      // Use owner wallet for query (needed for _validateAnyRole check)
-      const ownerWallet = this.getRoleWallet('owner');
-      const ownerWalletName = Object.keys(this.wallets).find(
-        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
-      ) || 'wallet1';
-      
-      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
-
-      const allowedTargets = await ownerGuardController.getFunctionWhitelistTargets(
+      const allowedTargets = await this.getFunctionWhitelistTargetsAsOwner(
         this.NATIVE_TRANSFER_SELECTOR
       );
       // Allow 0 for idempotent runs where add was skipped and target may not appear in the list.
@@ -404,11 +420,34 @@ export class WhitelistTests extends BaseGuardControllerTest {
       try {
         await this.assertGuardConfigBatchSucceeded(receiptRemove, 'Remove target from whitelist');
       } catch (e: any) {
-        if (this._addTreatedAsIdempotent && e?.message?.includes('TxStatus 6')) {
-          console.log('  ℹ️  Remove reported TxStatus 6 (target was not in list); treating as success for idempotent runs');
-        } else {
-          throw e;
+        if (!e?.message?.includes('TxStatus 6')) throw e;
+        // TxStatus 6: pass if we verify target is no longer in whitelist (already removed); use owner client + retry.
+        let stillInList = true;
+        try {
+          const targetsNow = await this.getFunctionWhitelistTargetsAsOwner(
+            this.NATIVE_TRANSFER_SELECTOR,
+            3,
+            1000
+          );
+          stillInList = targetsNow.some(
+            (t) => t.toLowerCase() === this.testTarget!.toLowerCase()
+          );
+        } catch (verifyErr: any) {
+          if (/ItemNotFound|ResourceNotFound/i.test(e?.message ?? '')) {
+            console.log('  ℹ️  Remove returned TxStatus 6 (item not found); verification call failed but revert implies already removed — step passed');
+            stillInList = false;
+          } else {
+            throw new Error(
+              `Remove target returned TxStatus 6 and getFunctionWhitelistTargets failed; cannot verify. ${e.message}`
+            );
+          }
         }
+        if (stillInList) {
+          throw new Error(
+            `Remove target returned TxStatus 6 but target is still in whitelist (verified). ${e.message}`
+          );
+        }
+        console.log('  ℹ️  Remove returned TxStatus 6; verified target is not in whitelist — step passed');
       }
 
       // Wait a bit for state to update
@@ -433,15 +472,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       console.log('📋 Step 5: Verify target is no longer in whitelist');
 
-      // Use owner wallet for query (needed for _validateAnyRole check)
-      const ownerWallet = this.getRoleWallet('owner');
-      const ownerWalletName = Object.keys(this.wallets).find(
-        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
-      ) || 'wallet1';
-      
-      const ownerGuardController = this.createGuardControllerWithWallet(ownerWalletName);
-
-      const allowedTargetsRemove = await ownerGuardController.getFunctionWhitelistTargets(
+      const allowedTargetsRemove = await this.getFunctionWhitelistTargetsAsOwner(
         this.NATIVE_TRANSFER_SELECTOR
       );
       console.log(`  📋 Allowed targets: ${allowedTargetsRemove.length} found`);
@@ -454,19 +485,11 @@ export class WhitelistTests extends BaseGuardControllerTest {
       );
 
       const expectedIsWhitelisted = false;
-      if (this._addTreatedAsIdempotent) {
-        console.log('  ℹ️  Add was idempotent; verify-removed passes (target may not have been in list)');
-        this.assertTest(true, 'Verify removed skipped (add was idempotent)');
-      } else {
-        this.assertTest(
-          isWhitelisted === expectedIsWhitelisted,
-          `Target is not whitelisted (expected: ${expectedIsWhitelisted}, actual: ${isWhitelisted})`
-        );
-      }
-
+      this.assertTest(
+        isWhitelisted === expectedIsWhitelisted,
+        `Target is not whitelisted (expected: ${expectedIsWhitelisted}, actual: ${isWhitelisted})`
+      );
       console.log('  ✅ Target verified as removed from whitelist');
-
-      this.assertTest(true, `Target ${this.testTarget} not found in whitelist (removed successfully)`);
     } catch (error: any) {
       this.handleTestError('Verify target is removed', error);
       throw error;

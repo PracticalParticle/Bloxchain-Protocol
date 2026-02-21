@@ -11,6 +11,8 @@
  * @version 1.0.0
  */
 
+import { decodeAbiParameters, parseAbiParameters } from 'viem'
+
 /**
  * Custom error interfaces matching SharedValidation.sol definitions
  */
@@ -150,7 +152,7 @@ export interface DefinitionNotIDefinitionError extends ContractError {
 
 export interface TargetNotWhitelistedError extends ContractError {
   name: 'TargetNotWhitelisted'
-  params: { target: string; functionSelector: string; roleHash: string }
+  params: { target: string; functionSelector: string }
 }
 
 export interface ResourceNotFoundError extends ContractError {
@@ -411,6 +413,77 @@ export interface CustomErrorError extends ContractError {
   params: { message: string }
 }
 
+/** Errors from SharedValidation.sol not previously in the union */
+export interface NoPermissionForFunctionError extends ContractError {
+  name: 'NoPermissionForFunction'
+  params: { caller: string; functionSelector: string }
+}
+
+export interface NotSupportedError extends ContractError {
+  name: 'NotSupported'
+  params: {}
+}
+
+export interface TransactionStatusMismatchError extends ContractError {
+  name: 'TransactionStatusMismatch'
+  params: { expectedStatus: string; currentStatus: string }
+}
+
+export interface PendingSecureRequestError extends ContractError {
+  name: 'PendingSecureRequest'
+  params: {}
+}
+
+export interface ResourceAlreadyExistsError extends ContractError {
+  name: 'ResourceAlreadyExists'
+  params: { resourceId: string }
+}
+
+export interface InvalidOperationError extends ContractError {
+  name: 'InvalidOperation'
+  params: { item: string }
+}
+
+export interface InternalFunctionNotAccessibleError extends ContractError {
+  name: 'InternalFunctionNotAccessible'
+  params: { functionSelector: string }
+}
+
+export interface FunctionSelectorMismatchError extends ContractError {
+  name: 'FunctionSelectorMismatch'
+  params: { providedSelector: string; derivedSelector: string }
+}
+
+export interface OperationFailedError extends ContractError {
+  name: 'OperationFailed'
+  params: {}
+}
+
+export interface BatchSizeExceededError extends ContractError {
+  name: 'BatchSizeExceeded'
+  params: { currentSize: string; maxSize: string }
+}
+
+export interface MaxRolesExceededError extends ContractError {
+  name: 'MaxRolesExceeded'
+  params: { currentCount: string; maxRoles: string }
+}
+
+export interface MaxHooksExceededError extends ContractError {
+  name: 'MaxHooksExceeded'
+  params: { currentCount: string; maxHooks: string }
+}
+
+export interface MaxFunctionsExceededError extends ContractError {
+  name: 'MaxFunctionsExceeded'
+  params: { currentCount: string; maxFunctions: string }
+}
+
+export interface RangeSizeExceededError extends ContractError {
+  name: 'RangeSizeExceeded'
+  params: { rangeSize: string; maxRangeSize: string }
+}
+
 /**
  * Union type for all contract errors
  */
@@ -487,196 +560,417 @@ export type GuardianContractError =
   | PatternMatchError
   | ReadableTextError
   | CustomErrorError
+  | NoPermissionForFunctionError
+  | NotSupportedError
+  | TransactionStatusMismatchError
+  | PendingSecureRequestError
+  | ResourceAlreadyExistsError
+  | InvalidOperationError
+  | InternalFunctionNotAccessibleError
+  | FunctionSelectorMismatchError
+  | OperationFailedError
+  | BatchSizeExceededError
+  | MaxRolesExceededError
+  | MaxHooksExceededError
+  | MaxFunctionsExceededError
+  | RangeSizeExceededError
 
 /**
- * Error signature mapping for quick lookup
- * Maps the keccak256 hash of the error signature to error information
- * Note: These are placeholder signatures - in practice, you would use the actual keccak256 hashes
+ * Error signature mapping for quick lookup.
+ * Selectors are the first 4 bytes of keccak256("ErrorName(type1,type2,...)") from SharedValidation.sol.
  */
 export const ERROR_SIGNATURES: Record<string, {
   name: string
   params: string[]
   userMessage: (params: Record<string, any>) => string
 }> = {
-  // Address validation errors (placeholder signatures)
-  '0x2c7b6e7f': { // InvalidAddress(address)
+  // Address validation (SharedValidation.sol)
+  '0x8e4c8aa6': {
     name: 'InvalidAddress',
     params: ['provided'],
     userMessage: (params) => `InvalidAddress: Invalid address provided: ${params.provided}`
   },
-  '0x8c5be1e6': { // InvalidTargetAddress(address)
-    name: 'InvalidTargetAddress',
-    params: ['target'],
-    userMessage: (params) => `InvalidTargetAddress: Invalid target address: ${params.target}`
-  },
-  '0x5c60da1c': { // InvalidRequesterAddress(address)
-    name: 'InvalidRequesterAddress',
-    params: ['requester'],
-    userMessage: (params) => `InvalidRequesterAddress: Invalid requester address: ${params.requester}`
-  },
-  '0x8da5cb5c': { // InvalidHandlerContract(address)
-    name: 'InvalidHandlerContract',
-    params: ['handler'],
-    userMessage: (params) => `InvalidHandlerContract: Invalid handler contract: ${params.handler}`
-  },
-  '0x8c5be1e7': { // InvalidSignerAddress(address)
-    name: 'InvalidSignerAddress',
-    params: ['signer'],
-    userMessage: (params) => `InvalidSignerAddress: Invalid signer address: ${params.signer}`
-  },
-  '0x5c60da1d': { // NotNewAddress(address,address)
+  '0x1c024b14': {
     name: 'NotNewAddress',
     params: ['newAddress', 'currentAddress'],
     userMessage: () => `NotNewAddress: New address must be different from current address`
   },
 
-  // Permission errors
-  '0x8da5cb5d': { // NoPermission(address)
-    name: 'NoPermission',
-    params: ['caller'],
-    userMessage: (params) => `NoPermission: Caller ${params.caller} does not have permission`
+  // Time and deadline
+  '0xf027e09d': {
+    name: 'InvalidTimeLockPeriod',
+    params: ['provided'],
+    userMessage: (params) => `InvalidTimeLockPeriod: Invalid time lock period: ${params.provided}`
   },
-  '0x8c5be1e8': { // RestrictedOwner(address,address)
-    name: 'RestrictedOwner',
-    params: ['caller', 'owner'],
-    userMessage: () => `RestrictedOwner: Only the owner can perform this action`
+  '0xbcdedf97': {
+    name: 'TimeLockPeriodZero',
+    params: ['provided'],
+    userMessage: () => `TimeLockPeriodZero: Time lock period must be greater than zero`
   },
-  '0x5c60da1e': { // RestrictedBroadcaster(address,address)
-    name: 'RestrictedBroadcaster',
-    params: ['caller', 'broadcaster'],
-    userMessage: () => `RestrictedBroadcaster: Only the broadcaster can perform this action`
-  },
-  '0x8da5cb5e': { // SignerNotAuthorized(address)
-    name: 'SignerNotAuthorized',
-    params: ['signer'],
-    userMessage: (params) => `SignerNotAuthorized: Signer ${params.signer} is not authorized`
-  },
-
-  // Resource and item management errors
-  '0x9da5cb5f': { // ItemAlreadyExists(address) - unique placeholder signature
-    name: 'ItemAlreadyExists',
-    params: ['item'],
-    userMessage: (params) => `ItemAlreadyExists: Item ${params.item} already exists`
-  },
-  '0x9da5cb60': { // ItemNotFound(address) - unique placeholder signature
-    name: 'ItemNotFound',
-    params: ['item'],
-    userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
-  },
-  '0x9da5cb63': { // DefinitionNotIDefinition(address) - unique placeholder signature
-    name: 'DefinitionNotIDefinition',
-    params: ['definition'],
-    userMessage: (params) => `DefinitionNotIDefinition: Address ${params.definition} is not an IDefinition contract`
-  },
-  '0x9da5cb61': { // TargetNotWhitelisted(address,bytes4,bytes32) - unique placeholder signature
-    name: 'TargetNotWhitelisted',
-    params: ['target', 'functionSelector', 'roleHash'],
-    userMessage: (params) => `TargetNotWhitelisted: Target ${params.target} is not whitelisted for function selector ${params.functionSelector} and role ${params.roleHash}`
-  },
-  '0x9da5cb62': { // ResourceNotFound(bytes32) - unique placeholder signature
-    name: 'ResourceNotFound',
-    params: ['resource'],
-    userMessage: (params) => `ResourceNotFound: Resource ${params.resource} not found`
-  },
-
-  // Operation errors
-  '0x8c5be1e9': { // OperationNotSupported()
-    name: 'OperationNotSupported',
-    params: [],
-    userMessage: () => `OperationNotSupported: This operation is not supported`
-  },
-  '0x5c60da1f': { // RequestAlreadyPending(uint256)
-    name: 'RequestAlreadyPending',
-    params: ['txId'],
-    userMessage: (params) => `RequestAlreadyPending: Request is already pending (Transaction ID: ${params.txId})`
-  },
-  '0x8da5cb5f': { // TransactionNotFound(uint256)
-    name: 'TransactionNotFound',
-    params: ['txId'],
-    userMessage: (params) => `TransactionNotFound: Transaction not found: ${params.txId}`
-  },
-
-  // Time errors
-  '0x8c5be1ea': { // DeadlineInPast(uint256,uint256)
+  '0x0e6fd6e4': {
     name: 'DeadlineInPast',
     params: ['deadline', 'currentTime'],
     userMessage: () => `DeadlineInPast: Transaction deadline has passed`
   },
-  '0x5c60da20': { // MetaTxExpired(uint256,uint256)
+  '0x0ce5c69c': {
     name: 'MetaTxExpired',
     params: ['deadline', 'currentTime'],
     userMessage: () => `MetaTxExpired: Meta-transaction has expired`
   },
+  '0xee142cd7': {
+    name: 'BeforeReleaseTime',
+    params: ['releaseTime', 'currentTime'],
+    userMessage: () => `BeforeReleaseTime: Current time is before release time`
+  },
+  '0x013cfafc': {
+    name: 'NewTimelockSame',
+    params: ['newPeriod', 'currentPeriod'],
+    userMessage: () => `NewTimelockSame: New timelock period must differ from current`
+  },
 
-  // Role errors
-  '0x8da5cb60': { // RoleDoesNotExist()
-    name: 'RoleDoesNotExist',
+  // Permission and authorization
+  '0xf37a3442': {
+    name: 'NoPermission',
+    params: ['caller'],
+    userMessage: (params) => `NoPermission: Caller ${params.caller} does not have permission`
+  },
+  '0x3975c914': {
+    name: 'NoPermissionForFunction',
+    params: ['caller', 'functionSelector'],
+    userMessage: (params) => `NoPermissionForFunction: Caller ${params.caller} has no permission for function ${params.functionSelector}`
+  },
+  '0x5f16a21a': {
+    name: 'RestrictedOwner',
+    params: ['caller', 'owner'],
+    userMessage: () => `RestrictedOwner: Only the owner can perform this action`
+  },
+  '0x14437a05': {
+    name: 'RestrictedOwnerRecovery',
+    params: ['caller', 'owner', 'recovery'],
+    userMessage: () => `RestrictedOwnerRecovery: Only owner or recovery can perform this action`
+  },
+  '0x92e22b88': {
+    name: 'RestrictedRecovery',
+    params: ['caller', 'recovery'],
+    userMessage: () => `RestrictedRecovery: Only the recovery address can perform this action`
+  },
+  '0xc26028e0': {
+    name: 'RestrictedBroadcaster',
+    params: ['caller', 'broadcaster'],
+    userMessage: () => `RestrictedBroadcaster: Only the broadcaster can perform this action`
+  },
+  '0x3b94fe24': {
+    name: 'SignerNotAuthorized',
+    params: ['signer'],
+    userMessage: (params) => `SignerNotAuthorized: Signer ${params.signer} is not authorized`
+  },
+  '0xf364cb26': {
+    name: 'OnlyCallableByContract',
+    params: ['caller', 'contractAddress'],
+    userMessage: (params) => `OnlyCallableByContract: Caller ${params.caller} is not the contract ${params.contractAddress}`
+  },
+
+  // Transaction and operation
+  '0xa0387940': {
+    name: 'NotSupported',
     params: [],
-    userMessage: () => `RoleDoesNotExist: Role does not exist`
+    userMessage: () => `NotSupported: This operation is not supported`
   },
-  '0x8c5be1eb': { // WalletAlreadyInRole(address)
-    name: 'WalletAlreadyInRole',
-    params: ['wallet'],
-    userMessage: (params) => `WalletAlreadyInRole: Wallet ${params.wallet} is already in this role`
+  '0xc502078d': {
+    name: 'InvalidOperationType',
+    params: ['actualType', 'expectedType'],
+    userMessage: () => `InvalidOperationType: Operation type does not match expected`
   },
-  '0x5c60da21': { // RoleWalletLimitReached(uint256,uint256)
-    name: 'RoleWalletLimitReached',
-    params: ['currentCount', 'maxWallets'],
-    userMessage: (params) => `RoleWalletLimitReached: Role wallet limit reached (${params.currentCount}/${params.maxWallets})`
+  '0x784a33af': {
+    name: 'ZeroOperationTypeNotAllowed',
+    params: [],
+    userMessage: () => `ZeroOperationTypeNotAllowed: Zero operation type is not allowed`
+  },
+  '0x10423d7c': {
+    name: 'TransactionStatusMismatch',
+    params: ['expectedStatus', 'currentStatus'],
+    userMessage: (params) => `TransactionStatusMismatch: Expected status ${params.expectedStatus}, current ${params.currentStatus}`
+  },
+  '0x0dc149f0': {
+    name: 'AlreadyInitialized',
+    params: [],
+    userMessage: () => `AlreadyInitialized: Contract is already initialized`
+  },
+  '0x87138d5c': {
+    name: 'NotInitialized',
+    params: [],
+    userMessage: () => `NotInitialized: Contract is not initialized`
+  },
+  '0x1efa143c': {
+    name: 'TransactionIdMismatch',
+    params: ['expectedTxId', 'providedTxId'],
+    userMessage: (params) => `TransactionIdMismatch: Transaction ID mismatch (expected: ${params.expectedTxId}, provided: ${params.providedTxId})`
+  },
+  '0xf5b20274': {
+    name: 'PendingSecureRequest',
+    params: [],
+    userMessage: () => `PendingSecureRequest: A secure request is already pending`
   },
 
-  // Signature errors
-  '0x8da5cb61': { // InvalidSignatureLength(uint256,uint256)
+  // Signature and meta-transaction
+  '0xd615d706': {
     name: 'InvalidSignatureLength',
     params: ['providedLength', 'expectedLength'],
     userMessage: (params) => `InvalidSignatureLength: Invalid signature length: ${params.providedLength} (expected: ${params.expectedLength})`
   },
-  '0x8c5be1ec': { // InvalidNonce(uint256,uint256)
+  '0x2adfdc30': {
+    name: 'InvalidSignature',
+    params: ['signature'],
+    userMessage: () => `InvalidSignature: Invalid signature`
+  },
+  '0x06427aeb': {
     name: 'InvalidNonce',
     params: ['providedNonce', 'expectedNonce'],
     userMessage: (params) => `InvalidNonce: Invalid nonce: ${params.providedNonce} (expected: ${params.expectedNonce})`
   },
-  '0x5c60da22': { // ChainIdMismatch(uint256,uint256)
+  '0x21967608': {
     name: 'ChainIdMismatch',
     params: ['providedChainId', 'expectedChainId'],
     userMessage: (params) => `ChainIdMismatch: Chain ID mismatch: ${params.providedChainId} (expected: ${params.expectedChainId})`
   },
+  '0x1c3e0d9d': {
+    name: 'InvalidHandlerSelector',
+    params: ['selector'],
+    userMessage: (params) => `InvalidHandlerSelector: Invalid handler selector: ${params.selector}`
+  },
+  '0xa9f81b00': {
+    name: 'InvalidSValue',
+    params: ['s'],
+    userMessage: () => `InvalidSValue: Invalid signature s value`
+  },
+  '0x8da8a15b': {
+    name: 'InvalidVValue',
+    params: ['v'],
+    userMessage: (params) => `InvalidVValue: Invalid signature v value: ${params.v}`
+  },
+  '0xb840c203': {
+    name: 'ECDSAInvalidSignature',
+    params: ['recoveredSigner'],
+    userMessage: (params) => `ECDSAInvalidSignature: ECDSA recovery returned invalid signer: ${params.recoveredSigner}`
+  },
+  '0xc6ded982': {
+    name: 'GasPriceExceedsMax',
+    params: ['currentGasPrice', 'maxGasPrice'],
+    userMessage: (params) => `GasPriceExceedsMax: Gas price ${params.currentGasPrice} exceeds max ${params.maxGasPrice}`
+  },
 
-  // Balance errors
-  '0x8da5cb62': { // InsufficientBalance(uint256,uint256)
-    name: 'InsufficientBalance',
-    params: ['currentBalance', 'requiredAmount'],
-    userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
+  // Resource and item (SharedValidation.sol)
+  '0x474d3baf': {
+    name: 'ResourceNotFound',
+    params: ['resource'],
+    userMessage: (params) => `ResourceNotFound: Resource ${params.resource} not found`
   },
-  '0x3c6b4b28': { // InvalidPayment()
-    name: 'InvalidPayment',
-    params: [],
-    userMessage: () => `InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)`
+  '0x430fab94': {
+    name: 'ResourceAlreadyExists',
+    params: ['resourceId'],
+    userMessage: (params) => `ResourceAlreadyExists: Resource ${params.resourceId} already exists`
+  },
+  '0xee809d50': {
+    name: 'CannotModifyProtected',
+    params: ['resourceId'],
+    userMessage: (params) => `CannotModifyProtected: Cannot modify protected resource ${params.resourceId}`
+  },
+  '0x0da9443d': {
+    name: 'ItemAlreadyExists',
+    params: ['item'],
+    userMessage: (params) => `ItemAlreadyExists: Item ${params.item} already exists`
+  },
+  '0x7a6318f1': {
+    name: 'ItemNotFound',
+    params: ['item'],
+    userMessage: (params) => `ItemNotFound: Item ${params.item} not found`
+  },
+  '0xf438c55f': {
+    name: 'InvalidOperation',
+    params: ['item'],
+    userMessage: (params) => `InvalidOperation: Invalid operation for item ${params.item}`
+  },
+  '0x5ca3be63': {
+    name: 'DefinitionNotIDefinition',
+    params: ['definition'],
+    userMessage: (params) => `DefinitionNotIDefinition: Address ${params.definition} is not an IDefinition contract`
   },
 
-  // Function validation errors
-  '0x8c5be1ee': { // HandlerForSelectorMismatch(bytes4,bytes4) - placeholder signature
-    name: 'HandlerForSelectorMismatch',
-    params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
-    userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema handler: ${params.schemaHandlerForSelector}, permission handler: ${params.permissionHandlerForSelector}`
+  // Role and function
+  '0xfc861e8c': {
+    name: 'RoleWalletLimitReached',
+    params: ['currentCount', 'maxWallets'],
+    userMessage: (params) => `RoleWalletLimitReached: Role wallet limit reached (${params.currentCount}/${params.maxWallets})`
   },
-  '0x11269582': { // ContractFunctionMustBeProtected(bytes4)
+  '0xd2bbf46a': {
+    name: 'MaxWalletsZero',
+    params: ['provided'],
+    userMessage: () => `MaxWalletsZero: Max wallets must be greater than zero`
+  },
+  '0x405c16b9': {
+    name: 'ConflictingMetaTxPermissions',
+    params: ['functionSelector'],
+    userMessage: (params) => `ConflictingMetaTxPermissions: Conflicting meta-tx permissions for selector ${params.functionSelector}`
+  },
+  '0xbb8128de': {
+    name: 'InternalFunctionNotAccessible',
+    params: ['functionSelector'],
+    userMessage: (params) => `InternalFunctionNotAccessible: Internal function ${params.functionSelector} is not accessible`
+  },
+  '0x11269582': {
     name: 'ContractFunctionMustBeProtected',
     params: ['functionSelector'],
     userMessage: (params) => `ContractFunctionMustBeProtected: Internal function (selector: ${params.functionSelector}) must be protected`
   },
+  '0x1fe7e0ac': {
+    name: 'TargetNotWhitelisted',
+    params: ['target', 'functionSelector'],
+    userMessage: (params) => `TargetNotWhitelisted: Target ${params.target} is not whitelisted for function selector ${params.functionSelector}`
+  },
+  '0x2584c569': {
+    name: 'FunctionSelectorMismatch',
+    params: ['providedSelector', 'derivedSelector'],
+    userMessage: (params) => `FunctionSelectorMismatch: Selector mismatch (provided: ${params.providedSelector}, derived: ${params.derivedSelector})`
+  },
+  '0xc0baa221': {
+    name: 'HandlerForSelectorMismatch',
+    params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
+    userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema: ${params.schemaHandlerForSelector}, permission: ${params.permissionHandlerForSelector}`
+  },
+  '0x2457cde7': {
+    name: 'InvalidRange',
+    params: ['from', 'to'],
+    userMessage: (params) => `InvalidRange: Invalid range (from: ${params.from}, to: ${params.to})`
+  },
+  '0x0364eed2': {
+    name: 'OperationFailed',
+    params: [],
+    userMessage: () => `OperationFailed: Operation failed`
+  },
 
-  // Array errors
-  '0x8c5be1ed': { // ArrayLengthMismatch(uint256,uint256)
+  // Payment and balance
+  '0x3c6b4b28': {
+    name: 'InvalidPayment',
+    params: [],
+    userMessage: () => `InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)`
+  },
+  '0xcf479181': {
+    name: 'InsufficientBalance',
+    params: ['currentBalance', 'requiredAmount'],
+    userMessage: (params) => `InsufficientBalance: Insufficient balance: ${params.currentBalance} (required: ${params.requiredAmount})`
+  },
+  '0xadca8d51': {
+    name: 'PaymentFailed',
+    params: ['recipient', 'amount', 'reason'],
+    userMessage: (params) => `PaymentFailed: Payment to ${params.recipient} for ${params.amount} failed`
+  },
+
+  // Array validation
+  '0xfa5dbe08': {
     name: 'ArrayLengthMismatch',
     params: ['array1Length', 'array2Length'],
     userMessage: (params) => `ArrayLengthMismatch: Array length mismatch: ${params.array1Length} vs ${params.array2Length}`
   },
-  '0x5c60da23': { // IndexOutOfBounds(uint256,uint256)
+  '0x63a056dd': {
     name: 'IndexOutOfBounds',
     params: ['index', 'arrayLength'],
     userMessage: (params) => `IndexOutOfBounds: Index out of bounds: ${params.index} (array length: ${params.arrayLength})`
+  },
+
+  // System limits
+  '0xf80a4845': {
+    name: 'BatchSizeExceeded',
+    params: ['currentSize', 'maxSize'],
+    userMessage: (params) => `BatchSizeExceeded: Batch size ${params.currentSize} exceeds max ${params.maxSize}`
+  },
+  '0xc37aabb4': {
+    name: 'MaxRolesExceeded',
+    params: ['currentCount', 'maxRoles'],
+    userMessage: (params) => `MaxRolesExceeded: Role count ${params.currentCount} exceeds max ${params.maxRoles}`
+  },
+  '0x0c285f2e': {
+    name: 'MaxHooksExceeded',
+    params: ['currentCount', 'maxHooks'],
+    userMessage: (params) => `MaxHooksExceeded: Hook count ${params.currentCount} exceeds max ${params.maxHooks}`
+  },
+  '0x106e9da6': {
+    name: 'MaxFunctionsExceeded',
+    params: ['currentCount', 'maxFunctions'],
+    userMessage: (params) => `MaxFunctionsExceeded: Function count ${params.currentCount} exceeds max ${params.maxFunctions}`
+  },
+  '0x82289375': {
+    name: 'RangeSizeExceeded',
+    params: ['rangeSize', 'maxRangeSize'],
+    userMessage: (params) => `RangeSizeExceeded: Range size ${params.rangeSize} exceeds max ${params.maxRangeSize}`
   }
+}
+
+/**
+ * ABI parameter types for decoding custom error args (selector -> viem parseAbiParameters string).
+ * Keys match ERROR_SIGNATURES; values are canonical ABI type strings for decodeAbiParameters.
+ * viem/abitype parseAbiParameters accepts type-only strings (e.g. 'address, bytes4'); names are optional.
+ */
+export const ERROR_DECODE_TYPES: Record<string, string> = {
+  '0x8e4c8aa6': 'address',
+  '0x1c024b14': 'address, address',
+  '0xf027e09d': 'uint256',
+  '0xbcdedf97': 'uint256',
+  '0x0e6fd6e4': 'uint256, uint256',
+  '0x0ce5c69c': 'uint256, uint256',
+  '0xee142cd7': 'uint256, uint256',
+  '0x013cfafc': 'uint256, uint256',
+  '0xf37a3442': 'address',
+  '0x3975c914': 'address, bytes4',
+  '0x5f16a21a': 'address, address',
+  '0x14437a05': 'address, address, address',
+  '0x92e22b88': 'address, address',
+  '0xc26028e0': 'address, address',
+  '0x3b94fe24': 'address',
+  '0xf364cb26': 'address, address',
+  '0xa0387940': '',
+  '0xc502078d': 'bytes32, bytes32',
+  '0x784a33af': '',
+  '0x10423d7c': 'uint8, uint8',
+  '0x0dc149f0': '',
+  '0x87138d5c': '',
+  '0x1efa143c': 'uint256, uint256',
+  '0xf5b20274': '',
+  '0xd615d706': 'uint256, uint256',
+  '0x2adfdc30': 'bytes',
+  '0x06427aeb': 'uint256, uint256',
+  '0x21967608': 'uint256, uint256',
+  '0x1c3e0d9d': 'bytes4',
+  '0xa9f81b00': 'bytes32',
+  '0x8da8a15b': 'uint8',
+  '0xb840c203': 'address',
+  '0xc6ded982': 'uint256, uint256',
+  '0x474d3baf': 'bytes32',
+  '0x430fab94': 'bytes32',
+  '0xee809d50': 'bytes32',
+  '0x0da9443d': 'address',
+  '0x7a6318f1': 'address',
+  '0xf438c55f': 'address',
+  '0x5ca3be63': 'address',
+  '0xfc861e8c': 'uint256, uint256',
+  '0xd2bbf46a': 'uint256',
+  '0x405c16b9': 'bytes4',
+  '0xbb8128de': 'bytes4',
+  '0x11269582': 'bytes4',
+  '0x1fe7e0ac': 'address, bytes4',
+  '0x2584c569': 'bytes4, bytes4',
+  '0xc0baa221': 'bytes4, bytes4',
+  '0x2457cde7': 'uint256, uint256',
+  '0x0364eed2': '',
+  '0x3c6b4b28': '',
+  '0xcf479181': 'uint256, uint256',
+  '0xadca8d51': 'address, uint256, bytes',
+  '0xfa5dbe08': 'uint256, uint256',
+  '0x63a056dd': 'uint256, uint256',
+  '0xf80a4845': 'uint256, uint256',
+  '0xc37aabb4': 'uint256, uint256',
+  '0x0c285f2e': 'uint256, uint256',
+  '0x106e9da6': 'uint256, uint256',
+  '0x82289375': 'uint256, uint256'
 }
 
 /**
@@ -715,12 +1009,45 @@ export const COMMON_ERROR_PATTERNS = [
  */
 export function decodeRevertReason(data: string): GuardianContractError | null {
   try {
-    // Ensure data is hex string without 0x prefix
+    // Ensure data is hex string without 0x prefix (normalize to lowercase for lookup)
     if (data.startsWith('0x')) {
       data = data.slice(2)
     }
+    data = data.toLowerCase()
 
-    // Check if it starts with Error(string) selector (0x08c379a0)
+    // Try known custom error by 4-byte selector (before Error(string))
+    if (data.length >= 8) {
+      const selector = ('0x' + data.slice(0, 8)) as keyof typeof ERROR_SIGNATURES
+      const sig = ERROR_SIGNATURES[selector]
+      const types = ERROR_DECODE_TYPES[selector]
+      if (sig && (types === '' || types)) {
+        const paramNames = sig.params
+        let params: Record<string, any> = {}
+        let decodeOk = true
+        if (types) {
+          try {
+            const argsHex = '0x' + data.slice(8)
+            const decoded = decodeAbiParameters(parseAbiParameters(types), argsHex as `0x${string}`)
+            paramNames.forEach((name, i) => {
+              params[name] = decoded[i] !== undefined ? String(decoded[i]) : ''
+            })
+          } catch (_) {
+            decodeOk = false
+          }
+        }
+        if (decodeOk) {
+          const message = sig.userMessage(params)
+          return {
+            name: sig.name,
+            signature: selector,
+            params,
+            message
+          } as unknown as GuardianContractError
+        }
+      }
+    }
+
+    // Check if it starts with Error(string) selector (0x08c379a0); data already lowercased
     if (data.length >= 8 && data.startsWith('08c379a0')) {
       const stringData = data.slice(8) // Remove selector
       if (stringData.length < 64) return null
@@ -825,8 +1152,9 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
  * @returns User-friendly error message
  */
 export function getUserFriendlyErrorMessage(error: GuardianContractError): string {
-  // Check if it's a known error signature
-  const errorSignature = ERROR_SIGNATURES[error.signature]
+  // Check if it's a known error signature (normalize selector to lowercase for lookup)
+  const selectorKey = (error.signature as string).toLowerCase()
+  const errorSignature = ERROR_SIGNATURES[selectorKey]
   if (errorSignature) {
     return errorSignature.userMessage(error.params)
   }
@@ -852,7 +1180,7 @@ export function getUserFriendlyErrorMessage(error: GuardianContractError): strin
     case 'InvalidPayment':
       return 'InvalidPayment: Invalid payment (e.g. wrong value or payment not allowed)'
     case 'TargetNotWhitelisted':
-      return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector} and role ${error.params.roleHash}`
+      return `TargetNotWhitelisted: Target ${error.params.target} is not whitelisted for function selector ${error.params.functionSelector}`
     case 'ResourceNotFound':
       return `ResourceNotFound: Resource ${error.params.resource} not found`
     case 'HandlerForSelectorMismatch':
@@ -911,7 +1239,7 @@ export function extractErrorInfo(revertData: string): {
   }
 
   const userMessage = getUserFriendlyErrorMessage(error)
-  const isKnownError = ERROR_SIGNATURES[error.signature] !== undefined
+  const isKnownError = ERROR_SIGNATURES[(error.signature as string).toLowerCase()] !== undefined
 
   return {
     error,
@@ -922,6 +1250,7 @@ export function extractErrorInfo(revertData: string): {
 
 export default {
   ERROR_SIGNATURES,
+  ERROR_DECODE_TYPES,
   COMMON_ERROR_PATTERNS,
   decodeRevertReason,
   getUserFriendlyErrorMessage,

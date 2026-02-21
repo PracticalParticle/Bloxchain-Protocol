@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -469,6 +469,80 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             maxWallets
         );
         assertEq(txRecord.result, expectedError);
+    }
+
+    /**
+     * @dev Test: State consistent after wallet removal (no stale indices/ghost entries)
+     * Attack Vector: State update ordering / missing state sync (UNEXPLORED_ATTACK_VECTORS.md §3.1)
+     */
+    function testFuzz_StateConsistentAfterRemoval(string memory roleName) public {
+        vm.assume(bytes(roleName).length > 0 && bytes(roleName).length < 32);
+        for (uint256 i = 0; i < bytes(roleName).length; i++) {
+            vm.assume(bytes(roleName)[i] >= 0x20 && bytes(roleName)[i] <= 0x7E);
+        }
+        bytes32 roleHash = keccak256(bytes(roleName));
+        vm.assume(roleHash != OWNER_ROLE && roleHash != BROADCASTER_ROLE && roleHash != RECOVERY_ROLE);
+
+        EngineBlox.FunctionPermission[] memory permissions = new EngineBlox.FunctionPermission[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            data: abi.encode(roleName, 10, permissions)
+        });
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
+        vm.prank(broadcaster);
+        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, createParams, 1 hours)) {
+            // continue
+        } catch (bytes memory reason) {
+            if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
+            assembly { revert(add(reason, 0x20), mload(reason)) }
+        }
+
+        IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](2);
+        addActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(roleHash, user1)
+        });
+        addActions[1] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(roleHash, user2)
+        });
+        bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
+        vm.prank(broadcaster);
+        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, addParams, 1 hours)) {
+            // continue
+        } catch (bytes memory reason) {
+            if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
+            assembly { revert(add(reason, 0x20), mload(reason)) }
+        }
+
+        vm.prank(owner);
+        assertTrue(roleBlox.hasRole(roleHash, user1));
+        vm.prank(owner);
+        assertTrue(roleBlox.hasRole(roleHash, user2));
+
+        IRuntimeRBAC.RoleConfigAction[] memory revokeActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        revokeActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REVOKE_WALLET,
+            data: abi.encode(roleHash, user1)
+        });
+        bytes memory revokeParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(revokeActions));
+        vm.prank(broadcaster);
+        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, revokeParams, 1 hours)) {
+            // continue
+        } catch (bytes memory reason) {
+            if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
+            assembly { revert(add(reason, 0x20), mload(reason)) }
+        }
+
+        vm.prank(owner);
+        assertFalse(roleBlox.hasRole(roleHash, user1));
+        vm.prank(owner);
+        assertTrue(roleBlox.hasRole(roleHash, user2));
+        vm.prank(owner);
+        address[] memory wallets = roleBlox.getWalletsInRole(roleHash);
+        assertEq(wallets.length, 1);
+        assertEq(wallets[0], user2);
     }
 
     /**
