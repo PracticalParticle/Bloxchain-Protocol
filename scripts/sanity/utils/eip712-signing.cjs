@@ -1,6 +1,6 @@
 const Web3 = require('web3');
 const fs = require('fs');
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 // Helper function to get RPC URL dynamically
 function getWeb3Url() {

@@ -1,5 +1,5 @@
 // Migration 2: Deploy Guardian Contracts (AccountBlox only)
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const AccountBlox = artifacts.require("AccountBlox");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 

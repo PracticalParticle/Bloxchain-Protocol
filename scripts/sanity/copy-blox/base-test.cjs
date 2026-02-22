@@ -294,6 +294,8 @@ class BaseCopyBloxTest {
             await this.executeTests();
         } catch (error) {
             console.error(`❌ Test suite failed: ${error.message}`);
+            this.testResults.totalTests++;
+            this.testResults.failedTests++;
         } finally {
             this.testResults.endTime = Date.now();
             this.printTestResults();

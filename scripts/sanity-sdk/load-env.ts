@@ -9,4 +9,4 @@ import * as path from 'path';
 
 // Load from cwd (project root when run via "npm run test:sanity-sdk") so RPC always comes from .env
 const envPath = path.join(process.cwd(), '.env');
-dotenv.config({ path: envPath, override: true });
+dotenv.config({ path: envPath, override: true, quiet: true });

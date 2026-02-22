@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Load environment variables
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 /**
  * @dev Extracts deployed contract addresses from Truffle migration artifacts
