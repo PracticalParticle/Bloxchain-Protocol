@@ -59,20 +59,23 @@
   ],
   "author": "Particle Crypto Security",
   "license": "MPL-2.0",
+  "overrides": {
+    "minimatch": ">=10.2.1"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.3.1",
+    "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.3.1",
     "@nomicfoundation/hardhat-ethers": "^4.0.4",
-    "dotenv": "^17.2.3",
-    "hardhat": "^3.1.5",
+    "dotenv": "^17.3.1",
+    "hardhat": "^3.1.8",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
-    "prettier-plugin-solidity": "^2.1.0",
-    "release-please": "^17.1.3",
-    "viem": "^2.44.4"
+    "prettier-plugin-solidity": "^2.2.1",
+    "release-please": "^17.3.0",
+    "viem": "^2.46.1"
   }
 }
