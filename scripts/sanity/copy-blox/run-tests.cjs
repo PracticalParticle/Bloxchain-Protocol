@@ -124,7 +124,10 @@ class CopyBloxTestRunner {
         if (args.includes('--all')) {
             await this.runAllTests();
         } else {
-            const requestedSuites = args.filter(arg => !arg.startsWith('--'));
+            const requestedSuites = args
+                .filter(arg => arg !== '--help')
+                .map(arg => arg.replace(/^--/, ''))
+                .filter(Boolean);
             if (requestedSuites.length > 0) {
                 await this.runSpecificTests(requestedSuites);
             } else {
@@ -137,10 +140,14 @@ class CopyBloxTestRunner {
 
 if (require.main === module) {
     const runner = new CopyBloxTestRunner();
-    runner.run().catch(error => {
-        console.error('❌ Test runner failed:', error);
-        process.exit(1);
-    });
+    runner.run()
+        .then(() => {
+            process.exit(runner.results.failedSuites > 0 ? 1 : 0);
+        })
+        .catch(error => {
+            console.error('❌ Test runner failed:', error);
+            process.exit(1);
+        });
 }
 
 module.exports = CopyBloxTestRunner;

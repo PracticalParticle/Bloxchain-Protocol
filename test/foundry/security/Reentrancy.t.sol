@@ -3,6 +3,7 @@ pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
 import "../helpers/MockContracts.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title ReentrancyTest
@@ -36,9 +37,13 @@ contract ReentrancyTest is CommonBase {
         assertEq(accountBlox.owner(), recovery);
 
         // Attempt to call again - state machine should prevent reentrancy
-        // The transaction status is now COMPLETED, not PENDING, so it should revert
+        // The transaction status is now COMPLETED, not PENDING, so it should revert with TransactionStatusMismatch
         vm.prank(recovery);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(
+            SharedValidation.TransactionStatusMismatch.selector,
+            uint8(EngineBlox.TxStatus.PENDING),
+            uint8(EngineBlox.TxStatus.COMPLETED)
+        ));
         accountBlox.transferOwnershipDelayedApproval(txId);
     }
 
@@ -60,7 +65,11 @@ contract ReentrancyTest is CommonBase {
 
         // Attempt to approve again (would be reentrancy if not protected)
         vm.prank(recovery);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(
+            SharedValidation.TransactionStatusMismatch.selector,
+            uint8(EngineBlox.TxStatus.PENDING),
+            uint8(EngineBlox.TxStatus.COMPLETED)
+        ));
         accountBlox.transferOwnershipDelayedApproval(txId);
     }
 }

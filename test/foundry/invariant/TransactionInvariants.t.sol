@@ -19,21 +19,23 @@ contract TransactionInvariantsTest is CommonBase {
         
         if (pending.length >= 2) {
             uint256 toTxId = pending[pending.length - 1];
-            vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
-            
-            for (uint256 i = 0; i < history.length; i++) {
-                EngineBlox.TxStatus status = history[i].status;
+            if (toTxId > 1) {
+                vm.prank(owner);
+                EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
+                
+                for (uint256 i = 0; i < history.length; i++) {
+                    EngineBlox.TxStatus status = history[i].status;
                 
                 // Status should be a valid enum value
-                assertTrue(
-                    status == EngineBlox.TxStatus.PENDING ||
-                    status == EngineBlox.TxStatus.EXECUTING ||
-                    status == EngineBlox.TxStatus.COMPLETED ||
-                    status == EngineBlox.TxStatus.CANCELLED ||
-                    status == EngineBlox.TxStatus.FAILED ||
-                    status == EngineBlox.TxStatus.REJECTED
-                );
+                    assertTrue(
+                        status == EngineBlox.TxStatus.PENDING ||
+                        status == EngineBlox.TxStatus.EXECUTING ||
+                        status == EngineBlox.TxStatus.COMPLETED ||
+                        status == EngineBlox.TxStatus.CANCELLED ||
+                        status == EngineBlox.TxStatus.FAILED ||
+                        status == EngineBlox.TxStatus.REJECTED
+                    );
+                }
             }
         }
     }
@@ -74,19 +76,21 @@ contract TransactionInvariantsTest is CommonBase {
         
         if (pending.length >= 2) {
             uint256 toTxId = pending[pending.length - 1];
-            vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
-            
-            for (uint256 i = 0; i < history.length; i++) {
-                EngineBlox.PaymentDetails memory payment = history[i].payment;
+            if (toTxId > 1) {
+                vm.prank(owner);
+                EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
                 
-                // If payment recipient is set, verify at least one amount is non-zero
-                if (payment.recipient != address(0)) {
-                    assertNotEq(payment.recipient, address(0));
-                    // Payment should have either native token amount or ERC20 amount
-                    bool hasNativePayment = payment.nativeTokenAmount > 0;
-                    bool hasERC20Payment = payment.erc20TokenAddress != address(0) && payment.erc20TokenAmount > 0;
-                    assertTrue(hasNativePayment || hasERC20Payment, "Payment recipient set but no amount");
+                for (uint256 i = 0; i < history.length; i++) {
+                    EngineBlox.PaymentDetails memory payment = history[i].payment;
+                    
+                    // If payment recipient is set, verify at least one amount is non-zero
+                    if (payment.recipient != address(0)) {
+                        assertNotEq(payment.recipient, address(0));
+                        // Payment should have either native token amount or ERC20 amount
+                        bool hasNativePayment = payment.nativeTokenAmount > 0;
+                        bool hasERC20Payment = payment.erc20TokenAddress != address(0) && payment.erc20TokenAmount > 0;
+                        assertTrue(hasNativePayment || hasERC20Payment, "Payment recipient set but no amount");
+                    }
                 }
             }
         }

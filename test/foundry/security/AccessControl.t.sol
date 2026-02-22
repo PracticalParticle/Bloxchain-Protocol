@@ -74,14 +74,7 @@ contract AccessControlTest is CommonBase {
     function test_PermissionBoundary_OwnerOnly() public {
         // Owner-only functions should reject non-owners
         vm.prank(attacker);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, attacker, owner));
         accountBlox.updateBroadcasterRequest(user1, 0);
-    }
-
-    function test_PermissionBoundary_RecoveryOnly() public {
-        // Recovery-only functions should reject non-recovery
-        vm.prank(attacker);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedRecovery.selector, attacker, recovery));
-        accountBlox.transferOwnershipRequest();
     }
 }

@@ -79,15 +79,16 @@ class CloneAccountBloxTests extends BaseCopyBloxTest {
             }
 
             if (!cloneAddress) {
-                // Fallback: get clone at index 0 (if this was the first clone)
+                // Fallback: get clone at last index (most recently created)
                 const count = await this.callMethod(this.contract.methods.getCloneCount);
                 if (count > 0) {
-                    cloneAddress = await this.callMethod(this.contract.methods.getCloneAtIndex, ['0']);
+                    const lastIndex = String(Number(count) - 1);
+                    cloneAddress = await this.callMethod(this.contract.methods.getCloneAtIndex, [lastIndex]);
                 }
             }
 
             if (!cloneAddress || cloneAddress === '0x0000000000000000000000000000000000000000') {
-                throw new Error('Could not determine clone address from tx events or getCloneAtIndex(0)');
+                throw new Error('Could not determine clone address from tx events or getCloneAtIndex(lastIndex)');
             }
 
             this.lastCloneAddress = cloneAddress;
@@ -100,12 +101,11 @@ class CloneAccountBloxTests extends BaseCopyBloxTest {
     }
 
     async testCloneStateAndRegistry() {
-        await this.startTest('Verify clone state and CopyBlox registry');
-
         if (!this.lastCloneAddress) {
             console.log('   Skipped (no clone from previous test)');
             return;
         }
+        await this.startTest('Verify clone state and CopyBlox registry');
 
         try {
             const cloneAddress = this.lastCloneAddress;

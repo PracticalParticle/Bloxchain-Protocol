@@ -253,7 +253,10 @@ class BaseCopyBloxTest {
         console.log(`Total Tests: ${this.testResults.totalTests}`);
         console.log(`Passed: ${this.testResults.passedTests}`);
         console.log(`Failed: ${this.testResults.failedTests}`);
-        console.log(`Success Rate: ${((this.testResults.passedTests / this.testResults.totalTests) * 100).toFixed(1)}%`);
+        const rate = this.testResults.totalTests > 0
+            ? ((this.testResults.passedTests / this.testResults.totalTests) * 100).toFixed(1)
+            : '0';
+        console.log(`Success Rate: ${rate}%`);
         if (this.testResults.startTime && this.testResults.endTime) {
             const duration = (this.testResults.endTime - this.testResults.startTime) / 1000;
             console.log(`Duration: ${duration.toFixed(2)} seconds`);

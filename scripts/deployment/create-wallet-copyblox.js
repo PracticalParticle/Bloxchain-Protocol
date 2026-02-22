@@ -57,6 +57,7 @@ async function main() {
 
   if (!process.env.DEPLOY_PRIVATE_KEY || !process.env.DEPLOY_RPC_URL) {
     console.error("Missing DEPLOY_PRIVATE_KEY or DEPLOY_RPC_URL in .env.deployment.");
+    if (rl) rl.close();
     process.exit(1);
   }
 

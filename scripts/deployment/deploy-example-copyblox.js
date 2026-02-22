@@ -143,9 +143,10 @@ async function main() {
   }
   console.log(`   ✅ CopyBlox: ${copyBloxAddress}`);
 
-  // Initialize CopyBlox
+  // Initialize CopyBlox (dev-friendly: same address for owner/broadcaster/recovery, 1s timelock)
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-  console.log(`🔧 Initializing CopyBlox (deployer as owner/broadcaster/recovery)...`);
+  console.log(`🔧 Initializing CopyBlox (deployer as owner/broadcaster/recovery, 1s timelock)...`);
+  console.warn(`   ⚠️  Dev config: role separation disabled and short timelock. For production use distinct roles and a longer timeLockPeriodSec.`);
   const initHash = await walletClient.writeContract({
     address: copyBloxAddress,
     abi: copyBloxArtifact.abi,
@@ -164,8 +165,9 @@ async function main() {
 
   const now = new Date().toISOString();
   const addresses = { [networkName]: { CopyBlox: { address: copyBloxAddress, deployedAt: now } } };
-  existing[networkName] = { ...(existing[networkName] || {}), ...addresses[networkName] };
-  fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
+  const existingReread = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+  existingReread[networkName] = { ...(existingReread[networkName] || {}), ...addresses[networkName] };
+  fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existingReread, null, 2));
 
   console.log("\n🎉 Example (CopyBlox) deployment complete.");
   console.log(`   CopyBlox: ${copyBloxAddress}`);

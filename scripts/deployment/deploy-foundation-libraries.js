@@ -10,7 +10,7 @@
  *
  * Usage:
  *   Copy env.deployment.example to .env.deployment and set DEPLOY_RPC_URL, DEPLOY_PRIVATE_KEY.
- *   npx hardhat run scripts/deploy-foundation-libraries.js --network sepolia
+ *   npx hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia
  */
 
 import { network } from "hardhat";
@@ -19,7 +19,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = path.join(__dirname, "..");
+const ROOT_DIR = path.join(__dirname, "..", "..");
 const ADDRESSES_FILE = path.join(ROOT_DIR, "deployed-addresses.json");
 
 const FOUNDATION_LIBRARIES = [

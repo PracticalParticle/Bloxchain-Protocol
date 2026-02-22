@@ -25,8 +25,6 @@ contract EdgeCasesTest is CommonBase {
         // Create and complete a transaction
         vm.prank(recovery);
         uint256 txId = accountBlox.transferOwnershipRequest();
-        vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
