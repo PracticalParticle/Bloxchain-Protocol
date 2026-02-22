@@ -85,6 +85,8 @@ class CopyBloxTestRunner {
                 this.results.totalSuites++;
                 await this.runTestSuite(suiteName, this.testSuites[suiteName]);
             } else {
+                this.results.totalSuites++;
+                this.results.failedSuites++;
                 console.error(`❌ Unknown test suite: ${suiteName}`);
                 console.log(`Available suites: ${Object.keys(this.testSuites).join(', ')}`);
             }

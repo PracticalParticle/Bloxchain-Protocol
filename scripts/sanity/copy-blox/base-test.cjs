@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Load environment variables from the project root
-require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../../../.env'), quiet: true });
 
 function getWeb3Url() {
   if (process.env.RPC_URL) {
