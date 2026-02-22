@@ -181,7 +181,6 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
      */
     function testFuzz_UpdatePaymentSelectorRequiresPermissions(
         address unauthorizedUser,
-        uint256 txId,
         uint256 paymentAmount
     ) public {
         vm.assume(unauthorizedUser != address(0));
@@ -250,8 +249,8 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         vm.assume(externalTarget != address(paymentHelper));
         vm.assume(externalTarget != address(accountBlox));
         
-        // Bound transfer amount
-        transferAmount = bound(transferAmount, 1, address(paymentHelper).balance);
+        // Bound transfer amount so multiple test phases have sufficient balance (Test 1 and Test 3 each use transferAmount)
+        transferAmount = bound(transferAmount, 1, address(paymentHelper).balance / 2);
         
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         bytes4 systemMacroSelector = EngineBlox.NATIVE_TRANSFER_SELECTOR;

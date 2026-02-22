@@ -9,7 +9,7 @@ const path = require('path');
 const SimpleRWA20EIP712Signer = require('./simple-rwa20-eip712-signer.cjs');
 
 // Load environment variables from the project root
-require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../../../.env'), quiet: true });
 
 // Helper function to get RPC URL dynamically
 function getWeb3Url() {

@@ -154,6 +154,28 @@ async function main() {
   deployed.AccountBlox = accountBloxAddress;
   console.log(`   ✅ AccountBlox: ${accountBloxAddress}`);
 
+  // Save deployed addresses before initialization so a failed init does not lose them
+  const now = new Date().toISOString();
+  const networkKey = networkName;
+  const addresses = {};
+  for (const [name, address] of Object.entries(deployed)) {
+    if (!addresses[networkKey]) addresses[networkKey] = {};
+    addresses[networkKey][name] = { address, deployedAt: now };
+  }
+  let existing = {};
+  if (fs.existsSync(ADDRESSES_FILE)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+    } catch (e) {
+      console.warn(`⚠️ ${ADDRESSES_FILE} exists but is not valid JSON; using empty object. Error:`, e?.message ?? e);
+    }
+  }
+  for (const net of Object.keys(addresses)) {
+    existing[net] = { ...(existing[net] || {}), ...addresses[net] };
+  }
+  fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
+  console.log(`   💾 Deployed addresses saved (pre-init)`);
+
   // Initialize the implementation so it cannot be taken by others (one-shot initializer)
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   console.log(`🔧 Initializing AccountBlox (deployer as owner/broadcaster/recovery)...`);
@@ -172,27 +194,6 @@ async function main() {
   });
   await waitForTransactionReceipt(publicClient, { hash: initHash });
   console.log(`   ✅ AccountBlox initialized (tx: ${initHash})`);
-
-  const now = new Date().toISOString();
-  const networkKey = networkName;
-
-  for (const [name, address] of Object.entries(deployed)) {
-    if (!addresses[networkKey]) addresses[networkKey] = {};
-    addresses[networkKey][name] = { address, deployedAt: now };
-  }
-
-  let existing = {};
-  if (fs.existsSync(ADDRESSES_FILE)) {
-    try {
-      existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
-    } catch (e) {
-      console.warn(`⚠️ ${ADDRESSES_FILE} exists but is not valid JSON; using empty object. Error:`, e?.message ?? e);
-    }
-  }
-  for (const net of Object.keys(addresses)) {
-    existing[net] = { ...(existing[net] || {}), ...addresses[net] };
-  }
-  fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
 
   console.log("\n🎉 Foundation libraries deployment complete.");
   console.log("📋 Deployed addresses (logged to deployed-addresses.json):");

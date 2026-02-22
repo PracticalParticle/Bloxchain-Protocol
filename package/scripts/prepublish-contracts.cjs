@@ -120,13 +120,15 @@ function collectPackagedContractNames() {
     fs.existsSync(componentsSrc) ? componentsSrc : null
   ].filter(Boolean);
 
-  function walk(dir) {
+  function walk(dir, excludeDirs = []) {
     if (!fs.existsSync(dir)) return;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        walk(full);
+        if (!excludeDirs.includes(entry.name)) {
+          walk(full, excludeDirs);
+        }
       } else if (entry.name.endsWith('.sol')) {
         names.add(path.basename(entry.name, '.sol'));
       }
@@ -134,7 +136,7 @@ function collectPackagedContractNames() {
   }
 
   for (const d of dirs) {
-    walk(d);
+    walk(d, excludedDirs);
   }
   return names;
 }

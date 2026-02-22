@@ -50,7 +50,7 @@ import "@bloxchain/contracts/core/lib/interfaces/IDefinition.sol";
 
 ### Templates and examples
 
-Templates (e.g. AccountBlox) and example applications (SimpleVault, SimpleRWA20) live in the main repository under `contracts/examples/`. They are not included in this npm package. See the [main repo](https://github.com/PracticalParticle/Bloxchain-Protocol) for full documentation and examples.
+Templates (e.g. AccountBlox, CopyBlox) and example applications (SimpleVault, SimpleRWA20) live in the main repository under `contracts/examples/`. They are not included in this npm package. See the [main repo](https://github.com/PracticalParticle/Bloxchain-Protocol) for full documentation and examples.
 
 ## Dependencies
 

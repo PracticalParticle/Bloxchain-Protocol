@@ -435,7 +435,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
      * @dev Test: Nonce prediction + signature replay prevention
      * Attack Vector: Nonce Prediction + Signature Replay (HIGH)
      */
-    function testFuzz_NoncePredictionReplayPrevented() public {
+    function test_NoncePredictionReplayPrevented() public {
         // getSignerNonce requires role permissions
         vm.prank(owner);
         uint256 currentNonce = accountBlox.getSignerNonce(owner);

@@ -45,7 +45,7 @@ node scripts/sanity/run-all-tests.cjs --simple-rwa20
 
 ## Contract Configuration
 
-All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from Truffle artifacts (AccountBlox).
+All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from **Truffle build artifacts** at `build/contracts/` (e.g. `build/contracts/AccountBlox.json`), which is separate from Hardhat deployment artifacts at `artifacts/contracts/`. Ensure Truffle has been run (`npm run compile:truffle` / migrations) so `build/contracts/` is populated, or use manual mode with addresses from Hardhat deployment.
 
 ## Individual Test Suites
 
