@@ -131,7 +131,12 @@ class CloneAccountBloxTests extends BaseCopyBloxTest {
 
             const owner = await cloneContract.methods.owner().call();
             const broadcasters = await cloneContract.methods.getBroadcasters().call();
-            const broadcaster = Array.isArray(broadcasters) && broadcasters.length > 0 ? broadcasters[0] : broadcasters;
+            const broadcaster = Array.isArray(broadcasters) && broadcasters.length > 0
+                ? broadcasters[0]
+                : (typeof broadcasters === 'string' ? broadcasters : null);
+            if (broadcaster == null || (typeof broadcaster !== 'string')) {
+                throw new Error(`Clone getBroadcasters() returned no broadcaster (expected at least one). Got: ${JSON.stringify(broadcasters)}`);
+            }
             const recovery = await cloneContract.methods.getRecovery().call();
 
             const expectedOwner = this.wallets.owner.address;

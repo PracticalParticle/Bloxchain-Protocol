@@ -49,14 +49,16 @@ class CopyBloxTestRunner {
         console.log(`\n🚀 Running ${suiteName} tests...`);
         console.log('═'.repeat(60));
 
-        try {
-            const testSuite = new TestClass();
-            await testSuite.runTests();
+        const testSuite = new TestClass();
+        await testSuite.runTests();
+        // BaseCopyBloxTest.runTests() catches errors internally and never re-throws; check testResults
+        const failedTests = testSuite.testResults?.failedTests ?? 0;
+        if (failedTests > 0) {
+            this.results.failedSuites++;
+            console.error(`❌ ${suiteName} tests failed (${failedTests} failed test(s))`);
+        } else {
             this.results.passedSuites++;
             console.log(`✅ ${suiteName} tests completed successfully`);
-        } catch (error) {
-            this.results.failedSuites++;
-            console.error(`❌ ${suiteName} tests failed:`, error.message);
         }
     }
 

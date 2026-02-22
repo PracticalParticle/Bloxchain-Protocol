@@ -71,6 +71,9 @@ class BaseCopyBloxTest {
 
     loadABI(contractName) {
         const abiPath = path.join(__dirname, '../../../abi', `${contractName}.abi.json`);
+        if (!fs.existsSync(abiPath)) {
+            throw new Error(`${contractName} ABI not found at ${abiPath}. Run "npm run compile:truffle" and optionally "npm run extract-abi".`);
+        }
         return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
     }
 
@@ -145,6 +148,15 @@ class BaseCopyBloxTest {
         console.log('🔑 Fetching Ganache accounts...');
 
         try {
+            const rpcUrl = getWeb3Url();
+            const isLocal = /localhost|127\.0\.0\.1/i.test(rpcUrl);
+            if (!isLocal) {
+                throw new Error(
+                    'Ganache auto mode with hardcoded keys is only allowed for local RPC (localhost/127.0.0.1). ' +
+                    `Current RPC_URL or REMOTE_HOST points to: ${rpcUrl}. Use TEST_MODE=manual with your own keys for remote networks.`
+                );
+            }
+
             const accounts = await this.web3.eth.getAccounts();
             if (accounts.length < 3) {
                 throw new Error('Not enough Ganache accounts available (need at least 3)');
@@ -156,8 +168,16 @@ class BaseCopyBloxTest {
                 '0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c'
             ];
 
+            const ownerAccount = this.web3.eth.accounts.privateKeyToAccount(ganachePrivateKeys[0]);
+            if (ownerAccount.address.toLowerCase() !== accounts[0].toLowerCase()) {
+                throw new Error(
+                    'Ganache accounts do not match hardcoded keys (wrong mnemonic or HD path). ' +
+                    `Expected accounts[0]=${ownerAccount.address}, got ${accounts[0]}. Use default Ganache mnemonic or TEST_MODE=manual.`
+                );
+            }
+
             this.wallets = {
-                owner: this.web3.eth.accounts.privateKeyToAccount(ganachePrivateKeys[0]),
+                owner: ownerAccount,
                 broadcaster: this.web3.eth.accounts.privateKeyToAccount(ganachePrivateKeys[1]),
                 recovery: this.web3.eth.accounts.privateKeyToAccount(ganachePrivateKeys[2])
             };
