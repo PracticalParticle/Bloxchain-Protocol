@@ -57,8 +57,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with wrong chainId
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -78,9 +78,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 block.chainid
             )
         );
-        roleBlox.generateUnsignedMetaTransactionForNew(
+        accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -98,7 +98,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         uint256 wrongNonce
     ) public {
         vm.prank(owner);
-        uint256 actualNonce = roleBlox.getSignerNonce(owner);
+        uint256 actualNonce = accountBlox.getSignerNonce(owner);
         vm.assume(wrongNonce != actualNonce);
         
         // Create valid action
@@ -112,8 +112,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction (will get current nonce during generation)
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -122,9 +122,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         );
         
         // Generate meta-transaction (nonce will be set to current nonce)
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -137,7 +137,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         metaTx.params.nonce = wrongNonce;
         
         // Re-generate message hash with wrong nonce
-        metaTx.message = metaTxSigner.generateMessageHash(metaTx, address(roleBlox));
+        metaTx.message = metaTxSigner.generateMessageHash(metaTx, address(accountBlox));
         
         // Sign with wrong nonce
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
@@ -155,7 +155,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 actualNonce
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies nonce replay is prevented ✅
     }
@@ -169,7 +169,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
      */
     function testFuzz_NonceIncrementsBeforeExecution() public {
         vm.prank(owner);
-        uint256 initialNonce = roleBlox.getSignerNonce(owner);
+        uint256 initialNonce = accountBlox.getSignerNonce(owner);
         
         // Create and execute valid meta-transaction
         IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -191,22 +191,22 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Execute transaction
         vm.prank(broadcaster);
-        uint256 _txId1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId1 = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord1 = roleBlox.getTransaction(_txId1);
+        EngineBlox.TxRecord memory txRecord1 = accountBlox.getTransaction(_txId1);
         
         // Transaction should succeed
         assertEq(uint8(txRecord1.status), uint8(EngineBlox.TxStatus.COMPLETED), "Transaction should succeed");
         
         // CRITICAL: Verify nonce incremented immediately after execution
         vm.prank(owner);
-        uint256 newNonce = roleBlox.getSignerNonce(owner);
+        uint256 newNonce = accountBlox.getSignerNonce(owner);
         assertEq(newNonce, initialNonce + 1, "Nonce should increment after execution");
         
         // Attempt to replay with old nonce - should fail
         // Create new meta-transaction (will get new txId and current nonce)
-        EngineBlox.MetaTxParams memory replayParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory replayParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -214,9 +214,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory replayMetaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory replayMetaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -229,7 +229,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         replayMetaTx.params.nonce = initialNonce; // Use old nonce
         
         // Re-generate message hash with old nonce using the helper
-        replayMetaTx.message = metaTxSigner.generateMessageHash(replayMetaTx, address(roleBlox));
+        replayMetaTx.message = metaTxSigner.generateMessageHash(replayMetaTx, address(accountBlox));
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 replayEthSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(replayMetaTx.message);
@@ -246,7 +246,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 initialNonce + 1 // The current nonce after first execution
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(replayMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(replayMetaTx);
         
         // Test verifies nonce increment timing prevents replay ✅
     }
@@ -306,7 +306,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             vm.prank(broadcaster);
             // Accept either InvalidSValue or InvalidSignature - both indicate protection works
             vm.expectRevert(); // Any revert is acceptable - malleable signature is rejected
-            roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            accountBlox.roleConfigBatchRequestAndApprove(metaTx);
             
             // Test verifies signature malleability is prevented ✅
         } else {
@@ -325,8 +325,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
     function testFuzz_MessageHashManipulationPrevented(
         uint256 manipulatedValue
     ) public {
-        // Use roleBlox as target (it's whitelisted for role config operations)
-        address manipulatedTarget = address(roleBlox);
+        // Use accountBlox as target (it's whitelisted for role config operations)
+        address manipulatedTarget = address(accountBlox);
         
         // Create valid meta-transaction
         IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -347,13 +347,13 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory originalSignature = metaTx.signature;
         
         // Manipulate transaction parameters after signing
-        // Since target is already roleBlox, we'll manipulate value instead
+        // Since target is already accountBlox, we'll manipulate value instead
         uint256 originalValue = metaTx.txRecord.params.value;
         uint256 newValue = manipulatedValue != originalValue ? manipulatedValue : originalValue + 1;
         
         // Create new meta-transaction with manipulated value
         EngineBlox.MetaTxParams memory manipulatedParams = metaTx.params;
-        EngineBlox.MetaTransaction memory manipulatedMetaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory manipulatedMetaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
             manipulatedTarget,
             newValue, // Changed value
@@ -378,7 +378,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 originalSignature
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies message hash manipulation is prevented ✅
     }
@@ -405,8 +405,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with expired deadline
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline, // Expired deadline (in past)
@@ -429,9 +429,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                     block.timestamp
                 )
             );
-            roleBlox.generateUnsignedMetaTransactionForNew(
+            accountBlox.generateUnsignedMetaTransactionForNew(
                 owner,
-                address(roleBlox),
+                address(accountBlox),
                 0,
                 0,
                 ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -467,8 +467,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
         // Create meta-transaction with very long deadline
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -476,9 +476,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -495,9 +495,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Very long deadline should be allowed (signature still requires permissions)
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should succeed if permissions are correct
         // The key is that long deadline doesn't bypass permission checks
@@ -534,8 +534,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
         
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -543,9 +543,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -572,7 +572,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 maxGasPrice
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies gas price limits are enforced ✅
     }
@@ -586,7 +586,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
      */
     function testFuzz_ConcurrentNonceUsagePrevented() public {
         vm.prank(owner);
-        uint256 currentNonce = roleBlox.getSignerNonce(owner);
+        uint256 currentNonce = accountBlox.getSignerNonce(owner);
         
         // Create first meta-transaction
         IRuntimeRBAC.RoleConfigAction[] memory actions1 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -615,8 +615,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         bytes memory executionParams2 = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions2));
         
-        EngineBlox.MetaTxParams memory metaTxParams2 = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams2 = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -626,9 +626,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         // Override nonce to match first transaction
         metaTxParams2.nonce = currentNonce;
         
-        EngineBlox.MetaTransaction memory metaTx2 = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx2 = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -645,16 +645,16 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Execute first transaction
         vm.prank(broadcaster);
-        uint256 _txId1 = roleBlox.roleConfigBatchRequestAndApprove(metaTx1);
+        uint256 _txId1 = accountBlox.roleConfigBatchRequestAndApprove(metaTx1);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord1 = roleBlox.getTransaction(_txId1);
+        EngineBlox.TxRecord memory txRecord1 = accountBlox.getTransaction(_txId1);
         
         // First transaction should succeed
         assertEq(uint8(txRecord1.status), uint8(EngineBlox.TxStatus.COMPLETED), "First transaction should succeed");
         
         // Verify nonce incremented
         vm.prank(owner);
-        uint256 newNonce = roleBlox.getSignerNonce(owner);
+        uint256 newNonce = accountBlox.getSignerNonce(owner);
         assertEq(newNonce, currentNonce + 1, "Nonce should increment after first transaction");
         
         // Attempt to execute second transaction with same nonce - should fail
@@ -667,7 +667,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 currentNonce + 1 // The actual nonce after first transaction (1)
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx2);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx2);
         
         // Test verifies concurrent nonce usage is prevented ✅
     }
@@ -704,7 +704,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 0
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies invalid signature rejection works ✅
     }
@@ -750,7 +750,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
                 65
             )
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         
         // Test verifies signature length validation works ✅
     }
@@ -765,7 +765,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
      */
     function testFuzz_NonceConsumedEvenOnExecutionFailure() public {
         vm.prank(owner);
-        uint256 nonceBefore = roleBlox.getSignerNonce(owner);
+        uint256 nonceBefore = accountBlox.getSignerNonce(owner);
 
         // Meta-tx that will pass verification but fail during execution (ADD_WALLET to protected role)
         IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -778,13 +778,13 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
 
         // Execute: signature valid, but batch execution fails (CannotModifyProtected)
         vm.prank(broadcaster);
-        uint256 txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
 
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Execution should fail");
         vm.prank(owner);
-        uint256 nonceAfter = roleBlox.getSignerNonce(owner);
+        uint256 nonceAfter = accountBlox.getSignerNonce(owner);
         assertEq(nonceAfter, nonceBefore + 1, "Nonce must be consumed even when execution fails");
 
         // Replay same meta-tx: must revert with InvalidNonce (replay prevented)
@@ -792,7 +792,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         vm.expectRevert(
             abi.encodeWithSelector(SharedValidation.InvalidNonce.selector, nonceBefore, nonceAfter)
         );
-        roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
     }
 
     /**
@@ -805,8 +805,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         vm.assume(chainIdA < type(uint256).max / 2);
         vm.assume(chainIdB < type(uint256).max / 2);
 
-        EngineBlox.MetaTxParams memory p = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory p = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -818,17 +818,17 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         metaTxA.params = p;
         metaTxA.txRecord.txId = 1;
         metaTxA.txRecord.params.requester = owner;
-        metaTxA.txRecord.params.target = address(roleBlox);
+        metaTxA.txRecord.params.target = address(accountBlox);
         metaTxA.txRecord.params.value = 0;
         metaTxA.txRecord.params.gasLimit = 0;
         metaTxA.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
         metaTxA.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
         metaTxA.txRecord.params.executionParams = "";
 
-        bytes32 hashA = metaTxSigner.generateMessageHash(metaTxA, address(roleBlox));
+        bytes32 hashA = metaTxSigner.generateMessageHash(metaTxA, address(accountBlox));
         p.chainId = chainIdB;
         metaTxA.params = p;
-        bytes32 hashB = metaTxSigner.generateMessageHash(metaTxA, address(roleBlox));
+        bytes32 hashB = metaTxSigner.generateMessageHash(metaTxA, address(accountBlox));
         assertTrue(hashA != hashB, "Message hash must depend on chainId");
     }
 
@@ -843,8 +843,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         uint256 nonce2
     ) public {
         vm.assume(txId1 != txId2 || nonce1 != nonce2);
-        EngineBlox.MetaTxParams memory p = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory p = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -856,7 +856,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         m1.params = p;
         m1.txRecord.txId = txId1;
         m1.txRecord.params.requester = owner;
-        m1.txRecord.params.target = address(roleBlox);
+        m1.txRecord.params.target = address(accountBlox);
         m1.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
         m1.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
 
@@ -865,12 +865,12 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         m2.params = p;
         m2.txRecord.txId = txId2;
         m2.txRecord.params.requester = owner;
-        m2.txRecord.params.target = address(roleBlox);
+        m2.txRecord.params.target = address(accountBlox);
         m2.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
         m2.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
 
-        bytes32 h1 = metaTxSigner.generateMessageHash(m1, address(roleBlox));
-        bytes32 h2 = metaTxSigner.generateMessageHash(m2, address(roleBlox));
+        bytes32 h1 = metaTxSigner.generateMessageHash(m1, address(accountBlox));
+        bytes32 h2 = metaTxSigner.generateMessageHash(m2, address(accountBlox));
         // Require both txId and nonce to differ so the structs differ in multiple hashed fields
         if (txId1 != txId2 && nonce1 != nonce2) {
             assertTrue(h1 != h2, "Distinct structs must not collide");
@@ -884,8 +884,8 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -893,9 +893,9 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

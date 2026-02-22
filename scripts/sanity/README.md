@@ -45,7 +45,7 @@ node scripts/sanity/run-all-tests.cjs --simple-rwa20
 
 ## Contract Configuration
 
-All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from Truffle artifacts (AccountBlox). SecureBlox and RoleBlox are no longer used by sanity tests.
+All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from Truffle artifacts (AccountBlox).
 
 ## Individual Test Suites
 

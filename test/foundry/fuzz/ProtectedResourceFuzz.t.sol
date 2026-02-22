@@ -58,9 +58,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             // Transaction should be marked as FAILED with CannotModifyProtected error
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -93,9 +93,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should be marked as FAILED with CannotModifyProtected error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -129,9 +129,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             // Transaction should be marked as FAILED with CannotModifyProtected error
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -160,9 +160,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         vm.assume(wallet != recovery);
 
         // Store initial protected role states
-        address initialOwner = roleBlox.owner();
-        address initialRecovery = roleBlox.getRecovery();
-        address[] memory initialBroadcasters = roleBlox.getBroadcasters();
+        address initialOwner = accountBlox.owner();
+        address initialRecovery = accountBlox.getRecovery();
+        address[] memory initialBroadcasters = accountBlox.getBroadcasters();
 
         // Create a non-protected role and add wallet to it
         bytes32 newRoleHash = keccak256(bytes(roleName));
@@ -183,7 +183,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
 
         // Then add wallet to the new role
         IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -200,12 +200,12 @@ contract ProtectedResourceFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
 
         // Verify protected roles are unchanged
-        assertEq(roleBlox.owner(), initialOwner);
-        assertEq(roleBlox.getRecovery(), initialRecovery);
-        address[] memory finalBroadcasters = roleBlox.getBroadcasters();
+        assertEq(accountBlox.owner(), initialOwner);
+        assertEq(accountBlox.getRecovery(), initialRecovery);
+        address[] memory finalBroadcasters = accountBlox.getBroadcasters();
         assertEq(finalBroadcasters.length, initialBroadcasters.length);
         assertEq(finalBroadcasters[0], initialBroadcasters[0]);
     }
@@ -219,8 +219,8 @@ contract ProtectedResourceFuzzTest is CommonBase {
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -229,9 +229,9 @@ contract ProtectedResourceFuzzTest is CommonBase {
         );
 
         // Generate unsigned meta-transaction
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0, // value
             0, // gasLimit
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

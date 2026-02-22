@@ -20,7 +20,7 @@ contract AccessControlTest is CommonBase {
     function test_Revert_UnauthorizedOwnershipTransfer() public {
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedRecovery.selector, attacker, recovery));
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
     }
 
     function test_Revert_UnauthorizedRoleCreation() public {
@@ -35,8 +35,8 @@ contract AccessControlTest is CommonBase {
 
         // Attempt direct execution (should fail - internal only)
         vm.prank(attacker);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.OnlyCallableByContract.selector, attacker, address(roleBlox)));
-        roleBlox.executeRoleConfigBatch(actions);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.OnlyCallableByContract.selector, attacker, address(accountBlox)));
+        accountBlox.executeRoleConfigBatch(actions);
     }
 
     // NOTE: Function registration has been moved to GuardController
@@ -67,7 +67,7 @@ contract AccessControlTest is CommonBase {
         // This is enforced in EngineBlox library
         // We verify the roles remain protected
         vm.prank(owner);
-        (, , , , bool ownerProtected) = secureBlox.getRole(OWNER_ROLE);
+        (, , , , bool ownerProtected) = accountBlox.getRole(OWNER_ROLE);
         assertTrue(ownerProtected);
     }
 
@@ -75,13 +75,13 @@ contract AccessControlTest is CommonBase {
         // Owner-only functions should reject non-owners
         vm.prank(attacker);
         vm.expectRevert();
-        secureBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, 0);
     }
 
     function test_PermissionBoundary_RecoveryOnly() public {
         // Recovery-only functions should reject non-recovery
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedRecovery.selector, attacker, recovery));
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
     }
 }

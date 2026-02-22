@@ -17,14 +17,14 @@ contract BaseStateMachineTest is CommonBase {
     // ============ META-TRANSACTION UTILITIES TESTS ============
 
     function test_CreateMetaTxParams_ValidParams() public {
-        address handlerContract = address(secureBlox);
+        address handlerContract = address(accountBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
         EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds
         uint256 maxGasPrice = 100 gwei;
         address signer = owner;
 
-        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = accountBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -50,12 +50,12 @@ contract BaseStateMachineTest is CommonBase {
     function test_GetTransaction_ReturnsCorrectTransaction() public {
         // Create a transaction first
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         vm.prank(owner);
-        EngineBlox.TxRecord memory retrievedTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory retrievedTx = accountBlox.getTransaction(txId);
         assertEq(retrievedTx.txId, txId);
         assertEq(uint8(retrievedTx.status), uint8(EngineBlox.TxStatus.PENDING));
     }
@@ -63,91 +63,91 @@ contract BaseStateMachineTest is CommonBase {
     function test_GetTransactionHistory_ReturnsRange() public {
         // Create first transaction (ownership request)
         vm.prank(recovery);
-        uint256 txId1 = secureBlox.transferOwnershipRequest();
+        uint256 txId1 = accountBlox.transferOwnershipRequest();
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx1 = secureBlox.getTransaction(txId1);
+        EngineBlox.TxRecord memory tx1 = accountBlox.getTransaction(txId1);
 
         // Complete it so we can create a second request (only one secure request allowed at a time)
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
-        secureBlox.transferOwnershipDelayedApproval(txId1);
+        accountBlox.transferOwnershipDelayedApproval(txId1);
         // After approval, recovery is now the owner
 
         // Create second transaction (broadcaster request) as new owner
         vm.prank(recovery);
-        uint256 txId2 = secureBlox.updateBroadcasterRequest(user1, 0);
+        uint256 txId2 = accountBlox.updateBroadcasterRequest(user1, 0);
         vm.prank(recovery);
-        EngineBlox.TxRecord memory tx2 = secureBlox.getTransaction(txId2);
+        EngineBlox.TxRecord memory tx2 = accountBlox.getTransaction(txId2);
 
         // getTransactionHistory requires fromTxId < toTxId (strictly less than)
         vm.prank(recovery);
-        EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(txId1, txId2);
+        EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(txId1, txId2);
         assertGe(history.length, 2);
     }
 
     function test_GetPendingTransactions_ReturnsPendingOnly() public {
         vm.prank(recovery);
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
 
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         assertGt(pending.length, 0);
     }
 
     function test_GetSupportedOperationTypes_ReturnsAllTypes() public {
         vm.prank(owner);
-        bytes32[] memory types = secureBlox.getSupportedOperationTypes();
+        bytes32[] memory types = accountBlox.getSupportedOperationTypes();
         assertGt(types.length, 0);
     }
 
     function test_GetSupportedRoles_ReturnsAllRoles() public {
         vm.prank(owner);
-        bytes32[] memory roles = secureBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         assertGe(roles.length, 3); // At least OWNER, BROADCASTER, RECOVERY
     }
 
     function test_GetSupportedFunctions_ReturnsAllFunctions() public {
         vm.prank(owner);
-        bytes4[] memory functions = secureBlox.getSupportedFunctions();
+        bytes4[] memory functions = accountBlox.getSupportedFunctions();
         assertGt(functions.length, 0);
     }
 
     function test_GetTimeLockPeriodSec_ReturnsCorrectPeriod() public {
-        assertEq(secureBlox.getTimeLockPeriodSec(), DEFAULT_TIMELOCK_PERIOD);
+        assertEq(accountBlox.getTimeLockPeriodSec(), DEFAULT_TIMELOCK_PERIOD);
     }
 
     function test_Initialized_ReturnsTrue() public {
-        assertTrue(secureBlox.initialized());
+        assertTrue(accountBlox.initialized());
     }
 
     // ============ ROLE QUERIES TESTS ============
 
     function test_Owner_ReturnsOwnerAddress() public {
-        assertEq(secureBlox.owner(), owner);
+        assertEq(accountBlox.owner(), owner);
     }
 
     function test_GetBroadcasters_ReturnsBroadcasterAddresses() public {
-        address[] memory broadcasters = secureBlox.getBroadcasters();
+        address[] memory broadcasters = accountBlox.getBroadcasters();
         assertEq(broadcasters.length, 1);
         assertEq(broadcasters[0], broadcaster);
     }
 
     function test_GetRecovery_ReturnsRecoveryAddress() public {
-        assertEq(secureBlox.getRecovery(), recovery);
+        assertEq(accountBlox.getRecovery(), recovery);
     }
 
     function test_HasRole_ReturnsCorrectPermissions() public {
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(OWNER_ROLE, owner));
+        assertTrue(accountBlox.hasRole(OWNER_ROLE, owner));
         
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(BROADCASTER_ROLE, broadcaster));
+        assertTrue(accountBlox.hasRole(BROADCASTER_ROLE, broadcaster));
         
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(RECOVERY_ROLE, recovery));
+        assertTrue(accountBlox.hasRole(RECOVERY_ROLE, recovery));
         
         vm.prank(owner);
-        assertFalse(secureBlox.hasRole(OWNER_ROLE, attacker));
+        assertFalse(accountBlox.hasRole(OWNER_ROLE, attacker));
     }
 
     function test_IsActionSupportedByFunction_ValidatesActions() public {
@@ -156,7 +156,7 @@ contract BaseStateMachineTest is CommonBase {
         
         // This may or may not be supported depending on function registration
         // We test the function exists and returns a boolean value
-        try secureBlox.isActionSupportedByFunction(selector, action) returns (bool supported) {
+        try accountBlox.isActionSupportedByFunction(selector, action) returns (bool supported) {
             // Function handled the check and returned a boolean value
             // Both true and false are valid responses depending on function registration
             // We verify the function executes successfully and returns a value
@@ -169,7 +169,7 @@ contract BaseStateMachineTest is CommonBase {
 
     function test_GetActiveRolePermissions_ReturnsPermissions() public {
         vm.prank(owner);
-        EngineBlox.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(OWNER_ROLE);
+        EngineBlox.FunctionPermission[] memory permissions = accountBlox.getActiveRolePermissions(OWNER_ROLE);
         
         // Permissions may be empty or populated depending on initialization
         // We verify the function executes successfully and returns a valid array
@@ -186,12 +186,12 @@ contract BaseStateMachineTest is CommonBase {
         address freshAddress = address(0x9999);
         
         vm.prank(owner);
-        uint256 freshNonce = secureBlox.getSignerNonce(freshAddress);
+        uint256 freshNonce = accountBlox.getSignerNonce(freshAddress);
         assertEq(freshNonce, 0, "Nonce should start at 0 for addresses that haven't signed meta-transactions");
         
         // Test that nonce for owner is accessible (may be 0 or higher depending on prior meta-transactions)
         vm.prank(owner);
-        uint256 ownerNonce = secureBlox.getSignerNonce(owner);
+        uint256 ownerNonce = accountBlox.getSignerNonce(owner);
         // Owner nonce should be >= 0 (always true for uint256, but documents expected behavior)
         // The actual value depends on whether any meta-transactions have been executed
         assertGe(ownerNonce, 0, "Owner nonce should be accessible");
@@ -201,10 +201,10 @@ contract BaseStateMachineTest is CommonBase {
 
     function test_SupportsInterface_IBaseStateMachine() public {
         bytes4 interfaceId = type(IBaseStateMachine).interfaceId;
-        assertTrue(secureBlox.supportsInterface(interfaceId));
+        assertTrue(accountBlox.supportsInterface(interfaceId));
     }
 
     function test_SupportsInterface_ERC165() public {
-        assertTrue(secureBlox.supportsInterface(0x01ffc9a7));
+        assertTrue(accountBlox.supportsInterface(0x01ffc9a7));
     }
 }

@@ -12,7 +12,7 @@ import "../../core/pattern/Account.sol";
  * - RuntimeRBAC: Runtime role creation and management
  * - SecureOwnable: Secure ownership transfer and management
  *
- * Top-level initializer: only concrete contracts (AccountBlox, MachineBlox) use the initializer modifier;
+ * Top-level initializer: only concrete contracts (AccountBlox) use the initializer modifier;
  * Account.initialize uses onlyInitializing and is invoked from here.
  */
 contract AccountBlox is Account {

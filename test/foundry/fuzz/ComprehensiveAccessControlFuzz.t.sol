@@ -69,9 +69,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -96,7 +96,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         if (protectedRoleHash == OWNER_ROLE) {
             walletToRevoke = owner;
         } else if (protectedRoleHash == BROADCASTER_ROLE) {
-            address[] memory broadcasters = roleBlox.getBroadcasters();
+            address[] memory broadcasters = accountBlox.getBroadcasters();
             vm.assume(broadcasters.length > 0);
             walletToRevoke = broadcasters[0];
             // Only test if it's the last wallet
@@ -115,9 +115,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
                 );
 
                 vm.prank(broadcaster);
-                uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+                uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
                 
                 assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
             }
@@ -137,9 +137,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             );
 
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         }
@@ -168,9 +168,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -281,7 +281,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         
         // Store initial role count (requires permissions)
         vm.prank(owner);
-        bytes32[] memory initialRoles = roleBlox.getSupportedRoles();
+        bytes32[] memory initialRoles = accountBlox.getSupportedRoles();
         uint256 initialRoleCount = initialRoles.length;
         
         // Create batch with valid action followed by invalid action (protected role modification)
@@ -308,9 +308,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // CRITICAL: Verify batch is atomic - Action 1 should NOT succeed if Action 2 fails
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Batch with invalid action should fail");
@@ -318,7 +318,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         // Verify Action 1 was NOT executed (role should not exist)
         // This tests atomicity - getSupportedRoles requires permissions
         vm.prank(owner);
-        bytes32[] memory finalRoles = roleBlox.getSupportedRoles();
+        bytes32[] memory finalRoles = accountBlox.getSupportedRoles();
         uint256 finalRoleCount = finalRoles.length;
         
         // Role count should not increase (atomicity)
@@ -369,9 +369,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // All should fail
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -420,7 +420,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallets up to limit
         for (uint256 i = 0; i < maxWallets; i++) {
@@ -439,7 +439,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+            accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         }
         
         // Attempt to add one more wallet (should fail)
@@ -458,9 +458,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(extraMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -491,7 +491,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         vm.prank(broadcaster);
-        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, createParams, 1 hours)) {
+        try accountBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, createParams, 1 hours)) {
             // continue
         } catch (bytes memory reason) {
             if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
@@ -509,7 +509,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         bytes memory addParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addActions));
         vm.prank(broadcaster);
-        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, addParams, 1 hours)) {
+        try accountBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, addParams, 1 hours)) {
             // continue
         } catch (bytes memory reason) {
             if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
@@ -517,9 +517,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         }
 
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(roleHash, user1));
+        assertTrue(accountBlox.hasRole(roleHash, user1));
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(roleHash, user2));
+        assertTrue(accountBlox.hasRole(roleHash, user2));
 
         IRuntimeRBAC.RoleConfigAction[] memory revokeActions = new IRuntimeRBAC.RoleConfigAction[](1);
         revokeActions[0] = IRuntimeRBAC.RoleConfigAction({
@@ -528,7 +528,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         });
         bytes memory revokeParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(revokeActions));
         vm.prank(broadcaster);
-        try roleBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, revokeParams, 1 hours)) {
+        try accountBlox.roleConfigBatchRequestAndApprove(_createMetaTxForRoleConfig(owner, revokeParams, 1 hours)) {
             // continue
         } catch (bytes memory reason) {
             if (reason.length >= 4 && bytes4(reason) == SharedValidation.NoPermission.selector) return;
@@ -536,11 +536,11 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         }
 
         vm.prank(owner);
-        assertFalse(roleBlox.hasRole(roleHash, user1));
+        assertFalse(accountBlox.hasRole(roleHash, user1));
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(roleHash, user2));
+        assertTrue(accountBlox.hasRole(roleHash, user2));
         vm.prank(owner);
-        address[] memory wallets = roleBlox.getWalletsInRole(roleHash);
+        address[] memory wallets = accountBlox.getWalletsInRole(roleHash);
         assertEq(wallets.length, 1);
         assertEq(wallets[0], user2);
     }
@@ -575,7 +575,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallet first time (should succeed)
         IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -592,7 +592,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
+        accountBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Attempt to add same wallet again (should fail)
         IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -609,9 +609,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -650,9 +650,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             // Should fail - role already exists
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -691,7 +691,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Attempt to add permission with both SIGN and EXECUTE actions (should fail)
         // Note: This requires a function schema to exist first
@@ -729,7 +729,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Attempt to add permission with empty bitmap (bitmap = 0)
         // Should fail with NotSupported
@@ -743,8 +743,8 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -752,9 +752,9 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

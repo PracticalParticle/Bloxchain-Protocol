@@ -765,8 +765,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         bytes memory executionParams = SecureOwnableDefinitions.updateTimeLockExecutionParams(newTimeLockPeriod);
         
         // Create meta-transaction for time-lock update
-        EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
-            address(secureBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             SecureOwnableDefinitions.UPDATE_TIMELOCK_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -774,9 +774,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             owner
         );
         
-        EngineBlox.MetaTransaction memory metaTx = secureBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(secureBlox),
+            address(accountBlox),
             0,
             0,
             SecureOwnableDefinitions.TIMELOCK_UPDATE,
@@ -794,10 +794,10 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         
         // Execute meta-transaction (bypasses time-lock as designed)
         vm.prank(broadcaster);
-        secureBlox.updateTimeLockRequestAndApprove(metaTx);
+        accountBlox.updateTimeLockRequestAndApprove(metaTx);
         
         // Verify time-lock updated (meta-transaction executes immediately)
-        assertEq(secureBlox.getTimeLockPeriodSec(), newTimeLockPeriod);
+        assertEq(accountBlox.getTimeLockPeriodSec(), newTimeLockPeriod);
         
         // Note: Meta-transactions bypass time-lock by design
         // This is intentional - meta-transactions provide immediate execution

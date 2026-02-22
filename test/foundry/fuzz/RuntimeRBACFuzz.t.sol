@@ -77,16 +77,16 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
 
         // Verify transaction completed
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
 
         // Verify role was created
         vm.prank(owner);
-        (string memory name, bytes32 hash, , , ) = roleBlox.getRole(roleHash);
+        (string memory name, bytes32 hash, , , ) = accountBlox.getRole(roleHash);
         assertEq(hash, roleHash);
         assertEq(keccak256(bytes(name)), keccak256(bytes(roleName)));
     }
@@ -125,7 +125,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
 
         // Then add wallet to the role
         IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -142,16 +142,16 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Verify transaction completed
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify wallet was added
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(roleHash, wallet), "Wallet should be in role");
+        assertTrue(accountBlox.hasRole(roleHash, wallet), "Wallet should be in role");
     }
 
     /**
@@ -163,8 +163,8 @@ contract RuntimeRBACFuzzTest is CommonBase {
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -173,9 +173,9 @@ contract RuntimeRBACFuzzTest is CommonBase {
         );
 
         // Generate unsigned meta-transaction
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0, // value
             0, // gasLimit
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -204,11 +204,11 @@ contract RuntimeRBACFuzzTest is CommonBase {
     function testFuzz_GetFunctionSchema(bytes4 selector) public {
         // Selector 0 can make functionSchemaExists true (default storage) while getFunctionSchema reverts with ResourceNotFound
         vm.assume(selector != bytes4(0));
-        bool exists = roleBlox.functionSchemaExists(selector);
+        bool exists = accountBlox.functionSchemaExists(selector);
 
         if (exists) {
             vm.prank(owner); // getFunctionSchema requires caller to have any role
-            EngineBlox.FunctionSchema memory schema = roleBlox.getFunctionSchema(selector);
+            EngineBlox.FunctionSchema memory schema = accountBlox.getFunctionSchema(selector);
 
             // Basic sanity checks for existing schemas
             assertEq(schema.functionSelector, selector, "Returned selector must match input selector");
@@ -227,7 +227,7 @@ contract RuntimeRBACFuzzTest is CommonBase {
         } else {
             vm.prank(owner); // getFunctionSchema requires caller to have any role
             vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(selector)));
-            roleBlox.getFunctionSchema(selector);
+            accountBlox.getFunctionSchema(selector);
         }
     }
 

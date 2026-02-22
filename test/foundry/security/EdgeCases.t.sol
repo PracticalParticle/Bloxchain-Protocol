@@ -24,18 +24,18 @@ contract EdgeCasesTest is CommonBase {
     function test_InvalidStateTransitions() public {
         // Create and complete a transaction
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
-        secureBlox.transferOwnershipDelayedApproval(txId);
+        accountBlox.transferOwnershipDelayedApproval(txId);
 
         // Try to cancel a completed transaction (should fail)
         vm.prank(recovery);
         vm.expectRevert();
-        secureBlox.transferOwnershipCancellation(txId);
+        accountBlox.transferOwnershipCancellation(txId);
     }
 
     function test_CreateMetaTxParams_ShortDeadline() public {
@@ -43,13 +43,13 @@ contract EdgeCasesTest is CommonBase {
         // Note: createMetaTxParams expects duration, so we use a small duration
         uint256 shortDuration = 1; // 1 second duration
         
-        address handlerContract = address(secureBlox);
+        address handlerContract = address(accountBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
         EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 maxGasPrice = 100 gwei;
 
         // Creating params with short duration should be allowed (validation happens on execution)
-        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = accountBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -70,12 +70,12 @@ contract EdgeCasesTest is CommonBase {
     function test_DuplicateRequests() public {
         // Create first request
         vm.prank(recovery);
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
 
         // Try to create duplicate (should fail)
         vm.prank(recovery);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
     }
 
     function test_EmptyArrays() public {
@@ -113,16 +113,16 @@ contract EdgeCasesTest is CommonBase {
     function test_ConcurrentOperations() public {
         // Only one secure request (ownership or broadcaster) may be pending at a time
         vm.prank(recovery);
-        secureBlox.transferOwnershipRequest();
+        accountBlox.transferOwnershipRequest();
 
         // Second request while ownership is pending should revert
         vm.prank(owner);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
-        secureBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, 0);
 
         // Exactly one should be pending
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         assertEq(pending.length, 1);
     }
 
@@ -130,19 +130,19 @@ contract EdgeCasesTest is CommonBase {
         // Try to approve non-existent transaction
         vm.prank(recovery);
         vm.expectRevert();
-        secureBlox.transferOwnershipDelayedApproval(99999);
+        accountBlox.transferOwnershipDelayedApproval(99999);
     }
 
     function test_BeforeReleaseTime() public {
         // Create request
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         // Try to approve before release time
         vm.prank(recovery);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.BeforeReleaseTime.selector, requestTx.releaseTime, block.timestamp));
-        secureBlox.transferOwnershipDelayedApproval(txId);
+        accountBlox.transferOwnershipDelayedApproval(txId);
     }
 }

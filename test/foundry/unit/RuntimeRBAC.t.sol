@@ -45,7 +45,7 @@ contract RuntimeRBACTest is CommonBase {
         
         // Verify role doesn't exist yet
         vm.expectRevert();
-        roleBlox.getWalletsInRole(roleHash);
+        accountBlox.getWalletsInRole(roleHash);
     }
 
     function test_GetFunctionSchema_RegisteredFunction() public {
@@ -54,7 +54,7 @@ contract RuntimeRBACTest is CommonBase {
         
         // This may or may not be registered depending on initialization
         // We test the function exists and handles both cases
-        try roleBlox.getFunctionSchema(selector) returns (EngineBlox.FunctionSchema memory schema) {
+        try accountBlox.getFunctionSchema(selector) returns (EngineBlox.FunctionSchema memory schema) {
             // Function schema exists - verify it's valid
             assertGt(bytes(schema.functionSignature).length, 0);
             assertEq(schema.functionSelector, selector);
@@ -69,7 +69,7 @@ contract RuntimeRBACTest is CommonBase {
         bytes4 invalidSelector = bytes4(0x12345678);
         vm.prank(owner); // getFunctionSchema requires caller to have any role
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(invalidSelector)));
-        roleBlox.getFunctionSchema(invalidSelector);
+        accountBlox.getFunctionSchema(invalidSelector);
     }
 
     function test_GetWalletsInRole_RequiresRole() public {
@@ -77,7 +77,7 @@ contract RuntimeRBACTest is CommonBase {
         
         // Should work if caller has a role
         vm.prank(owner);
-        address[] memory wallets = roleBlox.getWalletsInRole(roleHash);
+        address[] memory wallets = accountBlox.getWalletsInRole(roleHash);
         assertGt(wallets.length, 0);
     }
 
@@ -86,7 +86,7 @@ contract RuntimeRBACTest is CommonBase {
         
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, attacker));
-        roleBlox.getWalletsInRole(roleHash);
+        accountBlox.getWalletsInRole(roleHash);
     }
 
     function test_GetWalletsInRole_Revert_RoleNotFound() public {
@@ -94,18 +94,18 @@ contract RuntimeRBACTest is CommonBase {
         
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, nonExistentRole));
-        roleBlox.getWalletsInRole(nonExistentRole);
+        accountBlox.getWalletsInRole(nonExistentRole);
     }
 
     // ============ INTERFACE SUPPORT TESTS ============
 
     function test_SupportsInterface_IRuntimeRBAC() public {
         bytes4 interfaceId = type(IRuntimeRBAC).interfaceId;
-        assertTrue(roleBlox.supportsInterface(interfaceId));
+        assertTrue(accountBlox.supportsInterface(interfaceId));
     }
 
     function test_SupportsInterface_ERC165() public {
-        assertTrue(roleBlox.supportsInterface(0x01ffc9a7));
+        assertTrue(accountBlox.supportsInterface(0x01ffc9a7));
     }
 
     // ============ PROTECTED ROLES TESTS ============
@@ -115,12 +115,12 @@ contract RuntimeRBACTest is CommonBase {
         // This is tested through the state machine's role management
         // The actual protection is in EngineBlox library
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(OWNER_ROLE, owner));
+        assertTrue(accountBlox.hasRole(OWNER_ROLE, owner));
         
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(BROADCASTER_ROLE, broadcaster));
+        assertTrue(accountBlox.hasRole(BROADCASTER_ROLE, broadcaster));
         
         vm.prank(owner);
-        assertTrue(roleBlox.hasRole(RECOVERY_ROLE, recovery));
+        assertTrue(accountBlox.hasRole(RECOVERY_ROLE, recovery));
     }
 }

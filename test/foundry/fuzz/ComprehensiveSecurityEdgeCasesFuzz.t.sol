@@ -9,7 +9,7 @@ import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/standards/hooks/IOnActionHook.sol";
-import "../../../contracts/examples/templates/MachineBlox.sol";
+import "../helpers/HookTestBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
 import "../helpers/TestHelpers.sol";
@@ -36,7 +36,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
     using TestHelpers for *;
     
     PaymentTestHelper public paymentHelper;
-    MachineBlox public machineBlox;
+    HookTestBlox public hookTestBlox;
     
     bytes4 public constant ROLE_CONFIG_BATCH_META_SELECTOR = RuntimeRBACDefinitions.ROLE_CONFIG_BATCH_META_SELECTOR;
     bytes4 public constant ROLE_CONFIG_BATCH_EXECUTE_SELECTOR = RuntimeRBACDefinitions.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
@@ -57,17 +57,17 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         );
         vm.deal(address(paymentHelper), 1000 ether);
         
-        // Deploy MachineBlox for hook testing
-        machineBlox = new MachineBlox();
+        // Deploy HookTestBlox for hook testing
+        hookTestBlox = new HookTestBlox();
         vm.prank(owner);
-        machineBlox.initialize(
+        hookTestBlox.initialize(
             owner,
             broadcaster,
             recovery,
             DEFAULT_TIMELOCK_PERIOD,
             address(0)
         );
-        vm.deal(address(machineBlox), 1000 ether);
+        vm.deal(address(hookTestBlox), 1000 ether);
         
         // Hook contracts are created as needed in individual tests
     }
@@ -191,7 +191,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        try roleBlox.roleConfigBatchRequestAndApprove(metaTx) {
+        try accountBlox.roleConfigBatchRequestAndApprove(metaTx) {
             // Role created successfully
         } catch {
             // Role might already exist or other error, continue
@@ -228,9 +228,9 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         
         // This should fail - empty bitmap should be rejected
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory result = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory result = accountBlox.getTransaction(_txId);
         
         // Should fail with empty bitmap error
         assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with empty bitmap");
@@ -244,8 +244,8 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -253,9 +253,9 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -309,19 +309,19 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         }
         
         // Use an existing function selector from GuardController definitions
-        // This selector is registered during MachineBlox initialization
+        // This selector is registered during HookTestBlox (Account) initialization
         bytes4 functionSelector = GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR;
         
         // Set hooks for the function selector
         // Hooks can be set for any function selector that exists in the schema
         for (uint8 i = 0; i < numberOfHooks; i++) {
             vm.prank(owner);
-            machineBlox.setHook(functionSelector, hooks[i]);
+            hookTestBlox.setHook(functionSelector, hooks[i]);
         }
         
         // Verify hooks are set in order
         vm.prank(owner);
-        address[] memory retrievedHooks = machineBlox.getHooks(functionSelector);
+        address[] memory retrievedHooks = hookTestBlox.getHooks(functionSelector);
         assertEq(retrievedHooks.length, numberOfHooks, "All hooks should be set");
         
         // Hook execution order should be deterministic (EnumerableSet iteration order)
@@ -345,11 +345,11 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         // This should be allowed (no compile-time check), but hook execution should fail gracefully
         NonCompliantHookContract nonCompliantHook = new NonCompliantHookContract();
         vm.prank(owner);
-        machineBlox.setHook(functionSelector, address(nonCompliantHook));
+        hookTestBlox.setHook(functionSelector, address(nonCompliantHook));
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHooks(functionSelector);
+        address[] memory hooks = hookTestBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hook failures should not affect core state
@@ -379,12 +379,12 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         for (uint8 i = 0; i < numberOfHooks; i++) {
             GasIntensiveHookContract gasHook = new GasIntensiveHookContract();
             vm.prank(owner);
-            machineBlox.setHook(functionSelector, address(gasHook));
+            hookTestBlox.setHook(functionSelector, address(gasHook));
         }
         
         // Verify hooks are set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHooks(functionSelector);
+        address[] memory hooks = hookTestBlox.getHooks(functionSelector);
         assertEq(hooks.length, numberOfHooks, "All hooks should be set");
         
         // Key security property: Multiple hooks should not cause gas exhaustion
@@ -406,13 +406,13 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
         bytes4 functionSelector = GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR;
         
         // Set up reentrancy hook (hook that attempts to reenter)
-        ReentrancyHookContract reentrancyHook = new ReentrancyHookContract(address(machineBlox));
+        ReentrancyHookContract reentrancyHook = new ReentrancyHookContract(address(hookTestBlox));
         vm.prank(owner);
-        machineBlox.setHook(functionSelector, address(reentrancyHook));
+        hookTestBlox.setHook(functionSelector, address(reentrancyHook));
         
         // Verify hook is set
         vm.prank(owner);
-        address[] memory hooks = machineBlox.getHooks(functionSelector);
+        address[] memory hooks = hookTestBlox.getHooks(functionSelector);
         assertTrue(hooks.length > 0, "Hook should be set");
         
         // Key security property: Hooks should not be able to reenter

@@ -15,12 +15,12 @@ contract TransactionInvariantsTest is CommonBase {
     function invariant_TransactionStatusConsistency() public {
         // getTransactionHistory requires fromTxId < toTxId; need at least 2 tx ids for a valid range
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         
         if (pending.length >= 2) {
             uint256 toTxId = pending[pending.length - 1];
             vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, toTxId);
+            EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
             
             for (uint256 i = 0; i < history.length; i++) {
                 EngineBlox.TxStatus status = history[i].status;
@@ -40,11 +40,11 @@ contract TransactionInvariantsTest is CommonBase {
 
     function invariant_ReleaseTimeValidation() public {
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(pending[i]);
             // Release time should be validly set (greater than zero)
             // Note: Pending transactions can have releaseTime <= block.timestamp when timelock has elapsed
             // but transaction hasn't been approved/cancelled yet
@@ -57,7 +57,7 @@ contract TransactionInvariantsTest is CommonBase {
 
     function invariant_MetaTransactionNonceMonotonic() public {
         vm.prank(owner);
-        uint256 currentNonce = secureBlox.getSignerNonce(owner);
+        uint256 currentNonce = accountBlox.getSignerNonce(owner);
         
         // Nonce should be non-decreasing across all state transitions
         // This invariant is checked across multiple calls via the ghost variable
@@ -70,12 +70,12 @@ contract TransactionInvariantsTest is CommonBase {
     function invariant_PaymentValidation() public {
         // getTransactionHistory requires fromTxId < toTxId; need at least 2 tx ids for a valid range
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         
         if (pending.length >= 2) {
             uint256 toTxId = pending[pending.length - 1];
             vm.prank(owner);
-            EngineBlox.TxRecord[] memory history = secureBlox.getTransactionHistory(1, toTxId);
+            EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(1, toTxId);
             
             for (uint256 i = 0; i < history.length; i++) {
                 EngineBlox.PaymentDetails memory payment = history[i].payment;

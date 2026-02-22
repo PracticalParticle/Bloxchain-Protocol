@@ -26,13 +26,13 @@ contract MetaTransactionTest is CommonBase {
         address newOwner = user1;
 
         // Step 1: Create meta-transaction parameters
-        address handlerContract = address(secureBlox);
+        address handlerContract = address(accountBlox);
         bytes4 handlerSelector = bytes4(keccak256("transferOwnershipDelayedApproval(uint256)"));
         EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds (not absolute timestamp)
         uint256 maxGasPrice = 100 gwei;
 
-        EngineBlox.MetaTxParams memory metaTxParams = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -43,14 +43,14 @@ contract MetaTransactionTest is CommonBase {
 
         // Step 2: Create the transaction request first
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         // Step 3: Generate unsigned meta-transaction for existing transaction
         // Note: We use generateUnsignedMetaTransactionForExisting since we already created the request
         vm.prank(recovery);
-        EngineBlox.MetaTransaction memory unsignedMetaTx = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory unsignedMetaTx = accountBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             metaTxParams
         );
@@ -64,7 +64,7 @@ contract MetaTransactionTest is CommonBase {
         bytes memory signature = metaTxSigner.signMetaTransaction(
             unsignedMetaTx,
             RECOVERY_PRIVATE_KEY,
-            address(secureBlox)
+            address(accountBlox)
         );
 
         // Verify signature length
@@ -86,7 +86,7 @@ contract MetaTransactionTest is CommonBase {
         // The message hash in the meta-transaction should match our calculation
         bytes32 expectedMessageHash = metaTxSigner.generateMessageHash(
             signedMetaTx,
-            address(secureBlox)
+            address(accountBlox)
         );
         // Note: The message hash in the meta-transaction is set by EngineBlox
         // We verify our signer generates the same hash
@@ -97,13 +97,13 @@ contract MetaTransactionTest is CommonBase {
      * @dev Test meta-transaction parameter creation
      */
     function test_MetaTransaction_CreateParams() public {
-        address handlerContract = address(secureBlox);
+        address handlerContract = address(accountBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
         EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         uint256 deadlineDuration = 3600; // Duration in seconds
         uint256 maxGasPrice = 100 gwei;
 
-        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = accountBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,
@@ -131,16 +131,16 @@ contract MetaTransactionTest is CommonBase {
     function test_MetaTransaction_MessageHashConsistency() public {
         // Create a transaction first to get a valid txId
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
         vm.prank(recovery);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         // Create meta-tx params - need to get nonce first
         vm.prank(owner);
-        uint256 currentNonce = secureBlox.getSignerNonce(owner);
+        uint256 currentNonce = accountBlox.getSignerNonce(owner);
         
-        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
-            address(secureBlox),
+        EngineBlox.MetaTxParams memory params = accountBlox.createMetaTxParams(
+            address(accountBlox),
             bytes4(keccak256("testHandler()")),
             EngineBlox.TxAction.EXECUTE_META_APPROVE,
             3600, // Duration in seconds
@@ -150,13 +150,13 @@ contract MetaTransactionTest is CommonBase {
 
         // Generate meta-transactions for existing transaction
         vm.prank(owner);
-        EngineBlox.MetaTransaction memory metaTx1 = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory metaTx1 = accountBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             params
         );
 
         vm.prank(owner);
-        EngineBlox.MetaTransaction memory metaTx2 = secureBlox.generateUnsignedMetaTransactionForExisting(
+        EngineBlox.MetaTransaction memory metaTx2 = accountBlox.generateUnsignedMetaTransactionForExisting(
             txId,
             params
         );

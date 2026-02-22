@@ -63,9 +63,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should fail due to protected role modification
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -93,9 +93,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         
         // Empty batch should still execute (no-op)
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
     }
 
@@ -126,16 +126,16 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify all roles were created
         for (uint256 i = 0; i < size; i++) {
             bytes32 roleHash = keccak256(abi.encodePacked("ROLE_", i));
             vm.prank(owner);
-            (string memory name, bytes32 hash, , , ) = roleBlox.getRole(roleHash);
+            (string memory name, bytes32 hash, , , ) = accountBlox.getRole(roleHash);
             assertEq(hash, roleHash, "Role should be created");
         }
     }
@@ -170,14 +170,14 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
         
         // Verify role was created with correct name
         vm.prank(owner);
-        (string memory name, bytes32 hash, , , ) = roleBlox.getRole(roleHash);
+        (string memory name, bytes32 hash, , , ) = accountBlox.getRole(roleHash);
         assertEq(keccak256(bytes(name)), keccak256(bytes(roleName)), "Role name should match");
     }
 
@@ -190,8 +190,8 @@ contract EdgeCasesFuzzTest is CommonBase {
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -200,9 +200,9 @@ contract EdgeCasesFuzzTest is CommonBase {
         );
 
         // Generate unsigned meta-transaction
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0, // value
             0, // gasLimit
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
