@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -88,7 +88,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Attempt to add zero address to role
         IRuntimeRBAC.RoleConfigAction[] memory addActions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -105,9 +105,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Should fail with InvalidAddress
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -150,9 +150,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         
         // Execute - should handle large arrays
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should either complete or fail gracefully
         assertTrue(
@@ -175,7 +175,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
     ) public {
         // Try to get role wallets - may fail if role doesn't exist
         vm.prank(owner);
-        try roleBlox.getWalletsInRole(roleHash) returns (address[] memory wallets) {
+        try accountBlox.getWalletsInRole(roleHash) returns (address[] memory wallets) {
             uint256 walletCount = wallets.length;
             
             if (walletCount > 0) {
@@ -210,9 +210,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         
         // Execute empty batch - should succeed (no-op)
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Empty batch should complete (no operations to perform)
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.COMPLETED));
@@ -275,9 +275,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Should handle various name lengths
         assertTrue(
@@ -486,9 +486,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
 
             // Should fail with MaxWalletsZero
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
@@ -507,8 +507,8 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -516,9 +516,9 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

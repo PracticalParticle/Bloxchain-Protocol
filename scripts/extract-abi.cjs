@@ -17,14 +17,12 @@ const contractsToProcess = [
   'GuardController',
   'GuardControllerDefinitions',
   'IDefinition',
-  'BareBlox',
-  'SecureBlox',
-  'RoleBlox',
   'AccountBlox',
   'SimpleVault',
   'SimpleVaultDefinitions',
   'SimpleRWA20',
-  'SimpleRWA20Definitions'
+  'SimpleRWA20Definitions',
+  'CopyBlox'
 ];
 
 // Define the source and destination folders

@@ -27,12 +27,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
-     * @dev Counter to track the total number of clones created
-     */
-    uint256 private _cloneCount;
-
-    /**
-     * @dev Set to store all created clone addresses
+     * @dev Set to store all created clone addresses (length used as clone count)
      */
     EnumerableSet.AddressSet private _clones;
 
@@ -91,50 +86,16 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         address recovery,
         uint256 timeLockPeriodSec
     ) external nonReentrant returns (address cloneAddress) {
-        // Validate addresses
-        SharedValidation.validateNotZeroAddress(bloxAddress);
         SharedValidation.validateNotZeroAddress(initialOwner);
         SharedValidation.validateNotZeroAddress(broadcaster);
         SharedValidation.validateNotZeroAddress(recovery);
-        
-        // Prevent cloning self
-        if (bloxAddress == address(this)) {
-            revert SharedValidation.InvalidAddress(bloxAddress);
-        }
-        
-        // Validate that bloxAddress is a contract
-        if (bloxAddress.code.length == 0) {
-            revert SharedValidation.InvalidAddress(bloxAddress);
-        }
-        
-        // Verify that the blox contract implements IBaseStateMachine interface
-        if (!bloxAddress.supportsInterface(type(IBaseStateMachine).interfaceId)) {
-            revert SharedValidation.InvalidOperation(bloxAddress);
-        }
-        
-        // Check for overflow on clone count
-        if (_cloneCount == type(uint256).max) {
-            revert SharedValidation.OperationFailed();
-        }
-        
-        // CHECKS: All validations complete
-        
-        // EFFECTS: Update state before external calls (CEI pattern)
-        uint256 newCloneCount = _cloneCount + 1;
-        _cloneCount = newCloneCount;
-        
-        // Clone the blox contract using EIP-1167 minimal proxy pattern
+
+        _validateBloxImplementation(bloxAddress); // rejects zero (code.length==0), self, non-contract, non-IBaseStateMachine
+
+        // Clone first (no state change yet)
         cloneAddress = Clones.clone(bloxAddress);
-        
-        // Add clone to the set (before initialization call)
-        _clones.add(cloneAddress);
-        
-        // INTERACTIONS: External calls after state updates
-        // Set eventForwarder to CopyBlox address to centralize events from clones
         address eventForwarder = address(this);
-        
-        // Initialize the cloned contract
-        // We use a low-level call to handle any initialize function signature
+
         (bool success, ) = cloneAddress.call(
             abi.encodeWithSignature(
                 "initialize(address,address,address,uint256,address)",
@@ -145,17 +106,22 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
                 eventForwarder
             )
         );
-        
-        if (!success) {
-            // Revert state changes on failure
-            _clones.remove(cloneAddress);
-            _cloneCount = newCloneCount - 1;
-            revert SharedValidation.OperationFailed();
-        }
-        
-        emit BloxCloned(bloxAddress, cloneAddress, initialOwner, newCloneCount);
-        
+        if (!success) revert SharedValidation.OperationFailed();
+
+        _clones.add(cloneAddress);
+        emit BloxCloned(bloxAddress, cloneAddress, initialOwner, _clones.length());
         return cloneAddress;
+    }
+
+    /**
+     * @dev Validates that an address is not zero, not this contract, has code, and implements IBaseStateMachine.
+     */
+    function _validateBloxImplementation(address bloxAddress) internal view {
+        if (bloxAddress == address(this)) revert SharedValidation.InvalidAddress(bloxAddress);
+        if (bloxAddress.code.length == 0) revert SharedValidation.InvalidAddress(bloxAddress);
+        if (!bloxAddress.supportsInterface(type(IBaseStateMachine).interfaceId)) {
+            revert SharedValidation.InvalidOperation(bloxAddress);
+        }
     }
 
     /**
@@ -163,15 +129,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
      * @return The total number of clones created by this CopyBlox instance
      */
     function getCloneCount() external view returns (uint256) {
-        return _cloneCount;
-    }
-
-    /**
-     * @notice Get all clone addresses
-     * @return An array of all clone addresses created by this CopyBlox instance
-     */
-    function getAllClones() external view returns (address[] memory) {
-        return _clones.values();
+        return _clones.length();
     }
 
     /**
@@ -190,15 +148,6 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
      */
     function isClone(address cloneAddress) external view returns (bool) {
         return _clones.contains(cloneAddress);
-    }
-
-    /**
-     * @notice Get the total number of clones in the set
-     * @return The number of clones in the enumerable set
-     * @dev This should match getCloneCount() but uses the set length
-     */
-    function getClonesLength() external view returns (uint256) {
-        return _clones.length();
     }
 
     // ============ IEventForwarder IMPLEMENTATION ============
@@ -242,8 +191,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         address target,
         bytes32 operationType
     ) external override {
-        // Verify that the caller is a clone created by this CopyBlox
-        require(_clones.contains(msg.sender), "CopyBlox: Only clones can forward events");
+        if (!_clones.contains(msg.sender)) revert SharedValidation.NoPermission(msg.sender);
         
         // Emit event with clone address for tracking
         emit CloneEventForwarded(

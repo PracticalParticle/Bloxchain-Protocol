@@ -130,7 +130,7 @@ node run-tests.js --help
 - Node.js with Web3.js
 - Access to deployed SecureOwnable contract
 - Environment variables configured in `.env` file:
-  - `SECUREBLOX_ADDRESS`
+  - `ACCOUNTBLOX_ADDRESS` (manual mode; auto mode uses Truffle artifacts)
   - `TEST_WALLET_1_PRIVATE_KEY` through `TEST_WALLET_5_PRIVATE_KEY`
   - `REMOTE_HOST` and `REMOTE_PORT` (if using remote blockchain)
 

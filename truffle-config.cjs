@@ -39,7 +39,7 @@
  */
 
 // Load environment variables from .env file
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 // Helper function to create provider URL
 function getProviderUrl() {

@@ -17,7 +17,8 @@ class SanityTestRunner {
         
         this.exampleTests = {
             'simple-vault': path.resolve(__dirname, 'simple-vault', 'run-tests.cjs'),
-            'simple-rwa20': path.resolve(__dirname, 'simple-rwa20', 'run-tests.cjs')
+            'simple-rwa20': path.resolve(__dirname, 'simple-rwa20', 'run-tests.cjs'),
+            'copy-blox': path.resolve(__dirname, 'copy-blox', 'run-tests.cjs')
         };
         
         this.results = {
@@ -43,6 +44,7 @@ class SanityTestRunner {
         console.log('  --guard-controller       Run guard-controller tests only');
         console.log('  --simple-vault           Run simple-vault tests only');
         console.log('  --simple-rwa20           Run simple-rwa20 tests only');
+        console.log('  --copy-blox              Run copy-blox tests only');
         console.log('  --help                   Show this help message');
         console.log();
         console.log('Examples:');

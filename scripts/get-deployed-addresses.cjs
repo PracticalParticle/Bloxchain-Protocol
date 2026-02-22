@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Load environment variables
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 /**
  * @dev Extracts deployed contract addresses from Truffle migration artifacts
@@ -182,8 +182,7 @@ function displayEnvironmentConfig(addresses) {
       RUNTIME_RBAC_DEFINITIONS_ADDRESS: process.env.RUNTIME_RBAC_DEFINITIONS_ADDRESS || 'Not set'
     },
     guardianContracts: {
-      SECUREBLOX_ADDRESS: process.env.SECUREBLOX_ADDRESS || 'Not set',
-      ROLEBLOX_ADDRESS: process.env.ROLEBLOX_ADDRESS || 'Not set'
+      ACCOUNTBLOX_ADDRESS: process.env.ACCOUNTBLOX_ADDRESS || 'Not set'
     },
     exampleContracts: {
       SIMPLE_VAULT_ADDRESS: process.env.SIMPLE_VAULT_ADDRESS || 'Not set',
@@ -231,8 +230,7 @@ function displayEnvironmentConfig(addresses) {
     
     if (latestContracts) {
       const verifications = [
-        { env: 'SECUREBLOX_ADDRESS', artifact: latestContracts.SecureBlox },
-        { env: 'ROLEBLOX_ADDRESS', artifact: latestContracts.RoleBlox },
+        { env: 'ACCOUNTBLOX_ADDRESS', artifact: latestContracts.AccountBlox },
         { env: 'SIMPLE_VAULT_ADDRESS', artifact: latestContracts.SimpleVault },
         { env: 'SIMPLE_RWA20_ADDRESS', artifact: latestContracts.SimpleRWA20 }
       ];
@@ -253,7 +251,7 @@ function displayEnvironmentConfig(addresses) {
   console.log('```javascript');
   console.log('require(\'dotenv\').config();');
   console.log('');
-  console.log('const secureBloxAddress = process.env.SECUREBLOX_ADDRESS;');
+  console.log('const accountBloxAddress = process.env.ACCOUNTBLOX_ADDRESS;');
   console.log('const vaultAddress = process.env.SIMPLE_VAULT_ADDRESS;');
   console.log('// etc...');
   console.log('```');

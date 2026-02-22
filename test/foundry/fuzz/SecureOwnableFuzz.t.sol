@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
+import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
@@ -19,7 +20,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(timelockPeriod < 365 days);
 
         // Create new contract with fuzzed timelock
-        SecureBlox newContract = new SecureBlox();
+        AccountBlox newContract = new AccountBlox();
         vm.prank(owner);
         newContract.initialize(
             owner,
@@ -56,16 +57,16 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != recovery);
 
         vm.prank(owner);
-        uint256 txId = secureBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 txId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
         vm.prank(owner);
-        EngineBlox.TxRecord memory requestTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
 
         vm.prank(owner);
-        secureBlox.updateBroadcasterDelayedApproval(txId);
+        accountBlox.updateBroadcasterDelayedApproval(txId);
 
-        address[] memory broadcasters = secureBlox.getBroadcasters();
+        address[] memory broadcasters = accountBlox.getBroadcasters();
         assertEq(broadcasters[0], newBroadcaster);
     }
 
@@ -99,11 +100,11 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(maxGasPrice < type(uint256).max / 2);
 
         // Create meta-tx params
-        address handlerContract = address(secureBlox);
+        address handlerContract = address(accountBlox);
         bytes4 handlerSelector = bytes4(keccak256("testHandler()"));
         EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_META_APPROVE;
 
-        EngineBlox.MetaTxParams memory params = secureBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory params = accountBlox.createMetaTxParams(
             handlerContract,
             handlerSelector,
             action,

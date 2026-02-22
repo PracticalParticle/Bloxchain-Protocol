@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -14,15 +14,15 @@ contract StateMachineInvariantsTest is CommonBase {
 
     function invariant_OwnerRoleSingleWallet() public {
         vm.prank(owner);
-        (, , uint256 maxWallets, uint256 walletCount, ) = secureBlox.getRole(OWNER_ROLE);
+        (, , uint256 maxWallets, uint256 walletCount, ) = accountBlox.getRole(OWNER_ROLE);
         assertEq(walletCount, 1);
         assertEq(maxWallets, 1);
     }
 
     function invariant_NoZeroAddressInProtectedRoles() public {
-        address ownerAddr = secureBlox.owner();
-        address recoveryAddr = secureBlox.getRecovery();
-        address[] memory broadcasters = secureBlox.getBroadcasters();
+        address ownerAddr = accountBlox.owner();
+        address recoveryAddr = accountBlox.getRecovery();
+        address[] memory broadcasters = accountBlox.getBroadcasters();
 
         assertNotEq(ownerAddr, address(0));
         assertNotEq(recoveryAddr, address(0));
@@ -33,29 +33,29 @@ contract StateMachineInvariantsTest is CommonBase {
     function invariant_ValidStatusTransitions() public {
         // Get all pending transactions
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(pending[i]);
             // Pending transactions should have PENDING status
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         }
     }
 
     function invariant_TimelockPeriodPositive() public {
-        uint256 period = secureBlox.getTimeLockPeriodSec();
+        uint256 period = accountBlox.getTimeLockPeriodSec();
         assertGt(period, 0);
     }
 
     function invariant_PendingTransactionsConsistency() public {
         vm.prank(owner);
-        uint256[] memory pending = secureBlox.getPendingTransactions();
+        uint256[] memory pending = accountBlox.getPendingTransactions();
         
         // Verify all pending transactions are actually pending
         for (uint256 i = 0; i < pending.length; i++) {
             vm.prank(owner);
-            EngineBlox.TxRecord memory txRecord = secureBlox.getTransaction(pending[i]);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(pending[i]);
             assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.PENDING));
         }
     }
@@ -63,15 +63,15 @@ contract StateMachineInvariantsTest is CommonBase {
     function invariant_TransactionCounterMonotonic() public {
         // Create a transaction to increment counter
         vm.prank(recovery);
-        uint256 txId1 = secureBlox.transferOwnershipRequest();
+        uint256 txId1 = accountBlox.transferOwnershipRequest();
 
         // Cancel it
         vm.prank(recovery);
-        secureBlox.transferOwnershipCancellation(txId1);
+        accountBlox.transferOwnershipCancellation(txId1);
 
         // Create another transaction
         vm.prank(recovery);
-        uint256 txId2 = secureBlox.transferOwnershipRequest();
+        uint256 txId2 = accountBlox.transferOwnershipRequest();
 
         // Counter should be monotonic
         assertGt(txId2, txId1);
