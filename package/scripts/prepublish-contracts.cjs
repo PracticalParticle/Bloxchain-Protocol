@@ -91,11 +91,74 @@ if (fs.existsSync(destAbiDir)) {
   fs.rmSync(destAbiDir, { recursive: true, force: true });
 }
 
-// Copy ABIs (excluding examples and experimental)
-copyDir(sourceAbiDir, destAbiDir, excludedDirs);
-console.log('✅ ABIs copied (excluding examples and experimental)\n');
+copyDir(sourceAbiDir, destAbiDir, []);
+console.log('✅ ABIs copied\n');
+
+// Step 4: Remove ABIs that don't have a contract in the package
+// Only keep ABIs whose contract name exists in core, standards, or components (no examples).
+const packagedContractNames = collectPackagedContractNames();
+console.log('📋 Step 4: Pruning ABIs not packaged with contracts...');
+const removed = pruneUnpackagedAbis(destAbiDir, packagedContractNames);
+if (removed.length > 0) {
+  console.log(`   Removed ${removed.length} ABI(s) with no packaged contract: ${removed.join(', ')}`);
+}
+const remaining = fs.existsSync(destAbiDir) ? fs.readdirSync(destAbiDir).filter(f => f.endsWith('.abi.json')).length : 0;
+console.log(`   Packaged ABIs remaining: ${remaining}`);
+console.log('✅ ABI prune complete\n');
 
 console.log('✅ Package ready for publishing!\n');
+
+/**
+ * Collect contract names (basename of .sol files) from the source dirs that get copied
+ * into the package: core, standards, components. Excludes examples and experimental.
+ */
+function collectPackagedContractNames() {
+  const names = new Set();
+  const dirs = [
+    coreSrc,
+    fs.existsSync(standardsSrc) ? standardsSrc : null,
+    fs.existsSync(componentsSrc) ? componentsSrc : null
+  ].filter(Boolean);
+
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.sol')) {
+        names.add(path.basename(entry.name, '.sol'));
+      }
+    }
+  }
+
+  for (const d of dirs) {
+    walk(d);
+  }
+  return names;
+}
+
+/**
+ * Remove any file in destAbiDir that is *.abi.json and whose contract name
+ * (stem) is not in packagedContractNames. Returns list of removed filenames.
+ */
+function pruneUnpackagedAbis(destAbiDir, packagedContractNames) {
+  const removed = [];
+  if (!fs.existsSync(destAbiDir)) return removed;
+
+  const files = fs.readdirSync(destAbiDir);
+  for (const file of files) {
+    if (!file.endsWith('.abi.json')) continue;
+    const stem = file.replace(/\.abi\.json$/, '');
+    if (!packagedContractNames.has(stem)) {
+      const full = path.join(destAbiDir, file);
+      fs.unlinkSync(full);
+      removed.push(file);
+    }
+  }
+  return removed;
+}
 
 // Helper function to copy directory recursively
 // excludedDirs: array of directory names to skip (e.g., ['examples', 'experimental'])

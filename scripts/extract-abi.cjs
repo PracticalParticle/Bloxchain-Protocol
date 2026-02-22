@@ -24,7 +24,8 @@ const contractsToProcess = [
   'SimpleVault',
   'SimpleVaultDefinitions',
   'SimpleRWA20',
-  'SimpleRWA20Definitions'
+  'SimpleRWA20Definitions',
+  'CopyBlox'
 ];
 
 // Define the source and destination folders

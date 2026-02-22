@@ -1,8 +1,5 @@
-// Migration 2: Deploy Guardian Contracts (built on foundation libraries)
+// Migration 2: Deploy Guardian Contracts (AccountBlox only)
 require('dotenv').config();
-const SecureBlox = artifacts.require("SecureBlox");
-const RoleBlox = artifacts.require("RoleBlox");
-const BareBlox = artifacts.require("BareBlox");
 const AccountBlox = artifacts.require("AccountBlox");
 const { saveArtifactNetwork } = require('./helpers/save-artifact-network.cjs');
 
@@ -22,16 +19,9 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`🚀 Migration 2: Deploying Guardian Contracts on ${network}`);
     console.log(`📋 Using account: ${accounts[0]}`);
     
-    // Configuration flags - set to true/false to control which contracts to deploy
-    const deploySecureBlox = process.env.DEPLOY_SECUREBLOX === 'true'; // Default: false
-    const deployRoleBlox = process.env.DEPLOY_ROLEBLOX === 'true'; // Default: false
-    const deployBareBlox = process.env.DEPLOY_BAREBLOX === 'true'; // Default: false
-    const deployAccountBlox = process.env.DEPLOY_ACCOUNTBLOX === 'true'; // Default: false
+    const deployAccountBlox = process.env.DEPLOY_ACCOUNTBLOX !== 'false'; // Default: true
     
     console.log("\n🎯 Deployment Configuration:");
-    console.log(`   SecureBlox: ${deploySecureBlox ? '✅ YES' : '❌ NO'}`);
-    console.log(`   RoleBlox: ${deployRoleBlox ? '✅ YES' : '❌ NO'}`);
-    console.log(`   BareBlox: ${deployBareBlox ? '✅ YES' : '❌ NO'}`);
     console.log(`   AccountBlox: ${deployAccountBlox ? '✅ YES' : '❌ NO'}`);
     
     // Get deployed foundation libraries from Migration 1
@@ -80,228 +70,10 @@ module.exports = async function(deployer, network, accounts) {
     console.log("✅ Using RuntimeRBACDefinitions at:", drd.address);
     console.log("✅ Using GuardControllerDefinitions at:", gcd.address);
     
-    // Step 2: Deploy SecureBlox (if enabled)
-    let secureBlox = null;
-    if (deploySecureBlox) {
-        console.log("\n📦 Step 2: Deploying SecureBlox...");
-        
-        // Link all required libraries to SecureBlox
-        await deployer.link(EngineBlox, SecureBlox);
-        await deployer.link(SecureOwnableDefinitions, SecureBlox);
-        
-        // Deploy SecureBlox
-        await deployer.deploy(SecureBlox);
-        secureBlox = await SecureBlox.deployed();
-        console.log("✅ SecureBlox deployed at:", secureBlox.address);
-        
-        // Get web3 instance for nonce checking
-        const web3 = secureBlox.constructor.web3 || global.web3;
-        
-        // Wait for nonce to sync after deployment
-        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
-        console.log(`   Current account nonce: ${currentNonce}`);
-        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
-        if (!synced) {
-            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
-        }
-        
-        // Initialize SecureBlox
-        console.log("🔧 Initializing SecureBlox...");
-        try {
-            // Use estimateGas to get more detailed error information
-            try {
-                const gasEstimate = await secureBlox.initialize.estimateGas(
-                    accounts[0],  // initialOwner
-                    accounts[1],  // broadcaster
-                    accounts[2],  // recovery
-                    1,          // timeLockPeriodSec
-                    "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
-                );
-                console.log("   Gas estimate:", gasEstimate.toString());
-            } catch (gasError) {
-                console.log("   ⚠️  Gas estimation failed - this indicates the transaction will revert");
-                console.log("   Gas error:", gasError.message);
-                if (gasError.data) {
-                    console.log("   Gas error data:", gasError.data);
-                    // Try to decode error selector
-                    if (gasError.data.result) {
-                        const errorSelector = gasError.data.result.slice(0, 10);
-                        console.log("   Error selector:", errorSelector);
-                    }
-                }
-            }
-            
-            const tx = await secureBlox.initialize(
-                accounts[0],  // initialOwner
-                accounts[1],  // broadcaster
-                accounts[2],  // recovery
-                1,          // timeLockPeriodSec
-                "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
-            );
-            console.log("✅ SecureBlox initialized successfully");
-            console.log("   Transaction hash:", tx.tx);
-            
-            // Save network info to artifact (fixes issue when network_id is "*")
-            await saveArtifactNetwork(SecureBlox, secureBlox.address, web3, network);
-        } catch (error) {
-            console.log("❌ SecureBlox initialization failed:");
-            console.log("   Error message:", error.message);
-            console.log("   Error reason:", error.reason);
-            console.log("   Error data:", JSON.stringify(error.data, null, 2));
-            
-            // Extract error selector if available
-            if (error.data && error.data.result) {
-                const errorSelector = error.data.result.slice(0, 10);
-                console.log("   Error selector:", errorSelector);
-                console.log("   Full error result:", error.data.result);
-            }
-            
-            // Try to get more details from the transaction
-            if (error.receipt) {
-                console.log("   Transaction receipt:", JSON.stringify(error.receipt, null, 2));
-            }
-            
-            console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
-            throw error; // Re-throw to stop migration
-        }
-    } else {
-        console.log("\n📦 Step 2: Skipping SecureBlox deployment (disabled)");
-    }
-    
-    // Step 3: Deploy RoleBlox (if enabled)
-    let roleBlox = null;
-    if (deployRoleBlox) {
-        console.log("\n📦 Step 3: Deploying RoleBlox...");
-        
-        // Link all required libraries to RoleBlox
-        await deployer.link(EngineBlox, RoleBlox);
-        await deployer.link(SecureOwnableDefinitions, RoleBlox);
-        await deployer.link(RuntimeRBACDefinitions, RoleBlox);
-        
-        // Deploy RoleBlox
-        await deployer.deploy(RoleBlox);
-        roleBlox = await RoleBlox.deployed();
-        console.log("✅ RoleBlox deployed at:", roleBlox.address);
-        // Get web3 from deployed contract instance (available for error handling)
-        const web3 = roleBlox.constructor.web3 || global.web3;
-        
-        // Wait for nonce to sync after deployment
-        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
-        console.log(`   Current account nonce: ${currentNonce}`);
-        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
-        if (!synced) {
-            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
-        }
-        
-        // Save network info to artifact (fixes issue when network_id is "*")
-        await saveArtifactNetwork(RoleBlox, roleBlox.address, web3, network);
-        
-        // Initialize RoleBlox
-        console.log("🔧 Initializing RoleBlox...");
-        try {
-            const tx = await roleBlox.initialize(
-                accounts[0],  // initialOwner
-                accounts[1],  // broadcaster 
-                accounts[2],  // recovery 
-                1,          // timeLockPeriodSec
-                "0x0000000000000000000000000000000000000000"  // eventForwarder (none)
-            );
-            console.log("✅ RoleBlox initialized successfully");
-            console.log("   Transaction hash:", tx.tx);
-        } catch (error) {
-            console.log("❌ RoleBlox initialization failed:");
-            console.log("   Error message:", error.message);
-            console.log("   Error reason:", error.reason);
-            console.log("   Error data:", error.data);
-            console.log("   Full error:", JSON.stringify(error, null, 2));
-            
-            // Try to decode the error if it's a revert
-            if (error.data) {
-                try {
-                    const decodedError = await web3.eth.call({
-                        to: roleBlox.address,
-                        data: error.data
-                    });
-                    console.log("   Decoded error data:", decodedError);
-                } catch (decodeError) {
-                    console.log("   Could not decode error data:", decodeError.message);
-                }
-            }
-            
-            console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
-        }
-    } else {
-        console.log("\n📦 Step 3: Skipping RoleBlox deployment (disabled)");
-    }
-    
-    // Step 4: Deploy BareBlox (if enabled)
-    let bareBlox = null;
-    if (deployBareBlox) {
-        console.log("\n📦 Step 4: Deploying BareBlox...");
-        
-        // Link required libraries
-        await deployer.link(EngineBlox, BareBlox);
-        
-        // Deploy BareBlox
-        await deployer.deploy(BareBlox);
-        bareBlox = await BareBlox.deployed();
-        console.log("✅ BareBlox deployed at:", bareBlox.address);
-        // Get web3 from deployed contract instance
-        const web3 = bareBlox.constructor.web3 || global.web3;
-        
-        // Wait for nonce to sync after deployment
-        const currentNonce = await web3.eth.getTransactionCount(accounts[0], 'pending');
-        console.log(`   Current account nonce: ${currentNonce}`);
-        const synced = await waitForNonceSync(web3, accounts[0], currentNonce);
-        if (!synced) {
-            console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
-        }
-        
-        // Save network info to artifact (fixes issue when network_id is "*")
-        await saveArtifactNetwork(BareBlox, bareBlox.address, web3, network);
-        
-        // Initialize BareBlox
-        console.log("🔧 Initializing BareBlox...");
-        const initialOwner = accounts[0];
-        const broadcaster = accounts[1];
-        const recovery = accounts[2];
-        const timeLockPeriodSec = 3600; // 1 hour
-        const eventForwarder = "0x0000000000000000000000000000000000000000";
-        
-        console.log("Initial Owner:", initialOwner);
-        console.log("Broadcaster:", broadcaster);
-        console.log("Recovery:", recovery);
-        console.log("Time Lock Period:", timeLockPeriodSec, "seconds");
-        
-        try {
-            await bareBlox.initialize(
-                initialOwner,
-                broadcaster,
-                recovery,
-                timeLockPeriodSec,
-                eventForwarder
-            );
-            console.log("✅ BareBlox initialized successfully!");
-            
-            // Verify deployment
-            const isInitialized = await bareBlox.initialized();
-            
-            console.log("- Initialized:", isInitialized);
-        } catch (error) {
-            console.log("❌ BareBlox initialization failed:");
-            console.log("   Error message:", error.message);
-            console.log("   Error reason:", error.reason);
-            console.log("   Error data:", error.data);
-            console.log("   Full error:", JSON.stringify(error, null, 2));
-        }
-    } else {
-        console.log("\n📦 Step 4: Skipping BareBlox deployment (disabled)");
-    }
-    
-    // Step 5: Deploy AccountBlox (if enabled)
+    // Step 2: Deploy AccountBlox (if enabled)
     let accountBlox = null;
     if (deployAccountBlox) {
-        console.log("\n📦 Step 5: Deploying AccountBlox...");
+        console.log("\n📦 Step 2: Deploying AccountBlox...");
         
         // Link all required libraries to AccountBlox (includes GuardControllerDefinitions)
         await deployer.link(EngineBlox, AccountBlox);
@@ -362,14 +134,11 @@ module.exports = async function(deployer, network, accounts) {
             console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
         }
     } else {
-        console.log("\n📦 Step 5: Skipping AccountBlox deployment (disabled)");
+        console.log("\n📦 Step 2: Skipping AccountBlox deployment (disabled)");
     }
     
     console.log("\n🎉 Migration 2 completed successfully!");
     console.log("📋 Guardian Contracts Deployed & Initialized:");
-    if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
-    if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
-    if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
     if (accountBlox) console.log(`   AccountBlox: ${accountBlox.address}`);
     
     // Save deployed addresses to file for auto mode fallback
@@ -386,24 +155,6 @@ module.exports = async function(deployer, network, accounts) {
         addresses[network] = {};
     }
     
-    if (secureBlox) {
-        addresses[network].SecureBlox = {
-            address: secureBlox.address,
-            deployedAt: new Date().toISOString()
-        };
-    }
-    if (roleBlox) {
-        addresses[network].RoleBlox = {
-            address: roleBlox.address,
-            deployedAt: new Date().toISOString()
-        };
-    }
-    if (bareBlox) {
-        addresses[network].BareBlox = {
-            address: bareBlox.address,
-            deployedAt: new Date().toISOString()
-        };
-    }
     if (accountBlox) {
         addresses[network].AccountBlox = {
             address: accountBlox.address,
@@ -420,23 +171,17 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`   SecureOwnableDefinitions: ${sod.address}`);
     console.log(`   RuntimeRBACDefinitions: ${drd.address}`);
     console.log("🛡️ Guardian Contracts (Deployed & Initialized):");
-    if (secureBlox) console.log(`   SecureBlox: ${secureBlox.address}`);
-    if (roleBlox) console.log(`   RoleBlox: ${roleBlox.address}`);
-    if (bareBlox) console.log(`   BareBlox: ${bareBlox.address}`);
     if (accountBlox) console.log(`   AccountBlox: ${accountBlox.address}`);
     
     console.log("\n✅ All contracts deployed and initialized successfully!");
-    console.log("🎯 Ready for analyzer testing with fully functional contracts!");
     console.log("🔧 Initialization Parameters:");
     console.log(`   Owner: ${accounts[0]}`);
     console.log(`   Broadcaster: ${accounts[1] || accounts[0]}`);
     console.log(`   Recovery: ${accounts[2] || accounts[0]}`);
-    console.log(`   Time Lock Period: 60 seconds (1 minute) for SecureBlox/RoleBlox, 3600 seconds (1 hour) for BareBlox`);
+    console.log(`   Time Lock Period: 1 second`);
     console.log(`   Event Forwarder: None`);
     
-    console.log("\n💡 Usage Examples:");
-    console.log("   Deploy only SecureBlox: DEPLOY_SECUREBLOX=true DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_ACCOUNTBLOX=false truffle migrate");
-    console.log("   Deploy only BareBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=true DEPLOY_ACCOUNTBLOX=false truffle migrate");
-    console.log("   Deploy only AccountBlox: DEPLOY_SECUREBLOX=false DEPLOY_ROLEBLOX=false DEPLOY_BAREBLOX=false DEPLOY_ACCOUNTBLOX=true truffle migrate");
-    console.log("   Deploy all (default): truffle migrate");
+    console.log("\n💡 Usage:");
+    console.log("   Deploy AccountBlox (default): truffle migrate");
+    console.log("   Skip AccountBlox: DEPLOY_ACCOUNTBLOX=false truffle migrate");
 };
