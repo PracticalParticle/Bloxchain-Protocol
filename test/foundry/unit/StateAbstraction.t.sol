@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -44,34 +44,34 @@ contract EngineBloxTest is CommonBase {
     function test_TransactionStatus_Transitions() public {
         // Create a transaction
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
 
         // Verify PENDING status
         vm.prank(owner);
-        EngineBlox.TxRecord memory pendingTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory pendingTx = accountBlox.getTransaction(txId);
         assertEq(uint8(pendingTx.status), uint8(EngineBlox.TxStatus.PENDING));
 
         // Advance time and approve
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
-        secureBlox.transferOwnershipDelayedApproval(txId);
+        accountBlox.transferOwnershipDelayedApproval(txId);
 
         // Verify COMPLETED status
         // Note: After ownership transfer, the owner changes from owner to recovery
         // So we need to use recovery (the new owner) to view the transaction
         vm.prank(recovery);
-        EngineBlox.TxRecord memory completedTx = secureBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory completedTx = accountBlox.getTransaction(txId);
         assertEq(uint8(completedTx.status), uint8(EngineBlox.TxStatus.COMPLETED));
     }
 
     function test_TransactionStatus_InvalidTransition() public {
         // Create and immediately try to approve (should fail)
         vm.prank(recovery);
-        uint256 txId = secureBlox.transferOwnershipRequest();
+        uint256 txId = accountBlox.transferOwnershipRequest();
 
         // Try to approve before timelock (should revert)
         vm.prank(recovery);
         vm.expectRevert();
-        secureBlox.transferOwnershipDelayedApproval(txId);
+        accountBlox.transferOwnershipDelayedApproval(txId);
     }
 }

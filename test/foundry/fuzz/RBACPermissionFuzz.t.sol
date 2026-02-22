@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -54,10 +54,10 @@ contract RBACPermissionFuzzTest is CommonBase {
             abi.encodeWithSelector(
                 SharedValidation.OnlyCallableByContract.selector,
                 unauthorizedUser,
-                address(roleBlox)
+                address(accountBlox)
             )
         );
-        roleBlox.executeRoleConfigBatch(actions);
+        accountBlox.executeRoleConfigBatch(actions);
     }
 
     /**
@@ -105,7 +105,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallets up to the limit
         for (uint256 i = 0; i < maxWallets; i++) {
@@ -123,7 +123,7 @@ contract RBACPermissionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+            accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
         }
         
         // Try to add one more - should fail
@@ -141,9 +141,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(overflowMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should fail with RoleWalletLimitReached error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -192,7 +192,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
         
         // Add wallet first time
         IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -209,7 +209,7 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
+        accountBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Try to add same wallet again - should fail
         IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -226,9 +226,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Transaction should fail with ItemAlreadyExists error
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED), "Transaction should fail");
@@ -249,8 +249,8 @@ contract RBACPermissionFuzzTest is CommonBase {
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
         // Create meta-transaction parameters
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -259,9 +259,9 @@ contract RBACPermissionFuzzTest is CommonBase {
         );
 
         // Generate unsigned meta-transaction
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0, // value
             0, // gasLimit
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

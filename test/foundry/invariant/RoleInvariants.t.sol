@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -21,17 +21,17 @@ contract RoleInvariantsTest is CommonBase {
         secureOwnableExecutionSelectors[2] = UPDATE_RECOVERY_SELECTOR;
         secureOwnableExecutionSelectors[3] = UPDATE_TIMELOCK_SELECTOR;
         excludeSelector(
-            StdInvariant.FuzzSelector({ addr: address(roleBlox), selectors: secureOwnableExecutionSelectors })
+            StdInvariant.FuzzSelector({ addr: address(accountBlox), selectors: secureOwnableExecutionSelectors })
         );
     }
 
     function invariant_RoleWalletLimits() public {
         vm.prank(owner);
-        bytes32[] memory roles = secureBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         
         for (uint256 i = 0; i < roles.length; i++) {
             vm.prank(owner);
-            (, , uint256 maxWallets, uint256 walletCount, ) = secureBlox.getRole(roles[i]);
+            (, , uint256 maxWallets, uint256 walletCount, ) = accountBlox.getRole(roles[i]);
             assertLe(walletCount, maxWallets);
         }
     }
@@ -39,19 +39,19 @@ contract RoleInvariantsTest is CommonBase {
     function invariant_ProtectedRolesImmutable() public {
         // Protected roles should always exist
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(OWNER_ROLE, owner));
+        assertTrue(accountBlox.hasRole(OWNER_ROLE, owner));
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(BROADCASTER_ROLE, broadcaster));
+        assertTrue(accountBlox.hasRole(BROADCASTER_ROLE, broadcaster));
         vm.prank(owner);
-        assertTrue(secureBlox.hasRole(RECOVERY_ROLE, recovery));
+        assertTrue(accountBlox.hasRole(RECOVERY_ROLE, recovery));
 
         // Protected roles should have isProtected = true
         vm.prank(owner);
-        (, , , , bool ownerProtected) = secureBlox.getRole(OWNER_ROLE);
+        (, , , , bool ownerProtected) = accountBlox.getRole(OWNER_ROLE);
         vm.prank(owner);
-        (, , , , bool broadcasterProtected) = secureBlox.getRole(BROADCASTER_ROLE);
+        (, , , , bool broadcasterProtected) = accountBlox.getRole(BROADCASTER_ROLE);
         vm.prank(owner);
-        (, , , , bool recoveryProtected) = secureBlox.getRole(RECOVERY_ROLE);
+        (, , , , bool recoveryProtected) = accountBlox.getRole(RECOVERY_ROLE);
 
         assertTrue(ownerProtected);
         assertTrue(broadcasterProtected);
@@ -64,9 +64,9 @@ contract RoleInvariantsTest is CommonBase {
      */
     function invariant_ProtectedRolesNeverModifiedViaRuntimeRBAC() public {
         // Verify protected roles unchanged
-        address currentOwner = roleBlox.owner();
-        address currentRecovery = roleBlox.getRecovery();
-        address[] memory currentBroadcasters = roleBlox.getBroadcasters();
+        address currentOwner = accountBlox.owner();
+        address currentRecovery = accountBlox.getRecovery();
+        address[] memory currentBroadcasters = accountBlox.getBroadcasters();
 
         assertEq(currentOwner, owner, "Owner should never change via RuntimeRBAC");
         assertEq(currentRecovery, recovery, "Recovery should never change via RuntimeRBAC");
@@ -75,11 +75,11 @@ contract RoleInvariantsTest is CommonBase {
 
         // Verify protection flags remain true
         vm.prank(owner);
-        (, , , , bool ownerProtected) = roleBlox.getRole(OWNER_ROLE);
+        (, , , , bool ownerProtected) = accountBlox.getRole(OWNER_ROLE);
         vm.prank(owner);
-        (, , , , bool broadcasterProtected) = roleBlox.getRole(BROADCASTER_ROLE);
+        (, , , , bool broadcasterProtected) = accountBlox.getRole(BROADCASTER_ROLE);
         vm.prank(owner);
-        (, , , , bool recoveryProtected) = roleBlox.getRole(RECOVERY_ROLE);
+        (, , , , bool recoveryProtected) = accountBlox.getRole(RECOVERY_ROLE);
 
         assertTrue(ownerProtected, "OWNER_ROLE should remain protected");
         assertTrue(broadcasterProtected, "BROADCASTER_ROLE should remain protected");
@@ -88,22 +88,22 @@ contract RoleInvariantsTest is CommonBase {
 
     function invariant_RoleHashConsistency() public {
         vm.prank(owner);
-        bytes32[] memory roles = secureBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         
         for (uint256 i = 0; i < roles.length; i++) {
             vm.prank(owner);
-            (, bytes32 roleHash, , , ) = secureBlox.getRole(roles[i]);
+            (, bytes32 roleHash, , , ) = accountBlox.getRole(roles[i]);
             assertEq(roleHash, roles[i]);
         }
     }
 
     function invariant_FunctionPermissionConsistency() public {
         vm.prank(owner);
-        bytes32[] memory roles = secureBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         
         for (uint256 i = 0; i < roles.length; i++) {
             vm.prank(owner);
-            EngineBlox.FunctionPermission[] memory permissions = secureBlox.getActiveRolePermissions(roles[i]);
+            EngineBlox.FunctionPermission[] memory permissions = accountBlox.getActiveRolePermissions(roles[i]);
             
             // Verify permissions are valid
             for (uint256 j = 0; j < permissions.length; j++) {

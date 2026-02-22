@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "forge-std/Test.sol";
@@ -7,8 +7,6 @@ import "../../contracts/core/access/interface/IRuntimeRBAC.sol";
 import "../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
-import "../../contracts/examples/templates/SecureBlox.sol";
-import "../../contracts/examples/templates/RoleBlox.sol";
 import "../../contracts/examples/templates/AccountBlox.sol";
 import "./helpers/MockContracts.sol";
 import "./helpers/TestHelpers.sol";
@@ -29,9 +27,7 @@ contract CommonBase is Test {
     address public user4;
     address public user5;
 
-    // Deployed contracts
-    SecureBlox public secureBlox;
-    RoleBlox public roleBlox;
+    // Deployed contracts (AccountBlox provides SecureOwnable + RuntimeRBAC + GuardController)
     AccountBlox public accountBlox;
 
     // Mock contracts
@@ -90,28 +86,6 @@ contract CommonBase is Test {
         mockTarget = new MockTarget();
         mockEventForwarder = new MockEventForwarder();
         metaTxSigner = new MetaTxSigner();
-
-        // Deploy and initialize SecureBlox
-        secureBlox = new SecureBlox();
-        vm.prank(owner);
-        secureBlox.initialize(
-            owner,
-            broadcaster,
-            recovery,
-            DEFAULT_TIMELOCK_PERIOD,
-            address(mockEventForwarder)
-        );
-
-        // Deploy and initialize RoleBlox
-        roleBlox = new RoleBlox();
-        vm.prank(owner);
-        roleBlox.initialize(
-            owner,
-            broadcaster,
-            recovery,
-            DEFAULT_TIMELOCK_PERIOD,
-            address(mockEventForwarder)
-        );
 
         // Deploy and initialize AccountBlox
         accountBlox = new AccountBlox();

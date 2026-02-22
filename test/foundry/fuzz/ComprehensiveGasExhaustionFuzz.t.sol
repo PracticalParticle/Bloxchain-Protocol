@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -47,15 +47,15 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         bytes4 executeSelector = bytes4(keccak256("execute()"));
         _whitelistTarget(address(mockTarget), executeSelector);
         
-        // Whitelist roleBlox itself for role config batch operations
-        // When roleBlox.generateUnsignedMetaTransactionForNew is called with roleBlox as target,
-        // it checks if roleBlox is whitelisted on roleBlox's own whitelist
-        // Since roleBlox extends BaseStateMachine, we can use EngineBlox library functions directly
+        // Whitelist accountBlox itself for role config batch operations
+        // When accountBlox.generateUnsignedMetaTransactionForNew is called with accountBlox as target,
+        // it checks if accountBlox is whitelisted on accountBlox's own whitelist
+        // Since accountBlox extends BaseStateMachine, we can use EngineBlox library functions directly
         // But we need to do this through a transaction since addTargetToFunctionWhitelist requires permissions
-        // Actually, since target == address(this) for roleBlox, internal calls should be allowed
+        // Actually, since target == address(this) for accountBlox, internal calls should be allowed
         // The issue might be that the target check happens before the address(this) check
-        // Let's whitelist roleBlox on itself using a direct call if possible
-        // For now, we'll skip this and see if using roleBlox directly fixes it
+        // Let's whitelist accountBlox on itself using a direct call if possible
+        // For now, we'll skip this and see if using accountBlox directly fixes it
     }
     
     /**
@@ -101,15 +101,10 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
     }
     
     /**
-     * @dev Helper to whitelist a target for a function selector on roleBlox (if it extends GuardController)
-     * Note: roleBlox extends RuntimeRBAC which doesn't extend GuardController, so this may not be needed
-     * But we include it for completeness in case the contract structure changes
+     * @dev Helper to whitelist a target for a function selector on an RBAC contract that also has GuardController.
+     * accountBlox has both; we whitelist on accountBlox.
      */
-    function _whitelistTargetOnRoleBlox(address target, bytes4 selector) internal {
-        // Check if roleBlox has GuardController functionality
-        // Since RoleBlox doesn't extend GuardController, we skip whitelisting
-        // The whitelist check error might be coming from a different source
-        // For now, we'll try to whitelist on accountBlox instead
+    function _whitelistTargetForRBACContract(address target, bytes4 selector) internal {
         _whitelistTarget(target, selector);
     }
 
@@ -256,9 +251,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            uint256 _createTxId = roleBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+            uint256 _createTxId = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory createTxRecord = roleBlox.getTransaction(_createTxId);
+            EngineBlox.TxRecord memory createTxRecord = accountBlox.getTransaction(_createTxId);
             
             // If role creation failed (e.g., MaxRolesExceeded), skip adding wallet
             if (createTxRecord.status == EngineBlox.TxStatus.FAILED) {
@@ -280,9 +275,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            uint256 _addTxId = roleBlox.roleConfigBatchRequestAndApprove(addMetaTx);
+            uint256 _addTxId = accountBlox.roleConfigBatchRequestAndApprove(addMetaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory addTxRecord = roleBlox.getTransaction(_addTxId);
+            EngineBlox.TxRecord memory addTxRecord = accountBlox.getTransaction(_addTxId);
             
             // If wallet addition succeeded, count it
             if (addTxRecord.status == EngineBlox.TxStatus.COMPLETED) {
@@ -556,9 +551,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: In Foundry tests, gasleft() measurement can be inaccurate for external calls
         // We'll use a simpler approach - just verify the operation completes or fails gracefully
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Verify batch completes or fails gracefully
         assertTrue(
@@ -622,9 +617,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         // Should fail with BatchSizeExceeded error
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -881,9 +876,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             );
             
             vm.prank(broadcaster);
-            uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+            uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
             vm.prank(broadcaster);
-            EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
             
             // Count successfully created roles
             if (txRecord.status == EngineBlox.TxStatus.COMPLETED) {
@@ -1051,9 +1046,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
         bytes memory expectedError = abi.encodeWithSelector(
@@ -1176,9 +1171,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Note: Gas measurement using gasleft() can be inaccurate for external calls in Foundry
         // Gas consumption is measured by Foundry's gas reporting system
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         // Verify operation completes or fails gracefully
         assertTrue(
@@ -1234,9 +1229,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }
@@ -1260,9 +1255,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }
@@ -1298,9 +1293,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        uint256 _txId = roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+        uint256 _txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(_txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(_txId);
         
         success = txRecord.status == EngineBlox.TxStatus.COMPLETED;
     }
@@ -1412,15 +1407,15 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
 
     /**
      * @dev Helper to create meta-transaction for role config
-     * Note: Uses roleBlox (not accountBlox) since role config operations are executed on roleBlox
+     * Note: Uses accountBlox for role config operations.
      */
     function _createMetaTxForRoleConfig(
         address signer,
         bytes memory executionParams,
         uint256 deadline
     ) internal view returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -1428,9 +1423,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             signer
         );
         
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             RuntimeRBACDefinitions.ROLE_CONFIG_BATCH,

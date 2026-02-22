@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -39,8 +39,8 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         uint256 deadline
     ) public {
         deadline = bound(deadline, 1, 30 days);
-        EngineBlox.MetaTxParams memory p = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory p = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -52,12 +52,12 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         m.params = p;
         m.txRecord.txId = txId;
         m.txRecord.params.requester = owner;
-        m.txRecord.params.target = address(roleBlox);
+        m.txRecord.params.target = address(accountBlox);
         m.txRecord.params.operationType = ROLE_CONFIG_BATCH_OPERATION_TYPE;
         m.txRecord.params.executionSelector = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
 
-        bytes32 h1 = metaTxSigner.generateMessageHash(m, address(roleBlox));
-        bytes32 h2 = metaTxSigner.generateMessageHash(m, address(roleBlox));
+        bytes32 h1 = metaTxSigner.generateMessageHash(m, address(accountBlox));
+        bytes32 h2 = metaTxSigner.generateMessageHash(m, address(accountBlox));
         assertEq(h1, h2, "Message hash must be deterministic for same inputs");
     }
 
@@ -84,7 +84,7 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
         EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(owner, createParams, 1 hours);
         vm.prank(broadcaster);
-        try roleBlox.roleConfigBatchRequestAndApprove(createMetaTx) {
+        try accountBlox.roleConfigBatchRequestAndApprove(createMetaTx) {
             // continue
         } catch (bytes memory reason) {
             if (reason.length >= 4 && bytes4(reason) == SharedValidation.InvalidSignature.selector) return;
@@ -92,7 +92,7 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         }
 
         vm.prank(owner);
-        bytes32[] memory roles = roleBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         bool found;
         for (uint256 i = 0; i < roles.length; i++) {
             if (roles[i] == roleHash) {
@@ -102,7 +102,7 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         }
         assertTrue(found, "getSupportedRoles must include new role");
         vm.prank(owner);
-        address[] memory wallets = roleBlox.getWalletsInRole(roleHash);
+        address[] memory wallets = accountBlox.getWalletsInRole(roleHash);
         assertEq(wallets.length, 0, "New role must have no wallets");
     }
 
@@ -146,17 +146,17 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
             0,
             signer
         );
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -165,7 +165,7 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
             metaTxParams
         );
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
-        metaTx.signature = metaTxSigner.signMetaTransaction(metaTx, signerPrivateKey, address(roleBlox));
+        metaTx.signature = metaTxSigner.signMetaTransaction(metaTx, signerPrivateKey, address(accountBlox));
         return metaTx;
     }
 

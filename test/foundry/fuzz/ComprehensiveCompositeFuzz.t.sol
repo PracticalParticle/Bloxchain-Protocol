@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
@@ -107,7 +107,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx1);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx1);
         
         // Create role2
         IRuntimeRBAC.RoleConfigAction[] memory createActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -125,7 +125,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(createMetaTx2);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx2);
         
         // Add wallet to role1
         IRuntimeRBAC.RoleConfigAction[] memory addActions1 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -142,7 +142,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
+        accountBlox.roleConfigBatchRequestAndApprove(addMetaTx1);
         
         // Add wallet to role2
         IRuntimeRBAC.RoleConfigAction[] memory addActions2 = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -159,11 +159,11 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         );
         
         vm.prank(broadcaster);
-        roleBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
+        accountBlox.roleConfigBatchRequestAndApprove(addMetaTx2);
         
         // Verify wallet has both roles (permission accumulation)
-        assertTrue(roleBlox.hasRole(roleHash1, wallet), "Wallet should have role1");
-        assertTrue(roleBlox.hasRole(roleHash2, wallet), "Wallet should have role2");
+        assertTrue(accountBlox.hasRole(roleHash1, wallet), "Wallet should have role1");
+        assertTrue(accountBlox.hasRole(roleHash2, wallet), "Wallet should have role2");
         
         // This tests OR logic for permissions (intentional behavior)
     }
@@ -230,9 +230,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         vm.prank(broadcaster);
         
         // Use low-level call to check result without Foundry detecting revert
-        (bool success, bytes memory returnData) = address(roleBlox).call(
+        (bool success, bytes memory returnData) = address(accountBlox).call(
             abi.encodeWithSelector(
-                roleBlox.roleConfigBatchRequestAndApprove.selector,
+                accountBlox.roleConfigBatchRequestAndApprove.selector,
                 metaTx
             )
         );
@@ -245,7 +245,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
                 // This tells Foundry the revert is expected, making the test pass
                 vm.prank(broadcaster);
                 vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, broadcaster));
-                roleBlox.roleConfigBatchRequestAndApprove(metaTx);
+                accountBlox.roleConfigBatchRequestAndApprove(metaTx);
                 return; // Test passes - security working correctly
             }
             // Re-throw other errors
@@ -257,7 +257,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Call succeeded - decode txId (roleConfigBatchRequestAndApprove returns uint256)
         uint256 txId = abi.decode(returnData, (uint256));
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory txRecord = roleBlox.getTransaction(txId);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
         
         // CRITICAL: Batch should be atomic - Action 1 should NOT execute
         // The batch should fail because Action 2 (modifying protected role) is invalid
@@ -267,7 +267,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // If the batch was atomic, the valid role should not have been created
         // Note: getSupportedRoles() requires permissions, so we use owner
         vm.prank(owner);
-        bytes32[] memory roles = roleBlox.getSupportedRoles();
+        bytes32[] memory roles = accountBlox.getSupportedRoles();
         bool roleExists = false;
         for (uint256 i = 0; i < roles.length; i++) {
             if (roles[i] == validRoleHash) {
@@ -438,7 +438,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
     function testFuzz_NoncePredictionReplayPrevented() public {
         // getSignerNonce requires role permissions
         vm.prank(owner);
-        uint256 currentNonce = roleBlox.getSignerNonce(owner);
+        uint256 currentNonce = accountBlox.getSignerNonce(owner);
         
         // Create legitimate meta-transaction (will use currentNonce)
         IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
@@ -457,9 +457,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         
         // Execute legitimate transaction first - this will increment nonce
         vm.prank(broadcaster);
-        uint256 legitTxId = roleBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
+        uint256 legitTxId = accountBlox.roleConfigBatchRequestAndApprove(legitMetaTx);
         vm.prank(broadcaster);
-        EngineBlox.TxRecord memory legitResult = roleBlox.getTransaction(legitTxId);
+        EngineBlox.TxRecord memory legitResult = accountBlox.getTransaction(legitTxId);
         
         // If legitimate transaction failed, skip test
         if (legitResult.status != EngineBlox.TxStatus.COMPLETED) {
@@ -468,15 +468,15 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         
         // Get updated nonce after legitimate transaction
         vm.prank(owner);
-        uint256 updatedNonce = roleBlox.getSignerNonce(owner);
+        uint256 updatedNonce = accountBlox.getSignerNonce(owner);
         
         // Verify nonce was incremented
         assertEq(updatedNonce, currentNonce + 1, "Nonce should increment after transaction");
         
         // Now create attacker transaction that tries to use the old nonce (currentNonce)
         // This should fail because the nonce has already been used
-        EngineBlox.MetaTxParams memory attackerParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory attackerParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             1 hours,
@@ -498,9 +498,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Generate meta-transaction with old nonce
         // Note: generateUnsignedMetaTransactionForNew might override the nonce, so we need to
         // manually construct or use a different approach
-        EngineBlox.MetaTransaction memory attackerMetaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory attackerMetaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             owner,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
@@ -529,8 +529,8 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         bytes memory executionParams,
         uint256 deadline
     ) internal returns (EngineBlox.MetaTransaction memory) {
-        EngineBlox.MetaTxParams memory metaTxParams = roleBlox.createMetaTxParams(
-            address(roleBlox),
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
             deadline,
@@ -538,9 +538,9 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             signer
         );
 
-        EngineBlox.MetaTransaction memory metaTx = roleBlox.generateUnsignedMetaTransactionForNew(
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
             signer,
-            address(roleBlox),
+            address(accountBlox),
             0,
             0,
             ROLE_CONFIG_BATCH_OPERATION_TYPE,

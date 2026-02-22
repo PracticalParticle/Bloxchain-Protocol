@@ -1,6 +1,6 @@
 {
   "name": "Bloxchain",
-  "version": "1.0.0-alpha.12",
+  "version": "1.0.0-alpha.13",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "main": "truffle-config.cjs",
@@ -28,7 +28,8 @@
     "test:foundry:invariant": "forge test --invariant-runs 1000",
     "deploy:truffle": "npx truffle migrate --network development --reset --config truffle-config.cjs && node scripts/extract-abi.cjs",
     "deploy:hardhat": "hardhat run scripts/deploy.js",
-    "deploy:hardhat:foundation": "hardhat run scripts/deploy-foundation-libraries.js --network sepolia",
+    "deploy:hardhat:foundation": "hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia",
+    "create-wallet": "node scripts/deployment/create-wallet-copyblox.js",
     "test:sanity": "node scripts/sanity/run-all-tests.cjs",
     "test:sanity:core": "node scripts/sanity/run-all-tests.cjs --core",
     "test:sanity:examples": "node scripts/sanity/run-all-tests.cjs --examples",
@@ -44,8 +45,8 @@
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
     "release:prepare": "node scripts/release-prepare.cjs",
-    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.12",
-    "publish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.12",
+    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.13",
+    "publish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.13",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
     "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\"",
@@ -59,20 +60,23 @@
   ],
   "author": "Particle Crypto Security",
   "license": "MPL-2.0",
+  "overrides": {
+    "minimatch": ">=10.2.1"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.3.1",
+    "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.3.1",
     "@nomicfoundation/hardhat-ethers": "^4.0.4",
-    "dotenv": "^17.2.3",
-    "hardhat": "^3.1.5",
+    "dotenv": "^17.3.1",
+    "hardhat": "^3.1.8",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
-    "prettier-plugin-solidity": "^2.1.0",
-    "release-please": "^17.1.3",
-    "viem": "^2.44.4"
+    "prettier-plugin-solidity": "^2.2.1",
+    "release-please": "^17.3.0",
+    "viem": "^2.46.1"
   }
 }
