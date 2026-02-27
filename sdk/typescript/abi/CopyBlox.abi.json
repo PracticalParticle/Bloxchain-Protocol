@@ -326,25 +326,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "functionSchemaExists",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
@@ -871,6 +852,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "roleHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getAuthorizedWallets",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getBroadcasters",
     "outputs": [
@@ -1373,25 +1373,6 @@
         "internalType": "bytes32",
         "name": "roleHash",
         "type": "bytes32"
-      }
-    ],
-    "name": "getWalletsInRole",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
       },
       {
         "internalType": "address",
@@ -1413,30 +1394,6 @@
   {
     "inputs": [],
     "name": "initialized",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "enum EngineBlox.TxAction",
-        "name": "action",
-        "type": "uint8"
-      }
-    ],
-    "name": "isActionSupportedByFunction",
     "outputs": [
       {
         "internalType": "bool",
