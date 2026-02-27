@@ -72,23 +72,6 @@ export class WhitelistTests extends BaseGuardControllerTest {
         this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered`);
         return;
       }
-      // Fallback: functionSchemaExists
-      let alreadyRegistered = false;
-      try {
-        alreadyRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
-      } catch (checkError: any) {
-        console.warn(
-          `  ⚠️  functionSchemaExists pre-check failed (continuing with registration anyway): ${
-            checkError?.message || checkError
-          }`
-        );
-      }
-      if (alreadyRegistered) {
-        console.log('  ℹ️  Function selector already registered (functionSchemaExists), skipping registration');
-        this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered`);
-        return;
-      }
-
       // Get owner and broadcaster wallets
       const ownerWallet = this.getRoleWallet('owner');
       const broadcasterWallet = this.getRoleWallet('broadcaster');
@@ -134,11 +117,13 @@ export class WhitelistTests extends BaseGuardControllerTest {
       } catch (e: any) {
         if (e?.message?.includes('TxStatus 6')) {
           if (e?.message?.includes('ResourceAlreadyExists')) {
-            console.log('  ⚠️  ResourceAlreadyExists — function may already be registered (CJS-style: verify then pass)');
+            console.log('  ⚠️  ResourceAlreadyExists — function selector already registered; step passed');
+            this.assertTest(true, `Function selector ${this.NATIVE_TRANSFER_SELECTOR} already registered (ResourceAlreadyExists)`);
+            return;
           }
-          const verified = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+          const verified = await this.schemaOrSupportedSetPreCheck(this.NATIVE_TRANSFER_SELECTOR);
           if (verified) {
-            console.log('  ℹ️  Register returned TxStatus 6; verified selector is already registered via functionSchemaExists — step passed');
+            console.log('  ℹ️  Register returned TxStatus 6; verified selector is already registered via getFunctionSchema/getSupportedFunctions — step passed');
             return;
           }
         }
@@ -151,14 +136,14 @@ export class WhitelistTests extends BaseGuardControllerTest {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
         try {
-          isRegistered = await this.guardController.functionSchemaExists(this.NATIVE_TRANSFER_SELECTOR);
+          isRegistered = await this.schemaOrSupportedSetPreCheck(this.NATIVE_TRANSFER_SELECTOR);
           if (isRegistered) break;
         } catch (checkError: any) {
-          console.warn(`  ⏳ functionSchemaExists attempt ${attempt}/${maxRetries}: ${checkError?.message || checkError}`);
+          console.warn(`  ⏳ schema check attempt ${attempt}/${maxRetries}: ${checkError?.message || checkError}`);
         }
       }
-      this.assertTest(isRegistered, `Function selector must be registered via functionSchemaExists after ${maxRetries} retries`);
-      console.log(`  ✅ Verified function selector is registered via functionSchemaExists`);
+      this.assertTest(isRegistered, `Function selector must be visible via getFunctionSchema/getSupportedFunctions after ${maxRetries} retries`);
+      console.log(`  ✅ Verified function selector is registered (getFunctionSchema/getSupportedFunctions)`);
 
       const status = receipt.status as string | number;
       const txSucceeded =

@@ -368,23 +368,6 @@ Returns if a wallet is authorized for a role
 
 ---
 
-### functionSchemaExists
-
-```solidity
-function functionSchemaExists(bytes4 functionSelector) public view returns (bool)
-```
-
-Checks if a function schema exists
-
-**Parameters:**
-- `` (): The function selector to check
-
-**Returns:**
-- True if the function schema exists, false otherwise
-
-
----
-
 ### isActionSupportedByFunction
 
 ```solidity

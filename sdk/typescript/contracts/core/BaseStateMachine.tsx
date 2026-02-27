@@ -250,20 +250,12 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    * @returns Array of authorized wallet addresses
    * @notice Requires caller to have any role for privacy protection
    */
-  async getWalletsInRole(roleHash: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getWalletsInRole', [roleHash]);
-  }
-
-  async isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean> {
-    return this.executeReadContract<boolean>('isActionSupportedByFunction', [functionSelector, action]);
+  async getAuthorizedWallets(roleHash: Hex): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getAuthorizedWallets', [roleHash]);
   }
 
   async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
     return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
-  }
-
-  async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
-    return this.executeReadContract<boolean>('functionSchemaExists', [functionSelector]);
   }
 
   async getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema> {

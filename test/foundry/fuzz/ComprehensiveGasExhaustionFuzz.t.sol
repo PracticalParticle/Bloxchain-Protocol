@@ -843,7 +843,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * @dev Test: View function gas consumption with many roles
      * Attack Vector: GAS-011 - View Function Array Conversion Gas Exhaustion (HIGH)
      * 
-     * Tests getSupportedRolesList with many roles.
+     * Tests getSupportedRoles with many roles.
      */
     function testFuzz_ViewFunctionGasConsumptionWithManyRoles(
         uint16 numberOfRoles
@@ -920,7 +920,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
     /**
      * @dev Test: View function gas consumption with many functions
      * 
-     * Tests getSupportedFunctionsList with many functions.
+     * Tests getSupportedFunctions with many functions.
      */
     function testFuzz_ViewFunctionGasConsumptionWithManyFunctions(
         uint16 numberOfFunctions

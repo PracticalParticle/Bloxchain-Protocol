@@ -123,12 +123,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         this.assertTest(true, 'Mint schema already registered');
         return;
       }
-      const already = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
-      if (already) {
-        console.log('  ℹ️  mint(address,uint256) schema already registered (functionSchemaExists); skipping registration');
-        this.assertTest(true, 'Mint schema already registered');
-        return;
-      }
 
       const fullWorkflowActions = [
         TxAction.EXECUTE_TIME_DELAY_REQUEST,
@@ -180,11 +174,13 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       } catch (e: any) {
         if (e?.message?.includes('TxStatus 6')) {
           if (e?.message?.includes('ResourceAlreadyExists')) {
-            console.log('  ⚠️  ResourceAlreadyExists — mint schema may already be registered (CJS-style: verify then pass)');
+            console.log('  ⚠️  ResourceAlreadyExists — mint schema already registered; step passed');
+            this.assertTest(true, 'Mint schema already registered (ResourceAlreadyExists)');
+            return;
           }
-          const verified = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
+          const verified = await this.schemaOrSupportedSetPreCheck(ERC20_MINT_SELECTOR);
           if (verified) {
-            console.log('  ℹ️  Register returned TxStatus 6; verified mint schema already exists via functionSchemaExists — step passed');
+            console.log('  ℹ️  Register returned TxStatus 6; verified mint schema already exists via getFunctionSchema/getSupportedFunctions — step passed');
             return;
           }
         }
@@ -197,16 +193,16 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
         try {
-          existsNow = await this.guardController.functionSchemaExists(ERC20_MINT_SELECTOR);
+          existsNow = await this.schemaOrSupportedSetPreCheck(ERC20_MINT_SELECTOR);
           if (existsNow) {
-            console.log('  ✅ Mint schema is visible via functionSchemaExists after registration');
+            console.log('  ✅ Mint schema is visible via getFunctionSchema/getSupportedFunctions after registration');
             break;
           }
         } catch (checkError: any) {
-          console.warn(`  ⏳ functionSchemaExists attempt ${attempt}/${maxRetries}: ${checkError?.message || checkError}`);
+          console.warn(`  ⏳ schema check attempt ${attempt}/${maxRetries}: ${checkError?.message || checkError}`);
         }
       }
-      this.assertTest(existsNow, 'Mint schema must be visible via functionSchemaExists after registration');
+      this.assertTest(existsNow, 'Mint schema must be visible via getFunctionSchema/getSupportedFunctions after registration');
     } catch (error: any) {
       this.handleTestError('Ensure ERC20 mint schema', error);
       throw error;

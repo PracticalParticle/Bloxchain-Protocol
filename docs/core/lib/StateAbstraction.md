@@ -461,7 +461,7 @@ Unregisters a function schema from the system.
 - `` (): The function selector to unregister.
 - `` (): If true, reverts with ResourceAlreadyExists when any role still references this function.
        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) to avoid
-       calling getSupportedRolesList/getRoleFunctionPermissions, which use _validateAnyRole and would
+       calling getSupportedRoles/getRoleFunctionPermissions, which use _validateAnyRole and would
        revert NoPermission when the caller is the contract itself (e.g. during executeRoleConfigBatch).
 
 
@@ -643,13 +643,13 @@ Also used by getFunctionsByOperationType after role validation.
 
 ---
 
-### getPendingTransactionsList
+### getPendingTransactions
 
 ```solidity
-function getPendingTransactionsList(struct EngineBlox.SecureOperationState self) public view returns (uint256[])
+function getPendingTransactions(struct EngineBlox.SecureOperationState self) public view returns (uint256[])
 ```
 
-Gets all pending transaction IDs as an array for backward compatibility
+Gets all pending transaction IDs
 
 **Parameters:**
 - `` (): The SecureOperationState to check
@@ -660,10 +660,10 @@ Gets all pending transaction IDs as an array for backward compatibility
 
 ---
 
-### getSupportedRolesList
+### getSupportedRoles
 
 ```solidity
-function getSupportedRolesList(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
+function getSupportedRoles(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
 Gets all supported roles as an array for backward compatibility
@@ -677,10 +677,10 @@ Gets all supported roles as an array for backward compatibility
 
 ---
 
-### getSupportedFunctionsList
+### getSupportedFunctions
 
 ```solidity
-function getSupportedFunctionsList(struct EngineBlox.SecureOperationState self) public view returns (bytes4[])
+function getSupportedFunctions(struct EngineBlox.SecureOperationState self) public view returns (bytes4[])
 ```
 
 Gets all supported function selectors as an array for backward compatibility
@@ -694,10 +694,10 @@ Gets all supported function selectors as an array for backward compatibility
 
 ---
 
-### getSupportedOperationTypesList
+### getSupportedOperationTypes
 
 ```solidity
-function getSupportedOperationTypesList(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
+function getSupportedOperationTypes(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
 Gets all supported operation types as an array for backward compatibility

@@ -1283,8 +1283,8 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
 
     /**
      * @dev Invariant-style fuzz: supportedFunctions list and getFunctionSchema are consistent
-     *      - For every supported function selector, functionSchemaExists(selector) is true
-     *      - getFunctionSchema(selector).functionSelector == selector when schema exists
+     *      - For every supported function selector, getFunctionSchema(selector) succeeds
+     *      - getFunctionSchema(selector).functionSelector == selector
      */
     function testFuzz_FunctionSchemaConsistency() public {
         // getSupportedFunctions / getFunctionSchema require caller to have any role;
@@ -1292,9 +1292,6 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         try accountBlox.getSupportedFunctions() returns (bytes4[] memory selectors) {
             for (uint256 i = 0; i < selectors.length; i++) {
                 bytes4 selector = selectors[i];
-                bool exists = accountBlox.functionSchemaExists(selector);
-                assertTrue(exists, "Supported function must have a registered schema");
-
                 EngineBlox.FunctionSchema memory schema = accountBlox.getFunctionSchema(selector);
                 assertEq(schema.functionSelector, selector, "Schema selector must match supportedFunctions entry");
             }
