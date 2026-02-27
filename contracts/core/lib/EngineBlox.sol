@@ -576,7 +576,7 @@ library EngineBlox {
         // This proves reentrancy protection is active at entry point
         _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
 
-        bytes memory txData = prepareTransactionData(record);
+        bytes memory txData = buildCallData(record);
         uint gas = record.params.gasLimit;
         if (gas == 0) {
             gas = gasleft();
@@ -662,11 +662,11 @@ library EngineBlox {
     }
 
     /**
-     * @dev Prepares transaction data from execution selector and params without executing it.
+     * @dev Builds transaction call data from execution selector and params without executing it.
      * @param record The transaction record to prepare data for.
      * @return The prepared transaction data.
      */
-    function prepareTransactionData(TxRecord memory record) private pure returns (bytes memory) {
+    function buildCallData(TxRecord memory record) private pure returns (bytes memory) {
         // If executionSelector is NATIVE_TRANSFER_SELECTOR, it's a simple native token transfer (no function call)
         if (record.params.executionSelector == NATIVE_TRANSFER_SELECTOR) {
             // SECURITY: Validate empty params to prevent confusion with real function calls
@@ -1830,7 +1830,7 @@ library EngineBlox {
             params: metaTxParams,
             message: 0,
             signature: "",
-            data: prepareTransactionData(txRecord)
+            data: buildCallData(txRecord)
         });
 
         // Generate the message hash for ready to sign meta-transaction
