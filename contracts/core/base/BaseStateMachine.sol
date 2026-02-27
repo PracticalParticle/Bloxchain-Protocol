@@ -458,7 +458,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets the basic role information by its hash
      * @param roleHash The hash of the role to get
      * @return roleName The name of the role
-     * @return roleHashReturn The hash of the role
+     * @return hash The hash of the role
      * @return maxWallets The maximum number of wallets allowed for this role
      * @return walletCount The current number of wallets assigned to this role
      * @return isProtected Whether the role is protected from removal
@@ -466,7 +466,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getRole(bytes32 roleHash) public view returns (
         string memory roleName,
-        bytes32 roleHashReturn,
+        bytes32 hash,
         uint256 maxWallets,
         uint256 walletCount,
         bool isProtected
@@ -881,19 +881,19 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionSchemas Array of function schema definitions  
      * @param roleHashes Array of role hashes
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @param enforceProtectedSchemas When true, all function schemas must be protected; reverts if any is not
-     * @notice When enforceProtectedSchemas is true, every function schema must have isProtected == true
+     * @param requireProtected When true, all function schemas must be protected; reverts if any is not
+     * @notice When requireProtected is true, every function schema must have isProtected == true
      */
     function _loadDefinitions(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
         EngineBlox.FunctionPermission[] memory functionPermissions,
-        bool enforceProtectedSchemas
+        bool requireProtected
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             // When enforcing, require every schema to be protected
-            if (enforceProtectedSchemas && !functionSchemas[i].isProtected) {
+            if (requireProtected && !functionSchemas[i].isProtected) {
                 revert SharedValidation.ContractFunctionMustBeProtected(
                     functionSchemas[i].functionSelector
                 );

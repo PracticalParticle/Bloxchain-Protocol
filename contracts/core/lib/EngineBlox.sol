@@ -266,11 +266,11 @@ library EngineBlox {
     /**
      * @dev Updates the time lock period for the SecureOperationState.
      * @param self The SecureOperationState to modify.
-     * @param _newTimeLockPeriodSec The new time lock period in seconds.
+     * @param periodSec The new time lock period in seconds.
      */
-    function updateTimeLockPeriod(SecureOperationState storage self, uint256 _newTimeLockPeriodSec) public {
-        SharedValidation.validateTimeLockPeriod(_newTimeLockPeriodSec);
-        self.timeLockPeriodSec = _newTimeLockPeriodSec;
+    function updateTimeLockPeriod(SecureOperationState storage self, uint256 periodSec) public {
+        SharedValidation.validateTimeLockPeriod(periodSec);
+        self.timeLockPeriodSec = periodSec;
     }
 
     // ============ TRANSACTION MANAGEMENT FUNCTIONS ============
@@ -322,7 +322,7 @@ library EngineBlox {
             operationType,
             executionSelector,
             executionParams,
-            _noPayment()
+            _emptyPayment()
         );
     }
 
@@ -396,9 +396,9 @@ library EngineBlox {
     ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, executionSelector, target);
+        _validateTargetWhitelist(self, executionSelector, target);
 
-        TxRecord memory txRequestRecord = createNewTxRecord(
+        TxRecord memory txRequestRecord = createTxRecord(
             self,
             requester,
             target,
@@ -414,7 +414,7 @@ library EngineBlox {
         self.txCounter++;
 
         // Add to pending transactions list
-        addToPendingTransactionsList(self, txRequestRecord.txId);
+        addPendingTx(self, txRequestRecord.txId);
 
         logTxEvent(self, txRequestRecord.txId, executionSelector);
         
@@ -683,7 +683,7 @@ library EngineBlox {
 
 
     /**
-     * @notice Creates a new transaction record with basic fields populated
+     * @notice Creates a transaction record with basic fields populated
      * @dev Initializes a TxRecord struct with the provided parameters and default values
      * @param self The SecureOperationState to reference for txId and timelock
      * @param requester The address initiating the transaction
@@ -696,7 +696,7 @@ library EngineBlox {
      * @param payment The payment details to attach to the record (use empty struct for no payment)
      * @return TxRecord A new transaction record with populated fields
      */
-    function createNewTxRecord(
+    function createTxRecord(
         SecureOperationState storage self,
         address requester,
         address target,
@@ -731,7 +731,7 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param txId The transaction ID to add to the pending set.
      */
-    function addToPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
+    function addPendingTx(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
         _validateTxStatus(self, txId, TxStatus.PENDING);
         
@@ -746,7 +746,7 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param txId The transaction ID to remove from the pending set.
      */
-    function removeFromPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
+    function removePendingTx(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
         
         // Remove the transaction ID from the set (O(1) operation)
@@ -1311,7 +1311,7 @@ library EngineBlox {
      * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
      *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
      */
-    function _validateFunctionTargetWhitelist(
+    function _validateTargetWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
@@ -1767,7 +1767,7 @@ library EngineBlox {
     ) public view returns (MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(txParams.target);
         
-        TxRecord memory txRecord = createNewTxRecord(
+        TxRecord memory txRecord = createTxRecord(
             self,
             txParams.requester,
             txParams.target,
@@ -1776,7 +1776,7 @@ library EngineBlox {
             txParams.operationType,
             txParams.executionSelector,
             txParams.executionParams,
-            _noPayment()
+            _emptyPayment()
         );
 
          return generateMetaTransaction(self, txRecord, metaTxParams);
@@ -2020,7 +2020,7 @@ library EngineBlox {
         bytes memory result
     ) private {
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         
         // Update storage with new status and result
         if (success) {
@@ -2035,7 +2035,7 @@ library EngineBlox {
         }
         
         // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
+        removePendingTx(self, txId);
         
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
@@ -2050,12 +2050,12 @@ library EngineBlox {
         uint256 txId
     ) private {
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
+        removePendingTx(self, txId);
         
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
@@ -2302,7 +2302,7 @@ library EngineBlox {
      * @dev Returns an empty PaymentDetails struct for use when no payment is attached.
      * @return payment Empty payment details (recipient and amounts zero).
      */
-    function _noPayment() internal pure returns (PaymentDetails memory payment) {
+    function _emptyPayment() internal pure returns (PaymentDetails memory payment) {
         return PaymentDetails({
             recipient: address(0),
             nativeTokenAmount: 0,
