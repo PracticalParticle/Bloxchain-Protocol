@@ -17,7 +17,6 @@ import "./interface/IGuardController.sol";
  * 
  * Key Features:
  * - Core state machine functionality from BaseStateMachine
- * - Function schema query support (functionSchemaExists)
  * - STANDARD execution type only (function selector + params)
  * - Meta-transaction support for delegated approvals and cancellations
  * - Payment management for native tokens and ERC20 tokens
@@ -357,7 +356,7 @@ abstract contract GuardController is BaseStateMachine {
      */
     function _executeAddTargetToWhitelist(bytes calldata data) internal {
         (bytes4 functionSelector, address target) = abi.decode(data, (bytes4, address));
-        _addTargetToFunctionWhitelist(functionSelector, target);
+        _addTargetToWhitelist(functionSelector, target);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target);
     }
 
@@ -367,7 +366,7 @@ abstract contract GuardController is BaseStateMachine {
      */
     function _executeRemoveTargetFromWhitelist(bytes calldata data) internal {
         (bytes4 functionSelector, address target) = abi.decode(data, (bytes4, address));
-        _removeTargetFromFunctionWhitelist(functionSelector, target);
+        _removeTargetFromWhitelist(functionSelector, target);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target);
     }
 
@@ -382,7 +381,7 @@ abstract contract GuardController is BaseStateMachine {
             EngineBlox.TxAction[] memory supportedActions
         ) = abi.decode(data, (string, string, EngineBlox.TxAction[]));
 
-        bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
+        bytes4 functionSelector = _registerGuardedFunction(functionSignature, operationName, supportedActions);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0));
     }
 
@@ -419,7 +418,7 @@ abstract contract GuardController is BaseStateMachine {
      * @param supportedActions Array of supported actions
      * @return functionSelector The derived function selector
      */
-    function _registerFunction(
+    function _registerGuardedFunction(
         string memory functionSignature,
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
@@ -432,27 +431,17 @@ abstract contract GuardController is BaseStateMachine {
 
         // Create function schema directly (always non-protected)
         // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
-        // EngineBlox.createFunctionSchema validates schema doesn't already exist (ResourceAlreadyExists)
-        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
-        executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
-        _createFunctionSchema(
+        // EngineBlox.registerFunction validates schema doesn't already exist (ResourceAlreadyExists)
+        bytes4[] memory executionHandlers = new bytes4[](1);
+        executionHandlers[0] = functionSelector; // Self-reference for execution selector
+        _registerFunction(
             functionSignature,
             functionSelector,
             operationName,
             supportedActionsBitmap,
             false, // isProtected = false for dynamically registered functions
-            executionHandlerForSelectors // handlerForSelectors with self-reference for execution selectors
+            executionHandlers // handlerForSelectors with self-reference for execution selectors
         );
-    }
-
-    /**
-     * @dev Internal helper to unregister a function schema
-     * @param functionSelector The function selector to unregister
-     * @param safeRemoval If true, checks for role references before removal
-     * @notice EngineBlox.removeFunctionSchema validates schema existence (ResourceNotFound) and protected status (CannotModifyProtected)
-     */
-    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        _removeFunctionSchema(functionSelector, safeRemoval);
     }
 
 }

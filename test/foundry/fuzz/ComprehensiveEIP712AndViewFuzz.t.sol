@@ -102,7 +102,7 @@ contract ComprehensiveEIP712AndViewFuzzTest is CommonBase {
         }
         assertTrue(found, "getSupportedRoles must include new role");
         vm.prank(owner);
-        address[] memory wallets = accountBlox.getWalletsInRole(roleHash);
+        address[] memory wallets = accountBlox.getAuthorizedWallets(roleHash);
         assertEq(wallets.length, 0, "New role must have no wallets");
     }
 

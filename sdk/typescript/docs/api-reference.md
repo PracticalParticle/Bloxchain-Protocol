@@ -153,11 +153,11 @@ Checks if a wallet has a specific role.
 const hasRole = await runtimeRBAC.hasRole('0x...', '0x...')
 ```
 
-##### `getWalletsInRole(roleHash: Hex): Promise<Address[]>`
+##### `getAuthorizedWallets(roleHash: Hex): Promise<Address[]>`
 Gets all authorized wallets for a role.
 
 ```typescript
-const wallets = await runtimeRBAC.getWalletsInRole('0x...')
+const wallets = await runtimeRBAC.getAuthorizedWallets('0x...')
 ```
 
 ##### `getWalletRoles(wallet: Address): Promise<Hex[]>`

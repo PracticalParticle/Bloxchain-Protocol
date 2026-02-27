@@ -1020,7 +1020,7 @@
       },
       {
         "internalType": "bytes32",
-        "name": "roleHashReturn",
+        "name": "hash",
         "type": "bytes32"
       },
       {
@@ -1093,55 +1093,12 @@
         "type": "bytes32"
       }
     ],
-    "name": "getWalletsInRole",
+    "name": "getAuthorizedWallets",
     "outputs": [
       {
         "internalType": "address[]",
         "name": "",
         "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "functionSchemaExists",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "enum EngineBlox.TxAction",
-        "name": "action",
-        "type": "uint8"
-      }
-    ],
-    "name": "isActionSupportedByFunction",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",

@@ -124,10 +124,10 @@ Gets function schema information
 
 ---
 
-### getWalletsInRole
+### getAuthorizedWallets
 
 ```solidity
-function getWalletsInRole(bytes32 roleHash) public view returns (address[])
+function getAuthorizedWallets(bytes32 roleHash) public view returns (address[])
 ```
 
 Gets all authorized wallets for a role

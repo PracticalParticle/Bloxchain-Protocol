@@ -441,21 +441,16 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     const functionSignature = 'mint(address,uint256)';
     this.mintFunctionSelector = keccak256(toBytes(functionSignature)).slice(0, 10) as Hex;
 
-    // Check if function already exists (may have been registered by GuardController tests)
+    console.log('  ℹ️  Verifying mint function schema exists via RuntimeRBAC queries');
+
     const functionExists = await this.functionSchemaExists(this.mintFunctionSelector);
-    if (functionExists) {
-      console.log(`  ✅ Function ${functionSignature} already exists (likely registered via GuardController)`);
-      console.log('  ✅ Step 3 skipped - function schema exists');
-      return;
+    if (!functionExists) {
+      throw new Error(
+        'Mint function schema not found. Please register it via GuardController before running Step 4.'
+      );
     }
 
-    console.log(`  ⚠️  Function ${functionSignature} not found`);
-    console.log('  📋 To register this function, use GuardController SDK:');
-    console.log('     guardController.guardConfigBatchRequestAndApprove([{');
-    console.log('       actionType: GuardConfigActionType.REGISTER_FUNCTION,');
-    console.log('       data: encodeRegisterFunctionData(...)');
-    console.log('     }], ...)');
-    console.log('  ✅ Step 3 skipped - use GuardController for function registration');
+    console.log('  ✅ Step 3 completed - mint function schema exists');
   }
 
   /**
@@ -467,14 +462,6 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
 
     if (!this.runtimeRBAC || !this.registryAdminRoleHash || !this.mintFunctionSelector) {
       throw new Error('RuntimeRBAC SDK not initialized or prerequisites not met');
-    }
-
-    // Check if function schema exists (must be registered via GuardController first)
-    const functionExists = await this.functionSchemaExists(this.mintFunctionSelector);
-    if (!functionExists) {
-      console.log(`  ⚠️  Function schema not found - function must be registered via GuardController first`);
-      console.log(`  ✅ Step 4 skipped - function schema not registered`);
-      return;
     }
 
     // Check if function already in role

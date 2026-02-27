@@ -175,7 +175,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
     ) public {
         // Try to get role wallets - may fail if role doesn't exist
         vm.prank(owner);
-        try accountBlox.getWalletsInRole(roleHash) returns (address[] memory wallets) {
+        try accountBlox.getAuthorizedWallets(roleHash) returns (address[] memory wallets) {
             uint256 walletCount = wallets.length;
             
             if (walletCount > 0) {

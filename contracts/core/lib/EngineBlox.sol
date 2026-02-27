@@ -266,11 +266,11 @@ library EngineBlox {
     /**
      * @dev Updates the time lock period for the SecureOperationState.
      * @param self The SecureOperationState to modify.
-     * @param _newTimeLockPeriodSec The new time lock period in seconds.
+     * @param periodSec The new time lock period in seconds.
      */
-    function updateTimeLockPeriod(SecureOperationState storage self, uint256 _newTimeLockPeriodSec) public {
-        SharedValidation.validateTimeLockPeriod(_newTimeLockPeriodSec);
-        self.timeLockPeriodSec = _newTimeLockPeriodSec;
+    function updateTimeLockPeriod(SecureOperationState storage self, uint256 periodSec) public {
+        SharedValidation.validateTimeLockPeriod(periodSec);
+        self.timeLockPeriodSec = periodSec;
     }
 
     // ============ TRANSACTION MANAGEMENT FUNCTIONS ============
@@ -322,7 +322,7 @@ library EngineBlox {
             operationType,
             executionSelector,
             executionParams,
-            _noPayment()
+            _emptyPayment()
         );
     }
 
@@ -396,9 +396,9 @@ library EngineBlox {
     ) private returns (TxRecord memory) {
         SharedValidation.validateNotZeroAddress(target);
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, executionSelector, target);
+        _validateTargetWhitelist(self, executionSelector, target);
 
-        TxRecord memory txRequestRecord = createNewTxRecord(
+        TxRecord memory txRequestRecord = createTxRecord(
             self,
             requester,
             target,
@@ -414,7 +414,7 @@ library EngineBlox {
         self.txCounter++;
 
         // Add to pending transactions list
-        addToPendingTransactionsList(self, txRequestRecord.txId);
+        addPendingTx(self, txRequestRecord.txId);
 
         logTxEvent(self, txRequestRecord.txId, executionSelector);
         
@@ -576,7 +576,7 @@ library EngineBlox {
         // This proves reentrancy protection is active at entry point
         _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
 
-        bytes memory txData = prepareTransactionData(record);
+        bytes memory txData = buildCallData(record);
         uint gas = record.params.gasLimit;
         if (gas == 0) {
             gas = gasleft();
@@ -662,11 +662,11 @@ library EngineBlox {
     }
 
     /**
-     * @dev Prepares transaction data from execution selector and params without executing it.
+     * @dev Builds transaction call data from execution selector and params without executing it.
      * @param record The transaction record to prepare data for.
      * @return The prepared transaction data.
      */
-    function prepareTransactionData(TxRecord memory record) private pure returns (bytes memory) {
+    function buildCallData(TxRecord memory record) private pure returns (bytes memory) {
         // If executionSelector is NATIVE_TRANSFER_SELECTOR, it's a simple native token transfer (no function call)
         if (record.params.executionSelector == NATIVE_TRANSFER_SELECTOR) {
             // SECURITY: Validate empty params to prevent confusion with real function calls
@@ -683,7 +683,7 @@ library EngineBlox {
 
 
     /**
-     * @notice Creates a new transaction record with basic fields populated
+     * @notice Creates a transaction record with basic fields populated
      * @dev Initializes a TxRecord struct with the provided parameters and default values
      * @param self The SecureOperationState to reference for txId and timelock
      * @param requester The address initiating the transaction
@@ -696,7 +696,7 @@ library EngineBlox {
      * @param payment The payment details to attach to the record (use empty struct for no payment)
      * @return TxRecord A new transaction record with populated fields
      */
-    function createNewTxRecord(
+    function createTxRecord(
         SecureOperationState storage self,
         address requester,
         address target,
@@ -731,7 +731,7 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param txId The transaction ID to add to the pending set.
      */
-    function addToPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
+    function addPendingTx(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
         _validateTxStatus(self, txId, TxStatus.PENDING);
         
@@ -746,7 +746,7 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param txId The transaction ID to remove from the pending set.
      */
-    function removeFromPendingTransactionsList(SecureOperationState storage self, uint256 txId) private {
+    function removePendingTx(SecureOperationState storage self, uint256 txId) private {
         SharedValidation.validateTransactionExists(txId);
         
         // Remove the transaction ID from the set (O(1) operation)
@@ -914,13 +914,13 @@ library EngineBlox {
     }
 
     /**
-     * @dev Updates a role from an old address to a new address.
+     * @dev Updates a wallet in a role (replaces oldWallet with newWallet).
      * @param self The SecureOperationState to modify.
      * @param role The role to update.
      * @param newWallet The new wallet address to assign the role to.
      * @param oldWallet The old wallet address to remove from the role.
      */
-    function updateAssignedWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
+    function updateWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
         _validateRoleExists(self, role);
         SharedValidation.validateNotZeroAddress(newWallet);
         SharedValidation.validateNewAddress(newWallet, oldWallet);
@@ -1107,7 +1107,7 @@ library EngineBlox {
     // ============ FUNCTION MANAGEMENT FUNCTIONS ============
 
     /**
-     * @dev Creates a function access control with specified permissions.
+     * @dev Registers a function access control with specified permissions.
      * @param self The SecureOperationState to check.
      * @param functionSignature Function signature (e.g., "transfer(address,uint256)") or function name.
      * @param functionSelector Hash identifier for the function.
@@ -1116,7 +1116,7 @@ library EngineBlox {
      * @param isProtected Whether the function schema is protected from removal.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
      */
-    function createFunctionSchema(
+    function registerFunction(
         SecureOperationState storage self,
         string memory functionSignature,
         bytes4 functionSelector,
@@ -1183,15 +1183,15 @@ library EngineBlox {
     }
 
     /**
-     * @dev Removes a function schema from the system.
+     * @dev Unregisters a function schema from the system.
      * @param self The SecureOperationState to modify.
-     * @param functionSelector The function selector to remove.
+     * @param functionSelector The function selector to unregister.
      * @param safeRemoval If true, reverts with ResourceAlreadyExists when any role still references this function.
      *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) for efficiency.
-     * @notice Security: Cannot remove protected function schemas to maintain system integrity.
+     * @notice Security: Cannot unregister protected function schemas to maintain system integrity.
      * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
      */
-    function removeFunctionSchema(
+    function unregisterFunction(
         SecureOperationState storage self,
         bytes4 functionSelector,
         bool safeRemoval
@@ -1239,33 +1239,12 @@ library EngineBlox {
     }
 
     /**
-     * @dev Checks if a specific action is supported by a function.
-     * @param self The SecureOperationState to check.
-     * @param functionSelector The function selector to check.
-     * @param action The action to check for support.
-     * @return True if the action is supported by the function, false otherwise.
-     */
-    function isActionSupportedByFunction(
-        SecureOperationState storage self,
-        bytes4 functionSelector,
-        TxAction action
-    ) public view returns (bool) {
-        // Check if function exists in supportedFunctionsSet
-        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
-            return false;
-        }
-        
-        FunctionSchema memory functionSchema = self.functions[functionSelector];
-        return hasActionInBitmap(functionSchema.supportedActionsBitmap, action);
-    }
-
-    /**
      * @dev Adds a target address to the whitelist for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose whitelist will be updated.
      * @param target The target address to add to the whitelist.
      */
-    function addTargetToFunctionWhitelist(
+    function addTargetToWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
@@ -1289,7 +1268,7 @@ library EngineBlox {
      * @param functionSelector The function selector whose whitelist will be updated.
      * @param target The target address to remove from the whitelist.
      */
-    function removeTargetFromFunctionWhitelist(
+    function removeTargetFromWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
@@ -1311,7 +1290,7 @@ library EngineBlox {
      * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
      *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
      */
-    function _validateFunctionTargetWhitelist(
+    function _validateTargetWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
@@ -1387,17 +1366,17 @@ library EngineBlox {
     // ============ FUNCTION TARGET HOOKS MANAGEMENT ============
 
     /**
-     * @dev Adds a target address to the hooks for a function selector.
+     * @dev Sets (adds) a hook contract for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose hooks will be updated.
-     * @param target The target address to add to the hooks.
+     * @param hook The hook contract address to add (must not be zero).
      */
-    function addTargetToFunctionHooks(
+    function setHook(
         SecureOperationState storage self,
         bytes4 functionSelector,
-        address target
+        address hook
     ) public {
-        SharedValidation.validateNotZeroAddress(target);
+        SharedValidation.validateNotZeroAddress(hook);
 
         // Function selector must be registered in the schema set
         if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
@@ -1412,36 +1391,38 @@ library EngineBlox {
             MAX_HOOKS_PER_SELECTOR
         );
         
-        if (!set.add(target)) {
-            revert SharedValidation.ItemAlreadyExists(target);
+        if (!set.add(hook)) {
+            revert SharedValidation.ItemAlreadyExists(hook);
         }
     }
 
     /**
-     * @dev Removes a target address from the hooks for a function selector.
+     * @dev Clears (removes) a hook contract for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose hooks will be updated.
-     * @param target The target address to remove from the hooks.
+     * @param hook The hook contract address to remove (must not be zero).
      */
-    function removeTargetFromFunctionHooks(
+    function clearHook(
         SecureOperationState storage self,
         bytes4 functionSelector,
-        address target
+        address hook
     ) public {
+        SharedValidation.validateNotZeroAddress(hook);
+
         EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
-        if (!set.remove(target)) {
-            revert SharedValidation.ItemNotFound(target);
+        if (!set.remove(hook)) {
+            revert SharedValidation.ItemNotFound(hook);
         }
     }
 
     /**
-     * @dev Returns all hook target addresses for a function selector.
+     * @dev Returns all configured hooks for a function selector.
      * @param self The SecureOperationState to check.
      * @param functionSelector The function selector to query.
-     * @return Array of hook target addresses.
+     * @return Array of hook contract addresses.
      * @notice Access control should be enforced by the calling contract.
      */
-    function getFunctionHookTargets(
+    function getHooks(
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public view returns (address[] memory) {
@@ -1465,7 +1446,7 @@ library EngineBlox {
 
     /**
      * @dev Internal: Returns all function schemas that use a specific operation type.
-     * Used by removeFunctionSchema and getFunctionsByOperationType.
+     * Used by unregisterFunction and getFunctionsByOperationType.
      */
     function _getFunctionsByOperationType(
         SecureOperationState storage self,
@@ -1496,42 +1477,42 @@ library EngineBlox {
     // ============ BACKWARD COMPATIBILITY FUNCTIONS ============
 
     /**
-     * @dev Gets all pending transaction IDs as an array for backward compatibility
+     * @dev Gets all pending transaction IDs
      * @param self The SecureOperationState to check
      * @return Array of pending transaction IDs
      * @notice Access control should be enforced by the calling contract.
      */
-    function getPendingTransactionsList(SecureOperationState storage self) public view returns (uint256[] memory) {
+    function getPendingTransactions(SecureOperationState storage self) public view returns (uint256[] memory) {
         return _convertUintSetToArray(self.pendingTransactionsSet);
     }
 
     /**
-     * @dev Gets all supported roles as an array for backward compatibility
+     * @dev Gets all supported roles as an array
      * @param self The SecureOperationState to check
      * @return Array of supported role hashes
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedRolesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
+    function getSupportedRoles(SecureOperationState storage self) public view returns (bytes32[] memory) {
         return _convertBytes32SetToArray(self.supportedRolesSet);
     }
 
     /**
-     * @dev Gets all supported function selectors as an array for backward compatibility
+     * @dev Gets all supported function selectors as an array
      * @param self The SecureOperationState to check
      * @return Array of supported function selectors
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedFunctionsList(SecureOperationState storage self) public view returns (bytes4[] memory) {
+    function getSupportedFunctions(SecureOperationState storage self) public view returns (bytes4[] memory) {
         return _convertBytes4SetToArray(self.supportedFunctionsSet);
     }
 
     /**
-     * @dev Gets all supported operation types as an array for backward compatibility
+     * @dev Gets all supported operation types as an array
      * @param self The SecureOperationState to check
      * @return Array of supported operation type hashes
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedOperationTypesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
+    function getSupportedOperationTypes(SecureOperationState storage self) public view returns (bytes32[] memory) {
         return _convertBytes32SetToArray(self.supportedOperationTypesSet);
     }
 
@@ -1555,7 +1536,7 @@ library EngineBlox {
      * @return Array of authorized wallet addresses
      * @notice Access control should be enforced by the calling contract.
      */
-    function _getAuthorizedWallets(
+    function getAuthorizedWallets(
         SecureOperationState storage self,
         bytes32 roleHash
     ) public view returns (address[] memory) {
@@ -1767,7 +1748,7 @@ library EngineBlox {
     ) public view returns (MetaTransaction memory) {
         SharedValidation.validateNotZeroAddress(txParams.target);
         
-        TxRecord memory txRecord = createNewTxRecord(
+        TxRecord memory txRecord = createTxRecord(
             self,
             txParams.requester,
             txParams.target,
@@ -1776,7 +1757,7 @@ library EngineBlox {
             txParams.operationType,
             txParams.executionSelector,
             txParams.executionParams,
-            _noPayment()
+            _emptyPayment()
         );
 
          return generateMetaTransaction(self, txRecord, metaTxParams);
@@ -1830,7 +1811,7 @@ library EngineBlox {
             params: metaTxParams,
             message: 0,
             signature: "",
-            data: prepareTransactionData(txRecord)
+            data: buildCallData(txRecord)
         });
 
         // Generate the message hash for ready to sign meta-transaction
@@ -2020,7 +2001,7 @@ library EngineBlox {
         bytes memory result
     ) private {
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         
         // Update storage with new status and result
         if (success) {
@@ -2035,7 +2016,7 @@ library EngineBlox {
         }
         
         // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
+        removePendingTx(self, txId);
         
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
@@ -2050,12 +2031,12 @@ library EngineBlox {
         uint256 txId
     ) private {
         // enforce that the requested target is whitelisted for this selector.
-        _validateFunctionTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
-        removeFromPendingTransactionsList(self, txId);
+        removePendingTx(self, txId);
         
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
@@ -2227,14 +2208,32 @@ library EngineBlox {
             revert SharedValidation.ConflictingMetaTxPermissions(functionPermission.functionSelector);
         }
         
-        // Validate that each action in the bitmap is supported by the function
-        // This still requires iteration, but we can optimize it
-        for (uint i = 0; i < 9; i++) { // TxAction enum has 9 values (0-8)
-            if (hasActionInBitmap(bitmap, TxAction(i))) {
-                if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
-                    revert SharedValidation.NotSupported();
-                }
-            }
+        _validateActionsSupportedByFunction(self, functionPermission.functionSelector, bitmap);
+    }
+
+    /**
+     * @dev Validates that all actions present in the bitmap are supported by the function schema.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to check.
+     * @param bitmap The granted actions bitmap to validate.
+     */
+    function _validateActionsSupportedByFunction(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        uint16 bitmap
+    ) internal view {
+        // If the function itself is not supported, none of its actions can be considered valid
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.NotSupported();
+        }
+
+        uint16 granted = bitmap;
+        uint16 supported = self.functions[functionSelector].supportedActionsBitmap;
+
+        // Any bit set in granted but not in supported is invalid
+        uint16 invalid = granted & ~supported;
+        if (invalid != 0) {
+            revert SharedValidation.NotSupported();
         }
     }
 
@@ -2302,7 +2301,7 @@ library EngineBlox {
      * @dev Returns an empty PaymentDetails struct for use when no payment is attached.
      * @return payment Empty payment details (recipient and amounts zero).
      */
-    function _noPayment() internal pure returns (PaymentDetails memory payment) {
+    function _emptyPayment() internal pure returns (PaymentDetails memory payment) {
         return PaymentDetails({
             recipient: address(0),
             nativeTokenAmount: 0,

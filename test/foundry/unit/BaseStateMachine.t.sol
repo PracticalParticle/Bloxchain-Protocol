@@ -150,23 +150,6 @@ contract BaseStateMachineTest is CommonBase {
         assertFalse(accountBlox.hasRole(OWNER_ROLE, attacker));
     }
 
-    function test_IsActionSupportedByFunction_ValidatesActions() public {
-        bytes4 selector = bytes4(keccak256("transferOwnershipRequest()"));
-        EngineBlox.TxAction action = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        
-        // This may or may not be supported depending on function registration
-        // We test the function exists and returns a boolean value
-        try accountBlox.isActionSupportedByFunction(selector, action) returns (bool supported) {
-            // Function handled the check and returned a boolean value
-            // Both true and false are valid responses depending on function registration
-            // We verify the function executes successfully and returns a value
-            assertTrue(supported || !supported, "Function should return a boolean value");
-        } catch {
-            // Function may not be registered - acceptable if it reverts gracefully
-            // This indicates the function selector is not registered in the system
-        }
-    }
-
     function test_GetActiveRolePermissions_ReturnsPermissions() public {
         vm.prank(owner);
         EngineBlox.FunctionPermission[] memory permissions = accountBlox.getActiveRolePermissions(OWNER_ROLE);
