@@ -898,8 +898,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
                     functionSchemas[i].functionSelector
                 );
             }
-            EngineBlox.createFunctionSchema(
-                _getSecureState(),
+            _createFunctionSchema(
                 functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationName,
@@ -912,11 +911,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Load role permissions using parallel arrays
         SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
         for (uint256 i = 0; i < roleHashes.length; i++) {
-            EngineBlox.addFunctionToRole(
-                _getSecureState(),
-                roleHashes[i],
-                functionPermissions[i]
-            );
+            _addFunctionToRole(roleHashes[i], functionPermissions[i]);
         }
     }
 
