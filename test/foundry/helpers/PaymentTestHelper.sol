@@ -86,7 +86,7 @@ contract PaymentTestHelper is BaseStateMachine {
         nativeTransferHandlers[0] = nativeTransferSelector; // Self-reference
         
         if (!state.supportedFunctionsSet.contains(bytes32(nativeTransferSelector))) {
-            EngineBlox.createFunctionSchema(
+            EngineBlox.registerFunction(
                 state,
                 "__bloxchain_native_transfer__()",
                 nativeTransferSelector,
@@ -112,7 +112,7 @@ contract PaymentTestHelper is BaseStateMachine {
         // Note: address(this) is always allowed, but we add it explicitly for clarity
         EnumerableSet.AddressSet storage whitelist = state.functionTargetWhitelist[nativeTransferSelector];
         if (!whitelist.contains(address(this))) {
-            EngineBlox.addTargetToFunctionWhitelist(state, nativeTransferSelector, address(this));
+            EngineBlox.addTargetToWhitelist(state, nativeTransferSelector, address(this));
         }
         
         // Register requestTransaction function schema if not already registered
@@ -123,7 +123,7 @@ contract PaymentTestHelper is BaseStateMachine {
         requestTxHandlers[1] = nativeTransferSelector; // Points to NATIVE_TRANSFER_SELECTOR
         
         if (!state.supportedFunctionsSet.contains(bytes32(requestTxSelector))) {
-            EngineBlox.createFunctionSchema(
+            EngineBlox.registerFunction(
                 state,
                 "requestTransaction(address,address,uint256,uint256,bytes32,bytes4,bytes)",
                 requestTxSelector,
@@ -156,7 +156,7 @@ contract PaymentTestHelper is BaseStateMachine {
         requestWithPaymentHandlers[0] = requestWithPaymentSelector;
         requestWithPaymentHandlers[1] = nativeTransferSelector;
         if (!state.supportedFunctionsSet.contains(bytes32(requestWithPaymentSelector))) {
-            EngineBlox.createFunctionSchema(
+            EngineBlox.registerFunction(
                 state,
                 "requestTransactionWithPayment(address,address,uint256,uint256,bytes32,bytes4,bytes,(address,uint256,address,uint256))",
                 requestWithPaymentSelector,
@@ -184,7 +184,7 @@ contract PaymentTestHelper is BaseStateMachine {
         approveTxHandlers[0] = approveTxSelector; // Self-reference
         
         if (!state.supportedFunctionsSet.contains(bytes32(approveTxSelector))) {
-            EngineBlox.createFunctionSchema(
+            EngineBlox.registerFunction(
                 state,
                 "approveTransaction(uint256)",
                 approveTxSelector,
@@ -315,7 +315,7 @@ contract PaymentTestHelper is BaseStateMachine {
         
         // Add target to whitelist using EngineBlox library function
         EngineBlox.SecureOperationState storage state = _getSecureState();
-        EngineBlox.addTargetToFunctionWhitelist(state, selector, target);
+        EngineBlox.addTargetToWhitelist(state, selector, target);
     }
     
     /**

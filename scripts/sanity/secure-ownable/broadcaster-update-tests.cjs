@@ -491,7 +491,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
 
     /**
      * Find the first wallet not already in the broadcaster role (avoids OperationFailed when
-     * updateAssignedWallet tries to add an address already in the role).
+     * updateWallet tries to add an address already in the role).
      * @param {string[]} currentBroadcasters - All current broadcaster addresses from getBroadcasters()
      * @returns {string} Address of a wallet not in the role
      */

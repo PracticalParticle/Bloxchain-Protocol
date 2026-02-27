@@ -1020,7 +1020,7 @@
       },
       {
         "internalType": "bytes32",
-        "name": "roleHashReturn",
+        "name": "hash",
         "type": "bytes32"
       },
       {

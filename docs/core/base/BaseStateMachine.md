@@ -547,13 +547,13 @@ Centralized function to get all authorized wallets for a role
 
 ---
 
-### _updateAssignedWallet
+### _updateWallet
 
 ```solidity
-function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal nonpayable
+function _updateWallet(bytes32 roleHash, address newWallet, address oldWallet) internal nonpayable
 ```
 
-Centralized function to update assigned wallet for a role
+Centralized function to update wallet for a role (replaces oldWallet with newWallet).
 
 **Parameters:**
 - `` (): The role hash

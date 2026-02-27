@@ -300,13 +300,13 @@ Adds a wallet address to a role in the roles mapping.
 
 ---
 
-### updateAssignedWallet
+### updateWallet
 
 ```solidity
-function updateAssignedWallet(struct EngineBlox.SecureOperationState self, bytes32 role, address newWallet, address oldWallet) public nonpayable
+function updateWallet(struct EngineBlox.SecureOperationState self, bytes32 role, address newWallet, address oldWallet) public nonpayable
 ```
 
-Updates a role from an old address to a new address.
+Updates a wallet in a role (replaces oldWallet with newWallet).
 
 **Parameters:**
 - `` (): The SecureOperationState to modify.
@@ -448,17 +448,17 @@ Creates a function access control with specified permissions.
 
 ---
 
-### removeFunctionSchema
+### unregisterFunction
 
 ```solidity
-function removeFunctionSchema(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, bool safeRemoval) public nonpayable
+function unregisterFunction(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, bool safeRemoval) public nonpayable
 ```
 
-Removes a function schema from the system.
+Unregisters a function schema from the system.
 
 **Parameters:**
 - `` (): The SecureOperationState to modify.
-- `` (): The function selector to remove.
+- `` (): The function selector to unregister.
 - `` (): If true, reverts with ResourceAlreadyExists when any role still references this function.
        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) to avoid
        calling getSupportedRolesList/getRoleFunctionPermissions, which use _validateAnyRole and would
@@ -487,10 +487,10 @@ Checks if a specific action is supported by a function.
 
 ---
 
-### addTargetToFunctionWhitelist
+### addTargetToWhitelist
 
 ```solidity
-function addTargetToFunctionWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function addTargetToWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Adds a target address to the whitelist for a function selector.
@@ -504,10 +504,10 @@ Adds a target address to the whitelist for a function selector.
 
 ---
 
-### removeTargetFromFunctionWhitelist
+### removeTargetFromWhitelist
 
 ```solidity
-function removeTargetFromFunctionWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function removeTargetFromWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
 ```
 
 Removes a target address from the whitelist for a function selector.
@@ -557,54 +557,54 @@ Returns all whitelisted target addresses for a function selector.
 
 ---
 
-### addTargetToFunctionHooks
+### setHook
 
 ```solidity
-function addTargetToFunctionHooks(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function setHook(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address hook) public nonpayable
 ```
 
-Adds a target address to the hooks for a function selector.
+Sets (adds) a hook contract for a function selector.
 
 **Parameters:**
 - `` (): The SecureOperationState to modify.
 - `` (): The function selector whose hooks will be updated.
-- `` (): The target address to add to the hooks.
+- `` (): The hook contract address to add (must not be zero).
 
 
 
 ---
 
-### removeTargetFromFunctionHooks
+### clearHook
 
 ```solidity
-function removeTargetFromFunctionHooks(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) public nonpayable
+function clearHook(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address hook) public nonpayable
 ```
 
-Removes a target address from the hooks for a function selector.
+Clears (removes) a hook contract for a function selector.
 
 **Parameters:**
 - `` (): The SecureOperationState to modify.
 - `` (): The function selector whose hooks will be updated.
-- `` (): The target address to remove from the hooks.
+- `` (): The hook contract address to remove (must not be zero).
 
 
 
 ---
 
-### getFunctionHookTargets
+### getHooks
 
 ```solidity
-function getFunctionHookTargets(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
+function getHooks(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (address[])
 ```
 
-Returns all hook target addresses for a function selector.
+Returns all configured hooks for a function selector.
 
 **Parameters:**
 - `` (): The SecureOperationState to check.
 - `` (): The function selector to query.
 
 **Returns:**
-- Array of hook target addresses.
+- Array of hook contract addresses.
 
 
 ---
@@ -634,7 +634,7 @@ function _getFunctionsByOperationType(struct EngineBlox.SecureOperationState sel
 ```
 
 Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
-Used by removeFunctionSchema when called from contract-internal paths (e.g. _unregisterFunction)
+Used by unregisterFunction when called from contract-internal paths (e.g. _unregisterFunction)
 where msg.sender is the contract and would fail _validateAnyRole.
 Also used by getFunctionsByOperationType after role validation.
 
