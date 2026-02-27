@@ -708,7 +708,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     // ============ FUNCTION SCHEMA MANAGEMENT ============
 
     /**
-     * @dev Centralized function to create a function schema
+     * @dev Centralized function to register a function schema
      * @param functionSignature The function signature
      * @param functionSelector The function selector
      * @param operationName The operation name
@@ -717,7 +717,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param handlerForSelectors Array of handler selectors
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _createFunctionSchema(
+    function _registerFunction(
         string memory functionSignature,
         bytes4 functionSelector,
         string memory operationName,
@@ -725,7 +725,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool isProtected,
         bytes4[] memory handlerForSelectors
     ) internal virtual {
-        EngineBlox.createFunctionSchema(
+        EngineBlox.registerFunction(
             _getSecureState(),
             functionSignature,
             functionSelector,
@@ -898,7 +898,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
                     functionSchemas[i].functionSelector
                 );
             }
-            _createFunctionSchema(
+            _registerFunction(
                 functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationName,

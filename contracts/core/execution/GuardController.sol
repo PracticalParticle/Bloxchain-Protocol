@@ -382,7 +382,7 @@ abstract contract GuardController is BaseStateMachine {
             EngineBlox.TxAction[] memory supportedActions
         ) = abi.decode(data, (string, string, EngineBlox.TxAction[]));
 
-        bytes4 functionSelector = _registerFunction(functionSignature, operationName, supportedActions);
+        bytes4 functionSelector = _registerGuardedFunction(functionSignature, operationName, supportedActions);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.REGISTER_FUNCTION, functionSelector, address(0));
     }
 
@@ -419,7 +419,7 @@ abstract contract GuardController is BaseStateMachine {
      * @param supportedActions Array of supported actions
      * @return functionSelector The derived function selector
      */
-    function _registerFunction(
+    function _registerGuardedFunction(
         string memory functionSignature,
         string memory operationName,
         EngineBlox.TxAction[] memory supportedActions
@@ -432,16 +432,16 @@ abstract contract GuardController is BaseStateMachine {
 
         // Create function schema directly (always non-protected)
         // Dynamically registered functions are execution selectors (handlerForSelectors must contain self-reference)
-        // EngineBlox.createFunctionSchema validates schema doesn't already exist (ResourceAlreadyExists)
-        bytes4[] memory executionHandlerForSelectors = new bytes4[](1);
-        executionHandlerForSelectors[0] = functionSelector; // Self-reference for execution selector
-        _createFunctionSchema(
+        // EngineBlox.registerFunction validates schema doesn't already exist (ResourceAlreadyExists)
+        bytes4[] memory executionHandlers = new bytes4[](1);
+        executionHandlers[0] = functionSelector; // Self-reference for execution selector
+        _registerFunction(
             functionSignature,
             functionSelector,
             operationName,
             supportedActionsBitmap,
             false, // isProtected = false for dynamically registered functions
-            executionHandlerForSelectors // handlerForSelectors with self-reference for execution selectors
+            executionHandlers // handlerForSelectors with self-reference for execution selectors
         );
     }
 

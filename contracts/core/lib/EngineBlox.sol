@@ -1107,7 +1107,7 @@ library EngineBlox {
     // ============ FUNCTION MANAGEMENT FUNCTIONS ============
 
     /**
-     * @dev Creates a function access control with specified permissions.
+     * @dev Registers a function access control with specified permissions.
      * @param self The SecureOperationState to check.
      * @param functionSignature Function signature (e.g., "transfer(address,uint256)") or function name.
      * @param functionSelector Hash identifier for the function.
@@ -1116,7 +1116,7 @@ library EngineBlox {
      * @param isProtected Whether the function schema is protected from removal.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
      */
-    function createFunctionSchema(
+    function registerFunction(
         SecureOperationState storage self,
         string memory functionSignature,
         bytes4 functionSelector,
