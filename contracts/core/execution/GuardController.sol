@@ -357,7 +357,7 @@ abstract contract GuardController is BaseStateMachine {
      */
     function _executeAddTargetToWhitelist(bytes calldata data) internal {
         (bytes4 functionSelector, address target) = abi.decode(data, (bytes4, address));
-        _addTargetToFunctionWhitelist(functionSelector, target);
+        _addTargetToWhitelist(functionSelector, target);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST, functionSelector, target);
     }
 
@@ -367,7 +367,7 @@ abstract contract GuardController is BaseStateMachine {
      */
     function _executeRemoveTargetFromWhitelist(bytes calldata data) internal {
         (bytes4 functionSelector, address target) = abi.decode(data, (bytes4, address));
-        _removeTargetFromFunctionWhitelist(functionSelector, target);
+        _removeTargetFromWhitelist(functionSelector, target);
         _logGuardConfigEvent(IGuardController.GuardConfigActionType.REMOVE_TARGET_FROM_WHITELIST, functionSelector, target);
     }
 

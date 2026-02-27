@@ -1265,7 +1265,7 @@ library EngineBlox {
      * @param functionSelector The function selector whose whitelist will be updated.
      * @param target The target address to add to the whitelist.
      */
-    function addTargetToFunctionWhitelist(
+    function addTargetToWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
@@ -1289,7 +1289,7 @@ library EngineBlox {
      * @param functionSelector The function selector whose whitelist will be updated.
      * @param target The target address to remove from the whitelist.
      */
-    function removeTargetFromFunctionWhitelist(
+    function removeTargetFromWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target

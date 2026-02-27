@@ -848,8 +848,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param target The target address to whitelist
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _addTargetToFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
-        _getSecureState().addTargetToFunctionWhitelist(functionSelector, target);
+    function _addTargetToWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().addTargetToWhitelist(functionSelector, target);
     }
 
     /**
@@ -858,8 +858,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param target The target address to remove
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _removeTargetFromFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
-        _getSecureState().removeTargetFromFunctionWhitelist(functionSelector, target);
+    function _removeTargetFromWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().removeTargetFromWhitelist(functionSelector, target);
     }
 
     /**
