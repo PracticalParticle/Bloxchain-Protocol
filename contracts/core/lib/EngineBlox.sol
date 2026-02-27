@@ -1387,17 +1387,17 @@ library EngineBlox {
     // ============ FUNCTION TARGET HOOKS MANAGEMENT ============
 
     /**
-     * @dev Adds a target address to the hooks for a function selector.
+     * @dev Sets (adds) a hook contract for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose hooks will be updated.
-     * @param target The target address to add to the hooks.
+     * @param hook The hook contract address to add (must not be zero).
      */
-    function addTargetToFunctionHooks(
+    function setHook(
         SecureOperationState storage self,
         bytes4 functionSelector,
-        address target
+        address hook
     ) public {
-        SharedValidation.validateNotZeroAddress(target);
+        SharedValidation.validateNotZeroAddress(hook);
 
         // Function selector must be registered in the schema set
         if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
@@ -1412,36 +1412,36 @@ library EngineBlox {
             MAX_HOOKS_PER_SELECTOR
         );
         
-        if (!set.add(target)) {
-            revert SharedValidation.ItemAlreadyExists(target);
+        if (!set.add(hook)) {
+            revert SharedValidation.ItemAlreadyExists(hook);
         }
     }
 
     /**
-     * @dev Removes a target address from the hooks for a function selector.
+     * @dev Clears (removes) a hook contract for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose hooks will be updated.
-     * @param target The target address to remove from the hooks.
+     * @param hook The hook contract address to remove (must not be zero).
      */
-    function removeTargetFromFunctionHooks(
+    function clearHook(
         SecureOperationState storage self,
         bytes4 functionSelector,
-        address target
+        address hook
     ) public {
         EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
-        if (!set.remove(target)) {
-            revert SharedValidation.ItemNotFound(target);
+        if (!set.remove(hook)) {
+            revert SharedValidation.ItemNotFound(hook);
         }
     }
 
     /**
-     * @dev Returns all hook target addresses for a function selector.
+     * @dev Returns all configured hooks for a function selector.
      * @param self The SecureOperationState to check.
      * @param functionSelector The function selector to query.
-     * @return Array of hook target addresses.
+     * @return Array of hook contract addresses.
      * @notice Access control should be enforced by the calling contract.
      */
-    function getFunctionHookTargets(
+    function getHooks(
         SecureOperationState storage self,
         bytes4 functionSelector
     ) public view returns (address[] memory) {

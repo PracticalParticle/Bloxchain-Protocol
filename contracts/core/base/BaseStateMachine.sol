@@ -296,7 +296,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param hook The hook contract address (must not be zero)
      */
     function _setHook(bytes4 functionSelector, address hook) internal {
-        EngineBlox.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.setHook(_getSecureState(), functionSelector, hook);
     }
 
     /**
@@ -306,7 +306,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param hook The hook contract address to remove (must not be zero)
      */
     function _clearHook(bytes4 functionSelector, address hook) internal {
-        EngineBlox.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.clearHook(_getSecureState(), functionSelector, hook);
     }
 
     /**
@@ -317,7 +317,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getHooks(bytes4 functionSelector) public view returns (address[] memory hooks) {
         _validateAnyRole();
-        return EngineBlox.getFunctionHookTargets(_getSecureState(), functionSelector);
+        return EngineBlox.getHooks(_getSecureState(), functionSelector);
     }
 
     // ============ META-TRANSACTION UTILITIES ============
