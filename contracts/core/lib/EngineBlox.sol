@@ -914,13 +914,13 @@ library EngineBlox {
     }
 
     /**
-     * @dev Updates a role from an old address to a new address.
+     * @dev Updates a wallet in a role (replaces oldWallet with newWallet).
      * @param self The SecureOperationState to modify.
      * @param role The role to update.
      * @param newWallet The new wallet address to assign the role to.
      * @param oldWallet The old wallet address to remove from the role.
      */
-    function updateAssignedWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
+    function updateWallet(SecureOperationState storage self, bytes32 role, address newWallet, address oldWallet) public {
         _validateRoleExists(self, role);
         SharedValidation.validateNotZeroAddress(newWallet);
         SharedValidation.validateNewAddress(newWallet, oldWallet);

@@ -684,14 +684,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to update assigned wallet for a role
+     * @dev Centralized function to update wallet for a role (replaces oldWallet with newWallet).
      * @param roleHash The role hash
      * @param newWallet The new wallet address
      * @param oldWallet The old wallet address
      * @notice This function is virtual to allow extensions to add hook functionality or additional validation
      */
-    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
-        EngineBlox.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
+    function _updateWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
+        EngineBlox.updateWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
     /**
