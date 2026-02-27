@@ -449,7 +449,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getPendingTransactions() public view returns (uint256[] memory) {
         _validateAnyRole();
-        return _secureState.getPendingTransactionsList();
+        return _secureState.getPendingTransactions();
     }
 
     // ============ ROLE AND PERMISSION QUERIES ============
@@ -510,29 +510,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
+    function getAuthorizedWallets(bytes32 roleHash) public view returns (address[] memory) {
         _validateAnyRole();
         _validateRoleExists(roleHash);
         return _getAuthorizedWallets(roleHash);
-    }
-
-    /**
-     * @dev Checks if a function schema exists
-     * @param functionSelector The function selector to check
-     * @return True if the function schema exists, false otherwise
-     */
-    function functionSchemaExists(bytes4 functionSelector) public view returns (bool) {
-        return _secureState.functions[functionSelector].functionSelector == functionSelector;
-    }
-
-    /**
-     * @dev Returns if an action is supported by a function
-     * @param functionSelector The function selector to check
-     * @param action The action to check
-     * @return True if the action is supported by the function, false otherwise
-     */
-    function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) public view returns (bool) {
-        return _secureState.isActionSupportedByFunction(functionSelector, action);
     }
 
     /**
@@ -576,7 +557,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedOperationTypes() public view returns (bytes32[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedOperationTypesList();
+        return _secureState.getSupportedOperationTypes();
     }
 
     /**
@@ -586,7 +567,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedRoles() public view returns (bytes32[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedRolesList();
+        return _secureState.getSupportedRoles();
     }
 
     /**
@@ -596,7 +577,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedFunctions() public view returns (bytes4[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedFunctionsList();
+        return _secureState.getSupportedFunctions();
     }
 
     /**
@@ -633,7 +614,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      */
     function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[] memory) {
-        return EngineBlox._getAuthorizedWallets(_getSecureState(), roleHash);
+        return EngineBlox.getAuthorizedWallets(_getSecureState(), roleHash);
     }
 
     /**

@@ -1239,27 +1239,6 @@ library EngineBlox {
     }
 
     /**
-     * @dev Checks if a specific action is supported by a function.
-     * @param self The SecureOperationState to check.
-     * @param functionSelector The function selector to check.
-     * @param action The action to check for support.
-     * @return True if the action is supported by the function, false otherwise.
-     */
-    function isActionSupportedByFunction(
-        SecureOperationState storage self,
-        bytes4 functionSelector,
-        TxAction action
-    ) public view returns (bool) {
-        // Check if function exists in supportedFunctionsSet
-        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
-            return false;
-        }
-        
-        FunctionSchema memory functionSchema = self.functions[functionSelector];
-        return hasActionInBitmap(functionSchema.supportedActionsBitmap, action);
-    }
-
-    /**
      * @dev Adds a target address to the whitelist for a function selector.
      * @param self The SecureOperationState to modify.
      * @param functionSelector The function selector whose whitelist will be updated.
@@ -1496,42 +1475,42 @@ library EngineBlox {
     // ============ BACKWARD COMPATIBILITY FUNCTIONS ============
 
     /**
-     * @dev Gets all pending transaction IDs as an array for backward compatibility
+     * @dev Gets all pending transaction IDs
      * @param self The SecureOperationState to check
      * @return Array of pending transaction IDs
      * @notice Access control should be enforced by the calling contract.
      */
-    function getPendingTransactionsList(SecureOperationState storage self) public view returns (uint256[] memory) {
+    function getPendingTransactions(SecureOperationState storage self) public view returns (uint256[] memory) {
         return _convertUintSetToArray(self.pendingTransactionsSet);
     }
 
     /**
-     * @dev Gets all supported roles as an array for backward compatibility
+     * @dev Gets all supported roles as an array
      * @param self The SecureOperationState to check
      * @return Array of supported role hashes
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedRolesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
+    function getSupportedRoles(SecureOperationState storage self) public view returns (bytes32[] memory) {
         return _convertBytes32SetToArray(self.supportedRolesSet);
     }
 
     /**
-     * @dev Gets all supported function selectors as an array for backward compatibility
+     * @dev Gets all supported function selectors as an array
      * @param self The SecureOperationState to check
      * @return Array of supported function selectors
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedFunctionsList(SecureOperationState storage self) public view returns (bytes4[] memory) {
+    function getSupportedFunctions(SecureOperationState storage self) public view returns (bytes4[] memory) {
         return _convertBytes4SetToArray(self.supportedFunctionsSet);
     }
 
     /**
-     * @dev Gets all supported operation types as an array for backward compatibility
+     * @dev Gets all supported operation types as an array
      * @param self The SecureOperationState to check
      * @return Array of supported operation type hashes
      * @notice Access control should be enforced by the calling contract.
      */
-    function getSupportedOperationTypesList(SecureOperationState storage self) public view returns (bytes32[] memory) {
+    function getSupportedOperationTypes(SecureOperationState storage self) public view returns (bytes32[] memory) {
         return _convertBytes32SetToArray(self.supportedOperationTypesSet);
     }
 
@@ -1555,7 +1534,7 @@ library EngineBlox {
      * @return Array of authorized wallet addresses
      * @notice Access control should be enforced by the calling contract.
      */
-    function _getAuthorizedWallets(
+    function getAuthorizedWallets(
         SecureOperationState storage self,
         bytes32 roleHash
     ) public view returns (address[] memory) {
@@ -2227,14 +2206,32 @@ library EngineBlox {
             revert SharedValidation.ConflictingMetaTxPermissions(functionPermission.functionSelector);
         }
         
-        // Validate that each action in the bitmap is supported by the function
-        // This still requires iteration, but we can optimize it
-        for (uint i = 0; i < 9; i++) { // TxAction enum has 9 values (0-8)
-            if (hasActionInBitmap(bitmap, TxAction(i))) {
-                if (!isActionSupportedByFunction(self, functionPermission.functionSelector, TxAction(i))) {
-                    revert SharedValidation.NotSupported();
-                }
-            }
+        _validateActionsSupportedByFunction(self, functionPermission.functionSelector, bitmap);
+    }
+
+    /**
+     * @dev Validates that all actions present in the bitmap are supported by the function schema.
+     * @param self The SecureOperationState to check.
+     * @param functionSelector The function selector to check.
+     * @param bitmap The granted actions bitmap to validate.
+     */
+    function _validateActionsSupportedByFunction(
+        SecureOperationState storage self,
+        bytes4 functionSelector,
+        uint16 bitmap
+    ) internal view {
+        // If the function itself is not supported, none of its actions can be considered valid
+        if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
+            revert SharedValidation.NotSupported();
+        }
+
+        uint16 granted = bitmap;
+        uint16 supported = self.functions[functionSelector].supportedActionsBitmap;
+
+        // Any bit set in granted but not in supported is invalid
+        uint16 invalid = granted & ~supported;
+        if (invalid != 0) {
+            revert SharedValidation.NotSupported();
         }
     }
 

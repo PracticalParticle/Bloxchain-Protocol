@@ -17,7 +17,6 @@ import "./interface/IGuardController.sol";
  * 
  * Key Features:
  * - Core state machine functionality from BaseStateMachine
- * - Function schema query support (functionSchemaExists)
  * - STANDARD execution type only (function selector + params)
  * - Meta-transaction support for delegated approvals and cancellations
  * - Payment management for native tokens and ERC20 tokens
