@@ -1407,6 +1407,8 @@ library EngineBlox {
         bytes4 functionSelector,
         address hook
     ) public {
+        SharedValidation.validateNotZeroAddress(hook);
+
         EnumerableSet.AddressSet storage set = self.functionTargetHooks[functionSelector];
         if (!set.remove(hook)) {
             revert SharedValidation.ItemNotFound(hook);

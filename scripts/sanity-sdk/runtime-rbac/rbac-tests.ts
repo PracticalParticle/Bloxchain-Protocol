@@ -441,13 +441,16 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     const functionSignature = 'mint(address,uint256)';
     this.mintFunctionSelector = keccak256(toBytes(functionSignature)).slice(0, 10) as Hex;
 
-    console.log(`  ℹ️  Function schema existence check removed (functionSchemaExists deprecated)`);
-    console.log('  📋 To register this function, use GuardController SDK if not already registered:');
-    console.log('     guardController.guardConfigBatchRequestAndApprove([{');
-    console.log('       actionType: GuardConfigActionType.REGISTER_FUNCTION,');
-    console.log('       data: encodeRegisterFunctionData(...)');
-    console.log('     }], ...)');
-    console.log('  ✅ Step 3 skipped - ensure function schema is registered via GuardController if needed');
+    console.log('  ℹ️  Verifying mint function schema exists via RuntimeRBAC queries');
+
+    const functionExists = await this.functionSchemaExists(this.mintFunctionSelector);
+    if (!functionExists) {
+      throw new Error(
+        'Mint function schema not found. Please register it via GuardController before running Step 4.'
+      );
+    }
+
+    console.log('  ✅ Step 3 completed - mint function schema exists');
   }
 
   /**

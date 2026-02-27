@@ -634,8 +634,8 @@ function _getFunctionsByOperationType(struct EngineBlox.SecureOperationState sel
 ```
 
 Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
-Used by unregisterFunction when called from contract-internal paths (e.g. _unregisterFunction)
-where msg.sender is the contract and would fail _validateAnyRole.
+Used by `unregisterFunction` when called from contract-internal paths (e.g. `_unregisterFunction`)
+where `msg.sender` is the contract and would fail `_validateAnyRole`.
 Also used by getFunctionsByOperationType after role validation.
 
 
