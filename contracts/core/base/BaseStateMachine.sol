@@ -737,13 +737,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to remove a function schema
-     * @param functionSelector The function selector to remove
+     * @dev Centralized function to unregister a function schema
+     * @param functionSelector The function selector to unregister
      * @param safeRemoval Whether to perform safe removal (check for role references)
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _removeFunctionSchema(bytes4 functionSelector, bool safeRemoval) internal virtual {
-        EngineBlox.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
+    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal virtual {
+        EngineBlox.unregisterFunction(_getSecureState(), functionSelector, safeRemoval);
     }
 
     /**

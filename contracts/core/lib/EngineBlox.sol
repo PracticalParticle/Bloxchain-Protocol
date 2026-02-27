@@ -1183,15 +1183,15 @@ library EngineBlox {
     }
 
     /**
-     * @dev Removes a function schema from the system.
+     * @dev Unregisters a function schema from the system.
      * @param self The SecureOperationState to modify.
-     * @param functionSelector The function selector to remove.
+     * @param functionSelector The function selector to unregister.
      * @param safeRemoval If true, reverts with ResourceAlreadyExists when any role still references this function.
      *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) for efficiency.
-     * @notice Security: Cannot remove protected function schemas to maintain system integrity.
+     * @notice Security: Cannot unregister protected function schemas to maintain system integrity.
      * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
      */
-    function removeFunctionSchema(
+    function unregisterFunction(
         SecureOperationState storage self,
         bytes4 functionSelector,
         bool safeRemoval
@@ -1465,7 +1465,7 @@ library EngineBlox {
 
     /**
      * @dev Internal: Returns all function schemas that use a specific operation type.
-     * Used by removeFunctionSchema and getFunctionsByOperationType.
+     * Used by unregisterFunction and getFunctionsByOperationType.
      */
     function _getFunctionsByOperationType(
         SecureOperationState storage self,

@@ -445,14 +445,4 @@ abstract contract GuardController is BaseStateMachine {
         );
     }
 
-    /**
-     * @dev Internal helper to unregister a function schema
-     * @param functionSelector The function selector to unregister
-     * @param safeRemoval If true, checks for role references before removal
-     * @notice EngineBlox.removeFunctionSchema validates schema existence (ResourceNotFound) and protected status (CannotModifyProtected)
-     */
-    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal {
-        _removeFunctionSchema(functionSelector, safeRemoval);
-    }
-
 }
