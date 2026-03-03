@@ -39,7 +39,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult> {
     this.validateWalletClient();
-    
+
     // Viem's writeContract will use the WalletClient's account if available
     // Only pass account explicitly if it differs from WalletClient's account
     // Otherwise, let Viem use the WalletClient's account automatically
@@ -61,15 +61,34 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     }
 
     try {
-      // First, simulate the contract call to get better error messages (no gas params for eth_call)
+      // First, simulate the contract call to get better error messages (no gas params for eth_call).
+      // Some remote RPCs (e.g. managed Ganache instances) may reject very large eth_call payloads with
+      // "Missing or invalid parameters". In that specific case, we log and continue to the real
+      // write, letting the on-chain transaction determine the true result so tests can still
+      // exercise behavior. Any real contract revert will still be surfaced by handleViemError.
       try {
         await this.client.simulateContract({
           ...writeContractParams,
           account: writeContractParams.account || this.walletClient!.account
         });
       } catch (simulateError: any) {
-        // Re-throw to get better error handling
-        throw simulateError;
+        const msg =
+          (simulateError?.shortMessage ??
+            simulateError?.message ??
+            simulateError?.cause?.shortMessage ??
+            simulateError?.cause?.message ??
+            '') as string;
+        const details = (simulateError?.details ?? simulateError?.cause?.details ?? '') as string;
+        if (/Missing or invalid parameters/i.test(msg) || /Missing or invalid parameters/i.test(details)) {
+          // Environment/RPC quirk – proceed to actual write so higher-level code can still run.
+          // eslint-disable-next-line no-console
+          console.warn(
+            `simulateContract warning for ${functionName}: "${msg || details}". Proceeding to send transaction anyway.`
+          );
+        } else {
+          // Re-throw non-parameter errors for normal decoding/handling.
+          throw simulateError;
+        }
       }
 
       // Add gas override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
