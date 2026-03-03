@@ -2116,6 +2116,10 @@ library EngineBlox {
         bytes4 handlerSelector,
         TxAction action
     ) internal view {
+        // Ensure both execution and handler selectors have registered function schemas
+        _validateFunctionSchemaExists(self, executionSelector);
+        _validateFunctionSchemaExists(self, handlerSelector);
+
         // Validate permission for the execution selector (underlying operation)
         if (!hasActionPermission(self, wallet, executionSelector, action)) {
             revert SharedValidation.NoPermission(wallet);
