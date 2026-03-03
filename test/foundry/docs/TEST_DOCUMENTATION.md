@@ -1028,6 +1028,12 @@ This document provides comprehensive documentation of all test functions in the 
 - **Purpose**: Fuzz tests for state machine workflows
 - **Status**: ✅ Tests passing
 
+#### UnregisterFunctionFuzz.t.sol
+- **Location**: `test/foundry/fuzz/UnregisterFunctionFuzz.t.sol`
+- **Purpose**: Fuzz tests for unsafe function schema unregistration (`unregisterFunction` with `safeRemoval = false`) and stale role permissions
+- **Covers**: [FS-004](./ATTACK_VECTORS_CODEX.md#medium-unsafe-function-unregistration-with-stale-permissions) – ensures requests using unregistered selectors revert via schema validation
+- **Status**: ✅ Tests passing
+
 #### ProtectedResourceFuzz.t.sol
 - **Location**: `test/foundry/fuzz/ProtectedResourceFuzz.t.sol`
 - **Purpose**: Fuzz tests for protected resources

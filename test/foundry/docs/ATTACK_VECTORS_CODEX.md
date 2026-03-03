@@ -2086,6 +2086,43 @@ removeFunctionSchema(selector, false);
 
 ---
 
+#### MEDIUM: Unsafe Function Unregistration with Stale Permissions
+- **ID**: `FS-004`
+- **Location**: `EngineBlox.sol:1185-1239`, `EngineBlox.sol:2104-2129`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Using `unregisterFunction(functionSelector, false)` to remove a function schema while roles still hold permissions for the selector, then attempting to create or execute new transactions using the stale selector.
+
+**Attack Scenario**:
+```solidity
+// 1. Register function schema and grant role permission for EXECUTE_TIME_DELAY_REQUEST
+registerFunction(schemaSelector, ...);
+addFunctionToRole(ROLE, FunctionPermission({ functionSelector: schemaSelector, ... }));
+
+// 2. Unsafely unregister schema while role still references selector
+unregisterFunction(schemaSelector, false); // safeRemoval = false
+
+// 3. Attempt to create or approve new transaction using stale selector
+txRequest(..., handlerSelector = schemaSelector, executionSelector = schemaSelector, ...); // Should fail
+```
+
+**Current Protection**:
+- ✅ `_validateFunctionSchemaExists` ensures a function schema exists for any selector being executed
+- ✅ `_validateExecutionAndHandlerPermissions` enforces schema existence for both `executionSelector` and `handlerSelector`
+- ✅ Requests and approvals using unregistered selectors revert with `ResourceNotFound`
+
+**Verification**:
+- Test unsafe unregistration followed by `txRequest` and approval flows
+- Verify that requests and approvals revert when function schema has been unregistered
+- Confirm that `safeRemoval = true` continues to enforce "no stale role permissions" invariant
+
+**Related Tests**:
+- `UnregisterFunctionFuzz.t.sol::testFuzz_UnsafeUnregisterPreventsNewRequests`
+
+---
+
 ## 12. Initialization & Upgrade
 
 ### 12.1 Initialization Attacks

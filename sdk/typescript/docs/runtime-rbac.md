@@ -299,7 +299,7 @@ Roles have maximum wallet limits:
 
 ```typescript
 const role = await runtimeRBAC.getRole(roleHash)
-const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash)
 
 if (wallets.length >= role.maxWallets) {
   throw new Error('Role has reached maximum wallet limit')
@@ -435,7 +435,7 @@ describe('RuntimeRBAC', () => {
   })
 
   it('should get wallets in role', async () => {
-    const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+    const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash)
     expect(Array.isArray(wallets)).toBe(true)
   })
 })
