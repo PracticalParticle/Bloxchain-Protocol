@@ -449,9 +449,18 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
 
     let functionExists = false;
     try {
-      functionExists = await this.functionSchemaExists(this.mintFunctionSelector);
-    } catch {
-      functionExists = false;
+      await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
+      functionExists = true;
+    } catch (e: any) {
+      const msg = (e?.message ?? e?.details ?? '').toString();
+      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
+      const schemaNotFound =
+        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
+      if (schemaNotFound) {
+        functionExists = false;
+      } else {
+        throw e;
+      }
     }
 
     if (functionExists) {
@@ -488,7 +497,21 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     // Ensure the function schema itself is registered before managing permissions.
     // Function registration is handled by GuardController; when schema is missing,
     // this step is treated as skipped (soft-pass) to mirror CJS sanity tests.
-    const schemaExists = await this.functionSchemaExists(this.mintFunctionSelector);
+    let schemaExists = false;
+    try {
+      await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
+      schemaExists = true;
+    } catch (e: any) {
+      const msg = (e?.message ?? e?.details ?? '').toString();
+      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
+      const schemaNotFound =
+        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
+      if (schemaNotFound) {
+        schemaExists = false;
+      } else {
+        throw e;
+      }
+    }
     if (!schemaExists) {
       console.log('  ⚠️  Mint function schema is not registered.');
       console.log('  📋 Function registration has been moved to GuardController.');
@@ -680,8 +703,21 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       throw new Error('RuntimeRBAC SDK not initialized or mint function not registered');
     }
 
-    // Check if function exists
-    const functionExists = await this.functionSchemaExists(this.mintFunctionSelector);
+    let functionExists = false;
+    try {
+      await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
+      functionExists = true;
+    } catch (e: any) {
+      const msg = (e?.message ?? e?.details ?? '').toString();
+      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
+      const schemaNotFound =
+        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
+      if (schemaNotFound) {
+        functionExists = false;
+      } else {
+        throw e;
+      }
+    }
     if (!functionExists) {
       console.log(`  ✅ Mint function already unregistered`);
       console.log('  ✅ Step 6 skipped - function schema not found');

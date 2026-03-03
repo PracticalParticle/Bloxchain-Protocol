@@ -23,6 +23,8 @@ import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.
 
 const ERC20_MINT_SELECTOR = '0x40c10f19' as Hex; // mint(address,uint256)
 const ERC20_MINT_SIGNATURE = 'mint(address,uint256)';
+/** Must match CJS erc20-mint-controller-tests.cjs ERC20_MINT_OPERATION_TYPE and FULL_WORKFLOW_ACTIONS [0..8] */
+const ERC20_MINT_OPERATION_TYPE = 'ERC20_MINT';
 
 interface DeployedAddressesFile {
   [network: string]: {
@@ -114,6 +116,12 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     return balance as bigint;
   }
 
+  /**
+   * Step 0: Register mint(address,uint256) schema via GuardController if not already present.
+   * This step is the single source of mint schema registration for this suite (self-contained).
+   * Must match CJS testStep2RegisterMintFunction: same operationName ('ERC20_MINT'), same full workflow bitmap (TxAction 0..8).
+   * RuntimeRBAC tests (and any reader of getFunctionSchema(mint)) see this schema on the same contract (AccountBlox).
+   */
   private async step0RegisterMintSchemaIfNeeded(): Promise<void> {
     console.log('\n🧪 SDK Step 0: Ensure ERC20 mint schema exists');
     try {
@@ -126,6 +134,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         return;
       }
 
+      // Full workflow actions: same as CJS FULL_WORKFLOW_ACTIONS = [0,1,2,3,4,5,6,7,8] (TxAction enum)
       const fullWorkflowActions = [
         TxAction.EXECUTE_TIME_DELAY_REQUEST,
         TxAction.EXECUTE_TIME_DELAY_APPROVE,
@@ -147,7 +156,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       console.log('  📝 Creating signed meta-transaction for mint schema registration...');
       const signedMetaTx = await this.createSignedMetaTxForFunctionRegistration(
         ERC20_MINT_SIGNATURE,
-        'ERC20_MINT',
+        ERC20_MINT_OPERATION_TYPE,
         fullWorkflowActions,
         ownerWalletName
       );
@@ -205,6 +214,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         }
       }
       this.assertTest(existsNow, 'Mint schema must be visible via getFunctionSchema/getSupportedFunctions after registration');
+      if (existsNow) {
+        console.log('  📋 Mint schema is now registered on contract; getFunctionSchema(0x40c10f19) will succeed for runtime-rbac and other readers.');
+      }
     } catch (error: any) {
       this.handleTestError('Ensure ERC20 mint schema', error);
       throw error;

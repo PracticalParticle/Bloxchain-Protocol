@@ -528,22 +528,6 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
   }
 
   /**
-   * Check if function schema exists
-   */
-  protected async functionSchemaExists(functionSelector: Hex): Promise<boolean> {
-    if (!this.runtimeRBAC) {
-      throw new Error('RuntimeRBAC SDK not initialized');
-    }
-
-    try {
-      await this.getRuntimeRBACForRoleQueries().getFunctionSchema(functionSelector);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
    * Remove role if it exists (for clean state)
    */
   protected async removeRoleIfExists(roleHash: Hex): Promise<boolean> {
