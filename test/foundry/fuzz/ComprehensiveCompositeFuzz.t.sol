@@ -348,8 +348,8 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             vm.prank(broadcaster);
             try accountBlox.approveTimeLockExecutionWithMetaTx(metaTx) {
                 // If this ever succeeds before releaseTime, the underlying implementation is broken.
-                // We rely on EngineBlox/GuardController reverting via BeforeReleaseTime or status checks.
-                // The absence of a revert here would cause this test to fail via other assertions or follow-up tests.
+                // Time-lock bypass via meta-transaction is a critical regression: fail the test immediately.
+                fail("approveTimeLockExecutionWithMetaTx succeeded before releaseTime");
             } catch (bytes memory reason) {
                 bytes4 sel = bytes4(reason);
                 if (sel == SharedValidation.NoPermission.selector) {

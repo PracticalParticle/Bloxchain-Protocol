@@ -24,6 +24,9 @@ contract EngineBloxUnregisterHarness {
     function setupFunctionAndPermission(bytes4 functionSelector, string memory functionSignature) external {
         require(selector == bytes4(0), "Already initialized");
         require(functionSelector != bytes4(0), "Invalid selector");
+        // Ensure the provided signature and selector are consistent to avoid misleading test setups
+        bytes4 derivedSelector = bytes4(keccak256(bytes(functionSignature)));
+        require(derivedSelector == functionSelector, "Selector/signature mismatch");
         selector = functionSelector;
 
         EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](1);
