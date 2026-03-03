@@ -1595,22 +1595,23 @@ Combining multiple vulnerabilities for privilege escalation through a multi-stag
 - **Status**: ✅ **PROTECTED**
 
 **Description**:  
-Bypassing time-lock using meta-transactions by signing approval immediately after request.
+Using meta-transactions as a privileged path to approve time-locked transactions, potentially bypassing the time-lock delay if meta-approval is not properly gated by RBAC and schema configuration.
 
 **Attack Scenario**:
-1. Attacker requests time-locked transaction
+1. Attacker (or misconfigured role) requests time-locked transaction
 2. Immediately signs meta-transaction approval
-3. Broadcaster executes before time-lock expires
-4. Bypass time-lock protection
+3. Broadcaster executes meta-approval before time-lock expires
+4. If meta-approval is not properly gated, time-lock protection is effectively bypassed
 
 **Current Protection**:
-- ✅ Meta-transaction approval still requires time-lock expiration
-- ✅ Time-lock checked during meta-transaction execution
+- ✅ Meta-transaction approval is gated by dedicated RBAC actions (e.g. `SIGN_META_APPROVE` / `EXECUTE_META_APPROVE`)
+- ✅ Function schema and target whitelist validation enforced for meta-approval flows
+- ✅ Unauthorized or misconfigured meta-approval attempts revert with `NoPermission` / `ResourceNotFound`
 
 **Verification**:
-- Test meta-transaction with pending time-lock
-- Verify time-lock still enforced
-- Test immediate meta-transaction signing
+- Test meta-transaction approval immediately after requesting a time-locked transaction
+- Verify that only properly authorized and correctly configured meta-approval flows succeed
+- Verify that unauthorized or schema/whitelist-misconfigured meta-approvals revert
 
 **Related Tests**:
 - `testFuzz_TimeLockAppliesToMetaTransactions`
@@ -2119,7 +2120,7 @@ txRequest(..., handlerSelector = schemaSelector, executionSelector = schemaSelec
 - Confirm that `safeRemoval = true` continues to enforce "no stale role permissions" invariant
 
 **Related Tests**:
-- `UnregisterFunctionFuzz.t.sol::testFuzz_UnsafeUnregisterPreventsNewRequests`
+- `UnregisterFunctionFuzz.t.sol::test_UnsafeUnregisterPreventsNewRequests`
 
 ---
 
