@@ -4,6 +4,8 @@ pragma solidity 0.8.34;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/execution/GuardController.sol";
+import "../../../contracts/core/execution/interface/IGuardController.sol";
+import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
@@ -32,8 +34,17 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
 
     function setUp() public override {
         super.setUp();
-        // Ensure mockTarget is whitelisted for executeWithTimeLock tests
-        // Note: This should be done in CommonBase, but we ensure it here for Composite tests
+        
+        // Register function schema for execute() on mockTarget and grant owner REQUEST+APPROVE
+        bytes4 executeSelector = bytes4(keccak256("execute()"));
+        EngineBlox.TxAction[] memory actions = new EngineBlox.TxAction[](2);
+        actions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        actions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        _registerFunction("execute()", "TEST_OPERATION", actions);
+        _grantOwnerPermission(executeSelector, actions);
+
+        // Whitelist mockTarget for executeWithTimeLock tests
+        _whitelistTarget(address(mockTarget), executeSelector);
     }
 
     /// @dev Converts uint to decimal string for deterministic role names (avoids vm.assume reject limit).
@@ -335,21 +346,24 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // Attempt to execute before time-lock expires
         if (block.timestamp < releaseTime) {
             vm.prank(broadcaster);
-            accountBlox.approveTimeLockExecutionWithMetaTx(metaTx);
-            
-            // Should fail - time-lock not expired
-            // Note: Meta-transaction approval still checks releaseTime
-            // This verifies time-lock applies to meta-transactions
+            try accountBlox.approveTimeLockExecutionWithMetaTx(metaTx) {
+                // If this ever succeeds before releaseTime, the underlying implementation is broken.
+                // We rely on EngineBlox/GuardController reverting via BeforeReleaseTime or status checks.
+                // The absence of a revert here would cause this test to fail via other assertions or follow-up tests.
+            } catch (bytes memory reason) {
+                bytes4 sel = bytes4(reason);
+                if (sel == SharedValidation.NoPermission.selector) {
+                    return; // Security guard: this path simply isn't authorized in this fuzz run
+                }
+                assembly {
+                    revert(add(reason, 0x20), mload(reason))
+                }
+            }
         }
         } catch (bytes memory reason) {
             bytes4 errorSelector = bytes4(reason);
-            // If permissions or schemas are not configured for this selector in this fuzz run,
-            // treat NoPermission/ResourceNotFound as acceptable outcomes (security working / setup incomplete).
-            if (
-                errorSelector == SharedValidation.NoPermission.selector ||
-                errorSelector == SharedValidation.ResourceNotFound.selector
-            ) {
-                return;
+            if (errorSelector == SharedValidation.NoPermission.selector) {
+                return; // Security working
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -574,5 +588,156 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             }
         }
         revert("No matching private key found");
+    }
+
+    /**
+     * @dev Helper to register a function schema on accountBlox via GuardController guardConfigBatch
+     */
+    function _registerFunction(
+        string memory functionSignature,
+        string memory operationName,
+        EngineBlox.TxAction[] memory supportedActions
+    ) internal {
+        require(supportedActions.length > 0, "Supported actions cannot be empty");
+
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.REGISTER_FUNCTION,
+            data: abi.encode(functionSignature, operationName, supportedActions)
+        });
+
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
+
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
+            GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            1 hours,
+            0,
+            owner
+        );
+
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
+            owner,
+            address(accountBlox),
+            0,
+            0,
+            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
+            params,
+            metaTxParams
+        );
+
+        uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
+        bytes32 messageHash = metaTx.message;
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        metaTx.signature = abi.encodePacked(r, s, v);
+
+        vm.prank(broadcaster);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+    }
+
+    /**
+     * @dev Helper to whitelist a target for a function selector on accountBlox
+     */
+    function _whitelistTarget(address target, bytes4 selector) internal {
+        IGuardController.GuardConfigAction[] memory actions = new IGuardController.GuardConfigAction[](1);
+        actions[0] = IGuardController.GuardConfigAction({
+            actionType: IGuardController.GuardConfigActionType.ADD_TARGET_TO_WHITELIST,
+            data: abi.encode(selector, target)
+        });
+
+        bytes memory params = GuardControllerDefinitions.guardConfigBatchExecutionParams(actions);
+
+        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+            address(accountBlox),
+            GuardControllerDefinitions.GUARD_CONFIG_BATCH_META_SELECTOR,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            1 hours,
+            0,
+            owner
+        );
+
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
+            owner,
+            address(accountBlox),
+            0,
+            0,
+            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
+            params,
+            metaTxParams
+        );
+
+        uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
+        bytes32 messageHash = metaTx.message;
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        metaTx.signature = abi.encodePacked(r, s, v);
+
+        vm.prank(broadcaster);
+        accountBlox.guardConfigBatchRequestAndApprove(metaTx);
+    }
+
+    /**
+     * @dev Helper to grant owner REQUEST+APPROVE permission for a function selector
+     */
+    function _grantOwnerPermission(bytes4 functionSelector, EngineBlox.TxAction[] memory actions) internal {
+        string memory roleName = "COMPOSITE_EXECUTE_ROLE";
+        bytes32 roleHash = keccak256(bytes(roleName));
+
+        // 1. Create role without permissions
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        EngineBlox.FunctionPermission[] memory emptyPermissions = new EngineBlox.FunctionPermission[](0);
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            data: abi.encode(roleName, 10, emptyPermissions)
+        });
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(
+            owner,
+            createParams,
+            1 hours
+        );
+        vm.prank(broadcaster);
+        accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+
+        // 2. Add owner wallet to the role
+        IRuntimeRBAC.RoleConfigAction[] memory addWalletActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addWalletActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(roleHash, owner)
+        });
+        bytes memory addWalletParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addWalletActions));
+        EngineBlox.MetaTransaction memory addWalletMetaTx = _createMetaTxForRoleConfig(
+            owner,
+            addWalletParams,
+            1 hours
+        );
+        vm.prank(broadcaster);
+        accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
+
+        // 3. Add function permission for the selector
+        bytes4[] memory handlerForSelectors = new bytes4[](1);
+        handlerForSelectors[0] = functionSelector;
+        EngineBlox.FunctionPermission memory permission = EngineBlox.FunctionPermission({
+            functionSelector: functionSelector,
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            handlerForSelectors: handlerForSelectors
+        });
+        IRuntimeRBAC.RoleConfigAction[] memory addPermActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addPermActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+            data: abi.encode(roleHash, permission)
+        });
+        bytes memory addPermParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addPermActions));
+        EngineBlox.MetaTransaction memory addPermMetaTx = _createMetaTxForRoleConfig(
+            owner,
+            addPermParams,
+            1 hours
+        );
+        vm.prank(broadcaster);
+        accountBlox.roleConfigBatchRequestAndApprove(addPermMetaTx);
     }
 }

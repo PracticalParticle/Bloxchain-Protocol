@@ -80,7 +80,7 @@ contract EngineBloxUnregisterHarness {
 contract UnregisterFunctionFuzzTest is CommonBase {
     using EngineBlox for EngineBlox.SecureOperationState;
 
-    function testFuzz_UnsafeUnregisterPreventsNewRequests() public {
+    function test_UnsafeUnregisterPreventsNewRequests() public {
         EngineBloxUnregisterHarness harness = new EngineBloxUnregisterHarness(
             owner,
             broadcaster,
