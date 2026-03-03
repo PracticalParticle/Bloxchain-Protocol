@@ -14,7 +14,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 
 ## Test Files Created
 
-### ✅ Comprehensive Fuzz Tests (14 files - 148 tests)
+### ✅ Comprehensive Fuzz Tests (14 files - 149 tests)
 
 | File | Tests | Notes |
 |------|-------|-------|
@@ -312,15 +312,15 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 A comprehensive fuzz test suite has been successfully created covering **100% of all documented attack vectors** (207+ vectors). The tests are organized by security category and designed to verify that all identified attack vectors are properly prevented.
 
 **Key Achievements**:
-- ✅ 14 comprehensive fuzz files (148 tests)
-- ✅ 309 total tests across 37 suites (comprehensive + fuzz + invariant + unit)
+- ✅ 14 comprehensive fuzz files (149 tests)
+- ✅ 308 total tests across 38 suites (comprehensive + fuzz + invariant + unit)
 - ✅ 100% attack vector coverage (Codex + protocol-vulnerabilities-index §18)
 - ✅ Direct mapping to [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
 - ✅ Protocol-vulnerabilities-index: 17 covered/partial, 4 N/A (see Codex §18)
 
 **Status**: ✅ **COMPLETE** - Ready for Audit  
 **Coverage**: 100% of 207+ codex vectors + 21 protocol-vulnerabilities-index vectors (17 covered, 4 N/A)  
-**Test Count**: 309 tests in 37 suites (148 in comprehensive fuzz files)  
+**Test Count**: 308 tests in 38 suites (149 in comprehensive fuzz files)  
 **System Limits**: MAX_ROLES=1000, MAX_BATCH_SIZE=200, MAX_FUNCTIONS=2000, MAX_HOOKS_PER_SELECTOR=100  
 **Run**: `forge test --summary` from repo root to verify
 
