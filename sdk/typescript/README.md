@@ -178,8 +178,8 @@ console.log(role.roleName, role.maxWallets, role.isProtected);
 // Check if wallet has role
 const hasRole = await runtimeRBAC.hasRole(roleHash, walletAddress);
 
-// Get wallets in role
-const wallets = await runtimeRBAC.getWalletsInRole(roleHash);
+// Get authorized wallets in role
+const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash);
 
 // Get roles for a wallet
 const walletRoles = await runtimeRBAC.getWalletRoles(walletAddress);

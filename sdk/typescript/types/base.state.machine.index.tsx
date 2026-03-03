@@ -31,7 +31,6 @@ export const BASE_STATE_MACHINE_FUNCTION_SELECTORS = {
   
   // Role and permission queries
   HAS_ROLE: keccak256(new TextEncoder().encode("hasRole(bytes32,address)")).slice(0, 10),
-  IS_ACTION_SUPPORTED_BY_FUNCTION: keccak256(new TextEncoder().encode("isActionSupportedByFunction(bytes4,uint8)")).slice(0, 10),
   GET_ACTIVE_ROLE_PERMISSIONS: keccak256(new TextEncoder().encode("getActiveRolePermissions(bytes32)")).slice(0, 10),
   GET_SIGNER_NONCE: keccak256(new TextEncoder().encode("getSignerNonce(address)")).slice(0, 10),
   

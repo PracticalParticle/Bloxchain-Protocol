@@ -1,6 +1,6 @@
 # Final Fuzz Test Coverage Report
 
-**Date**: February 21, 2026  
+**Date**: March 3, 2026  
 **Status**: ✅ **COMPREHENSIVE TEST SUITE COMPLETE**  
 **Goal**: 100% Coverage of All Attack Vectors
 
@@ -8,13 +8,13 @@
 
 ## Summary
 
-A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in the security analysis, plus **21 protocol-vulnerabilities-index-derived vectors** (see [Attack Vectors Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)). The suite consists of **14 comprehensive fuzz files** with **148 tests**, plus additional fuzz, invariant, and unit tests: **37 test suites, 309 tests** (all passing as of last full run).
+A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in the security analysis, plus **21 protocol-vulnerabilities-index-derived vectors** (see [Attack Vectors Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)). The suite consists of **14 comprehensive fuzz files** with **149 tests**, plus additional fuzz, invariant, and unit tests: **38 test suites, 308 tests** (all passing as of last full run, including `UnregisterFunctionFuzz.t.sol`).
 
 ---
 
 ## Test Files Created
 
-### ✅ Comprehensive Fuzz Tests (14 files - 148 tests)
+### ✅ Comprehensive Fuzz Tests (14 files - 149 tests)
 
 | File | Tests | Notes |
 |------|-------|-------|
@@ -97,8 +97,8 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 - ✅ Malicious forwarder isolation
 - ✅ Gas exhaustion handling
 
-### Target Whitelist & Function Schema (6 vectors)
-- ✅ **100% coverage** - 8/8 tests passing
+### Target Whitelist & Function Schema (7 vectors)
+- ✅ **100% coverage** - 9/9 tests passing
 - ✅ Empty whitelist denial
 - ✅ Whitelist removal prevention
 - ✅ Handler selector validation
@@ -154,13 +154,13 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 | Initialization | 3 | 9 | 100% |
 | Hook System | 4 | 2 | 100% |
 | Event Forwarding | 2 | 2 | 100% |
-| Whitelist/Schema | 6 | 8 | 100% |
+| Whitelist/Schema | 7 | 9 | 100% |
 | Time-Based | 3 | 1* | 100%* |
 | Role Management | 3 | 3* | 100%* |
 | Security Edge Cases | 10 | 10 | 100% |
 | Gas Exhaustion | 17 | 17 | 100% |
 | Protocol-Vulnerabilities-Index (§18) | 21 | 17 covered, 4 N/A | 100%* |
-| **TOTAL** | **207+** | **309 tests (37 suites)** | **100%** |
+| **TOTAL** | **207+** | **308 tests (38 suites)** | **100%** |
 
 *Covered in other test files. §18: 17 vectors covered by comprehensive suite; 4 N/A (no delegatecall/approve-before-call/proxy pattern).
 
@@ -168,8 +168,8 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 
 ## Test Execution Results
 
-### Current Status (February 2026)
-- ✅ **37 test suites**, **309 tests** (all passing; includes 14 comprehensive fuzz files with 148 tests)
+### Current Status (March 2026)
+- ✅ **38 test suites**, **308 tests** (all passing; includes 14 comprehensive fuzz files with 149 tests and additional targeted fuzz like `UnregisterFunctionFuzz.t.sol`)
 - ✅ **All critical attack vectors** covered
 - ✅ **All high-priority attack vectors** covered
 - ✅ **Protocol-vulnerabilities-index-derived vectors**: 17 covered/partial, 4 N/A — see [Codex §18](./ATTACK_VECTORS_CODEX.md#18-protocol-vulnerabilities-index-derived-vectors)
@@ -202,7 +202,7 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 ### ✅ Complete Test Coverage Structure
 
 1. **14 comprehensive test files** organized by attack category
-2. **309 test functions** covering all attack vectors
+2. **308 test functions** covering all attack vectors
 3. **Direct mapping** to security analysis documents
 4. **Clear documentation** with execution guides
 5. **System safety limits** verified and tested
@@ -312,15 +312,15 @@ A comprehensive fuzz test suite covers **all 207+ attack vectors** identified in
 A comprehensive fuzz test suite has been successfully created covering **100% of all documented attack vectors** (207+ vectors). The tests are organized by security category and designed to verify that all identified attack vectors are properly prevented.
 
 **Key Achievements**:
-- ✅ 14 comprehensive fuzz files (148 tests)
-- ✅ 309 total tests across 37 suites (comprehensive + fuzz + invariant + unit)
+- ✅ 14 comprehensive fuzz files (149 tests)
+- ✅ 308 total tests across 38 suites (comprehensive + fuzz + invariant + unit)
 - ✅ 100% attack vector coverage (Codex + protocol-vulnerabilities-index §18)
 - ✅ Direct mapping to [Attack Vectors Codex](./ATTACK_VECTORS_CODEX.md)
 - ✅ Protocol-vulnerabilities-index: 17 covered/partial, 4 N/A (see Codex §18)
 
 **Status**: ✅ **COMPLETE** - Ready for Audit  
 **Coverage**: 100% of 207+ codex vectors + 21 protocol-vulnerabilities-index vectors (17 covered, 4 N/A)  
-**Test Count**: 309 tests in 37 suites (148 in comprehensive fuzz files)  
+**Test Count**: 308 tests in 38 suites (149 in comprehensive fuzz files)  
 **System Limits**: MAX_ROLES=1000, MAX_BATCH_SIZE=200, MAX_FUNCTIONS=2000, MAX_HOOKS_PER_SELECTOR=100  
 **Run**: `forge test --summary` from repo root to verify
 

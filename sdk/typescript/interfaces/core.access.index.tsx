@@ -23,5 +23,5 @@ export interface IRuntimeRBAC {
    * @param roleHash The role hash to get wallets for
    * @return Array of authorized wallet addresses
    */
-  getWalletsInRole(roleHash: Hex): Promise<Address[]>;
+  getAuthorizedWallets(roleHash: Hex): Promise<Address[]>;
 }

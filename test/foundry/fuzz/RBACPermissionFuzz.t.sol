@@ -36,6 +36,10 @@ contract RBACPermissionFuzzTest is CommonBase {
         vm.assume(unauthorizedUser != broadcaster);
         vm.assume(unauthorizedUser != recovery);
         vm.assume(unauthorizedUser != address(0));
+        // Ensure we are truly testing an EXTERNAL caller, not the contract itself
+        // Otherwise _validateExecuteBySelf() will pass and later logic may revert
+        // with a different error (e.g. ResourceNotFound), breaking this expectation.
+        vm.assume(unauthorizedUser != address(accountBlox));
         vm.assume(wallet != address(0));
         
         // Ensure user doesn't have the role (or create a non-existent role)

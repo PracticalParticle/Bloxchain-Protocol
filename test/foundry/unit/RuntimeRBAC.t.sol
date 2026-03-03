@@ -45,7 +45,7 @@ contract RuntimeRBACTest is CommonBase {
         
         // Verify role doesn't exist yet
         vm.expectRevert();
-        accountBlox.getWalletsInRole(roleHash);
+        accountBlox.getAuthorizedWallets(roleHash);
     }
 
     function test_GetFunctionSchema_RegisteredFunction() public {
@@ -77,7 +77,7 @@ contract RuntimeRBACTest is CommonBase {
         
         // Should work if caller has a role
         vm.prank(owner);
-        address[] memory wallets = accountBlox.getWalletsInRole(roleHash);
+        address[] memory wallets = accountBlox.getAuthorizedWallets(roleHash);
         assertGt(wallets.length, 0);
     }
 
@@ -86,7 +86,7 @@ contract RuntimeRBACTest is CommonBase {
         
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, attacker));
-        accountBlox.getWalletsInRole(roleHash);
+        accountBlox.getAuthorizedWallets(roleHash);
     }
 
     function test_GetWalletsInRole_Revert_RoleNotFound() public {
@@ -94,7 +94,7 @@ contract RuntimeRBACTest is CommonBase {
         
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, nonExistentRole));
-        accountBlox.getWalletsInRole(nonExistentRole);
+        accountBlox.getAuthorizedWallets(nonExistentRole);
     }
 
     // ============ INTERFACE SUPPORT TESTS ============

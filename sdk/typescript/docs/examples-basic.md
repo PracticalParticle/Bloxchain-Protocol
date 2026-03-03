@@ -267,14 +267,14 @@ async function checkRoleMembership(roleHash: string, account: Address) {
   }
 }
 
-// Get wallets in a role
-async function getWalletsInRole(roleHash: string) {
+// Get authorized wallets in a role
+async function getAuthorizedWallets(roleHash: string) {
   try {
-    const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
-    console.log(`Wallets in role ${roleHash}:`, wallets)
+    const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash)
+    console.log(`Authorized wallets in role ${roleHash}:`, wallets)
     return wallets
   } catch (error) {
-    console.error('Failed to get wallets in role:', error.message)
+    console.error('Failed to get authorized wallets in role:', error.message)
   }
 }
 
@@ -303,7 +303,7 @@ async function getSupportedRoles() {
 // Usage
 await getRoleInfo('0x...') // role hash
 await checkRoleMembership('0x...', '0x...') // role hash, account
-await getWalletsInRole('0x...') // role hash
+await getAuthorizedWallets('0x...') // role hash
 await getWalletRoles('0x...') // wallet address
 await getSupportedRoles()
 ```

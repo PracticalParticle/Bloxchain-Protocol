@@ -296,7 +296,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param hook The hook contract address (must not be zero)
      */
     function _setHook(bytes4 functionSelector, address hook) internal {
-        EngineBlox.addTargetToFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.setHook(_getSecureState(), functionSelector, hook);
     }
 
     /**
@@ -306,7 +306,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param hook The hook contract address to remove (must not be zero)
      */
     function _clearHook(bytes4 functionSelector, address hook) internal {
-        EngineBlox.removeTargetFromFunctionHooks(_getSecureState(), functionSelector, hook);
+        EngineBlox.clearHook(_getSecureState(), functionSelector, hook);
     }
 
     /**
@@ -317,7 +317,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getHooks(bytes4 functionSelector) public view returns (address[] memory hooks) {
         _validateAnyRole();
-        return EngineBlox.getFunctionHookTargets(_getSecureState(), functionSelector);
+        return EngineBlox.getHooks(_getSecureState(), functionSelector);
     }
 
     // ============ META-TRANSACTION UTILITIES ============
@@ -449,7 +449,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getPendingTransactions() public view returns (uint256[] memory) {
         _validateAnyRole();
-        return _secureState.getPendingTransactionsList();
+        return _secureState.getPendingTransactions();
     }
 
     // ============ ROLE AND PERMISSION QUERIES ============
@@ -458,7 +458,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets the basic role information by its hash
      * @param roleHash The hash of the role to get
      * @return roleName The name of the role
-     * @return roleHashReturn The hash of the role
+     * @return hash The hash of the role
      * @return maxWallets The maximum number of wallets allowed for this role
      * @return walletCount The current number of wallets assigned to this role
      * @return isProtected Whether the role is protected from removal
@@ -466,7 +466,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getRole(bytes32 roleHash) public view returns (
         string memory roleName,
-        bytes32 roleHashReturn,
+        bytes32 hash,
         uint256 maxWallets,
         uint256 walletCount,
         bool isProtected
@@ -510,29 +510,10 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
      */
-    function getWalletsInRole(bytes32 roleHash) public view returns (address[] memory) {
+    function getAuthorizedWallets(bytes32 roleHash) public view returns (address[] memory) {
         _validateAnyRole();
         _validateRoleExists(roleHash);
         return _getAuthorizedWallets(roleHash);
-    }
-
-    /**
-     * @dev Checks if a function schema exists
-     * @param functionSelector The function selector to check
-     * @return True if the function schema exists, false otherwise
-     */
-    function functionSchemaExists(bytes4 functionSelector) public view returns (bool) {
-        return _secureState.functions[functionSelector].functionSelector == functionSelector;
-    }
-
-    /**
-     * @dev Returns if an action is supported by a function
-     * @param functionSelector The function selector to check
-     * @param action The action to check
-     * @return True if the action is supported by the function, false otherwise
-     */
-    function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) public view returns (bool) {
-        return _secureState.isActionSupportedByFunction(functionSelector, action);
     }
 
     /**
@@ -576,7 +557,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedOperationTypes() public view returns (bytes32[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedOperationTypesList();
+        return _secureState.getSupportedOperationTypes();
     }
 
     /**
@@ -586,7 +567,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedRoles() public view returns (bytes32[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedRolesList();
+        return _secureState.getSupportedRoles();
     }
 
     /**
@@ -596,7 +577,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      */
     function getSupportedFunctions() public view returns (bytes4[] memory) {
         _validateAnyRole();
-        return _secureState.getSupportedFunctionsList();
+        return _secureState.getSupportedFunctions();
     }
 
     /**
@@ -633,7 +614,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @return Array of authorized wallet addresses
      */
     function _getAuthorizedWallets(bytes32 roleHash) internal view returns (address[] memory) {
-        return EngineBlox._getAuthorizedWallets(_getSecureState(), roleHash);
+        return EngineBlox.getAuthorizedWallets(_getSecureState(), roleHash);
     }
 
     /**
@@ -684,14 +665,14 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to update assigned wallet for a role
+     * @dev Centralized function to update wallet for a role (replaces oldWallet with newWallet).
      * @param roleHash The role hash
      * @param newWallet The new wallet address
      * @param oldWallet The old wallet address
      * @notice This function is virtual to allow extensions to add hook functionality or additional validation
      */
-    function _updateAssignedWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
-        EngineBlox.updateAssignedWallet(_getSecureState(), roleHash, newWallet, oldWallet);
+    function _updateWallet(bytes32 roleHash, address newWallet, address oldWallet) internal virtual {
+        EngineBlox.updateWallet(_getSecureState(), roleHash, newWallet, oldWallet);
     }
 
     /**
@@ -708,7 +689,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     // ============ FUNCTION SCHEMA MANAGEMENT ============
 
     /**
-     * @dev Centralized function to create a function schema
+     * @dev Centralized function to register a function schema
      * @param functionSignature The function signature
      * @param functionSelector The function selector
      * @param operationName The operation name
@@ -717,7 +698,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param handlerForSelectors Array of handler selectors
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _createFunctionSchema(
+    function _registerFunction(
         string memory functionSignature,
         bytes4 functionSelector,
         string memory operationName,
@@ -725,7 +706,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         bool isProtected,
         bytes4[] memory handlerForSelectors
     ) internal virtual {
-        EngineBlox.createFunctionSchema(
+        EngineBlox.registerFunction(
             _getSecureState(),
             functionSignature,
             functionSelector,
@@ -737,13 +718,13 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     /**
-     * @dev Centralized function to remove a function schema
-     * @param functionSelector The function selector to remove
+     * @dev Centralized function to unregister a function schema
+     * @param functionSelector The function selector to unregister
      * @param safeRemoval Whether to perform safe removal (check for role references)
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _removeFunctionSchema(bytes4 functionSelector, bool safeRemoval) internal virtual {
-        EngineBlox.removeFunctionSchema(_getSecureState(), functionSelector, safeRemoval);
+    function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal virtual {
+        EngineBlox.unregisterFunction(_getSecureState(), functionSelector, safeRemoval);
     }
 
     /**
@@ -848,8 +829,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param target The target address to whitelist
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _addTargetToFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
-        _getSecureState().addTargetToFunctionWhitelist(functionSelector, target);
+    function _addTargetToWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().addTargetToWhitelist(functionSelector, target);
     }
 
     /**
@@ -858,8 +839,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param target The target address to remove
      * @notice This function is virtual to allow extensions to add hook functionality
      */
-    function _removeTargetFromFunctionWhitelist(bytes4 functionSelector, address target) internal virtual {
-        _getSecureState().removeTargetFromFunctionWhitelist(functionSelector, target);
+    function _removeTargetFromWhitelist(bytes4 functionSelector, address target) internal virtual {
+        _getSecureState().removeTargetFromWhitelist(functionSelector, target);
     }
 
     /**
@@ -881,25 +862,24 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param functionSchemas Array of function schema definitions  
      * @param roleHashes Array of role hashes
      * @param functionPermissions Array of function permissions (parallel to roleHashes)
-     * @param enforceProtectedSchemas When true, all function schemas must be protected; reverts if any is not
-     * @notice When enforceProtectedSchemas is true, every function schema must have isProtected == true
+     * @param requireProtected When true, all function schemas must be protected; reverts if any is not
+     * @notice When requireProtected is true, every function schema must have isProtected == true
      */
     function _loadDefinitions(
         EngineBlox.FunctionSchema[] memory functionSchemas,
         bytes32[] memory roleHashes,
         EngineBlox.FunctionPermission[] memory functionPermissions,
-        bool enforceProtectedSchemas
+        bool requireProtected
     ) internal {
         // Load function schemas
         for (uint256 i = 0; i < functionSchemas.length; i++) {
             // When enforcing, require every schema to be protected
-            if (enforceProtectedSchemas && !functionSchemas[i].isProtected) {
+            if (requireProtected && !functionSchemas[i].isProtected) {
                 revert SharedValidation.ContractFunctionMustBeProtected(
                     functionSchemas[i].functionSelector
                 );
             }
-            EngineBlox.createFunctionSchema(
-                _getSecureState(),
+            _registerFunction(
                 functionSchemas[i].functionSignature,
                 functionSchemas[i].functionSelector,
                 functionSchemas[i].operationName,
@@ -912,11 +892,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Load role permissions using parallel arrays
         SharedValidation.validateArrayLengthMatch(roleHashes.length, functionPermissions.length);
         for (uint256 i = 0; i < roleHashes.length; i++) {
-            EngineBlox.addFunctionToRole(
-                _getSecureState(),
-                roleHashes[i],
-                functionPermissions[i]
-            );
+            _addFunctionToRole(roleHashes[i], functionPermissions[i]);
         }
     }
 

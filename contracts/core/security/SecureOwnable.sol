@@ -323,7 +323,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function _transferOwnership(address newOwner) internal virtual {
         address oldOwner = owner();
-        _updateAssignedWallet(EngineBlox.OWNER_ROLE, newOwner, oldOwner);
+        _updateWallet(EngineBlox.OWNER_ROLE, newOwner, oldOwner);
         _logAddressPairEvent(oldOwner, newOwner);
     }
 
@@ -363,7 +363,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
         // Case 2: Update existing broadcaster at location
         if (oldBroadcaster != address(0)) {
-            _updateAssignedWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
+            _updateWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
             _logAddressPairEvent(oldBroadcaster, newBroadcaster);
             return;
         }
@@ -379,7 +379,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function _updateRecoveryAddress(address newRecoveryAddress) internal virtual {
         address oldRecovery = getRecovery();
-        _updateAssignedWallet(EngineBlox.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
+        _updateWallet(EngineBlox.RECOVERY_ROLE, newRecoveryAddress, oldRecovery);
         _logAddressPairEvent(oldRecovery, newRecoveryAddress);
     }
 

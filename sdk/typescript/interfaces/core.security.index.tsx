@@ -119,7 +119,6 @@ export interface ISecureOwnable {
 
   // Additional Query Functions
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
-  isActionSupportedByFunction(functionSelector: Hex, action: TxAction): Promise<boolean>;
   getSignerNonce(signer: Address): Promise<bigint>;
   getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
   initialized(): Promise<boolean>;

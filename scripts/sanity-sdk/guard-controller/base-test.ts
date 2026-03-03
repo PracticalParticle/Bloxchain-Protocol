@@ -813,7 +813,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       if (!errorSelector || errorName.startsWith('Unknown')) {
         console.log(`  🔍 Raw revert data (first 66 chars): ${resultHex.slice(0, 66)}`);
         if (!resultHex || resultHex === '0x' || resultHex.length <= 4) {
-          console.log(`  ℹ️  Revert data empty — caller may still pass if verification (e.g. functionSchemaExists) succeeds`);
+          console.log(`  ℹ️  Revert data empty — caller may still pass if verification (e.g. getFunctionSchema/getSupportedFunctions) succeeds`);
         }
       }
       throw new Error(

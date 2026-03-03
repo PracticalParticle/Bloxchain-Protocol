@@ -202,32 +202,32 @@ contract RuntimeRBACFuzzTest is CommonBase {
      *      - reverts with ResourceNotFound when schema does not exist
      */
     function testFuzz_GetFunctionSchema(bytes4 selector) public {
-        // Selector 0 can make functionSchemaExists true (default storage) while getFunctionSchema reverts with ResourceNotFound
         vm.assume(selector != bytes4(0));
-        bool exists = accountBlox.functionSchemaExists(selector);
+        vm.prank(owner); // getFunctionSchema requires caller to have any role
 
-        if (exists) {
-            vm.prank(owner); // getFunctionSchema requires caller to have any role
-            EngineBlox.FunctionSchema memory schema = accountBlox.getFunctionSchema(selector);
-
+        try accountBlox.getFunctionSchema(selector) returns (EngineBlox.FunctionSchema memory schema) {
             // Basic sanity checks for existing schemas
             assertEq(schema.functionSelector, selector, "Returned selector must match input selector");
+
             // Native-transfer macro selector (0x00000000) may intentionally have empty metadata,
             // so only enforce signature/name constraints for non-zero selectors.
-            if (selector != bytes4(0)) {
-                assertGt(bytes(schema.functionSignature).length, 0, "Function signature should not be empty");
-                assertTrue(schema.operationType != bytes32(0), "Operation type should be non-zero");
-                assertGt(bytes(schema.operationName).length, 0, "Operation name should not be empty");
-            }
+            assertGt(bytes(schema.functionSignature).length, 0, "Function signature should not be empty");
+            assertTrue(schema.operationType != bytes32(0), "Operation type should be non-zero");
+            assertGt(bytes(schema.operationName).length, 0, "Operation name should not be empty");
 
             // For protected schemas, we expect at least one supported action (bitmap non-zero)
             if (schema.isProtected) {
                 assertTrue(schema.supportedActionsBitmap != 0, "Protected schemas should advertise supported actions");
             }
-        } else {
-            vm.prank(owner); // getFunctionSchema requires caller to have any role
-            vm.expectRevert(abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(selector)));
-            accountBlox.getFunctionSchema(selector);
+        } catch (bytes memory reason) {
+            // When schema does not exist, we expect a ResourceNotFound(selector) revert
+            bytes4 errorSelector = bytes4(reason);
+            if (errorSelector != SharedValidation.ResourceNotFound.selector) {
+                // Re-throw unexpected errors
+                assembly {
+                    revert(add(reason, 0x20), mload(reason))
+                }
+            }
         }
     }
 

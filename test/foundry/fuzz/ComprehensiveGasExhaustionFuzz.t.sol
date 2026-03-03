@@ -51,7 +51,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // When accountBlox.generateUnsignedMetaTransactionForNew is called with accountBlox as target,
         // it checks if accountBlox is whitelisted on accountBlox's own whitelist
         // Since accountBlox extends BaseStateMachine, we can use EngineBlox library functions directly
-        // But we need to do this through a transaction since addTargetToFunctionWhitelist requires permissions
+        // But we need to do this through a transaction since addTargetToWhitelist requires permissions
         // Actually, since target == address(this) for accountBlox, internal calls should be allowed
         // The issue might be that the target check happens before the address(this) check
         // Let's whitelist accountBlox on itself using a direct call if possible
@@ -843,7 +843,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
      * @dev Test: View function gas consumption with many roles
      * Attack Vector: GAS-011 - View Function Array Conversion Gas Exhaustion (HIGH)
      * 
-     * Tests getSupportedRolesList with many roles.
+     * Tests getSupportedRoles with many roles.
      */
     function testFuzz_ViewFunctionGasConsumptionWithManyRoles(
         uint16 numberOfRoles
@@ -920,7 +920,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
     /**
      * @dev Test: View function gas consumption with many functions
      * 
-     * Tests getSupportedFunctionsList with many functions.
+     * Tests getSupportedFunctions with many functions.
      */
     function testFuzz_ViewFunctionGasConsumptionWithManyFunctions(
         uint16 numberOfFunctions

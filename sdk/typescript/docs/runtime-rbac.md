@@ -65,10 +65,10 @@ const hasRole = await runtimeRBAC.hasRole(
 console.log('Account has role:', hasRole)
 ```
 
-#### **Get Wallets in Role**
+#### **Get Authorized Wallets in Role**
 ```typescript
-const wallets = await runtimeRBAC.getWalletsInRole('0x...') // role hash
-console.log('Wallets in role:', wallets)
+const wallets = await runtimeRBAC.getAuthorizedWallets('0x...') // role hash
+console.log('Authorized wallets in role:', wallets)
 ```
 
 #### **Get Roles for Wallet**
@@ -102,12 +102,6 @@ console.log('Function schema:', {
 // Supported actions as array: EngineBlox.convertBitmapToActions(schema.supportedActionsBitmap)
 ```
 
-#### **Check Function Schema Exists**
-```typescript
-const exists = await runtimeRBAC.functionSchemaExists('0xa9059cbb')
-console.log('Function schema exists:', exists)
-```
-
 #### **Get Supported Functions**
 ```typescript
 const functions = await runtimeRBAC.getSupportedFunctions()
@@ -136,15 +130,6 @@ const hasPermission = await runtimeRBAC.hasActionPermission(
   TxAction.EXECUTE_TIME_DELAY_REQUEST
 )
 console.log('Has action permission:', hasPermission)
-```
-
-#### **Check Action Supported by Function**
-```typescript
-const isSupported = await runtimeRBAC.isActionSupportedByFunction(
-  '0xa9059cbb', // function selector
-  TxAction.EXECUTE_TIME_DELAY_REQUEST
-)
-console.log('Action supported:', isSupported)
 ```
 
 ## 🔄 **Batch Configuration Workflow**
@@ -314,7 +299,7 @@ Roles have maximum wallet limits:
 
 ```typescript
 const role = await runtimeRBAC.getRole(roleHash)
-const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash)
 
 if (wallets.length >= role.maxWallets) {
   throw new Error('Role has reached maximum wallet limit')
@@ -450,7 +435,7 @@ describe('RuntimeRBAC', () => {
   })
 
   it('should get wallets in role', async () => {
-    const wallets = await runtimeRBAC.getWalletsInRole(roleHash)
+    const wallets = await runtimeRBAC.getAuthorizedWallets(roleHash)
     expect(Array.isArray(wallets)).toBe(true)
   })
 })

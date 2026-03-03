@@ -72,6 +72,13 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         _registerFunction("execute()", "TEST_OPERATION", actions);
         _registerFunction("maliciousFunction()", "TEST_OPERATION", actions);
         _registerFunction("alwaysReverts()", "TEST_OPERATION", actions);
+
+        // Register native transfer selector schema for accountBlox and grant owner REQUEST+APPROVE
+        EngineBlox.TxAction[] memory nativeActions = new EngineBlox.TxAction[](2);
+        nativeActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        nativeActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        _registerFunction("__bloxchain_native_transfer__()", "NATIVE_TRANSFER", nativeActions);
+        _grantOwnerPermission(EngineBlox.NATIVE_TRANSFER_SELECTOR, nativeActions);
         
         // Handler supports only REQUEST; approve/cancel use separate handlers
         EngineBlox.TxAction[] memory requestOnly = new EngineBlox.TxAction[](1);
@@ -1229,62 +1236,62 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
     // ============ PAYMENT SECURITY ============
 
     /**
-     * @dev Test: Insufficient balance handling
+     * @dev Test: Insufficient balance handling in an authorized context (deterministic)
      * Attack Vector: Insufficient Balance Exploitation (HIGH)
+     *
+     * Uses PaymentTestHelper, which has NATIVE_TRANSFER_SELECTOR schema and owner permissions
+     * preconfigured in setUp. This avoids RBAC variability from fuzzing and focuses purely on
+     * the insufficient balance behavior.
      */
-    function testFuzz_InsufficientBalanceHandled(
-        uint256 paymentAmount
-    ) public {
-        // Ensure contract has some balance
-        uint256 contractBalance = address(accountBlox).balance;
-        vm.assume(contractBalance < type(uint256).max / 2); // Avoid overflow
-        // Set payment amount to exceed balance
-        paymentAmount = bound(paymentAmount, contractBalance + 1, contractBalance + 1000 ether);
-        
-        // Create transaction with payment exceeding balance
+    function test_InsufficientBalanceHandled_AuthorizedContext() public {
+        // Ensure helper has some initial balance (set in setUp)
+        uint256 helperBalance = address(paymentHelper).balance;
+        assertGt(helperBalance, 0, "paymentHelper must have initial balance");
+
+        // Choose a payment amount that exceeds the helper's balance
+        uint256 paymentAmount = helperBalance + 1 ether;
+
+        // Build payment details with native token amount exceeding balance
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: user1,
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
+
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+
+        // Request a transaction with payment attached via PaymentTestHelper
         vm.prank(owner);
-        try accountBlox.executeWithTimeLock(
-            address(accountBlox),
+        uint256 txId = paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
             0,
+            0,
+            operationType,
             EngineBlox.NATIVE_TRANSFER_SELECTOR,
             "",
-            0,
-            operationType
-        ) returns (uint256 txId) {
-            EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
-            
-            // Advance time
-            advanceTime(accountBlox.getTimeLockPeriodSec() + 1);
-            
-            // Approve - should fail due to insufficient balance
-            vm.prank(owner);
-            accountBlox.approveTimeLockExecution(txId);
-            EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
-            
-            // Transaction should fail with insufficient balance
-            assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
-            bytes memory expectedError = abi.encodeWithSelector(
-                SharedValidation.InsufficientBalance.selector,
-                address(accountBlox).balance,
-                paymentAmount
-            );
-            assertEq(result.result, expectedError);
-        } catch (bytes memory reason) {
-            bytes4 errorSelector = bytes4(reason);
-            if (errorSelector == SharedValidation.NoPermission.selector) {
-                return; // Security working
-            }
-            assembly {
-                revert(add(reason, 0x20), mload(reason))
-            }
-        }
+            payment
+        );
+
+        // Advance time beyond timelock and attempt approval; this should revert due to insufficient balance
+        advanceTime(paymentHelper.getTimeLockPeriodSec() + 1);
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+            SharedValidation.InsufficientBalance.selector,
+            address(paymentHelper).balance,
+            paymentAmount
+            )
+        );
+        paymentHelper.approveTransaction(txId);
     }
 
     /**
      * @dev Invariant-style fuzz: supportedFunctions list and getFunctionSchema are consistent
-     *      - For every supported function selector, functionSchemaExists(selector) is true
-     *      - getFunctionSchema(selector).functionSelector == selector when schema exists
+     *      - For every supported function selector, getFunctionSchema(selector) succeeds
+     *      - getFunctionSchema(selector).functionSelector == selector
      */
     function testFuzz_FunctionSchemaConsistency() public {
         // getSupportedFunctions / getFunctionSchema require caller to have any role;
@@ -1292,9 +1299,6 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         try accountBlox.getSupportedFunctions() returns (bytes4[] memory selectors) {
             for (uint256 i = 0; i < selectors.length; i++) {
                 bytes4 selector = selectors[i];
-                bool exists = accountBlox.functionSchemaExists(selector);
-                assertTrue(exists, "Supported function must have a registered schema");
-
                 EngineBlox.FunctionSchema memory schema = accountBlox.getFunctionSchema(selector);
                 assertEq(schema.functionSelector, selector, "Schema selector must match supportedFunctions entry");
             }
