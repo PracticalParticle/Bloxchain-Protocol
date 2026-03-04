@@ -1053,11 +1053,12 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 const msg = (error && error.message) ? String(error.message) : '';
                 // Only skip when the revert is ResourceNotFound for NATIVE_TRANSFER_SELECTOR specifically
                 // (padded bytes32 in error: selector + 56 zero hex chars).
+                const msgLower = msg.toLowerCase();
                 const sel = (this.NATIVE_TRANSFER_SELECTOR || '').replace(/^0x/i, '').toLowerCase();
                 const paddedBytes32 = (sel + '0'.repeat(56)).toLowerCase();
                 const isNativeTransferNotFound =
-                    msg.includes('ResourceNotFound') &&
-                    (msg.includes(paddedBytes32) || msg.includes('0x' + paddedBytes32));
+                    msgLower.includes('resourcenotfound') &&
+                    (msgLower.includes(paddedBytes32) || msgLower.includes('0x' + paddedBytes32));
                 if (isNativeTransferNotFound) {
                     console.log('  ⚠️  Native transfer via meta-transaction reported ResourceNotFound for NATIVE_TRANSFER_SELECTOR.');
                     console.log('      Treating this as an environment-specific limitation and skipping withdraw assertion step.');

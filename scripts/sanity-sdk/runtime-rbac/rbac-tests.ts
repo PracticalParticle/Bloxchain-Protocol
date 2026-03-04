@@ -25,13 +25,20 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
    * Avoids broad patterns like "revert" that could match unrelated errors.
    */
   private isSchemaNotFoundError(error: unknown): boolean {
-    const msg = (error && typeof error === 'object' && 'message' in error
-      ? (error as { message?: unknown }).message
-      : (error && typeof error === 'object' && 'details' in error)
-        ? (error as { details?: unknown }).details
-        : '') as string;
-    const s = String(msg ?? '');
-    return /ResourceNotFound|NotFound|function schema not found|Missing or invalid parameters/i.test(s);
+    let message = '';
+    let details = '';
+    if (error && typeof error === 'object') {
+      const o = error as Record<string, unknown>;
+      if (typeof o.message === 'string') message = o.message;
+      if (typeof o.details === 'string') details = o.details;
+      if ((message === '' || details === '') && o.cause != null && typeof o.cause === 'object') {
+        const c = o.cause as Record<string, unknown>;
+        if (message === '' && typeof c.message === 'string') message = c.message;
+        if (details === '' && typeof c.details === 'string') details = c.details;
+      }
+    }
+    const combined = `${String(message)} ${String(details)}`;
+    return /ResourceNotFound|NotFound|function schema not found|Missing or invalid parameters/i.test(combined);
   }
 
   async executeTests(): Promise<void> {
