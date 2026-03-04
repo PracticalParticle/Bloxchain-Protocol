@@ -19,10 +19,11 @@ interface TestConfig {
 }
 
 class SanitySDKTestRunner {
+  /** Order: guard-controller before runtime-rbac so mint schema is registered before RBAC steps 3–6 that use getFunctionSchema(mint). */
   private coreTests: TestConfig = {
     'secure-ownable': resolve(__dirname, 'secure-ownable', 'run-tests.ts'),
-    'runtime-rbac': resolve(__dirname, 'runtime-rbac', 'run-tests.ts'),
-    'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts')
+    'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts'),
+    'runtime-rbac': resolve(__dirname, 'runtime-rbac', 'run-tests.ts')
   };
 
   private exampleTests: TestConfig = {};

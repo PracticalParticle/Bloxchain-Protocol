@@ -92,11 +92,12 @@ export const INTERFACE_IDS = {
   IGuardController: calculateInterfaceId([
     'initialize(address,address,address,uint256,address)',
     'executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)',
-    'approveTimeLockExecution(uint256,bytes32)',
-    'cancelTimeLockExecution(uint256,bytes32)',
-    'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes),bytes32,bytes4)',
-    'cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes),bytes32,bytes4)',
-    'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes),bytes4)'
+    'executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))',
+    'approveTimeLockExecution(uint256)',
+    'cancelTimeLockExecution(uint256)',
+    'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))',
+    'cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))',
+    'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
   ])
 } as const;
 
