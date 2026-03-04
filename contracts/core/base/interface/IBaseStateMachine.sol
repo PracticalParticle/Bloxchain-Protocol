@@ -98,14 +98,6 @@ interface IBaseStateMachine {
     function hasRole(bytes32 roleHash, address wallet) external view returns (bool);
 
     /**
-     * @dev Returns if an action is supported by a function
-     * @param functionSelector The function selector to check
-     * @param action The action to check
-     * @return True if the action is supported by the function, false otherwise
-     */
-    function isActionSupportedByFunction(bytes4 functionSelector, EngineBlox.TxAction action) external view returns (bool);
-
-    /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
      * @return The full FunctionSchema struct
