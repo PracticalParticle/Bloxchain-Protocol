@@ -1051,11 +1051,16 @@ class GuardControllerTests extends BaseGuardControllerTest {
                 );
             } catch (error) {
                 const msg = (error && error.message) ? String(error.message) : '';
-                // If the engine reports ResourceNotFound for a function selector bytes32,
-                // treat this as an environment-specific native-transfer schema mismatch
-                // and skip this step rather than failing the entire sanity suite.
-                if (msg.includes('ResourceNotFound: 0xfbdd913d') || /ResourceNotFound: 0x[0-9a-fA-F]{8}0{56}/.test(msg)) {
-                    console.log('  ⚠️  Native transfer via meta-transaction reported ResourceNotFound for selector.');
+                // Only skip when the revert is ResourceNotFound for NATIVE_TRANSFER_SELECTOR specifically
+                // (padded bytes32 in error: selector + 56 zero hex chars).
+                const msgLower = msg.toLowerCase();
+                const sel = (this.NATIVE_TRANSFER_SELECTOR || '').replace(/^0x/i, '').toLowerCase();
+                const paddedBytes32 = (sel + '0'.repeat(56)).toLowerCase();
+                const isNativeTransferNotFound =
+                    msgLower.includes('resourcenotfound') &&
+                    (msgLower.includes(paddedBytes32) || msgLower.includes('0x' + paddedBytes32));
+                if (isNativeTransferNotFound) {
+                    console.log('  ⚠️  Native transfer via meta-transaction reported ResourceNotFound for NATIVE_TRANSFER_SELECTOR.');
                     console.log('      Treating this as an environment-specific limitation and skipping withdraw assertion step.');
                     await this.passTest(
                         'Withdraw ETH from contract (skipped due to ResourceNotFound on native transfer selector)',

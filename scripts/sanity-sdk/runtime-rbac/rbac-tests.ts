@@ -20,6 +20,27 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     super('RuntimeRBAC Functionality Tests');
   }
 
+  /**
+   * Returns true if the error indicates a missing function schema (contract revert or RPC parameter error).
+   * Avoids broad patterns like "revert" that could match unrelated errors.
+   */
+  private isSchemaNotFoundError(error: unknown): boolean {
+    let message = '';
+    let details = '';
+    if (error && typeof error === 'object') {
+      const o = error as Record<string, unknown>;
+      if (typeof o.message === 'string') message = o.message;
+      if (typeof o.details === 'string') details = o.details;
+      if ((message === '' || details === '') && o.cause != null && typeof o.cause === 'object') {
+        const c = o.cause as Record<string, unknown>;
+        if (message === '' && typeof c.message === 'string') message = c.message;
+        if (details === '' && typeof c.details === 'string') details = c.details;
+      }
+    }
+    const combined = `${String(message)} ${String(details)}`;
+    return /ResourceNotFound|NotFound|function schema not found|Missing or invalid parameters/i.test(combined);
+  }
+
   async executeTests(): Promise<void> {
     console.log('\n🔄 TESTING COMPLETE RUNTIME RBAC WORKFLOW');
     console.log('==================================================');
@@ -452,11 +473,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
       functionExists = true;
     } catch (e: any) {
-      const msg = (e?.message ?? e?.details ?? '').toString();
-      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
-      const schemaNotFound =
-        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
-      if (schemaNotFound) {
+      if (this.isSchemaNotFoundError(e)) {
         functionExists = false;
       } else {
         throw e;
@@ -502,11 +519,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
       schemaExists = true;
     } catch (e: any) {
-      const msg = (e?.message ?? e?.details ?? '').toString();
-      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
-      const schemaNotFound =
-        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
-      if (schemaNotFound) {
+      if (this.isSchemaNotFoundError(e)) {
         schemaExists = false;
       } else {
         throw e;
@@ -708,11 +721,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       await this.getRuntimeRBACForRoleQueries().getFunctionSchema(this.mintFunctionSelector);
       functionExists = true;
     } catch (e: any) {
-      const msg = (e?.message ?? e?.details ?? '').toString();
-      // Schema missing: contract reverts or RPC reports "Missing or invalid parameters" on revert
-      const schemaNotFound =
-        /ResourceNotFound|NotFound|function schema not found|revert|Missing or invalid parameters/i.test(msg);
-      if (schemaNotFound) {
+      if (this.isSchemaNotFoundError(e)) {
         functionExists = false;
       } else {
         throw e;
