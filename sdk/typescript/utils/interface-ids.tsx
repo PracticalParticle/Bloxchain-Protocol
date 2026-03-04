@@ -92,6 +92,7 @@ export const INTERFACE_IDS = {
   IGuardController: calculateInterfaceId([
     'initialize(address,address,address,uint256,address)',
     'executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)',
+    'executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))',
     'approveTimeLockExecution(uint256)',
     'cancelTimeLockExecution(uint256)',
     'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))',
