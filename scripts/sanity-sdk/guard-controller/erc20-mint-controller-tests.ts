@@ -521,7 +521,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
             'treating as environment issue and skipping mint execution step'
         );
         this.mintExecutionSkippedForEnv = true;
-        this.assertTest(true, 'Mint meta-transaction skipped due to RPC parameter error (environment-specific)');
+        this.skipTest(
+          'Mint meta-transaction skipped due to RPC parameter error (environment-specific)'
+        );
         return;
       }
 
@@ -636,9 +638,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
           '  ⚠️  Mint execution was skipped earlier due to RPC parameter error; ' +
             'skipping BASIC balance delta assertion (environment-specific limitation)'
         );
-        this.assertTest(
-          true,
-          'Skipped BASIC balance check because mint execution was not performed (environment-specific RPC limitation)'
+        this.skipTest(
+          'BASIC balance check skipped (mint execution was not performed due to environment-specific RPC limitation)'
         );
         return;
       }
