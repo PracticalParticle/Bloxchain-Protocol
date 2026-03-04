@@ -702,8 +702,23 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected async schemaOrSupportedSetPreCheck(selector: Hex): Promise<boolean> {
     if (!this.guardController) return false;
     const norm = (s: string | Hex) => String(s).toLowerCase();
+
+    // Prefer an owner-scoped client for reads in case the contract now
+    // enforces _validateAnyRole() or similar on view functions.
+    let client: GuardController;
     try {
-      const schema = await this.guardController.getFunctionSchema(selector);
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName =
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+        ) ?? 'wallet1';
+      client = this.createGuardControllerWithWallet(ownerWalletName);
+    } catch {
+      // Fallback to the default client if role discovery or mapping fails.
+      client = this.guardController;
+    }
+    try {
+      const schema = await client.getFunctionSchema(selector);
       const returnedSelector =
         (schema as any)?.functionSelector ?? (schema as any)?.functionSelectorReturn ?? (schema as any)?.[1];
       if (returnedSelector != null && norm(returnedSelector) === norm(selector)) {
@@ -714,7 +729,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       // ResourceNotFound or any revert => schema not present
     }
     try {
-      const list = await this.guardController.getSupportedFunctions();
+      const list = await client.getSupportedFunctions();
       if (Array.isArray(list) && list.some((f: Hex) => norm(f) === norm(selector))) {
         console.log(`  📋 getSupportedFunctions: selector ${selector} in supported set`);
         return true;

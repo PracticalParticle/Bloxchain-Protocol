@@ -39,7 +39,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     options: TransactionOptions
   ): Promise<TransactionResult> {
     this.validateWalletClient();
-    
+
     // Viem's writeContract will use the WalletClient's account if available
     // Only pass account explicitly if it differs from WalletClient's account
     // Otherwise, let Viem use the WalletClient's account automatically
@@ -61,14 +61,13 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     }
 
     try {
-      // First, simulate the contract call to get better error messages (no gas params for eth_call)
+      // Simulate the contract call first for better error messages (no gas params for eth_call).
       try {
         await this.client.simulateContract({
           ...writeContractParams,
           account: writeContractParams.account || this.walletClient!.account
         });
-      } catch (simulateError: any) {
-        // Re-throw to get better error handling
+      } catch (simulateError: unknown) {
         throw simulateError;
       }
 

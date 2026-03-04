@@ -25,6 +25,7 @@ export interface TestResults {
   totalTests: number;
   passedTests: number;
   failedTests: number;
+  skippedTests: number;
   startTime: number | null;
   endTime: number | null;
 }
@@ -40,6 +41,7 @@ export abstract class BaseSDKTest {
     totalTests: 0,
     passedTests: 0,
     failedTests: 0,
+    skippedTests: 0,
     startTime: null,
     endTime: null,
   };
@@ -288,6 +290,19 @@ export abstract class BaseSDKTest {
   }
 
   /**
+   * Record a skipped test (e.g. environment-specific limitation).
+   * Does not increment passedTests; reported separately in summary.
+   */
+  protected skipTest(message: string, details?: string): void {
+    this.testResults.totalTests++;
+    this.testResults.skippedTests++;
+    console.log(`  ⏭️  ${message}`);
+    if (details) {
+      console.log(`     ${details}`);
+    }
+  }
+
+  /**
    * Assert transaction success
    */
   protected async assertTransactionSuccess(
@@ -362,9 +377,10 @@ export abstract class BaseSDKTest {
       this.testResults.startTime && this.testResults.endTime
         ? this.testResults.endTime - this.testResults.startTime
         : 0;
+    const runTests = this.testResults.totalTests - this.testResults.skippedTests;
     const successRate =
-      this.testResults.totalTests > 0
-        ? ((this.testResults.passedTests / this.testResults.totalTests) * 100).toFixed(2)
+      runTests > 0
+        ? ((this.testResults.passedTests / runTests) * 100).toFixed(2)
         : '0.00';
 
     console.log('\n' + '='.repeat(60));
@@ -373,7 +389,8 @@ export abstract class BaseSDKTest {
     console.log(`📋 Total Tests: ${this.testResults.totalTests}`);
     console.log(`✅ Passed: ${this.testResults.passedTests}`);
     console.log(`❌ Failed: ${this.testResults.failedTests}`);
-    console.log(`📈 Success Rate: ${successRate}%`);
+    console.log(`⏭️  Skipped: ${this.testResults.skippedTests}`);
+    console.log(`📈 Success Rate: ${successRate}% (of ${runTests} run)`);
     console.log(`⏱️  Duration: ${(duration / 1000).toFixed(2)} seconds`);
     console.log('='.repeat(60));
 

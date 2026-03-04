@@ -159,7 +159,7 @@ class BaseGuardControllerTest {
         this.NATIVE_TRANSFER_OPERATION_TYPE = this.web3.utils.keccak256('NATIVE_TRANSFER');
         this.NATIVE_TRANSFER_SELECTOR = '0xd8cb519d'; // bytes4(keccak256("__bloxchain_native_transfer__()")) - matches EngineBlox.NATIVE_TRANSFER_SELECTOR
         this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR = this.web3.utils.keccak256(
-            'requestAndApproveExecution((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
         // GuardController batch config constants
@@ -1741,6 +1741,92 @@ class BaseGuardControllerTest {
             }
         }
         return false;
+    }
+
+    /**
+     * Ensure NATIVE_TRANSFER selector is fully configured on the current AccountBlox instance:
+     * - Function schema registered for "__bloxchain_native_transfer__()" / "NATIVE_TRANSFER"
+     * - OWNER_ROLE has SIGN_META_REQUEST_AND_APPROVE + EXECUTE_META_REQUEST_AND_APPROVE permissions
+     * - Contract address whitelisted as a valid target for the selector
+     *
+     * This mirrors the setup performed by the Solidity PaymentTestHelper, but uses the public
+     * GuardController + RuntimeRBAC config flows exposed through this test harness.
+     */
+    async ensureNativeTransferSchemaAndPermissions() {
+        const nativeSelector = this.NATIVE_TRANSFER_SELECTOR;
+        const ownerRoleHash = this.getRoleHash('OWNER_ROLE');
+
+        // For the GuardController CJS tests we use the meta path:
+        // requestAndApproveExecution(metaTx) with SIGN_META_REQUEST_AND_APPROVE / EXECUTE_META_REQUEST_AND_APPROVE.
+        const fullWorkflowActions = [
+            this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+        ];
+
+        // 1) Ensure function schema exists for NATIVE_TRANSFER_SELECTOR
+        const hasSchema = await this.functionSchemaExists(nativeSelector);
+        if (!hasSchema) {
+            const ownerPrivateKey = this.getRoleWallet('owner');
+            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
+
+            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: registering NATIVE_TRANSFER function schema...');
+            await this.registerFunction(
+                nativeSelector,
+                '__bloxchain_native_transfer__()',
+                'NATIVE_TRANSFER',
+                fullWorkflowActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+        }
+
+        // 2) Ensure OWNER_ROLE has both SIGN + EXECUTE meta permissions on NATIVE_TRANSFER_SELECTOR
+        const ownerHasSign = await this.roleHasPermissionForSelector(
+            ownerRoleHash,
+            nativeSelector,
+            this.TxAction.SIGN_META_REQUEST_AND_APPROVE
+        );
+        const ownerHasExecute = await this.roleHasPermissionForSelector(
+            ownerRoleHash,
+            nativeSelector,
+            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+        );
+
+        if (!ownerHasSign || !ownerHasExecute) {
+            const ownerPrivateKey = this.getRoleWallet('owner');
+            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
+
+            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: granting OWNER_ROLE meta permissions for NATIVE_TRANSFER...');
+            await this.addFunctionToRole(
+                ownerRoleHash,
+                nativeSelector,
+                fullWorkflowActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+        }
+
+        // 3) Ensure contract address is whitelisted as a valid target for NATIVE_TRANSFER_SELECTOR
+        const contractWhitelisted = await this.isTargetWhitelistedForSelector(nativeSelector, this.contractAddress);
+        if (!contractWhitelisted) {
+            const ownerPrivateKey = this.getRoleWallet('owner');
+            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
+
+            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: whitelisting contract address for NATIVE_TRANSFER_SELECTOR...');
+            try {
+                await this.addTargetToWhitelist(
+                    nativeSelector,
+                    this.contractAddress,
+                    ownerPrivateKey,
+                    broadcasterWallet
+                );
+            } catch (error) {
+                const msg = (error && error.message) ? String(error.message) : '';
+                if (!msg.includes('ItemAlreadyExists') && !msg.includes('already whitelisted')) {
+                    throw error;
+                }
+            }
+        }
     }
 
     /**

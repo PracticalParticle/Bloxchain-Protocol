@@ -2,6 +2,7 @@
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
+import "forge-std/StdInvariant.sol";
 
 /**
  * @title TransactionInvariantsTest
@@ -10,6 +11,21 @@ import "../CommonBase.sol";
 contract TransactionInvariantsTest is CommonBase {
     function setUp() public override {
         super.setUp();
+
+        // Exclude SecureOwnable execution-only entrypoints from the invariant fuzzer.
+        // These functions are designed to be callable only via internal time-lock /
+        // meta-transaction flows (self-calls), and direct fuzzed calls with random
+        // senders are expected to revert with NoPermission / OnlyCallableByContract.
+        // The invariants in this file only inspect transaction state and do not
+        // require direct execution of these entrypoints.
+        bytes4[] memory secureOwnableExecutionSelectors = new bytes4[](4);
+        secureOwnableExecutionSelectors[0] = TRANSFER_OWNERSHIP_SELECTOR;
+        secureOwnableExecutionSelectors[1] = UPDATE_BROADCASTER_SELECTOR;
+        secureOwnableExecutionSelectors[2] = UPDATE_RECOVERY_SELECTOR;
+        secureOwnableExecutionSelectors[3] = UPDATE_TIMELOCK_SELECTOR;
+        excludeSelector(
+            StdInvariant.FuzzSelector({ addr: address(accountBlox), selectors: secureOwnableExecutionSelectors })
+        );
     }
 
     function invariant_TransactionStatusConsistency() public {
