@@ -27,6 +27,8 @@ export interface FunctionSchema {
   operationType: Hex;
   operationName: string;
   supportedActionsBitmap: Uint16Bitmap; // uint16 - bitmap for TxAction enum
+  /** When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference). */
+  enforceHandlerRelations: boolean;
   isProtected: boolean;
   handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
 }

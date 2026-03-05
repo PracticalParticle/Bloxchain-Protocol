@@ -27,8 +27,19 @@ import {
   encodeAddWallet,
   encodeAddFunctionToRole,
 } from '../../../sdk/typescript/lib/definitions/RuntimeRBACDefinitions';
+import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.ts';
 import { RoleConfigActionType, RoleConfigAction, FunctionPermission } from '../runtime-rbac/base-test.ts';
 import { keccak256, toBytes } from 'viem';
+
+/** Extract raw revert data from a viem/contract error for decoding. */
+function getRevertDataFromError(error: any): string | null {
+  const data = error?.data ?? error?.cause?.data ?? error?.cause?.cause?.data;
+  if (typeof data === 'string' && data.startsWith('0x')) return data;
+  if (data?.data && typeof data.data === 'string' && data.data.startsWith('0x')) return data.data;
+  const msg = (error?.message ?? error?.cause?.message ?? '').toString();
+  const hexMatch = msg.match(/0x[a-fA-F0-9]{8,}/);
+  return hexMatch ? hexMatch[0] : null;
+}
 
 export interface GuardControllerRoles {
   owner: Address;
@@ -73,6 +84,19 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   /** requestAndApproveExecution selector (handler for mint meta-approve). */
   protected readonly REQUEST_AND_APPROVE_EXECUTION_SELECTOR: Hex = keccak256(
     toBytes('requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+  ).slice(0, 10) as Hex;
+
+  /** executeWithTimeLock selector (controller; MINT_REQUESTOR needs EXECUTE_TIME_DELAY_REQUEST for mint). */
+  protected readonly EXECUTE_WITH_TIMELOCK_SELECTOR: Hex = keccak256(
+    toBytes('executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)')
+  ).slice(0, 10) as Hex;
+  /** approveTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_APPROVE for mint). */
+  protected readonly APPROVE_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
+    toBytes('approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+  ).slice(0, 10) as Hex;
+  /** cancelTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_CANCEL for mint). */
+  protected readonly CANCEL_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
+    toBytes('cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
 
   constructor(testName: string) {
@@ -168,8 +192,18 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
         }
       }
     } catch (error: any) {
-      console.error('❌ Failed to discover role assignments:', error.message);
-      throw new Error(`Role discovery failed: ${error.message}`);
+      const addr = this.contractAddress ?? 'unknown';
+      let hint = `Contract at ${addr} reverted when calling owner() or getBroadcasters/getRecovery. Ensure AccountBlox is deployed and initialized for this network (see deployed-addresses.json).`;
+      const revertData = getRevertDataFromError(error);
+      if (revertData) {
+        const { userMessage, error: decoded } = extractErrorInfo(revertData);
+        if (decoded?.name) {
+          console.error(`  📋 Revert decoded: ${decoded.name}${decoded.params ? ` ${JSON.stringify(decoded.params)}` : ''}`);
+          hint = `${userMessage}. ${hint}`;
+        }
+      }
+      console.error('❌ Failed to discover role assignments:', error?.message ?? error);
+      throw new Error(`Role discovery failed: ${hint}`);
     }
   }
 

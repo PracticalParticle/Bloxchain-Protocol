@@ -156,6 +156,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: executeWithTimeLockHandlerForSelectors
         });
@@ -167,6 +168,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: approveTimeLockExecutionHandlerForSelectors
         });
@@ -178,6 +180,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: cancelTimeLockExecutionHandlerForSelectors
         });
@@ -189,6 +192,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: approveTimeLockExecutionMetaHandlerForSelectors
         });
@@ -200,6 +204,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxCancelActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: cancelTimeLockExecutionMetaHandlerForSelectors
         });
@@ -211,6 +216,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: requestAndApproveExecutionHandlerForSelectors
         });
@@ -222,6 +228,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: guardConfigHandlerForSelectors
         });
@@ -237,6 +244,7 @@ library GuardControllerDefinitions {
             operationType: CONTROLLER_OPERATION,
             operationName: "CONTROLLER_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(guardConfigExecutionActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
         });

@@ -94,6 +94,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -162,6 +163,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: emptyHandlers // Empty array
         });
@@ -200,6 +202,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -343,21 +346,19 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
     }
     
     /**
-     * @dev Test: Definition with self-reference behavior (documents current implementation)
+     * @dev Test: Definition with invalid self-reference for handler is rejected
      * Attack Vector: DEF-009 - Handler Selector Self-Reference Violation (HIGH)
-     * 
-     * Documents that self-reference is currently allowed for any functionSelector.
-     * This test verifies the permissions can be loaded with self-reference.
+     *
+     * Verifies that a handler permission which self-references a selector that is
+     * not declared in the schema's handlerForSelectors array is rejected.
      */
-    function testFuzz_DefinitionWithSelfReferenceBehavior(
-        bytes4 handlerSelector
-    ) public {
+    function testFuzz_DefinitionWithSelfReferenceBehavior(bytes4 handlerSelector) public {
         vm.assume(handlerSelector != bytes4(0));
-        
+
         // Get malicious definition with invalid self-reference
         IDefinition.RolePermission memory permissions = MaliciousDefinitions_InvalidSelfReference.getRolePermissions();
-        
-        // Load schemas first
+
+        // Load schemas first (schema declares handlerForSelectors = [0x12345678])
         EngineBlox.FunctionSchema[] memory schemas = MaliciousDefinitions_InvalidSelfReference.getFunctionSchemas();
         testStateMachine.loadDefinitionsForTesting(
             schemas,
@@ -365,35 +366,26 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             new EngineBlox.FunctionPermission[](0),
             true // Allow protected schemas for factory settings
         );
-        
-        // The test verifies that handler functions cannot have invalid self-references
-        // In this case, the permission's functionSelector is HANDLER_SELECTOR (a handler function)
-        // and its handlerForSelectors points to HANDLER_SELECTOR (self-reference)
-        // However, the schema's handlerForSelectors only includes 0x12345678, not HANDLER_SELECTOR
-        // So when validating, it should fail because HANDLER_SELECTOR is not in schema's handlerForSelectors
-        // BUT: Since functionSelector == handlerForSelector, it passes the self-reference check for execution functions
-        // This test documents the current behavior: self-reference is allowed for any functionSelector
-        // The security property being tested is that handlerForSelectors must be in schema's array
-        
-        // Actually, the permission will succeed because:
-        // - functionSelector = HANDLER_SELECTOR
-        // - handlerForSelectors[0] = HANDLER_SELECTOR
-        // - Since they match, it's treated as execution function self-reference (valid)
-        // The test should verify this behavior or be updated to test a different scenario
-        
-        // For now, we'll verify the permissions can be loaded (current behavior)
-        // This documents that self-reference is allowed for any functionSelector
+
+        // Now attempt to load permissions where:
+        // - functionSelector = HANDLER_SELECTOR (handler function)
+        // - handlerForSelectors = [HANDLER_SELECTOR] (self-reference)
+        // Since HANDLER_SELECTOR is not in the schema's handlerForSelectors array,
+        // strict handler validation must reject this with HandlerForSelectorMismatch.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.HandlerForSelectorMismatch.selector,
+                bytes4(0), // expected (cannot surface array, uses 0 as placeholder)
+                MaliciousDefinitions_InvalidSelfReference.HANDLER_SELECTOR
+            )
+        );
+
         testStateMachine.loadDefinitionsForTesting(
             new EngineBlox.FunctionSchema[](0), // Don't reload schemas
             permissions.roleHashes,
             permissions.functionPermissions,
             true // Allow protected schemas for factory settings
         );
-        
-        // Verify permissions were successfully loaded (asserts current behavior)
-        // This documents that self-reference is allowed for any functionSelector
-        // Note: If stricter validation is needed, it should be added to _validateHandlerForSelectors
-        assertTrue(true, "Permissions with self-reference loaded successfully");
     }
     
     // ============ DEFINITION CONTRACT INTEGRITY TESTS ============
@@ -499,6 +491,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Protected because function exists in contract
             handlerForSelectors: handlerForSelectors
         });
@@ -567,6 +560,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("OPERATION1"),
             operationName: "OPERATION1",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false,
             handlerForSelectors: handlerForSelectors1
         });
@@ -587,6 +581,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("OPERATION2"),
             operationName: "OPERATION2",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false,
             handlerForSelectors: handlerForSelectors2
         });
@@ -677,6 +672,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false, // Non-protected - should fail when enforcing
             handlerForSelectors: handlerForSelectors
         });
@@ -720,6 +716,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -757,6 +754,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false,
             handlerForSelectors: handlerForSelectors
         });
@@ -802,6 +800,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("OPERATION1"),
             operationName: "OPERATION1",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false, // First non-protected - reverts with this selector
             handlerForSelectors: handlerForSelectors1
         });
@@ -811,6 +810,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             operationType: keccak256("OPERATION2"),
             operationName: "OPERATION2",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors2
         });
