@@ -79,6 +79,7 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: withdrawEthHandlerForSelectors
         });
@@ -89,6 +90,7 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: withdrawTokenHandlerForSelectors
         });
@@ -99,6 +101,7 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: approveWithdrawalDelayedHandlerForSelectors
         });
@@ -109,6 +112,7 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: cancelWithdrawalHandlerForSelectors
         });
@@ -120,6 +124,7 @@ library SimpleVaultDefinitions {
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
         });
@@ -142,6 +147,7 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_ETH,
             operationName: "WITHDRAW_ETH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: withdrawEthExecutionHandlerForSelectors
         });
@@ -152,6 +158,7 @@ library SimpleVaultDefinitions {
             operationType: WITHDRAW_TOKEN,
             operationName: "WITHDRAW_TOKEN",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: withdrawTokenExecutionHandlerForSelectors
         });

@@ -31,6 +31,7 @@ library MaliciousDefinitions_MissingProtected {
             operationType: keccak256("OWNERSHIP_TRANSFER"),
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false, // ❌ Should be true - function exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -67,6 +68,7 @@ library MaliciousDefinitions_MismatchedSignature {
             operationType: keccak256("OWNERSHIP_TRANSFER"),
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -104,6 +106,7 @@ library MaliciousDefinitions_InvalidHandler {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false,
             handlerForSelectors: handlerForSelectors
         });
@@ -139,6 +142,7 @@ library MaliciousDefinitions_EmptyHandlerArray {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -211,6 +215,7 @@ library MaliciousDefinitions_MismatchedArrays {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -266,6 +271,7 @@ library MaliciousDefinitions_EmptyBitmap {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -316,6 +322,7 @@ library MaliciousDefinitions_InvalidSelfReference {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -370,6 +377,7 @@ library MaliciousDefinitions_DuplicateSchemas {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -381,6 +389,7 @@ library MaliciousDefinitions_DuplicateSchemas {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false,
             handlerForSelectors: handlerForSelectors
         });

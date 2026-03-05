@@ -331,11 +331,15 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
             await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
             await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
 
             const requestorActions = [this.TxAction.EXECUTE_TIME_DELAY_REQUEST];
             // MINT_APPROVER performs request+approve meta workflow on mint and can cancel
             const approverActions = [this.TxAction.SIGN_META_REQUEST_AND_APPROVE, this.TxAction.SIGN_META_APPROVE, this.TxAction.SIGN_META_CANCEL];
-            const broadcasterActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+            const broadcasterRequestApproveActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+            const broadcasterApproveCancelActions = [this.TxAction.EXECUTE_META_APPROVE, this.TxAction.EXECUTE_META_CANCEL];
 
             // Execution selector permissions (mint and handler for requestAndApproveExecution)
             await this.addFunctionToRole(this.getRoleHash('MINT_REQUESTOR'), ERC20_MINT_SELECTOR, requestorActions, ownerPrivateKey, broadcasterWallet);
@@ -354,7 +358,34 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 ownerPrivateKey,
                 broadcasterWallet
             );
-            await this.addFunctionToRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, broadcasterActions, ownerPrivateKey, broadcasterWallet);
+            await this.addFunctionToRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, broadcasterRequestApproveActions, ownerPrivateKey, broadcasterWallet);
+            // Broadcaster must also have EXECUTE_META_REQUEST_AND_APPROVE on the requestAndApproveExecution
+            // handler selector wired to the mint execution selector so EngineBlox validates both
+            // executionSelector and handlerSelector permissions for the broadcaster.
+            await this.addFunctionToRoleWithHandlerForSelectors(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
+                broadcasterRequestApproveActions,
+                [ERC20_MINT_SELECTOR],
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            // Broadcaster must be able to execute approve/cancel meta flows on the controller for any
+            // ERC20 mint workflows that go through approveTimeLockExecutionWithMetaTx / cancelTimeLockExecutionWithMetaTx.
+            await this.addFunctionToRole(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                broadcasterApproveCancelActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            await this.addFunctionToRole(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+                broadcasterApproveCancelActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
 
             // Controller permissions: MINT_REQUESTOR can call executeWithTimeLock (handler schema only allows self-reference; restriction to mint is via execution selector permission already granted).
             await this.addFunctionToRole(

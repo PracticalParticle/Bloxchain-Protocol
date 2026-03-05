@@ -1,13 +1,11 @@
 /**
  * ERC20 Mint via GuardController SDK Sanity Tests
  *
- * Mirrors the direct CJS sanity test:
- *   - MINT_REQUESTOR (wallet3) requests mint on BasicERC20 via AccountBlox
- *   - MINT_APPROVER (wallet4) signs meta-approve
- *   - BROADCASTER executes requestAndApproveExecution
- *   - Verifies AccountBlox BASIC balance increased by 100e18.
- *
- * This version uses the TypeScript SDK `GuardController` wrapper and `MetaTransactionSigner`.
+ * Uses the 3-step mint flow (no requestAndApproveExecution):
+ *   1. MINT_REQUESTOR (wallet3) calls executeWithTimeLock to request mint
+ *   2. MINT_APPROVER (wallet4) signs meta approve for the pending tx
+ *   3. BROADCASTER (wallet2) calls approveTimeLockExecutionWithMetaTx to execute mint
+ * Verifies AccountBlox BASIC balance increased by 100e18.
  */
 
 import fs from 'fs';
@@ -42,8 +40,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   private balanceBefore: bigint | null = null;
   /** Total supply of BasicERC20 before mint (for step 3 verification). */
   private totalSupplyBefore: bigint | null = null;
-  /** Set when we skip mint execution due to environment-specific RPC/simulation issues. */
-  private mintExecutionSkippedForEnv = false;
 
   /** ERC20 ABI fragment for balanceOf and totalSupply (shared for reads). */
   private static readonly ERC20_READ_ABI = [
@@ -73,14 +69,16 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     console.log('   1. Ensure mint(address,uint256) schema exists');
     console.log('   2. Ensure BasicERC20 is whitelisted for mint selector');
     console.log('   3. Ensure mint roles and permissions (MINT_REQUESTOR, MINT_APPROVER, BROADCASTER)');
-    console.log('   4. Mint 100 BASIC to AccountBlox via meta-transaction');
-    console.log('   5. Verify tokens minted and passed to destination (totalSupply + balance increase)\n');
+    console.log('   4. Mint 100 BASIC via 3-step flow (request → sign approve → execute approve)');
+    console.log('   5. Verify tokens minted and passed to destination (totalSupply + balance increase)');
+    console.log('   6. Snapshot mint readiness state (schema, whitelist, roles, balances)\n');
 
     await this.step0RegisterMintSchemaIfNeeded();
     await this.step1WhitelistBasicErc20IfNeeded();
     await this.step1bEnsureMintRolesAndPermissions();
     await this.step2Mint100ToAccountBloxViaMetaTx();
     await this.step3VerifyBalanceIncrease();
+    await this.step4SnapshotMintReadinessState();
   }
 
   private getBasicErc20Address(): Address {
@@ -353,11 +351,13 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   }
 
   /**
-   * Ensure MINT_REQUESTOR, MINT_APPROVER roles exist and have correct function permissions;
-   * BROADCASTER_ROLE must have EXECUTE_META_REQUEST_AND_APPROVE for mint. Aligns with CJS steps 1 and 4.
+   * Ensure MINT_REQUESTOR, MINT_APPROVER roles exist and have correct function permissions for the
+   * 3-step mint flow: (1) MINT_REQUESTOR requests via executeWithTimeLock, (2) MINT_APPROVER signs
+   * meta approve, (3) BROADCASTER executes approveTimeLockExecutionWithMetaTx.
+   * Does NOT use requestAndApproveExecution.
    */
   private async step1bEnsureMintRolesAndPermissions(): Promise<void> {
-    console.log('\n🧪 SDK Step 1b: Ensure mint roles and permissions');
+    console.log('\n🧪 SDK Step 1b: Ensure mint roles and permissions (3-step flow)');
     try {
       const ownerWalletName =
         Object.keys(this.wallets).find(
@@ -399,12 +399,87 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         }
       }
 
-      const requestorActions = [TxAction.EXECUTE_TIME_DELAY_REQUEST];
-      // MINT_APPROVER performs request+approve meta workflow on mint and can also approve/cancel existing requests
-      const approverActions = [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.SIGN_META_APPROVE, TxAction.SIGN_META_CANCEL];
-      const broadcasterActions = [TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+      // When roles already exist (e.g. from previous suite or CJS run), ensure mint wallets are in them.
+      if (requestorExists || approverExists) {
+        const ensureWalletActions: import('../runtime-rbac/base-test.ts').RoleConfigAction[] = [];
+        if (requestorExists && this.wallets.wallet3) {
+          const inRequestor = await this.guardController!.hasRole(requestorHash, this.wallets.wallet3.address as Address);
+          if (!inRequestor) {
+            ensureWalletActions.push(
+              await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+                roleHash: requestorHash,
+                wallet: this.wallets.wallet3.address,
+              })
+            );
+          }
+        }
+        if (approverExists && this.wallets.wallet4) {
+          const inApprover = await this.guardController!.hasRole(approverHash, this.wallets.wallet4.address as Address);
+          if (!inApprover) {
+            ensureWalletActions.push(
+              await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+                roleHash: approverHash,
+                wallet: this.wallets.wallet4.address,
+              })
+            );
+          }
+        }
+        if (ensureWalletActions.length > 0) {
+          console.log('  📋 Ensuring mint requestor/approver wallets are in roles...');
+          try {
+            await this.executeRoleConfigBatch(ensureWalletActions, ownerWalletName, broadcasterWalletName);
+            await new Promise((r) => setTimeout(r, 1000));
+          } catch (e: any) {
+            if (this.isResourceAlreadyExistsRevert(e)) {
+              console.log('  ⏭️  Wallets already in roles (ItemAlreadyExists)');
+            } else {
+              throw e;
+            }
+          }
+        }
+      }
 
-      const batch1 = [
+      // Ensure current broadcaster wallet is in BROADCASTER_ROLE (RBAC). getBroadcasters() returns the
+      // stored broadcaster address, but that address must also be in BROADCASTER_ROLE for
+      // hasActionPermission to pass when the broadcaster calls approveTimeLockExecutionWithMetaTx.
+      // Use Owner as executor so we can add the broadcaster even when they are not yet in the role.
+      const broadcasterWallet = this.wallets[broadcasterWalletName];
+      if (broadcasterWallet && (await this.roleExists(broadcasterHash))) {
+        const broadcasterInRole = await this.guardController!.hasRole(
+          broadcasterHash,
+          broadcasterWallet.address as Address
+        );
+        if (!broadcasterInRole) {
+          console.log('  📋 Adding broadcaster wallet to BROADCASTER_ROLE for RBAC...');
+          try {
+            await this.executeRoleConfigBatch(
+              [
+                await this.encodeRoleConfigAction(RoleConfigActionType.ADD_WALLET, {
+                  roleHash: broadcasterHash,
+                  wallet: broadcasterWallet.address,
+                }),
+              ],
+              ownerWalletName,
+              ownerWalletName
+            );
+            await new Promise((r) => setTimeout(r, 800));
+          } catch (e: any) {
+            if (this.isResourceAlreadyExistsRevert(e)) {
+              console.log('  ⏭️  Broadcaster already in BROADCASTER_ROLE (ItemAlreadyExists)');
+            } else {
+              throw e;
+            }
+          }
+        }
+      }
+
+      const requestorActions = [TxAction.EXECUTE_TIME_DELAY_REQUEST];
+      // 3-step flow: MINT_APPROVER only signs approve/cancel (no SIGN_META_REQUEST_AND_APPROVE).
+      const approverActions = [TxAction.SIGN_META_APPROVE, TxAction.SIGN_META_CANCEL];
+      const broadcasterApproveCancelActions = [TxAction.EXECUTE_META_APPROVE, TxAction.EXECUTE_META_CANCEL];
+
+      // Batch A: MINT_REQUESTOR + MINT_APPROVER permissions for 3-step flow (no requestAndApprove).
+      const batchRequestorApprover = [
         await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: requestorHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, requestorActions),
@@ -413,16 +488,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
           roleHash: approverHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, approverActions),
         }),
-        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
-          roleHash: approverHash,
-          functionPermission: this.createFunctionPermission(this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, approverActions, [ERC20_MINT_SELECTOR]),
-        }),
-        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
-          roleHash: broadcasterHash,
-          functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, broadcasterActions),
-        }),
-        // Controller permissions: executeWithTimeLock / approveTimeLockExecutionWithMetaTx / cancelTimeLockExecutionWithMetaTx
-        // use default handlerForSelectors (self-reference); restriction to mint is via execution selector permission.
         await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: requestorHash,
           functionPermission: this.createFunctionPermission(this.EXECUTE_WITH_TIMELOCK_SELECTOR, requestorActions),
@@ -437,10 +502,66 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         }),
       ];
       try {
-        await this.executeRoleConfigBatch(batch1, ownerWalletName, broadcasterWalletName);
+        await this.executeRoleConfigBatch(batchRequestorApprover, ownerWalletName, broadcasterWalletName);
+        console.log('  ✅ Requestor/approver permissions applied');
       } catch (batchError: any) {
         if (this.isResourceAlreadyExistsRevert(batchError)) {
-          console.log('  ⏭️  Mint permissions already present (ResourceAlreadyExists/ItemAlreadyExists), continuing');
+          console.log('  ⏭️  Requestor/approver permissions already present (ResourceAlreadyExists/ItemAlreadyExists)');
+        } else {
+          throw batchError;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Batch B: BROADCASTER_ROLE can execute approve/cancel meta-tx only (3-step flow).
+      // Apply in two separate batches so that if handler permissions already exist (ItemAlreadyExists),
+      // the execution-selector permission (mint) still gets applied. A single batch would revert entirely
+      // on the first duplicate and never apply the mint permission required by _validateExecutionAndHandlerPermissions.
+      const batchBroadcasterHandlers = [
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: broadcasterHash,
+          functionPermission: this.createFunctionPermission(
+            this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+            broadcasterApproveCancelActions,
+          ),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: broadcasterHash,
+          functionPermission: this.createFunctionPermission(
+            this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+            broadcasterApproveCancelActions,
+          ),
+        }),
+      ];
+      const batchBroadcasterMint = [
+        // Broadcaster must have EXECUTE_META_APPROVE/EXECUTE_META_CANCEL on the underlying
+        // execution selector (mint) so EngineBlox._validateExecutionAndHandlerPermissions passes
+        // for both executionSelector (mint) and handlerSelector (approveTimeLockExecutionWithMetaTx).
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: broadcasterHash,
+          functionPermission: this.createFunctionPermission(
+            ERC20_MINT_SELECTOR,
+            broadcasterApproveCancelActions,
+          ),
+        }),
+      ];
+      try {
+        await this.executeRoleConfigBatch(batchBroadcasterMint, ownerWalletName, broadcasterWalletName);
+        console.log('  ✅ Broadcaster mint (execution selector) permissions applied');
+      } catch (batchError: any) {
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Broadcaster mint permissions already present (ResourceAlreadyExists/ItemAlreadyExists)');
+        } else {
+          throw batchError;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 800));
+      try {
+        await this.executeRoleConfigBatch(batchBroadcasterHandlers, ownerWalletName, broadcasterWalletName);
+        console.log('  ✅ Broadcaster handler (approve/cancel meta-tx) permissions applied');
+      } catch (batchError: any) {
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Broadcaster handler permissions already present (ResourceAlreadyExists/ItemAlreadyExists)');
         } else {
           throw batchError;
         }
@@ -454,13 +575,103 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   }
 
   /**
-   * Mint 100 BASIC to AccountBlox via requestAndApproveExecution.
-   * Flow mirrors sanity direct (100% working reference):
-   *   scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs (testStep5MintFlow)
-   * Run CJS on same RPC to compare: node scripts/sanity/guard-controller/run-tests.cjs --erc20-mint-controller
+   * Negative test: requestAndApproveExecution expects SIGN_META_REQUEST_AND_APPROVE; passing
+   * SIGN_META_APPROVE must revert (NotSupported). Mint flow uses 3-step approveTimeLockExecutionWithMetaTx instead.
+   */
+  private async step2aMintMetaTxWrongActionMustRevert(): Promise<void> {
+    console.log('\n🧪 SDK Step 2a: requestAndApproveExecution must reject SIGN_META_APPROVE meta action');
+    try {
+      if (!this.guardController || !this.metaTxSigner) {
+        throw new Error('GuardController or MetaTransactionSigner not initialized');
+      }
+      if (!this.contractAddress) {
+        throw new Error('Contract address not set');
+      }
+
+      const token = this.getBasicErc20Address();
+      const accountBlox = this.contractAddress;
+
+      const mintRequestor = this.wallets.wallet3;
+      const mintApprover = this.wallets.wallet4;
+      if (!mintRequestor || !mintApprover) {
+        throw new Error('wallet3 and wallet4 must be configured for mint test');
+      }
+
+      const amount = 100n * 10n ** 18n;
+      const executionParams = encodeAbiParameters(
+        parseAbiParameters('address, uint256'),
+        [accountBlox, amount]
+      ) as Hex;
+
+      const operationType = keccak256(stringToHex('ERC20_MINT')) as Hex;
+      const txParams = {
+        requester: mintRequestor.address as Address,
+        target: token,
+        value: BigInt(0),
+        gasLimit: BigInt(200000),
+        operationType,
+        executionSelector: ERC20_MINT_SELECTOR,
+        executionParams,
+      };
+
+      // Deliberately use the WRONG signer action for requestAndApproveExecution.
+      const badMetaTxParams = await this.createMetaTxParams(
+        ERC20_MINT_SELECTOR,
+        TxAction.SIGN_META_APPROVE,
+        mintApprover.address as Address,
+        3600
+      );
+
+      console.log('  📋 Generating unsigned meta-transaction (wrong action SIGN_META_APPROVE)...');
+      const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
+        txParams,
+        badMetaTxParams
+      );
+      console.log('  🔐 Signing bad meta-transaction...');
+      let signedMetaTx = await this.metaTxSigner.signMetaTransaction(
+        unsignedMetaTx,
+        mintApprover.address as Address,
+        mintApprover.privateKey
+      );
+      signedMetaTx = this.normalizeMetaTxToHex(signedMetaTx);
+
+      const broadcasterWallet = this.getRoleWallet('broadcaster');
+      const broadcasterGuardController = this.createGuardControllerWithWallet(
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === broadcasterWallet.address.toLowerCase()
+        ) || 'wallet2'
+      );
+
+      console.log('  📤 Calling requestAndApproveExecution(metaTx) with SIGN_META_APPROVE (should revert)...');
+      let reverted = false;
+      try {
+        const result = await broadcasterGuardController.requestAndApproveExecution(
+          signedMetaTx,
+          this.getTxOptions(broadcasterWallet.address)
+        );
+        await result.wait();
+      } catch (error: any) {
+        reverted = true;
+        this.logRevertReason(error);
+      }
+
+      this.assertTest(
+        reverted,
+        'requestAndApproveExecution with SIGN_META_APPROVE must revert (NotSupported)'
+      );
+    } catch (error: any) {
+      this.handleTestError('Mint via wrong meta action (SIGN_META_APPROVE)', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mint 100 BASIC to AccountBlox via the 3-step flow:
+   * (1) MINT_REQUESTOR calls executeWithTimeLock, (2) MINT_APPROVER signs meta approve,
+   * (3) BROADCASTER calls approveTimeLockExecutionWithMetaTx.
    */
   private async step2Mint100ToAccountBloxViaMetaTx(): Promise<void> {
-    console.log('\n🧪 SDK Step 2: Mint 100 BASIC to AccountBlox via meta-transaction');
+    console.log('\n🧪 SDK Step 2: Mint 100 BASIC via 3-step flow (executeWithTimeLock → sign approve → execute approve)');
     try {
       if (!this.guardController || !this.metaTxSigner) {
         throw new Error('GuardController or MetaTransactionSigner not initialized');
@@ -483,95 +694,154 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       console.log(`  ℹ️  BASIC balance before mint (destination AccountBlox): ${this.balanceBefore.toString()}`);
       console.log(`  ℹ️  BASIC totalSupply before mint: ${this.totalSupplyBefore.toString()}`);
 
-      const amount = 100n * 10n ** 18n;
+      await new Promise((r) => setTimeout(r, 1000));
 
+      const amount = 100n * 10n ** 18n;
       const executionParams = encodeAbiParameters(
         parseAbiParameters('address, uint256'),
         [accountBlox, amount]
       ) as Hex;
-
-      // Build TxParams for new ERC20_MINT operation (match CJS: web3.utils.keccak256('ERC20_MINT'))
       const operationType = keccak256(stringToHex('ERC20_MINT')) as Hex;
-      const txParams = {
-        requester: mintRequestor.address as Address,
-        target: token,
-        value: BigInt(0),
-        gasLimit: BigInt(200000),
-        operationType,
-        executionSelector: ERC20_MINT_SELECTOR,
-        executionParams,
-      };
 
-      // Meta-tx params: match CJS createExternalExecutionMetaTx (handlerContract=AccountBlox,
-      // handlerSelector=executionSelector=mint, action=SIGN_META_REQUEST_AND_APPROVE, deadline=3600, maxGasPrice=0).
-      const metaTxParams = await this.createMetaTxParams(
+      // Step 1: MINT_REQUESTOR requests via executeWithTimeLock
+      const requestorWalletName =
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === mintRequestor.address.toLowerCase()
+        ) || 'wallet3';
+      const requestorGC = this.createGuardControllerWithWallet(requestorWalletName);
+      console.log('  📤 Step 1: MINT_REQUESTOR calling executeWithTimeLock...');
+      const requestResult = await requestorGC.executeWithTimeLock(
+        token,
+        BigInt(0),
         ERC20_MINT_SELECTOR,
-        TxAction.SIGN_META_REQUEST_AND_APPROVE,
+        executionParams,
+        BigInt(200000),
+        operationType,
+        this.getTxOptions(mintRequestor.address, { gas: 500_000 })
+      );
+      const requestReceipt = await requestResult.wait();
+      const txId = this.extractTxIdFromReceipt(requestReceipt);
+      if (txId == null) {
+        throw new Error('Could not extract txId from executeWithTimeLock receipt');
+      }
+      console.log(`  ✅ Timelock request created (txId: ${txId})`);
+
+      // Step 2: Wait for timelock
+      const timeLockSec = await this.guardController.getTimeLockPeriodSec();
+      const waitSec = Number(timeLockSec) + 1;
+      console.log(`  ⏳ Waiting ${waitSec}s for timelock...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1000));
+
+      // Step 3a: MINT_APPROVER signs meta approve for existing tx
+      const metaTxParams = await this.createMetaTxParams(
+        this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+        TxAction.SIGN_META_APPROVE,
         mintApprover.address as Address,
         3600
       );
-
-      // Flow mirrors sanity direct: scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs
-      // testStep5MintFlow (createExternalExecutionMetaTx → signMetaTransaction → requestAndApproveExecution).
-      // Reference: run "node scripts/sanity/guard-controller/erc20-mint-controller-tests.cjs" on same RPC to compare.
-      console.log('  📋 Generating unsigned meta-transaction from contract (nonce + txRecord)...');
-      const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
-      console.log('  🔐 Signing meta-transaction...');
-      let signedMetaTx = await this.metaTxSigner.signMetaTransaction(
-        unsignedMetaTx,
+      console.log('  📋 Generating unsigned meta-tx for approve (existing tx)...');
+      const unsignedApproveMetaTx = await this.guardController!.generateUnsignedMetaTransactionForExisting(txId, metaTxParams);
+      console.log('  🔐 MINT_APPROVER signing approve meta-tx...');
+      let signedApproveMetaTx = await this.metaTxSigner!.signMetaTransaction(
+        unsignedApproveMetaTx,
         mintApprover.address as Address,
         mintApprover.privateKey
       );
-      signedMetaTx = this.normalizeMetaTxToHex(signedMetaTx);
+      // Normalize hex/bytes so SDK validation and write encoding accept (contract is source of struct; we only fix types)
+      signedApproveMetaTx = this.normalizeMetaTxToHex(signedApproveMetaTx);
 
+      // Step 3b: BROADCASTER executes approveTimeLockExecutionWithMetaTx
       const broadcasterWallet = this.getRoleWallet('broadcaster');
       const broadcasterGuardController = this.createGuardControllerWithWallet(
         Object.keys(this.wallets).find(
           (k) => this.wallets[k].address.toLowerCase() === broadcasterWallet.address.toLowerCase()
         ) || 'wallet2'
       );
+      console.log('  📤 Step 3: BROADCASTER calling approveTimeLockExecutionWithMetaTx...');
+      const approveResult = await broadcasterGuardController.approveTimeLockExecutionWithMetaTx(
+        signedApproveMetaTx,
+        this.getTxOptions(broadcasterWallet.address, { simulationMode: 'warn-only', gas: 1_500_000 })
+      );
+      const approveReceipt = await approveResult.wait();
+      const status = approveReceipt.status as any;
+      const isSuccess = status === 'success' || status === 1 || String(status) === '1';
+      console.log(`  ✅ approveTimeLockExecutionWithMetaTx ${isSuccess ? 'SUCCESS' : 'FAILED'} (tx hash: ${approveResult.hash})`);
 
-      console.log('  📤 Calling requestAndApproveExecution(metaTx) via broadcaster wallet...');
-      const result = await broadcasterGuardController.requestAndApproveExecution(signedMetaTx, this.getTxOptions(broadcasterWallet.address));
-      const receipt = await result.wait();
-
-      console.log('  ✅ requestAndApproveExecution meta-tx sent');
-      console.log(`     Tx hash: ${result.hash}`);
-      const status2 = receipt.status as any;
-      const isSuccess2 = status2 === 'success' || status2 === 1 || String(status2) === '1';
-      console.log(`     Status: ${isSuccess2 ? 'SUCCESS' : 'FAILED'}`);
-
-      this.assertTest(isSuccess2, 'Mint meta-transaction must execute successfully');
+      if (!isSuccess) {
+        const revertMsg = await this.tryGetRevertReasonFromFailedTx(approveReceipt.transactionHash);
+        this.assertTest(false, revertMsg ? `Mint approve failed: ${revertMsg}` : 'Mint approve tx reverted');
+      }
+      this.assertTest(true, 'Mint 100 BASIC via 3-step flow executed successfully');
     } catch (error: any) {
       this.logRevertReason(error);
-
-      const msg =
-        (error?.shortMessage ??
-          error?.message ??
-          error?.cause?.shortMessage ??
-          error?.cause?.message ??
-          '') as string;
-      const details = (error?.details ?? error?.cause?.details ?? '') as string;
-
-      // Some RPCs (including remote Ganache instances) may reject large eth_call
-      // payloads used by viem.simulateContract with "Missing or invalid parameters".
-      // In that case, treat this as an environment limitation rather than a hard test
-      // failure so the overall sanity suite can still pass.
-      if (/Missing or invalid parameters/i.test(msg) || /Missing or invalid parameters/i.test(details)) {
-        console.log(
-          '  ⚠️  RPC reported "Missing or invalid parameters" during simulateContract for requestAndApproveExecution; ' +
-            'treating as environment issue and skipping mint execution step'
-        );
-        this.mintExecutionSkippedForEnv = true;
-        this.skipTest(
-          'Mint meta-transaction skipped due to RPC parameter error (environment-specific)'
-        );
-        return;
-      }
-
-      this.handleTestError('Mint 100 BASIC via GuardController meta-tx', error);
+      this.handleTestError('Mint 100 BASIC via 3-step flow', error);
       throw error;
     }
+  }
+
+  /**
+   * Try to obtain a human-readable revert reason from a failed transaction.
+   * Uses: (1) re-call at same block to get revert data then decode via contract-errors catalog;
+   *       (2) fallback to debug_traceTransaction if RPC supports it.
+   */
+  private async tryGetRevertReasonFromFailedTx(txHash: string): Promise<string | null> {
+    if (!this.publicClient) return null;
+
+    // 1) Re-execute the failed tx at its block to get revert data, then decode with contract-errors catalog
+    try {
+      const tx = await this.publicClient.getTransaction({ hash: txHash as `0x${string}` });
+      if (tx && tx.from && tx.to && tx.input && tx.blockNumber != null) {
+        await this.publicClient.call({
+          account: tx.from,
+          to: tx.to,
+          data: tx.input,
+          value: tx.value ?? 0n,
+          blockNumber: tx.blockNumber,
+        });
+      }
+    } catch (callErr: any) {
+      // Revert data can be on error.data (raw RPC) or error.cause (viem wrappers)
+      let revertData: string | undefined;
+      const d = callErr?.data ?? callErr?.cause?.data ?? callErr?.cause?.cause?.data;
+      if (typeof d === 'string' && d.startsWith('0x')) revertData = d;
+      else if (d && typeof d === 'object' && typeof (d as any).data === 'string') revertData = (d as any).data;
+      if (!revertData && callErr?.message && /0x[0-9a-fA-F]{8,}/.test(callErr.message)) {
+        const m = callErr.message.match(/0x[0-9a-fA-F]{8,}/);
+        if (m && m[0].length <= 600) revertData = m[0];
+      }
+      if (revertData) {
+        const { userMessage, error: decodedError, isKnownError } = extractErrorInfo(revertData);
+        if (decodedError) {
+          console.log(`  📋 Revert decoded (contract-errors): ${decodedError.name}`);
+          if (decodedError.params && Object.keys(decodedError.params).length > 0) {
+            console.log(`     Params: ${JSON.stringify(decodedError.params)}`);
+          }
+          if (isKnownError && userMessage && userMessage !== 'Transaction reverted with unknown error') {
+            return userMessage;
+          }
+          return decodedError.message || userMessage || null;
+        }
+        if (userMessage && userMessage !== 'Transaction reverted with unknown error') return userMessage;
+      }
+    }
+
+    // 2) Fallback: debug_traceTransaction (some RPCs return revert reason here)
+    try {
+      const result = await (this.publicClient as any).request({
+        method: 'debug_traceTransaction',
+        params: [
+          txHash,
+          { tracer: 'callTracer', tracerConfig: { onlyTopCall: false } },
+        ],
+      });
+      if (result?.error) return result.error;
+      if (result?.revertReason) return result.revertReason;
+      const err = typeof result === 'string' ? result : (result?.returnValue ?? result?.output);
+      if (err && typeof err === 'string') return err;
+    } catch (_) {
+      /* RPC may not support debug_traceTransaction */
+    }
+    return null;
   }
 
   /** Decode and log contract revert data when present (supports EnhancedViemError and nested cause). */
@@ -636,7 +906,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       if (typeof v !== 'string' && typeof v !== 'undefined') {
         console.warn('normalizeMetaTxToHex: unexpected type for hex field', typeof v, v);
       }
-      return v as string;
+      return (v as string) ?? '0x';
     };
     // Normalize message to 66-char hex (0x + 64 hex digits) like CJS eip712-signing._normalizeMessageHex
     let messageHex = metaTx.message;
@@ -653,6 +923,14 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       }
       messageHex = '0x' + body.padStart(64, '0');
     }
+    const params = metaTx.txRecord?.params;
+    const executionParams = params?.executionParams;
+    const normalizedExecutionParams =
+      executionParams != null && typeof executionParams === 'string' && executionParams.startsWith('0x')
+        ? executionParams
+        : executionParams instanceof Uint8Array
+          ? bytesToHex(executionParams)
+          : '0x';
     return {
       ...metaTx,
       message: messageHex ?? metaTx.message,
@@ -661,10 +939,12 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       txRecord: {
         ...metaTx.txRecord,
         message: metaTx.txRecord?.message != null ? toHex(metaTx.txRecord.message) : metaTx.txRecord?.message,
-        params: metaTx.txRecord?.params
+        params: params
           ? {
-              ...metaTx.txRecord.params,
-              executionParams: toHex(metaTx.txRecord.params.executionParams),
+              ...params,
+              executionParams: normalizedExecutionParams,
+              executionSelector: params.executionSelector != null ? toHex(params.executionSelector) : '0x00000000',
+              operationType: params.operationType != null ? toHex(params.operationType) : '0x' + '0'.repeat(64),
             }
           : metaTx.txRecord?.params,
         result: metaTx.txRecord?.result != null ? toHex(metaTx.txRecord.result) : metaTx.txRecord?.result,
@@ -675,17 +955,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   private async step3VerifyBalanceIncrease(): Promise<void> {
     console.log('\n🧪 SDK Step 3: Verify tokens minted and passed to destination');
     try {
-      if (this.mintExecutionSkippedForEnv) {
-        console.log(
-          '  ⚠️  Mint execution was skipped earlier due to RPC parameter error; ' +
-            'skipping BASIC balance delta assertion (environment-specific limitation)'
-        );
-        this.skipTest(
-          'BASIC balance check skipped (mint execution was not performed due to environment-specific RPC limitation)'
-        );
-        return;
-      }
-
       if (this.balanceBefore === null) {
         throw new Error('Balance before mint not recorded');
       }
@@ -735,6 +1004,97 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       );
     } catch (error: any) {
       this.handleTestError('Verify tokens minted and passed to destination', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Step 4: Snapshot mint readiness state after sanity run.
+   * Logs current schema, whitelist, role permissions and BASIC balances to aid manual review.
+   */
+  private async step4SnapshotMintReadinessState(): Promise<void> {
+    console.log('\n🧪 SDK Step 4: Snapshot mint readiness state');
+    try {
+      if (!this.guardController || !this.runtimeRBAC || !this.publicClient || !this.contractAddress) {
+        throw new Error('GuardController, RuntimeRBAC, publicClient or contractAddress not initialized');
+      }
+
+      const token = this.getBasicErc20Address();
+      const accountBlox = this.contractAddress;
+
+      console.log('  📋 Addresses');
+      console.log(`     AccountBlox (controller): ${accountBlox}`);
+      console.log(`     BasicERC20 (token):       ${token}`);
+
+      // Role permissions snapshot (using same hashes as step1b)
+      const requestorHash = this.getRoleHash('MINT_REQUESTOR');
+      const approverHash = this.getRoleHash('MINT_APPROVER');
+      const broadcasterHash = this.getRoleHash('BROADCASTER_ROLE');
+
+      console.log('  📋 Role permission snapshot (RuntimeRBAC.getActiveRolePermissions)');
+      for (const [name, hash] of [
+        ['MINT_REQUESTOR', requestorHash],
+        ['MINT_APPROVER', approverHash],
+        ['BROADCASTER_ROLE', broadcasterHash],
+      ] as const) {
+        try {
+          // Rely on RuntimeRBAC SDK wrapper from base-test
+          const permissions = await this.runtimeRBAC!.getActiveRolePermissions(hash);
+          console.log(`     ${name}:`);
+          console.log(`       functionSelectors: ${JSON.stringify((permissions as any).functionSelectors ?? (permissions as any).functionSelectorsReturn ?? [], null, 2)}`);
+          console.log(
+            `       functionPermissions: ${JSON.stringify(
+              (permissions as any).functionPermissions ?? (permissions as any).functionPermissionsReturn ?? [],
+              null,
+              2
+            )}`
+          );
+        } catch (e: any) {
+          console.warn(`     [WARN] Failed to read permissions for role ${name}: ${e?.message ?? e}`);
+        }
+      }
+
+      // BASIC token balances
+      const totalSupply = await this.readTotalSupply();
+      const accountBloxBalance = await this.readAccountBloxBasicBalance();
+
+      console.log('  📋 BASIC token state');
+      console.log(`     totalSupply:        ${totalSupply.toString()}`);
+      console.log(`     AccountBlox balance: ${accountBloxBalance.toString()}`);
+
+      // Engine transaction history snapshot
+      try {
+        console.log('  📋 Engine transaction history (recent records)');
+        // getTransactionHistory(fromTxId, toTxId)
+        // Use a wide, valid range: fromTxId=1, toTxId=largeUpperBound (contract clamps to actual txCounter)
+        const largeUpperBound = BigInt('0xffffffffffffffff');
+        const history: any[] = await (this.guardController as any).getTransactionHistory(1n, largeUpperBound);
+        const maxToPrint = 20;
+        for (let i = 0; i < history.length && i < maxToPrint; i++) {
+          const tx = history[i] as any;
+          const params = tx.params ?? tx[3] ?? {};
+          const opType = params.operationType ?? params.operationTypeReturn ?? params[5];
+          const execSel = params.executionSelector ?? params.executionSelectorReturn ?? params[6];
+          const requester = params.requester ?? params.requesterReturn ?? params[1];
+          const target = params.target ?? params.targetReturn ?? params[2];
+          const status = tx.status ?? tx.statusReturn ?? tx[2];
+          console.log(
+            `     txId=${String(tx.txId ?? tx.txIdReturn ?? tx[0])}, ` +
+              `status=${String(status)}, ` +
+              `operationType=${String(opType)}, ` +
+              `executionSelector=${String(execSel)}, ` +
+              `requester=${String(requester)}, ` +
+              `target=${String(target)}`
+          );
+        }
+        if (history.length > maxToPrint) {
+          console.log(`     ... ${history.length - maxToPrint} more transaction(s) omitted`);
+        }
+      } catch (e: any) {
+        console.warn(`  [WARN] Failed to read transaction history: ${e?.message ?? e}`);
+      }
+    } catch (error: any) {
+      this.handleTestError('Snapshot mint readiness state', error);
       throw error;
     }
   }

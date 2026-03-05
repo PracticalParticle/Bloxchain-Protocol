@@ -32,6 +32,7 @@ library TestDefinitions_Valid {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true, // Protected because function exists in contract
             handlerForSelectors: handlerForSelectors
         });
@@ -68,6 +69,7 @@ library TestDefinitions_MissingProtected {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: false, // ❌ Should be true - function exists in contract bytecode
             handlerForSelectors: handlerForSelectors
         });
@@ -104,6 +106,7 @@ library TestDefinitions_MismatchedSignature {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -141,6 +144,7 @@ library TestDefinitions_Duplicate {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -152,6 +156,7 @@ library TestDefinitions_Duplicate {
             operationType: keccak256("TEST_OPERATION"),
             operationName: "TEST_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });

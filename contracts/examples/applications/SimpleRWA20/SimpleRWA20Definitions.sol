@@ -52,6 +52,7 @@ library SimpleRWA20Definitions {
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: mintHandlerForSelectors
         });
@@ -62,6 +63,7 @@ library SimpleRWA20Definitions {
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: burnHandlerForSelectors
         });
@@ -78,6 +80,7 @@ library SimpleRWA20Definitions {
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: mintExecutionHandlerForSelectors
         });
@@ -88,6 +91,7 @@ library SimpleRWA20Definitions {
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: burnExecutionHandlerForSelectors
         });
