@@ -439,6 +439,7 @@ abstract contract GuardController is BaseStateMachine {
             functionSelector,
             operationName,
             supportedActionsBitmap,
+            true, // enforceHandlerRelations for dynamically registered execution selectors
             false, // isProtected = false for dynamically registered functions
             executionHandlers // handlerForSelectors with self-reference for execution selectors
         );

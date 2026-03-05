@@ -128,6 +128,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
@@ -138,6 +139,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
@@ -148,6 +150,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
@@ -158,6 +161,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
@@ -168,6 +172,7 @@ library SecureOwnableDefinitions {
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: recoveryHandlerForSelectors
         });
@@ -178,6 +183,7 @@ library SecureOwnableDefinitions {
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: timelockHandlerForSelectors
         });
@@ -189,6 +195,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
@@ -199,6 +206,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
@@ -209,6 +217,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
@@ -219,6 +228,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
@@ -229,6 +239,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
@@ -239,6 +250,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
@@ -251,6 +263,7 @@ library SecureOwnableDefinitions {
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: transferOwnershipExecutionHandlerForSelectors
         });
@@ -261,6 +274,7 @@ library SecureOwnableDefinitions {
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: broadcasterExecutionHandlerForSelectors
         });
@@ -271,6 +285,7 @@ library SecureOwnableDefinitions {
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: recoveryExecutionHandlerForSelectors
         });
@@ -281,6 +296,7 @@ library SecureOwnableDefinitions {
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: timelockExecutionHandlerForSelectors
         });

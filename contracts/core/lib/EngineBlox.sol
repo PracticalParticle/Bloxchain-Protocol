@@ -152,6 +152,7 @@ library EngineBlox {
         bytes32 operationType;
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
+        bool enforceHandlerRelations;  // When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference)
         bool isProtected;
         bytes4[] handlerForSelectors; 
     }
@@ -1119,6 +1120,7 @@ library EngineBlox {
      * @param functionSelector Hash identifier for the function.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
+     * @param enforceHandlerRelations When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference).
      * @param isProtected Whether the function schema is protected from removal.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
      */
@@ -1128,6 +1130,7 @@ library EngineBlox {
         bytes4 functionSelector,
         string memory operationName,
         uint16 supportedActionsBitmap,
+        bool enforceHandlerRelations,
         bool isProtected,
         bytes4[] memory handlerForSelectors
     ) public {
@@ -1179,6 +1182,7 @@ library EngineBlox {
         schema.operationType = derivedOperationType;
         schema.operationName = operationName;
         schema.supportedActionsBitmap = supportedActionsBitmap;
+        schema.enforceHandlerRelations = enforceHandlerRelations;
         schema.isProtected = isProtected;
         schema.handlerForSelectors = handlerForSelectors;
         
@@ -2157,14 +2161,14 @@ library EngineBlox {
 
         FunctionSchema storage schema = self.functions[functionSelector];
 
+        // If this function schema does not enforce handler relations, skip validation.
+        if (!schema.enforceHandlerRelations) {
+            return;
+        }
+
         // Validate each handlerForSelector in the array
         for (uint256 j = 0; j < handlerForSelectors.length; j++) {
             bytes4 handlerForSelector = handlerForSelectors[j];
-            
-            // Special case: execution function permissions use handlerForSelector == functionSelector (self-reference)
-            if (handlerForSelector == functionSelector) {
-                continue; // Valid execution function permission
-            }
 
             bool found = false;
             for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
