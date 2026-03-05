@@ -40,8 +40,28 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   private basicErc20Address: Address | null = null;
   private balanceBefore: bigint | null = null;
+  /** Total supply of BasicERC20 before mint (for step 3 verification). */
+  private totalSupplyBefore: bigint | null = null;
   /** Set when we skip mint execution due to environment-specific RPC/simulation issues. */
   private mintExecutionSkippedForEnv = false;
+
+  /** ERC20 ABI fragment for balanceOf and totalSupply (shared for reads). */
+  private static readonly ERC20_READ_ABI = [
+    {
+      name: 'balanceOf',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [{ name: 'account', type: 'address' }],
+      outputs: [{ type: 'uint256' }],
+    },
+    {
+      name: 'totalSupply',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [],
+      outputs: [{ type: 'uint256' }],
+    },
+  ] as const;
 
   constructor() {
     super('ERC20 Mint via GuardController SDK Tests');
@@ -54,7 +74,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     console.log('   2. Ensure BasicERC20 is whitelisted for mint selector');
     console.log('   3. Ensure mint roles and permissions (MINT_REQUESTOR, MINT_APPROVER, BROADCASTER)');
     console.log('   4. Mint 100 BASIC to AccountBlox via meta-transaction');
-    console.log('   5. Verify BASIC balance increased by 100e18\n');
+    console.log('   5. Verify tokens minted and passed to destination (totalSupply + balance increase)\n');
 
     await this.step0RegisterMintSchemaIfNeeded();
     await this.step1WhitelistBasicErc20IfNeeded();
@@ -96,24 +116,29 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
     const token = this.getBasicErc20Address();
     const accountBlox = this.contractAddress;
 
-    const ERC20_BALANCE_OF_ABI = [
-      {
-        name: 'balanceOf',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [{ name: 'account', type: 'address' }],
-        outputs: [{ type: 'uint256' }],
-      },
-    ] as const;
-
     const balance = await this.publicClient.readContract({
       address: token,
-      abi: ERC20_BALANCE_OF_ABI,
+      abi: Erc20MintControllerSdkTests.ERC20_READ_ABI,
       functionName: 'balanceOf',
       args: [accountBlox],
     });
 
     return balance as bigint;
+  }
+
+  /** Read totalSupply of BasicERC20 (for verifying mint occurred). */
+  private async readTotalSupply(): Promise<bigint> {
+    if (!this.publicClient) {
+      throw new Error('Public client not initialized');
+    }
+    const token = this.getBasicErc20Address();
+    const supply = await this.publicClient.readContract({
+      address: token,
+      abi: Erc20MintControllerSdkTests.ERC20_READ_ABI,
+      functionName: 'totalSupply',
+      args: [],
+    });
+    return supply as bigint;
   }
 
   /**
@@ -375,7 +400,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       }
 
       const requestorActions = [TxAction.EXECUTE_TIME_DELAY_REQUEST];
-      const approverActions = [TxAction.SIGN_META_APPROVE, TxAction.SIGN_META_CANCEL];
+      // MINT_APPROVER performs request+approve meta workflow on mint and can also approve/cancel existing requests
+      const approverActions = [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.SIGN_META_APPROVE, TxAction.SIGN_META_CANCEL];
       const broadcasterActions = [TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
 
       const batch1 = [
@@ -394,6 +420,20 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: broadcasterHash,
           functionPermission: this.createFunctionPermission(ERC20_MINT_SELECTOR, broadcasterActions),
+        }),
+        // Controller permissions: executeWithTimeLock / approveTimeLockExecutionWithMetaTx / cancelTimeLockExecutionWithMetaTx
+        // use default handlerForSelectors (self-reference); restriction to mint is via execution selector permission.
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: requestorHash,
+          functionPermission: this.createFunctionPermission(this.EXECUTE_WITH_TIMELOCK_SELECTOR, requestorActions),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: approverHash,
+          functionPermission: this.createFunctionPermission(this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, [TxAction.SIGN_META_APPROVE]),
+        }),
+        await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
+          roleHash: approverHash,
+          functionPermission: this.createFunctionPermission(this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, [TxAction.SIGN_META_CANCEL]),
         }),
       ];
       try {
@@ -439,7 +479,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       }
 
       this.balanceBefore = await this.readAccountBloxBasicBalance();
-      console.log(`  ℹ️  BASIC balance before mint: ${this.balanceBefore.toString()}`);
+      this.totalSupplyBefore = await this.readTotalSupply();
+      console.log(`  ℹ️  BASIC balance before mint (destination AccountBlox): ${this.balanceBefore.toString()}`);
+      console.log(`  ℹ️  BASIC totalSupply before mint: ${this.totalSupplyBefore.toString()}`);
 
       const amount = 100n * 10n ** 18n;
 
@@ -461,10 +503,10 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       };
 
       // Meta-tx params: match CJS createExternalExecutionMetaTx (handlerContract=AccountBlox,
-      // handlerSelector=executionSelector=mint, action=SIGN_META_APPROVE, deadline=3600, maxGasPrice=0).
+      // handlerSelector=executionSelector=mint, action=SIGN_META_REQUEST_AND_APPROVE, deadline=3600, maxGasPrice=0).
       const metaTxParams = await this.createMetaTxParams(
         ERC20_MINT_SELECTOR,
-        TxAction.SIGN_META_APPROVE,
+        TxAction.SIGN_META_REQUEST_AND_APPROVE,
         mintApprover.address as Address,
         3600
       );
@@ -631,7 +673,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   }
 
   private async step3VerifyBalanceIncrease(): Promise<void> {
-    console.log('\n🧪 SDK Step 3: Verify BASIC balance increased');
+    console.log('\n🧪 SDK Step 3: Verify tokens minted and passed to destination');
     try {
       if (this.mintExecutionSkippedForEnv) {
         console.log(
@@ -647,15 +689,52 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       if (this.balanceBefore === null) {
         throw new Error('Balance before mint not recorded');
       }
+      if (this.totalSupplyBefore === null) {
+        throw new Error('Total supply before mint not recorded');
+      }
+
+      const token = this.getBasicErc20Address();
+      const destination = this.contractAddress!;
+      const expectedAmount = 100n * 10n ** 18n;
 
       const balanceAfter = await this.readAccountBloxBasicBalance();
-      const delta = balanceAfter - this.balanceBefore;
-      const expected = 100n * 10n ** 18n;
+      const totalSupplyAfter = await this.readTotalSupply();
 
-      this.assertTest(delta === expected, `BASIC balance must increase by 100e18 (delta=${delta.toString()}, expected=${expected.toString()})`);
-      this.assertTest(balanceAfter >= expected, `AccountBlox BASIC balance >= 100 (after=${balanceAfter.toString()})`);
+      const balanceDelta = balanceAfter - this.balanceBefore;
+      const supplyDelta = totalSupplyAfter - this.totalSupplyBefore;
+
+      console.log(`  📋 Destination (AccountBlox): ${destination}`);
+      console.log(`  📋 Token (BasicERC20): ${token}`);
+      console.log(`  📋 Amount minted: ${expectedAmount.toString()} (100e18)`);
+      console.log(`  📋 Balance after: ${balanceAfter.toString()}`);
+      console.log(`  📋 Total supply after: ${totalSupplyAfter.toString()}`);
+
+      // 1. Verify tokens were minted (totalSupply increased by expected amount)
+      this.assertTest(
+        supplyDelta === expectedAmount,
+        `Tokens minted: totalSupply must increase by 100e18 (delta=${supplyDelta.toString()}, expected=${expectedAmount.toString()})`
+      );
+      if (supplyDelta === expectedAmount) {
+        console.log(`  ✅ Verified: tokens were minted (totalSupply increased by ${expectedAmount.toString()})`);
+      }
+
+      // 2. Verify tokens were passed to the destination (AccountBlox balance increased by expected amount)
+      this.assertTest(
+        balanceDelta === expectedAmount,
+        `Tokens passed to destination: AccountBlox balance must increase by 100e18 (delta=${balanceDelta.toString()}, expected=${expectedAmount.toString()})`
+      );
+      if (balanceDelta === expectedAmount) {
+        console.log(
+          `  ✅ Verified: tokens passed to destination (AccountBlox balance increased by ${expectedAmount.toString()})`
+        );
+      }
+
+      this.assertTest(
+        balanceAfter >= expectedAmount,
+        `AccountBlox BASIC balance >= 100e18 (after=${balanceAfter.toString()})`
+      );
     } catch (error: any) {
-      this.handleTestError('Verify BASIC balance after mint', error);
+      this.handleTestError('Verify tokens minted and passed to destination', error);
       throw error;
     }
   }

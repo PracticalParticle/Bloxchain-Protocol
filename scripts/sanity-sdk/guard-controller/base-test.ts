@@ -75,6 +75,19 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     toBytes('requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
 
+  /** executeWithTimeLock selector (controller; MINT_REQUESTOR needs EXECUTE_TIME_DELAY_REQUEST for mint). */
+  protected readonly EXECUTE_WITH_TIMELOCK_SELECTOR: Hex = keccak256(
+    toBytes('executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)')
+  ).slice(0, 10) as Hex;
+  /** approveTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_APPROVE for mint). */
+  protected readonly APPROVE_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
+    toBytes('approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+  ).slice(0, 10) as Hex;
+  /** cancelTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_CANCEL for mint). */
+  protected readonly CANCEL_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
+    toBytes('cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+  ).slice(0, 10) as Hex;
+
   constructor(testName: string) {
     super(testName);
   }
