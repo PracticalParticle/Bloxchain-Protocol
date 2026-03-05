@@ -18,4 +18,11 @@ export interface TransactionOptions {
   /** Max fee per gas (EIP-1559) in wei. Prefer bigint; string must be a non-negative integer. */
   gasPrice?: string | bigint;
   value?: string;
+  /**
+   * Controls how pre-flight simulation (eth_call) is handled before sending a write transaction.
+   * - 'strict' (default): simulation must succeed or the write is aborted.
+   * - 'warn-only': log simulation failures and still send the transaction.
+   * - 'skip': skip simulation entirely and send the transaction directly.
+   */
+  simulationMode?: 'strict' | 'warn-only' | 'skip';
 }
