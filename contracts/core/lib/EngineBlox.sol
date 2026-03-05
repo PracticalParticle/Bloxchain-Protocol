@@ -477,6 +477,8 @@ library EngineBlox {
      */
     function txCancellationWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_CANCEL);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxStatus(self, txId, TxStatus.PENDING);
@@ -495,6 +497,8 @@ library EngineBlox {
      * @return The updated TxRecord.
      */
     function txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_APPROVE);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_APPROVE);
         
@@ -537,6 +541,8 @@ library EngineBlox {
         SecureOperationState storage self,
         MetaTransaction memory metaTx
     ) public returns (TxRecord memory) {
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_REQUEST_AND_APPROVE);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
@@ -1640,10 +1646,9 @@ library EngineBlox {
         }
 
         // Authorization check - verify signer has meta-transaction signing permissions for the function and action
-        bool isSignAction = metaTx.params.action == TxAction.SIGN_META_REQUEST_AND_APPROVE || metaTx.params.action == TxAction.SIGN_META_APPROVE || metaTx.params.action == TxAction.SIGN_META_CANCEL;
         bool isHandlerAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
         bool isExecutionAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.txRecord.params.executionSelector, metaTx.params.action);
-        if (!isSignAction || !isHandlerAuthorized || !isExecutionAuthorized) {
+        if (!isHandlerAuthorized || !isExecutionAuthorized) {
             revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
         }
           
@@ -2213,6 +2218,22 @@ library EngineBlox {
         }
         
         _validateActionsSupportedByFunction(self, functionPermission.functionSelector, bitmap);
+    }
+
+    /**
+     * @dev Validates that the meta-transaction uses the expected signer action for the current workflow.
+     * @param metaTx The meta-transaction to validate.
+     * @param expectedAction The TxAction that must be used as the signer action.
+     * @custom:security Enforces strict separation between SIGN_META_REQUEST_AND_APPROVE,
+     *                  SIGN_META_APPROVE and SIGN_META_CANCEL workflows.
+     */
+    function _validateMetaTxAction(
+        MetaTransaction memory metaTx,
+        TxAction expectedAction
+    ) internal pure {
+        if (metaTx.params.action != expectedAction) {
+            revert SharedValidation.NotSupported();
+        }
     }
 
     /**
