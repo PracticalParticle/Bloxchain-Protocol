@@ -40,6 +40,9 @@ class SanitySDKTestRunner {
     endTime: null as number | null
   };
 
+  /** Number of sequential runs (--repeat N). Default 1. */
+  private repeatCount = 1;
+
   printUsage(): void {
     console.log('🧪 Sanity SDK Test Master Runner');
     console.log('='.repeat(60));
@@ -49,6 +52,7 @@ class SanitySDKTestRunner {
     console.log('  --all                    Run all tests (core + examples)');
     console.log('  --core                   Run core tests only (default)');
     console.log('  --examples               Run example tests only');
+    console.log('  --repeat N                Run selected tests N times sequentially (default: 1)');
     console.log('  --secure-ownable         Run secure-ownable tests only');
     console.log('  --runtime-rbac           Run runtime-rbac tests only');
     console.log('  --guard-controller       Run guard-controller tests only');
@@ -57,6 +61,7 @@ class SanitySDKTestRunner {
     console.log('Examples:');
     console.log('  tsx run-all-tests.ts                    # Run core tests (default)');
     console.log('  tsx run-all-tests.ts --all              # Run all tests');
+    console.log('  tsx run-all-tests.ts --core --repeat 3   # Run core tests 3 times in sequence');
     console.log('  tsx run-all-tests.ts --examples         # Run example tests only');
     console.log('  tsx run-all-tests.ts --secure-ownable   # Run single test suite');
     console.log();
@@ -132,11 +137,19 @@ class SanitySDKTestRunner {
 
   async runTests(testsToRun: TestConfig): Promise<void> {
     this.results.startTime = Date.now();
+    const totalRuns = this.repeatCount;
     console.log('\n🧪 Starting Sanity SDK Test Suite');
-    console.log(`📋 Running ${Object.keys(testsToRun).length} test suite(s)\n`);
+    console.log(`📋 Running ${Object.keys(testsToRun).length} test suite(s)${totalRuns > 1 ? ` × ${totalRuns} run(s)` : ''}\n`);
 
-    for (const [testName, testPath] of Object.entries(testsToRun)) {
-      await this.runTest(testName, testPath);
+    for (let run = 1; run <= totalRuns; run++) {
+      if (totalRuns > 1) {
+        console.log(`\n${'═'.repeat(60)}`);
+        console.log(`📍 Run ${run}/${totalRuns}`);
+        console.log('═'.repeat(60));
+      }
+      for (const [testName, testPath] of Object.entries(testsToRun)) {
+        await this.runTest(testName, testPath);
+      }
     }
 
     this.results.endTime = Date.now();
@@ -276,6 +289,17 @@ class SanitySDKTestRunner {
     if (args.includes('--help') || args.includes('-h')) {
       this.printUsage();
       process.exit(0);
+    }
+
+    // Parse --repeat N (default 1)
+    const repeatIdx = args.indexOf('--repeat');
+    if (repeatIdx >= 0 && args[repeatIdx + 1]) {
+      const n = parseInt(args[repeatIdx + 1], 10);
+      if (Number.isInteger(n) && n >= 1 && n <= 100) {
+        this.repeatCount = n;
+      }
+      // Remove --repeat and its value so they don't affect test selection
+      args.splice(repeatIdx, 2);
     }
 
     const testsToRun: TestConfig = {};
