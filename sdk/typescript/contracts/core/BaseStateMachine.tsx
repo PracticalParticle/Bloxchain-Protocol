@@ -52,23 +52,40 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
       abi: this.abi,
       functionName,
       args,
-    };
-    
+    };  
     // Only set account if it differs from WalletClient's account
     // This ensures consistency and avoids potential conflicts
     if (!walletClientAccount || walletClientAccount.toLowerCase() !== requestedAccount) {
       writeContractParams.account = options.from;
     }
 
+    // Determine how strictly to enforce pre-flight simulation.
+    const simulationMode = options.simulationMode ?? 'strict';
+
     try {
       // Simulate the contract call first for better error messages (no gas params for eth_call).
-      try {
-        await this.client.simulateContract({
-          ...writeContractParams,
-          account: writeContractParams.account || this.walletClient!.account
-        });
-      } catch (simulateError: unknown) {
-        throw simulateError;
+      if (simulationMode !== 'skip') {
+        try {
+          await this.client.simulateContract({
+            ...writeContractParams,
+            account: writeContractParams.account || this.walletClient!.account
+          });
+        } catch (simulateError: any) {
+          if (simulationMode === 'strict') {
+            throw simulateError;
+          }
+
+          const msg =
+            simulateError?.shortMessage ??
+            simulateError?.message ??
+            simulateError?.cause?.shortMessage ??
+            simulateError?.cause?.message ??
+            String(simulateError);
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[BaseStateMachine] Pre-flight simulation failed for ${functionName} (mode=${simulationMode}); continuing to send tx: ${msg}`
+          );
+        }
       }
 
       // Add gas override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.

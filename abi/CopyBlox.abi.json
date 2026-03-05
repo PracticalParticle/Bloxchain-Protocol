@@ -922,6 +922,11 @@
           },
           {
             "internalType": "bool",
+            "name": "enforceHandlerRelations",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
             "name": "isProtected",
             "type": "bool"
           },

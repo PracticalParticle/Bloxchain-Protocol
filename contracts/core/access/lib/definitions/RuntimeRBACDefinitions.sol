@@ -62,6 +62,7 @@ library RuntimeRBACDefinitions {
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: handlerForSelectors
         });
@@ -83,6 +84,7 @@ library RuntimeRBACDefinitions {
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
+            enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: executionHandlerForSelectors
         });

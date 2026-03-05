@@ -162,6 +162,19 @@ class BaseGuardControllerTest {
             'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
+        // GuardController: executeWithTimeLock (for MINT_REQUESTOR time-lock request)
+        this.EXECUTE_WITH_TIMELOCK_SELECTOR = this.web3.utils.keccak256(
+            'executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)'
+        ).slice(0, 10);
+        // GuardController: approveTimeLockExecutionWithMetaTx (for MINT_APPROVER meta approve)
+        this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR = this.web3.utils.keccak256(
+            'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+        ).slice(0, 10);
+        // GuardController: cancelTimeLockExecutionWithMetaTx (for MINT_APPROVER meta cancel)
+        this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR = this.web3.utils.keccak256(
+            'cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+        ).slice(0, 10);
+        
         // GuardController batch config constants
         this.CONTROLLER_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_OPERATION');
         this.GUARD_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(

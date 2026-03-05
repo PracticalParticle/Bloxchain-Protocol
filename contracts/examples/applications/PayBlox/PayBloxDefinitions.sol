@@ -63,6 +63,7 @@ library PayBloxDefinitions {
             operationType: NATIVE_PAYMENT,
             operationName: "NATIVE_PAYMENT",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: nativeTransferHandlerForSelectors
         });
@@ -73,6 +74,7 @@ library PayBloxDefinitions {
             operationType: GENERIC_APPROVAL,
             operationName: "GENERIC_APPROVAL",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: approvePaymentDelayedHandlerForSelectors
         });
@@ -83,6 +85,7 @@ library PayBloxDefinitions {
             operationType: GENERIC_CANCELLATION,
             operationName: "GENERIC_CANCELLATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
+            enforceHandlerRelations: true,
             isProtected: true,
             handlerForSelectors: cancelPaymentHandlerForSelectors
         });

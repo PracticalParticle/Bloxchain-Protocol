@@ -152,6 +152,7 @@ library EngineBlox {
         bytes32 operationType;
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
+        bool enforceHandlerRelations;  // When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference)
         bool isProtected;
         bytes4[] handlerForSelectors; 
     }
@@ -477,6 +478,8 @@ library EngineBlox {
      */
     function txCancellationWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_CANCEL);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxStatus(self, txId, TxStatus.PENDING);
@@ -495,6 +498,8 @@ library EngineBlox {
      * @return The updated TxRecord.
      */
     function txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) public returns (TxRecord memory) {
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_APPROVE);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_APPROVE);
         
@@ -537,6 +542,8 @@ library EngineBlox {
         SecureOperationState storage self,
         MetaTransaction memory metaTx
     ) public returns (TxRecord memory) {
+        _validateMetaTxAction(metaTx, TxAction.SIGN_META_REQUEST_AND_APPROVE);
+
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
@@ -1113,6 +1120,7 @@ library EngineBlox {
      * @param functionSelector Hash identifier for the function.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
+     * @param enforceHandlerRelations When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference).
      * @param isProtected Whether the function schema is protected from removal.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
      */
@@ -1122,6 +1130,7 @@ library EngineBlox {
         bytes4 functionSelector,
         string memory operationName,
         uint16 supportedActionsBitmap,
+        bool enforceHandlerRelations,
         bool isProtected,
         bytes4[] memory handlerForSelectors
     ) public {
@@ -1173,6 +1182,7 @@ library EngineBlox {
         schema.operationType = derivedOperationType;
         schema.operationName = operationName;
         schema.supportedActionsBitmap = supportedActionsBitmap;
+        schema.enforceHandlerRelations = enforceHandlerRelations;
         schema.isProtected = isProtected;
         schema.handlerForSelectors = handlerForSelectors;
         
@@ -1640,10 +1650,9 @@ library EngineBlox {
         }
 
         // Authorization check - verify signer has meta-transaction signing permissions for the function and action
-        bool isSignAction = metaTx.params.action == TxAction.SIGN_META_REQUEST_AND_APPROVE || metaTx.params.action == TxAction.SIGN_META_APPROVE || metaTx.params.action == TxAction.SIGN_META_CANCEL;
         bool isHandlerAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
         bool isExecutionAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.txRecord.params.executionSelector, metaTx.params.action);
-        if (!isSignAction || !isHandlerAuthorized || !isExecutionAuthorized) {
+        if (!isHandlerAuthorized || !isExecutionAuthorized) {
             revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
         }
           
@@ -2152,14 +2161,14 @@ library EngineBlox {
 
         FunctionSchema storage schema = self.functions[functionSelector];
 
+        // If this function schema does not enforce handler relations, skip validation.
+        if (!schema.enforceHandlerRelations) {
+            return;
+        }
+
         // Validate each handlerForSelector in the array
         for (uint256 j = 0; j < handlerForSelectors.length; j++) {
             bytes4 handlerForSelector = handlerForSelectors[j];
-            
-            // Special case: execution function permissions use handlerForSelector == functionSelector (self-reference)
-            if (handlerForSelector == functionSelector) {
-                continue; // Valid execution function permission
-            }
 
             bool found = false;
             for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
@@ -2213,6 +2222,22 @@ library EngineBlox {
         }
         
         _validateActionsSupportedByFunction(self, functionPermission.functionSelector, bitmap);
+    }
+
+    /**
+     * @dev Validates that the meta-transaction uses the expected signer action for the current workflow.
+     * @param metaTx The meta-transaction to validate.
+     * @param expectedAction The TxAction that must be used as the signer action.
+     * @custom:security Enforces strict separation between SIGN_META_REQUEST_AND_APPROVE,
+     *                  SIGN_META_APPROVE and SIGN_META_CANCEL workflows.
+     */
+    function _validateMetaTxAction(
+        MetaTransaction memory metaTx,
+        TxAction expectedAction
+    ) internal pure {
+        if (metaTx.params.action != expectedAction) {
+            revert SharedValidation.NotSupported();
+        }
     }
 
     /**

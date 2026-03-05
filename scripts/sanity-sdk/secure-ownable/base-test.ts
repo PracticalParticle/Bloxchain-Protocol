@@ -12,6 +12,17 @@ import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/meta
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.ts';
+
+/** Extract raw revert data from a viem/contract error for decoding. */
+function getRevertDataFromError(error: any): string | null {
+  const data = error?.data ?? error?.cause?.data ?? error?.cause?.cause?.data;
+  if (typeof data === 'string' && data.startsWith('0x')) return data;
+  if (data?.data && typeof data.data === 'string' && data.data.startsWith('0x')) return data.data;
+  const msg = (error?.message ?? error?.cause?.message ?? '').toString();
+  const hexMatch = msg.match(/0x[a-fA-F0-9]{8,}/);
+  return hexMatch ? hexMatch[0] : null;
+}
 
 export interface SecureOwnableRoles {
   owner: Address;
@@ -114,8 +125,18 @@ export abstract class BaseSecureOwnableTest extends BaseSDKTest {
         }
       }
     } catch (error: any) {
-      console.error('❌ Failed to discover role assignments:', error.message);
-      throw new Error(`Role discovery failed: ${error.message}`);
+      const addr = this.contractAddress ?? 'unknown';
+      let hint = `Contract at ${addr} reverted when calling owner() or getBroadcasters/getRecovery. Ensure AccountBlox is deployed and initialized for this network (see deployed-addresses.json).`;
+      const revertData = getRevertDataFromError(error);
+      if (revertData) {
+        const { userMessage, error: decoded } = extractErrorInfo(revertData);
+        if (decoded?.name) {
+          console.error(`  📋 Revert decoded: ${decoded.name}${decoded.params ? ` ${JSON.stringify(decoded.params)}` : ''}`);
+          hint = `${userMessage}. ${hint}`;
+        }
+      }
+      console.error('❌ Failed to discover role assignments:', error?.message ?? error);
+      throw new Error(`Role discovery failed: ${hint}`);
     }
   }
 

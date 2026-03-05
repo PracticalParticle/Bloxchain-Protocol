@@ -4,9 +4,13 @@
  */
 
 import { spawn, exec } from 'child_process';
+import fs from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
+import { createPublicClient, http } from 'viem';
+import type { Address } from 'viem';
+import { getTestConfig } from './base/test-config.ts';
 
 const execAsync = promisify(exec);
 
@@ -19,11 +23,11 @@ interface TestConfig {
 }
 
 class SanitySDKTestRunner {
-  /** Order: guard-controller before runtime-rbac so mint schema is registered before RBAC steps 3–6 that use getFunctionSchema(mint). */
+  /** Core test order: run secure-ownable, then runtime-rbac, and guard-controller last. */
   private coreTests: TestConfig = {
     'secure-ownable': resolve(__dirname, 'secure-ownable', 'run-tests.ts'),
-    'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts'),
-    'runtime-rbac': resolve(__dirname, 'runtime-rbac', 'run-tests.ts')
+    'runtime-rbac': resolve(__dirname, 'runtime-rbac', 'run-tests.ts'),
+    'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts')
   };
 
   private exampleTests: TestConfig = {};
@@ -36,6 +40,9 @@ class SanitySDKTestRunner {
     endTime: null as number | null
   };
 
+  /** Number of sequential runs (--repeat N). Default 1. */
+  private repeatCount = 1;
+
   printUsage(): void {
     console.log('🧪 Sanity SDK Test Master Runner');
     console.log('='.repeat(60));
@@ -45,6 +52,7 @@ class SanitySDKTestRunner {
     console.log('  --all                    Run all tests (core + examples)');
     console.log('  --core                   Run core tests only (default)');
     console.log('  --examples               Run example tests only');
+    console.log('  --repeat N                Run selected tests N times sequentially (default: 1)');
     console.log('  --secure-ownable         Run secure-ownable tests only');
     console.log('  --runtime-rbac           Run runtime-rbac tests only');
     console.log('  --guard-controller       Run guard-controller tests only');
@@ -53,6 +61,7 @@ class SanitySDKTestRunner {
     console.log('Examples:');
     console.log('  tsx run-all-tests.ts                    # Run core tests (default)');
     console.log('  tsx run-all-tests.ts --all              # Run all tests');
+    console.log('  tsx run-all-tests.ts --core --repeat 3   # Run core tests 3 times in sequence');
     console.log('  tsx run-all-tests.ts --examples         # Run example tests only');
     console.log('  tsx run-all-tests.ts --secure-ownable   # Run single test suite');
     console.log();
@@ -128,18 +137,26 @@ class SanitySDKTestRunner {
 
   async runTests(testsToRun: TestConfig): Promise<void> {
     this.results.startTime = Date.now();
+    const totalRuns = this.repeatCount;
     console.log('\n🧪 Starting Sanity SDK Test Suite');
-    console.log(`📋 Running ${Object.keys(testsToRun).length} test suite(s)\n`);
+    console.log(`📋 Running ${Object.keys(testsToRun).length} test suite(s)${totalRuns > 1 ? ` × ${totalRuns} run(s)` : ''}\n`);
 
-    for (const [testName, testPath] of Object.entries(testsToRun)) {
-      await this.runTest(testName, testPath);
+    for (let run = 1; run <= totalRuns; run++) {
+      if (totalRuns > 1) {
+        console.log(`\n${'═'.repeat(60)}`);
+        console.log(`📍 Run ${run}/${totalRuns}`);
+        console.log('═'.repeat(60));
+      }
+      for (const [testName, testPath] of Object.entries(testsToRun)) {
+        await this.runTest(testName, testPath);
+      }
     }
 
     this.results.endTime = Date.now();
-    this.printSummary();
+    await this.printSummary(testsToRun);
   }
 
-  printSummary(): void {
+  async printSummary(testsToRun: TestConfig): Promise<void> {
     const duration = ((this.results.endTime! - this.results.startTime!) / 1000).toFixed(2);
 
     console.log('\n' + '='.repeat(60));
@@ -151,12 +168,118 @@ class SanitySDKTestRunner {
     console.log(`⏱️  Duration: ${duration}s`);
     console.log('='.repeat(60));
 
-    if (this.results.failed === 0) {
+    const allPassed = this.results.failed === 0;
+
+    if (allPassed) {
       console.log('\n🎉 All tests passed!');
-      process.exit(0);
     } else {
       console.log('\n⚠️  Some tests failed. Please review the output above.');
-      process.exit(1);
+    }
+
+    // Post-sanity system state summary (only when all tests passed)
+    try {
+      await this.printPostSanitySystemStateSummary(testsToRun);
+    } catch (e: any) {
+      console.warn(
+        `\n⚠️  Post-sanity system state summary failed: ${e?.message ?? String(e)}`
+      );
+    }
+
+    process.exit(allPassed ? 0 : 1);
+  }
+
+  /**
+   * Print a concise, top-level system state summary after sanity tests.
+   * Shows core contract addresses and BASIC token state for the current network.
+   */
+  private async printPostSanitySystemStateSummary(testsToRun: TestConfig): Promise<void> {
+    // Only run when guard-controller suite ran (core flow), so we know AccountBlox / BasicERC20 are deployed.
+    const ranGuardController = Object.keys(testsToRun).includes('guard-controller');
+    if (!ranGuardController) return;
+
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 Post-Sanity System State Summary');
+    console.log('='.repeat(60));
+
+    const config = getTestConfig();
+    const rpcUrl = config.rpcUrl;
+    const network = process.env.NETWORK_NAME || 'development';
+
+    console.log(`Network: ${network}`);
+    console.log(`RPC URL: ${rpcUrl}`);
+
+    // Load deployed-addresses.json
+    const addressesPath = resolve(__dirname, '../../deployed-addresses.json');
+    if (!fs.existsSync(addressesPath)) {
+      console.log('⚠️  deployed-addresses.json not found; skipping address/state summary');
+      return;
+    }
+
+    const raw = fs.readFileSync(addressesPath, 'utf8');
+    const json = JSON.parse(raw) as any;
+    const netInfo = json[network];
+    if (!netInfo) {
+      console.log(`⚠️  No deployed-addresses entry for network "${network}"`);
+      return;
+    }
+
+    const engineBlox = netInfo.EngineBlox?.address as Address | undefined;
+    const accountBlox = netInfo.AccountBlox?.address as Address | undefined;
+    const basicErc20 = netInfo.BasicERC20?.address as Address | undefined;
+
+    console.log('Contracts:');
+    console.log(`  EngineBlox:   ${engineBlox ?? 'n/a'}`);
+    console.log(`  AccountBlox:  ${accountBlox ?? 'n/a'}`);
+    console.log(`  BasicERC20:   ${basicErc20 ?? 'n/a'}`);
+
+    if (!basicErc20 || !accountBlox) {
+      console.log('⚠️  BasicERC20 or AccountBlox address missing; skipping token state summary');
+      return;
+    }
+
+    // Minimal ERC20 read ABI (balanceOf, totalSupply)
+    const ERC20_READ_ABI = [
+      {
+        name: 'balanceOf',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [{ name: 'account', type: 'address' }],
+        outputs: [{ type: 'uint256' }],
+      },
+      {
+        name: 'totalSupply',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ type: 'uint256' }],
+      },
+    ] as const;
+
+    try {
+      const transport = http(rpcUrl, {
+        timeout: config.rpcTimeoutMs ?? 30_000,
+      });
+      const publicClient: any = createPublicClient({ transport });
+
+      const totalSupply: bigint = await publicClient.readContract({
+        address: basicErc20,
+        abi: ERC20_READ_ABI as any,
+        functionName: 'totalSupply',
+      });
+      const accountBloxBalance: bigint = await publicClient.readContract({
+        address: basicErc20,
+        abi: ERC20_READ_ABI as any,
+        functionName: 'balanceOf',
+        args: [accountBlox],
+      });
+
+      console.log('\nBASIC Token State (on-chain):');
+      console.log(`  totalSupply:         ${totalSupply.toString()}`);
+      console.log(`  AccountBlox balance: ${accountBloxBalance.toString()}`);
+    } catch (e: any) {
+      console.log(
+        `⚠️  Failed to read BASIC token state from chain: ${e?.message ?? String(e)}`
+      );
     }
   }
 
@@ -166,6 +289,17 @@ class SanitySDKTestRunner {
     if (args.includes('--help') || args.includes('-h')) {
       this.printUsage();
       process.exit(0);
+    }
+
+    // Parse --repeat N (default 1)
+    const repeatIdx = args.indexOf('--repeat');
+    if (repeatIdx >= 0 && args[repeatIdx + 1]) {
+      const n = parseInt(args[repeatIdx + 1], 10);
+      if (Number.isInteger(n) && n >= 1 && n <= 100) {
+        this.repeatCount = n;
+      }
+      // Remove --repeat and its value so they don't affect test selection
+      args.splice(repeatIdx, 2);
     }
 
     const testsToRun: TestConfig = {};

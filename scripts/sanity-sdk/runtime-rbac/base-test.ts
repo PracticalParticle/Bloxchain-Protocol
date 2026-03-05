@@ -465,8 +465,8 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     const rbacForRead = this.getRuntimeRBACForRoleQueries();
     try {
       const role = await rbacForRead.getRole(roleHash);
-      // getRole returns: { roleName, roleHashReturn, maxWallets, walletCount, isProtected }
-      const roleHashReturn = role.roleHashReturn;
+      // getRole returns: { roleName, roleHashReturn, maxWallets, walletCount, isProtected } (or roleHash in some ABIs)
+      const roleHashReturn = (role as any).roleHashReturn ?? (role as any).roleHash;
       const exists = (
         roleHashReturn &&
         typeof roleHashReturn === 'string' &&
@@ -697,6 +697,7 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       '0xa0387940': 'NotSupported',
       '0x405c16b9': 'ConflictingMetaTxPermissions',
       '0xee809d50': 'CannotModifyProtected',
+      '0xc0baa221': 'HandlerForSelectorMismatch',
     };
 
     return errorMap[errorSelector.toLowerCase()] || `Unknown(${errorSelector})`;

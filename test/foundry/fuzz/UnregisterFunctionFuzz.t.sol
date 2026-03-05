@@ -42,6 +42,7 @@ contract EngineBloxUnregisterHarness {
             functionSelector,
             "TEST_OPERATION",
             bitmap,
+            true, // enforceHandlerRelations
             false,
             handlers
         );

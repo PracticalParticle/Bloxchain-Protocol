@@ -53,7 +53,7 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         console.log('   3. Whitelist BasicERC20 for mint selector');
         console.log('   4. Add function to roles: MINT_REQUESTOR=request, MINT_APPROVER=meta approve+cancel, BROADCASTER=execute');
         console.log('   5. Request (requester=MINT_REQUESTOR) → Sign (MINT_APPROVER) → Execute (BROADCASTER)');
-        console.log('   6. Verify TxStatus COMPLETED and 100 tokens minted to AccountBlox');
+        console.log('   6. Verify tokens minted and passed to destination (totalSupply + balance increase)');
 
         // Ensure AccountBlox and BasicERC20 are in sync (BasicERC20.minter must be this AccountBlox)
         const tokenAddress = this.getBasicErc20Address();
@@ -258,6 +258,12 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 ERC20_MINT_SELECTOR,
                 this.TxAction.EXECUTE_TIME_DELAY_REQUEST
             );
+            // Controller permission: MINT_REQUESTOR must be able to call executeWithTimeLock for mint
+            const requestorHasControllerRequest = await this.roleHasPermissionForSelector(
+                requestorRoleHash,
+                this.EXECUTE_WITH_TIMELOCK_SELECTOR,
+                this.TxAction.EXECUTE_TIME_DELAY_REQUEST
+            );
             const approverHasMetaApprove = await this.roleHasPermissionForSelector(
                 approverRoleHash,
                 ERC20_MINT_SELECTOR,
@@ -278,6 +284,17 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
                 this.TxAction.SIGN_META_CANCEL
             );
+            // Controller permissions: MINT_APPROVER must be able to sign approve/cancel meta-tx for the controller
+            const approverHasApproveMetaTx = await this.roleHasPermissionForSelector(
+                approverRoleHash,
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                this.TxAction.SIGN_META_APPROVE
+            );
+            const approverHasCancelMetaTx = await this.roleHasPermissionForSelector(
+                approverRoleHash,
+                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+                this.TxAction.SIGN_META_CANCEL
+            );
             const broadcasterOk = await this.roleHasPermissionForSelector(
                 broadcasterRoleHash,
                 ERC20_MINT_SELECTOR,
@@ -286,10 +303,13 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
 
             if (
                 requestorOk &&
+                requestorHasControllerRequest &&
                 approverHasMetaApprove &&
                 approverHasMetaCancel &&
                 approverHasHandlerMetaApprove &&
                 approverHasHandlerMetaCancel &&
+                approverHasApproveMetaTx &&
+                approverHasCancelMetaTx &&
                 broadcasterOk
             ) {
                 console.log('  ℹ️  Mint role permissions already correctly configured; skipping cleanup batch');
@@ -305,15 +325,23 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
 
             // Remove existing mint/handler permissions first so we always set the correct bitmap (idempotent; ignores ResourceNotFound)
             await this.removeFunctionFromRole(this.getRoleHash('MINT_REQUESTOR'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('MINT_REQUESTOR'), this.EXECUTE_WITH_TIMELOCK_SELECTOR, ownerPrivateKey, broadcasterWallet);
             await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
             await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
             await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
+            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
 
             const requestorActions = [this.TxAction.EXECUTE_TIME_DELAY_REQUEST];
-            // FIX: MINT_APPROVER should meta-approve (not meta-request+approve) and be able to cancel
-            const approverActions = [this.TxAction.SIGN_META_APPROVE, this.TxAction.SIGN_META_CANCEL];
-            const broadcasterActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+            // MINT_APPROVER performs request+approve meta workflow on mint and can cancel
+            const approverActions = [this.TxAction.SIGN_META_REQUEST_AND_APPROVE, this.TxAction.SIGN_META_APPROVE, this.TxAction.SIGN_META_CANCEL];
+            const broadcasterRequestApproveActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+            const broadcasterApproveCancelActions = [this.TxAction.EXECUTE_META_APPROVE, this.TxAction.EXECUTE_META_CANCEL];
 
+            // Execution selector permissions (mint and handler for requestAndApproveExecution)
             await this.addFunctionToRole(this.getRoleHash('MINT_REQUESTOR'), ERC20_MINT_SELECTOR, requestorActions, ownerPrivateKey, broadcasterWallet);
             await this.addFunctionToRole(this.getRoleHash('MINT_APPROVER'), ERC20_MINT_SELECTOR, approverActions, ownerPrivateKey, broadcasterWallet);
             // Also grant MINT_APPROVER meta-approve/cancel on the handler selector itself so EngineBlox
@@ -330,7 +358,58 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 ownerPrivateKey,
                 broadcasterWallet
             );
-            await this.addFunctionToRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, broadcasterActions, ownerPrivateKey, broadcasterWallet);
+            await this.addFunctionToRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, broadcasterRequestApproveActions, ownerPrivateKey, broadcasterWallet);
+            // Broadcaster must also have EXECUTE_META_REQUEST_AND_APPROVE on the requestAndApproveExecution
+            // handler selector wired to the mint execution selector so EngineBlox validates both
+            // executionSelector and handlerSelector permissions for the broadcaster.
+            await this.addFunctionToRoleWithHandlerForSelectors(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
+                broadcasterRequestApproveActions,
+                [ERC20_MINT_SELECTOR],
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            // Broadcaster must be able to execute approve/cancel meta flows on the controller for any
+            // ERC20 mint workflows that go through approveTimeLockExecutionWithMetaTx / cancelTimeLockExecutionWithMetaTx.
+            await this.addFunctionToRole(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                broadcasterApproveCancelActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            await this.addFunctionToRole(
+                this.getRoleHash('BROADCASTER_ROLE'),
+                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+                broadcasterApproveCancelActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+
+            // Controller permissions: MINT_REQUESTOR can call executeWithTimeLock (handler schema only allows self-reference; restriction to mint is via execution selector permission already granted).
+            await this.addFunctionToRole(
+                this.getRoleHash('MINT_REQUESTOR'),
+                this.EXECUTE_WITH_TIMELOCK_SELECTOR,
+                requestorActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            // Controller permissions: MINT_APPROVER can sign approveTimeLockExecutionWithMetaTx and cancelTimeLockExecutionWithMetaTx (handler schemas use self-reference).
+            await this.addFunctionToRole(
+                this.getRoleHash('MINT_APPROVER'),
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                [this.TxAction.SIGN_META_APPROVE],
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+            await this.addFunctionToRole(
+                this.getRoleHash('MINT_APPROVER'),
+                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+                [this.TxAction.SIGN_META_CANCEL],
+                ownerPrivateKey,
+                broadcasterWallet
+            );
 
             // AFTER: verify each role has the correct action permission for mint selector
             await this.verifyStep4RolePermissions();
@@ -352,7 +431,19 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         );
         this.assertTest(requestorHasRequest, 'MINT_REQUESTOR has EXECUTE_TIME_DELAY_REQUEST for mint');
 
+        const requestorHasControllerRequest = await this.roleHasPermissionForSelector(
+            this.getRoleHash('MINT_REQUESTOR'),
+            this.EXECUTE_WITH_TIMELOCK_SELECTOR,
+            this.TxAction.EXECUTE_TIME_DELAY_REQUEST
+        );
+        this.assertTest(requestorHasControllerRequest, 'MINT_REQUESTOR has controller permission for executeWithTimeLock (mint)');
+
         const approverRoleHash = this.getRoleHash('MINT_APPROVER');
+        const approverMintMetaRequestApprove = await this.roleHasPermissionForSelector(
+            approverRoleHash,
+            ERC20_MINT_SELECTOR,
+            this.TxAction.SIGN_META_REQUEST_AND_APPROVE
+        );
         const approverMintMetaApprove = await this.roleHasPermissionForSelector(
             approverRoleHash,
             ERC20_MINT_SELECTOR,
@@ -375,14 +466,32 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         );
 
         console.log('     MINT_APPROVER mint permissions:');
-        console.log(`       SIGN_META_APPROVE (mint): ${approverMintMetaApprove}`);
-        console.log(`       SIGN_META_CANCEL  (mint): ${approverMintMetaCancel}`);
+        console.log(`       SIGN_META_REQUEST_AND_APPROVE (mint): ${approverMintMetaRequestApprove}`);
+        console.log(`       SIGN_META_APPROVE            (mint): ${approverMintMetaApprove}`);
+        console.log(`       SIGN_META_CANCEL             (mint): ${approverMintMetaCancel}`);
         console.log('     MINT_APPROVER handler permissions:');
         console.log(`       SIGN_META_APPROVE (handler): ${approverHandlerMetaApprove}`);
         console.log(`       SIGN_META_CANCEL  (handler): ${approverHandlerMetaCancel}`);
 
+        const approverApproveMetaTx = await this.roleHasPermissionForSelector(
+            approverRoleHash,
+            this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+            this.TxAction.SIGN_META_APPROVE
+        );
+        const approverCancelMetaTx = await this.roleHasPermissionForSelector(
+            approverRoleHash,
+            this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+            this.TxAction.SIGN_META_CANCEL
+        );
+        console.log('     MINT_APPROVER controller permissions:');
+        console.log(`       approveTimeLockExecutionWithMetaTx (SIGN_META_APPROVE): ${approverApproveMetaTx}`);
+        console.log(`       cancelTimeLockExecutionWithMetaTx (SIGN_META_CANCEL): ${approverCancelMetaTx}`);
+
+        this.assertTest(approverMintMetaRequestApprove, 'MINT_APPROVER has SIGN_META_REQUEST_AND_APPROVE for mint');
         this.assertTest(approverMintMetaApprove, 'MINT_APPROVER has SIGN_META_APPROVE for mint');
         this.assertTest(approverMintMetaCancel, 'MINT_APPROVER has SIGN_META_CANCEL for mint');
+        this.assertTest(approverApproveMetaTx, 'MINT_APPROVER has controller permission for approveTimeLockExecutionWithMetaTx');
+        this.assertTest(approverCancelMetaTx, 'MINT_APPROVER has controller permission for cancelTimeLockExecutionWithMetaTx');
 
         const broadcasterHasExecute = await this.roleHasPermissionForSelector(
             this.getRoleHash('BROADCASTER_ROLE'),
@@ -394,12 +503,12 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
     }
 
     async testStep5MintFlow() {
-        await this.startTest('Mint 100 tokens to AccountBlox via request → sign meta approve → execute');
+        await this.startTest('Mint 100 tokens to AccountBlox via request+approve meta-tx (one-step)');
         try {
             console.log('  [DEBUG] step5 BEFORE createExternalExecutionMetaTx');
             const tokenAddress = this.getBasicErc20Address();
             const mintAmount = this.web3.utils.toBN('100000000000000000000'); // 100e18
-            // BEFORE: record balance so step 6 can verify delta
+            // BEFORE: record balance and totalSupply so step 6 can verify mint actually occurred
             // IMPORTANT: use raw eth_call + manual decode to avoid Contract._decodeMethodReturn
             // and any ABI enum/\"u\" issues inside web3's Contract abstraction.
             const balanceOfCallData = this.web3.eth.abi.encodeFunctionCall(
@@ -417,12 +526,23 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             const balanceBeforeDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceBeforeHex);
             this._balanceBeforeMint = this.web3.utils.toBN(balanceBeforeDecoded);
 
+            const totalSupplyCallData = this.web3.eth.abi.encodeFunctionCall(
+                { name: 'totalSupply', type: 'function', inputs: [] },
+                []
+            );
+            const totalSupplyBeforeHex = await this.web3.eth.call({
+                to: tokenAddress,
+                data: totalSupplyCallData
+            });
+            const totalSupplyBeforeDecoded = this.web3.eth.abi.decodeParameter('uint256', totalSupplyBeforeHex);
+            this._totalSupplyBeforeMint = this.web3.utils.toBN(totalSupplyBeforeDecoded);
+
             const executionParams = this.web3.eth.abi.encodeParameters(
                 ['address', 'uint256'],
                 [this.contractAddress, mintAmount.toString()]
             );
 
-            // Use SIGN_META_APPROVE so MINT_APPROVER only approves the meta-tx (broadcaster executes with EXECUTE_META_REQUEST_AND_APPROVE)
+            // Use SIGN_META_REQUEST_AND_APPROVE so MINT_APPROVER performs a one-step request+approve meta-tx
             const unsignedMetaTx = await this.createExternalExecutionMetaTx(
                 this.mintRequestorWallet.address,
                 tokenAddress,
@@ -432,7 +552,7 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 ERC20_MINT_SELECTOR,
                 executionParams,
                 this.mintApproverWallet.address,
-                this.TxAction.SIGN_META_APPROVE
+                this.TxAction.SIGN_META_REQUEST_AND_APPROVE
             );
             console.log(`  [DEBUG] step5 AFTER createExternalExecutionMetaTx: message=${unsignedMetaTx.message != null ? 'set' : 'MISSING'}`);
 
@@ -482,7 +602,11 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             this._mintTxId = this.extractTxIdFromReceipt(this._mintReceipt);
             const ok = this._mintReceipt && (this._mintReceipt.status === true || this._mintReceipt.status === 1 || this._mintReceipt.status === '0x1');
             this.assertTest(ok, `requestAndApproveExecution tx succeeded (txId: ${this._mintTxId})`);
-            await this.passTest('Mint flow executed', `TxId: ${this._mintTxId}`);
+            if (this._mintTxId == null) {
+                console.log('  ⚠️  TxId could not be extracted from receipt (logs may be missing or event shape differs).');
+                console.log('  📋 Mint is NOT confirmed until step 6 verifies balance and totalSupply increase.');
+            }
+            await this.passTest('Mint flow executed', `Tx accepted (txId: ${this._mintTxId ?? 'n/a'}; mint verification in step 6)`);
         } catch (error) {
             await this.failTest('Mint 100 tokens to AccountBlox', error);
             throw error;
@@ -490,7 +614,7 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
     }
 
     async testStep6Verify() {
-        await this.startTest('Verify TxStatus COMPLETED and token balance');
+        await this.startTest('Verify tokens minted and passed to destination (balance + totalSupply)');
         try {
             let txId = this._mintTxId;
             let receipt = this._mintReceipt;
@@ -551,11 +675,15 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                     this.assertTest(statusNum === this.TxStatus.COMPLETED, `TxStatus COMPLETED (got ${statusNum})`);
                 }
             } else {
-                console.warn('  [WARN] No TransactionEvent found for mint tx; skipping explicit TxStatus assertion');
+                console.warn('  [WARN] No TransactionEvent found for mint tx; relying on balance + totalSupply for mint verification');
             }
 
-            // Verify balance increased by exactly 100e18 from step 5 before
             const tokenAddress = this.getBasicErc20Address();
+            const expectedIncrease = this.web3.utils.toBN('100000000000000000000');
+            const balanceBefore = this._balanceBeforeMint != null ? this._balanceBeforeMint : this.web3.utils.toBN(0);
+            const totalSupplyBefore = this._totalSupplyBeforeMint != null ? this._totalSupplyBeforeMint : this.web3.utils.toBN(0);
+
+            // --- Balance: tokens passed to destination (AccountBlox) ---
             const balanceOfCallData = this.web3.eth.abi.encodeFunctionCall(
                 {
                     name: 'balanceOf',
@@ -564,18 +692,14 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 },
                 [this.contractAddress]
             );
-            const expectedIncrease = this.web3.utils.toBN('100000000000000000000');
-            const balanceBefore = this._balanceBeforeMint != null ? this._balanceBeforeMint : this.web3.utils.toBN(0);
-
             let balanceAfterHex = await this.web3.eth.call({
                 to: tokenAddress,
                 data: balanceOfCallData
             });
             let balanceAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceAfterHex);
             let balanceAfter = this.web3.utils.toBN(balanceAfterDecoded);
-            let actualIncrease = balanceAfter.sub(balanceBefore);
-            // After chain restart or slow node, balance may not be visible immediately; retry once after short delay
-            if (actualIncrease.lt(expectedIncrease)) {
+            let actualBalanceIncrease = balanceAfter.sub(balanceBefore);
+            if (actualBalanceIncrease.lt(expectedIncrease)) {
                 await new Promise(r => setTimeout(r, 2000));
                 balanceAfterHex = await this.web3.eth.call({
                     to: tokenAddress,
@@ -583,19 +707,47 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 });
                 balanceAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', balanceAfterHex);
                 balanceAfter = this.web3.utils.toBN(balanceAfterDecoded);
-                actualIncrease = balanceAfter.sub(balanceBefore);
+                actualBalanceIncrease = balanceAfter.sub(balanceBefore);
             }
-            if (!actualIncrease.eq(expectedIncrease)) {
-                const hint = (receipt && (receipt.status === true || receipt.status === 1 || receipt.status === '0x1'))
-                    ? ' Tx succeeded but balance did not change. If the chain was restarted, re-run the full test suite from the start.'
-                    : '';
-                this.assertTest(false, `Balance increased by 100e18 (got +${this.web3.utils.fromWei(actualIncrease.toString(), 'ether')})${hint}`);
-            }
+            this.assertTest(
+                actualBalanceIncrease.eq(expectedIncrease),
+                `Tokens passed to destination: AccountBlox balance must increase by 100e18 (got +${this.web3.utils.fromWei(actualBalanceIncrease.toString(), 'ether')} BASIC)`
+            );
+            console.log(`  ✅ Verified: tokens passed to destination (AccountBlox balance +100e18)`);
+
             this.assertTest(balanceAfter.gte(expectedIncrease), `AccountBlox token balance >= 100 (got ${this.web3.utils.fromWei(balanceAfter.toString(), 'ether')})`);
 
-            await this.passTest('Verify TxStatus and balance', `Status=COMPLETED, balance+=100 BASIC`);
+            // --- TotalSupply: tokens were actually minted ---
+            const totalSupplyCallData = this.web3.eth.abi.encodeFunctionCall(
+                { name: 'totalSupply', type: 'function', inputs: [] },
+                []
+            );
+            let totalSupplyAfterHex = await this.web3.eth.call({
+                to: tokenAddress,
+                data: totalSupplyCallData
+            });
+            let totalSupplyAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', totalSupplyAfterHex);
+            let totalSupplyAfter = this.web3.utils.toBN(totalSupplyAfterDecoded);
+            let actualSupplyIncrease = totalSupplyAfter.sub(totalSupplyBefore);
+            if (actualSupplyIncrease.lt(expectedIncrease)) {
+                await new Promise(r => setTimeout(r, 2000));
+                totalSupplyAfterHex = await this.web3.eth.call({
+                    to: tokenAddress,
+                    data: totalSupplyCallData
+                });
+                totalSupplyAfterDecoded = this.web3.eth.abi.decodeParameter('uint256', totalSupplyAfterHex);
+                totalSupplyAfter = this.web3.utils.toBN(totalSupplyAfterDecoded);
+                actualSupplyIncrease = totalSupplyAfter.sub(totalSupplyBefore);
+            }
+            this.assertTest(
+                actualSupplyIncrease.eq(expectedIncrease),
+                `Tokens minted: totalSupply must increase by 100e18 (got +${this.web3.utils.fromWei(actualSupplyIncrease.toString(), 'ether')})`
+            );
+            console.log(`  ✅ Verified: tokens were minted (totalSupply +100e18)`);
+
+            await this.passTest('Verify tokens minted and passed to destination', 'Balance +100e18, totalSupply +100e18');
         } catch (error) {
-            await this.failTest('Verify TxStatus and token balance', error);
+            await this.failTest('Verify tokens minted and passed to destination', error);
             throw error;
         }
     }
