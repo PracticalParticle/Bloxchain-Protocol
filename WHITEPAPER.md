@@ -10,7 +10,7 @@
 
 *Licensed under Mozilla Public License 2.0 (MPL-2.0)*
 
-*Last updated: 14.10.2025*
+*Last updated: 07.03.2026*
 
 ***
 
@@ -139,7 +139,7 @@ State Abstraction implements these principles through a **centralized state mach
 
 **State Machine Engine**: A **deterministic state machine** that processes all transactions through defined state transitions. The engine ensures that every operation follows prescribed security protocols and maintains complete audit trails.
 
-**Role-Based Access Control (RBAC)**: **Dynamic RBAC implementation** with function-level granularity that allows runtime modification of permissions without requiring contract upgrades. The system supports both protected system roles and user-defined dynamic roles.
+**Role-Based Access Control (RBAC)**: **Runtime RBAC implementation** (see `RuntimeRBAC.sol` and EngineBlox) with function-level granularity that allows runtime modification of permissions without requiring contract upgrades. The system supports both protected system roles (OWNER_ROLE, BROADCASTER_ROLE, RECOVERY_ROLE) and user-defined dynamic roles.
 
 **EIP-712 Meta-Transaction Framework**: **EIP-712 compliant structured data signing** with per-signer nonce management and replay protection. This enables complex off-chain authorization workflows while maintaining on-chain security guarantees.
 
@@ -372,10 +372,12 @@ The **multi-signature wallet market** demonstrates strong growth driven by incre
 
 ## Technical Deep Dive: Architecture and Implementation
 
-> **📋 Implementation Status**: The following technical sections contain both **currently implemented features** (based on EngineBlox.sol v1.0.0) and **future roadmap features**. Code examples are clearly marked to distinguish between:
-> - ✅ **Currently Implemented**: Actual code from EngineBlox.sol
+> **📋 Implementation Status**: The following technical sections are grounded in the actual **Bloxchain-protocol** `contracts/core/` implementation (EngineBlox.sol v1.0.0, BaseStateMachine.sol, SecureOwnable.sol, RuntimeRBAC.sol, GuardController.sol, Account.sol). Code examples are clearly marked:
+> - ✅ **Currently Implemented**: Actual or closely aligned code from `contracts/core/`
 > - 🔮 **Future Development**: Conceptual implementations for upcoming releases
 > - ⚠️ **Roadmap Features**: Planned enhancements not yet in production
+>
+> **Contract reference (audit)**: Implemented behaviour is defined in `contracts/core/`: **lib/EngineBlox.sol** (library), **base/BaseStateMachine.sol**, **security/SecureOwnable.sol**, **access/RuntimeRBAC.sol**, **execution/GuardController.sol**, **pattern/Account.sol**. Definitions: **security/lib/definitions/SecureOwnableDefinitions.sol**, **access/lib/definitions/RuntimeRBACDefinitions.sol**, **execution/lib/definitions/GuardControllerDefinitions.sol**. Validation: **lib/utils/SharedValidation.sol**.
 
 ### Centralized State Machine Design
 
@@ -383,7 +385,7 @@ State Abstraction implements a **sophisticated state machine architecture** that
 
 **State Machine Fundamentals**: The system implements a **deterministic finite automaton** where each state represents a specific security context, and transitions between states are governed by cryptographically verified inputs. This approach ensures that all nodes in the network arrive at identical states when processing the same transaction sequences.
 
-**State Representation**: ✅ **Currently Implemented** - The global state is encapsulated in a `SecureOperationState` struct that maintains:
+**State Representation**: ✅ **Currently Implemented** - The global state is encapsulated in a `SecureOperationState` struct in `EngineBlox.sol` that maintains:
 ```solidity
 struct SecureOperationState {
     // ============ SYSTEM STATE ============
@@ -398,6 +400,7 @@ struct SecureOperationState {
     // ============ ROLE-BASED ACCESS CONTROL ============
     mapping(bytes32 => Role) roles;
     EnumerableSet.Bytes32Set supportedRolesSet;
+    mapping(address => EnumerableSet.Bytes32Set) walletRoles;  // reverse index O(1) lookup
     
     // ============ FUNCTION MANAGEMENT ============
     mapping(bytes4 => FunctionSchema) functions;
@@ -409,6 +412,11 @@ struct SecureOperationState {
     
     // ============ EVENT FORWARDING ============
     address eventForwarder;
+    
+    // ============ FUNCTION TARGET MANAGEMENT ============
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
+    EnumerableSet.Bytes32Set systemMacroSelectorsSet;
 }
 ```
 
@@ -416,18 +424,18 @@ struct SecureOperationState {
 
 ### Four-Tier Component Hierarchy
 
-State Abstraction organizes functionality into a **hierarchical component architecture** that provides both flexibility and security assurance:
+State Abstraction organizes functionality into a **hierarchical component architecture** grounded in `contracts/core/`:
 
 ```mermaid
 flowchart TD
-    A["Tier 4: DynamicRBAC<br/>Full Role-Based Access Control<br/>Function-Level Granularity<br/>Runtime Role Modification"] --> B["Tier 3: SecureOwnable<br/>Mandatory Multi-Role Security<br/>Time-Locked Operations<br/>Role Separation Enforcement"]
-    B --> C["Tier 2: BaseStateMachineCore<br/>State Transition Management<br/>Event Emission<br/>Audit Trail Maintenance"]
-    C --> D["Tier 1: EngineBlox Library<br/>Atomic Transaction Breakdown<br/>Multi-Signature Validation<br/>Mathematical Verification"]
+    A["Tier 4: Account (pattern)<br/>GuardController + RuntimeRBAC + SecureOwnable<br/>Single combined entry point"] --> B["Tier 3: SecureOwnable / RuntimeRBAC / GuardController<br/>SecureOwnable: ownership, broadcaster, recovery, timelock<br/>RuntimeRBAC: dynamic roles, function permissions<br/>GuardController: time-locked execution, target whitelist"]
+    B --> C["Tier 2: BaseStateMachine<br/>State transition management, event emission<br/>Meta-tx utilities, state queries, role management"]
+    C --> D["Tier 1: EngineBlox (library)<br/>Atomic transaction breakdown, multi-signature validation<br/>SecureOperationState, TxRecord, EIP-712"]
     
-    D --> E["Core Security Operations<br/>Signature Verification<br/>State Transitions<br/>Cryptographic Proofs"]
-    C --> F["State Machine Engine<br/>Deterministic Processing<br/>Event Handling<br/>Audit Logging"]
-    B --> G["Security Enforcement<br/>Time-Lock Validation<br/>Role Permission Checks<br/>Multi-Signature Requirements"]
-    A --> H["Enterprise Features<br/>Dynamic Role Management<br/>Function-Level Permissions<br/>Runtime Configuration"]
+    D --> E["Core security operations<br/>Signature verification, state transitions"]
+    C --> F["State machine engine<br/>Deterministic processing, audit logging"]
+    B --> G["Security enforcement<br/>Time-lock validation, role permission checks"]
+    A --> H["Enterprise pattern<br/>Full Bloxchain account"]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -439,19 +447,22 @@ flowchart TD
     style H fill:#e0f2f1
 ```
 
-**Tier 1: EngineBlox Library**: Core functional operations implementing **atomic transaction breakdown** and **multi-signature validation**. This library provides the fundamental building blocks for secure operations and is designed for **mathematical verification**.
+**Tier 1: EngineBlox (library)** (`contracts/core/lib/EngineBlox.sol`): Core functional operations implementing **atomic transaction breakdown**, **multi-signature validation**, and **SecureOperationState**. This library provides the fundamental building blocks for secure operations.
 
-**Tier 2: BaseStateMachineCore**: Basic state machine capabilities including **state transition management**, **event emission**, and **audit trail maintenance**. This tier provides the foundational infrastructure for deterministic operation processing.
+**Tier 2: BaseStateMachine** (`contracts/core/base/BaseStateMachine.sol`): Holds `_secureState`, wraps EngineBlox, and provides **state transition management**, **event emission**, **meta-transaction utilities**, **state queries**, and **role/function management**. Inherited by all security components.
 
-**Tier 3: SecureOwnable**: Security-focused functionality implementing **mandatory multi-role security**, **time-locked operations**, and **role separation enforcement**. This tier ensures that security properties are maintained across all operations.
+**Tier 3: Security and execution components** (all extend BaseStateMachine):
+- **SecureOwnable** (`contracts/core/security/SecureOwnable.sol`): **Mandatory multi-role security** (Owner, Broadcaster, Recovery), **time-locked operations** (ownership transfer, broadcaster update), and **role separation** for approvals.
+- **RuntimeRBAC** (`contracts/core/access/RuntimeRBAC.sol`): **Runtime role-based access control** — creation of non-protected roles, wallet assignment, and **function-level permissions** via batch meta-transactions.
+- **GuardController** (`contracts/core/execution/GuardController.sol`): **Time-locked execution** and **meta-transaction** workflows; **per-function target whitelist**; payment handling for native and ERC20.
 
-**Tier 4: DynamicRBAC**: **Full role-based access control** with **function-level granularity** and **runtime role modification** capabilities. This tier provides the flexibility required for complex enterprise applications while maintaining security guarantees.
+**Tier 4: Account** (`contracts/core/pattern/Account.sol`): Optional **pattern contract** that composes GuardController, RuntimeRBAC, and SecureOwnable into a single account with one initializer and unified interface support.
 
 ### EIP-712 Meta-Transaction Implementation
 
 State Abstraction leverages **EIP-712 structured data signing** to enable sophisticated off-chain authorization workflows while maintaining on-chain security verification:
 
-**Structured Data Types**: ✅ **Currently Implemented** - The system defines comprehensive **EIP-712 types** for different transaction categories:
+**Structured Data Types**: ✅ **Currently Implemented** - The system defines **EIP-712 types** in `EngineBlox.sol` (TxParams includes executionSelector and executionParams for execution targeting):
 ```solidity
 struct MetaTransaction {
     TxRecord txRecord;
@@ -471,6 +482,16 @@ struct TxRecord {
     PaymentDetails payment;
 }
 
+struct TxParams {
+    address requester;
+    address target;
+    uint256 value;
+    uint256 gasLimit;
+    bytes32 operationType;
+    bytes4 executionSelector;
+    bytes executionParams;
+}
+
 struct MetaTxParams {
     uint256 chainId;
     uint256 nonce;
@@ -483,36 +504,26 @@ struct MetaTxParams {
 }
 ```
 
-**Signature Verification**: ✅ **Currently Implemented** - **Multi-signature verification** is implemented with **malleability protection** and **replay attack prevention**:
+**Signature Verification**: ✅ **Currently Implemented** - **Meta-transaction verification** in `EngineBlox.verifySignature` includes **replay protection** (nonce, chainId, deadline), **gas price** check, and **authorization** for both handler and execution selectors; role separation for meta-tx is enforced via `ConflictingMetaTxPermissions` when adding function permissions:
 ```solidity
 function verifySignature(
     SecureOperationState storage self,
     MetaTransaction memory metaTx
 ) private view returns (bool) {
-    // Basic validation
     SharedValidation.validateSignatureLength(metaTx.signature);
-    SharedValidation.validatePendingTransaction(uint8(metaTx.txRecord.status));
-    
-    // Transaction parameters validation
+    _validateTxStatus(self, metaTx.txRecord.txId, TxStatus.PENDING);
     SharedValidation.validateNotZeroAddress(metaTx.txRecord.params.requester);
-    
-    // Meta-transaction parameters validation
     SharedValidation.validateChainId(metaTx.params.chainId);
-    SharedValidation.validateHandlerContractMatch(metaTx.params.handlerContract, metaTx.txRecord.params.target);
     SharedValidation.validateMetaTxDeadline(metaTx.params.deadline);
-    
-    // Validate signer-specific nonce
+    SharedValidation.validateGasPrice(metaTx.params.maxGasPrice);
     SharedValidation.validateNonce(metaTx.params.nonce, getSignerNonce(self, metaTx.params.signer));
-    
-    // Signature verification
+    // ... txId validation for new meta-tx (SIGN_META_REQUEST_AND_APPROVE)
+    bool isHandlerAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
+    bool isExecutionAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.txRecord.params.executionSelector, metaTx.params.action);
+    if (!isHandlerAuthorized || !isExecutionAuthorized) revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
     bytes32 messageHash = generateMessageHash(metaTx);
     address recoveredSigner = recoverSigner(messageHash, metaTx.signature);
     if (recoveredSigner != metaTx.params.signer) revert SharedValidation.InvalidSignature(metaTx.signature);
-
-    // Authorization check
-    bool isAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
-    if (!isAuthorized) revert SharedValidation.SignerNotAuthorized(metaTx.params.signer);
-    
     return true;
 }
 ```
@@ -521,20 +532,21 @@ function verifySignature(
 
 ### Dynamic Access Control Implementation
 
-The **DynamicRBAC** system provides enterprise-grade access control with runtime configuration capabilities:
+The **RuntimeRBAC** system (EngineBlox + RuntimeRBAC.sol) provides enterprise-grade access control with runtime configuration:
 
 **Protected System Roles**:
 - **Owner Role**: Administrative control with signing permissions and role management authority
 - **Broadcaster Role**: Meta-transaction execution with gas sponsorship capabilities
 - **Recovery Role**: Emergency operations with strictly limited scope and time-bound access
 
-**Dynamic Role Configuration**: ✅ **Currently Implemented** - **Runtime role creation and modification** without requiring contract upgrades:
+**Dynamic Role Configuration**: ✅ **Currently Implemented** - **Runtime role creation and modification** (non-protected roles only) without requiring contract upgrades. Protected roles (OWNER, BROADCASTER, RECOVERY) are managed by SecureOwnable. Storage uses mapping per selector; structure below is conceptual:
 ```solidity
 struct Role {
     string roleName;
     bytes32 roleHash;
     EnumerableSet.AddressSet authorizedWallets;
-    FunctionPermission[] functionPermissions;
+    mapping(bytes4 => FunctionPermission) functionPermissions;  // per-selector permissions
+    EnumerableSet.Bytes32Set functionSelectorsSet;
     uint256 maxWallets;
     uint256 walletCount;
     bool isProtected;
@@ -542,11 +554,12 @@ struct Role {
 
 struct FunctionPermission {
     bytes4 functionSelector;
-    TxAction[] grantedActions;
+    uint16 grantedActionsBitmap;   // TxAction bitmap (9 actions)
+    bytes4[] handlerForSelectors;  // execution/handler selectors this permission can access
 }
 ```
 
-**Function-Level Permissions**: ✅ **Currently Implemented** - **Granular access control** at the function level enables precise permission management:
+**Function-Level Permissions**: ✅ **Currently Implemented** - **Granular access control** at the function level; permission checks use the wallet's roles (via reverse index `walletRoles`) and `roleHasActionPermission` for the selector and requested `TxAction`:
 ```solidity
 function hasActionPermission(
     SecureOperationState storage self,
@@ -554,16 +567,12 @@ function hasActionPermission(
     bytes4 functionSelector,
     TxAction requestedAction
 ) public view returns (bool) {
-    // Check if wallet has any role that grants permission for this function and action
-    uint256 rolesLength = self.supportedRolesSet.length();
+    EnumerableSet.Bytes32Set storage walletRolesSet = self.walletRoles[wallet];
+    uint256 rolesLength = walletRolesSet.length();
     for (uint i = 0; i < rolesLength; i++) {
-        bytes32 roleHash = self.supportedRolesSet.at(i);
-        Role storage role = self.roles[roleHash];
-        
-        if (role.authorizedWallets.contains(wallet)) {
-            if (roleHasActionPermission(self, roleHash, functionSelector, requestedAction)) {
-                return true;
-            }
+        bytes32 roleHash = walletRolesSet.at(i);
+        if (roleHasActionPermission(self, roleHash, functionSelector, requestedAction)) {
+            return true;
         }
     }
     return false;
@@ -792,35 +801,11 @@ Property: RoleSeparation
 
 The foundation phase establishes the **mathematical and cryptographic infrastructure** underlying State Abstraction. **Core library development** focuses on implementing the **EngineBlox library** with **formally verified security properties**.
 
-**EngineBlox Library Implementation**: ✅ **Currently Implemented** - Core library with actual implementation:
+**EngineBlox Library Implementation**: ✅ **Currently Implemented** - Core library in `contracts/core/lib/EngineBlox.sol` with actual implementation. Transaction requests validate both handler and execution selector permissions; `txRequest` uses `handlerSelector` (msg.sig at call site) and `executionSelector`/`executionParams` for the operation to execute:
 ```solidity
 library EngineBlox {
-    struct SecureOperationState {
-        // ============ SYSTEM STATE ============
-        bool initialized;
-        uint256 txCounter;
-        uint256 timeLockPeriodSec;
-        
-        // ============ TRANSACTION MANAGEMENT ============
-        mapping(uint256 => TxRecord) txRecords;
-        EnumerableSet.UintSet pendingTransactionsSet;
-        
-        // ============ ROLE-BASED ACCESS CONTROL ============
-        mapping(bytes32 => Role) roles;
-        EnumerableSet.Bytes32Set supportedRolesSet;
-        
-        // ============ FUNCTION MANAGEMENT ============
-        mapping(bytes4 => FunctionSchema) functions;
-        EnumerableSet.Bytes32Set supportedFunctionsSet;
-        EnumerableSet.Bytes32Set supportedOperationTypesSet;
-        
-        // ============ META-TRANSACTION SUPPORT ============
-        mapping(address => uint256) signerNonces;
-        
-        // ============ EVENT FORWARDING ============
-        address eventForwarder;
-    }
-    
+    struct SecureOperationState { /* ... see State Representation above ... */ }
+
     function txRequest(
         SecureOperationState storage self,
         address requester,
@@ -828,36 +813,14 @@ library EngineBlox {
         uint256 value,
         uint256 gasLimit,
         bytes32 operationType,
-        ExecutionType executionType,
-        bytes memory executionOptions
+        bytes4 handlerSelector,
+        bytes4 executionSelector,
+        bytes memory executionParams
     ) public returns (TxRecord memory) {
-        if (!hasActionPermission(self, msg.sender, TX_REQUEST_SELECTOR, TxAction.EXECUTE_TIME_DELAY_REQUEST) && 
-            !hasActionPermission(self, msg.sender, META_TX_REQUEST_AND_APPROVE_SELECTOR, TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) {
-            revert SharedValidation.NoPermissionExecute(msg.sender);
-        }
-        SharedValidation.validateNotZeroAddress(target);
-
-        TxRecord memory txRequestRecord = createNewTxRecord(
-            self,
-            requester,
-            target,
-            value,
-            gasLimit,
-            operationType,
-            executionType,
-            executionOptions
-        );
-    
-        self.txRecords[txRequestRecord.txId] = txRequestRecord;
-        self.txCounter++;
-
-        // Add to pending transactions list
-        addToPendingTransactionsList(self, txRequestRecord.txId);
-
-        logTxEvent(self, txRequestRecord.txId, TX_REQUEST_SELECTOR);
-        
-        return txRequestRecord;
+        _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
+        return _txRequest(self, requester, target, value, gasLimit, operationType, executionSelector, executionParams, _emptyPayment());
     }
+    // ... txDelayedApproval, txApprovalWithMetaTx, requestAndApprove, etc.
 }
 ```
 
@@ -887,9 +850,9 @@ Phase 2 focuses on **enterprise market penetration** through **strategic partner
 - **Supply Chain Implementations**: **Multi-national corporations** for **supply chain transparency** and **compliance automation**
 - **DeFi Protocol Enhancement**: **High-TVL DeFi protocols** for **enhanced security architecture**
 
-**Developer Ecosystem Development**:
+**Developer Ecosystem Development**: Conceptual extension of the core Account pattern (`contracts/core/pattern/Account.sol`), which already combines GuardController, RuntimeRBAC, and SecureOwnable:
 ```solidity
-contract EnterpriseStateMachine is BaseStateMachineCore {
+contract EnterpriseStateMachine is Account {
     using EngineBlox for SecureOperationState;
     
     function initializeEnterprise(
@@ -898,9 +861,8 @@ contract EnterpriseStateMachine is BaseStateMachineCore {
         address[] memory operationsTeam,
         ComplianceConfiguration memory compliance
     ) public initializer {
-        // Initialize enterprise-grade multi-signature workflows
-        // Configure regulatory compliance automation
-        // Set up audit trail and monitoring systems
+        // Initialize via Account.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec, eventForwarder)
+        // Configure regulatory compliance automation via RuntimeRBAC and GuardController
     }
 }
 ```
@@ -931,7 +893,7 @@ Phase 3 expands State Abstraction across **major blockchain networks** and estab
 
 **Regulatory Compliance Framework**:
 ```solidity
-contract RegulatoryCompliantStateMachine is DynamicRBAC {
+contract RegulatoryCompliantStateMachine is RuntimeRBAC {
     struct ComplianceFramework {
         bytes32 jurisdictionHash;
         bytes32[] requiredDocumentation;
@@ -1252,7 +1214,7 @@ State Abstraction establishes **technology leadership** through **fundamental in
 
 **Centralized State Machine**: **Deterministic state machine architecture** with **formal verification integration** provides **mathematical security guarantees** while maintaining operational flexibility.
 
-**Dynamic Role-Based Access Control**: **Runtime-configurable role management** without **contract upgrades** provides **enterprise-grade flexibility** while maintaining **security invariants**.
+**Dynamic Role-Based Access Control**: **Runtime-configurable role management** (RuntimeRBAC.sol, EngineBlox) without **contract upgrades** provides **enterprise-grade flexibility** while maintaining **security invariants**.
 
 **Integrated Compliance Engine**: **Built-in regulatory compliance** with **automated documentation** and **audit trail generation** addresses **enterprise adoption requirements** that existing solutions handle through **external integrations**.
 
