@@ -51,23 +51,21 @@ console.log('Current owner:', owner)
 
 #### **Request Ownership Transfer**
 ```typescript
-// This creates a time-locked request
+// No arguments: creates a time-locked request. New owner is set when the pending tx is approved and executed.
 const txHash = await secureOwnable.transferOwnershipRequest(
-  '0x...', // new owner address
   { from: account.address }
 )
-
 console.log('Ownership transfer requested:', txHash)
+// Use getPendingTransactions() / getTransaction(txId) to get txId for approval
 ```
 
 #### **Approve Ownership Transfer**
 ```typescript
 // After the time lock period, approve the transfer
 const txHash = await secureOwnable.transferOwnershipDelayedApproval(
-  1n, // transaction ID
+  txId, // transaction ID from getPendingTransactions / events
   { from: account.address }
 )
-
 console.log('Ownership transfer approved:', txHash)
 ```
 
@@ -75,28 +73,31 @@ console.log('Ownership transfer approved:', txHash)
 
 #### **Broadcaster Management**
 ```typescript
-// Request broadcaster update
+// Request broadcaster update (location = index in broadcaster role's wallet set)
 const txHash = await secureOwnable.updateBroadcasterRequest(
-  '0x...', // new broadcaster address
+  '0x...', // new broadcaster address (or zero to revoke at location)
+  locationIndex, // bigint: index in getBroadcasters()
   { from: account.address }
 )
 ```
 
 #### **Recovery Management**
 ```typescript
-// Update recovery address (immediate approval)
+// Update recovery address: requires a signed meta-transaction (owner signs, broadcaster executes)
+const metaTx = await createSignedMetaTxForRecoveryUpdate(newRecovery) // build via generateUnsignedMetaTransactionForNew + sign
 const txHash = await secureOwnable.updateRecoveryRequestAndApprove(
-  '0x...', // new recovery address
-  { from: account.address }
+  metaTx,
+  { from: broadcasterAddress }
 )
 ```
 
 #### **Time Lock Management**
 ```typescript
-// Update time lock period (immediate approval)
+// Update time lock period: requires a signed meta-transaction (owner signs, broadcaster executes)
+const metaTx = await createSignedMetaTxForTimeLockUpdate(newPeriodSec)
 const txHash = await secureOwnable.updateTimeLockRequestAndApprove(
-  3600n, // new period in seconds (1 hour)
-  { from: account.address }
+  metaTx,
+  { from: broadcasterAddress }
 )
 ```
 
@@ -104,8 +105,8 @@ const txHash = await secureOwnable.updateTimeLockRequestAndApprove(
 
 #### **Check Initialization Status**
 ```typescript
-const isInitialized = await secureOwnable.isInitialized()
-console.log('Contract initialized:', isInitialized)
+const isInit = await secureOwnable.initialized()
+console.log('Contract initialized:', isInit)
 ```
 
 #### **Get Time Lock Period**
@@ -116,13 +117,9 @@ console.log('Time lock period:', timeLockPeriod, 'seconds')
 
 #### **Get Administrative Addresses**
 ```typescript
-const broadcaster = await secureOwnable.broadcaster()
-const recovery = await secureOwnable.recovery()
-const eventForwarder = await secureOwnable.eventForwarder()
-
-console.log('Broadcaster:', broadcaster)
-console.log('Recovery:', recovery)
-console.log('Event forwarder:', eventForwarder)
+const broadcasters = await secureOwnable.getBroadcasters() // address[]
+const recovery = await secureOwnable.getRecovery()
+console.log('Broadcasters:', broadcasters, 'Recovery:', recovery)
 ```
 
 ## 🔄 **Workflow Patterns**
@@ -130,14 +127,12 @@ console.log('Event forwarder:', eventForwarder)
 ### **Time-Delay Workflow (Ownership Transfer)**
 
 ```typescript
-// Step 1: Request ownership transfer
+// Step 1: Request ownership transfer (no new-owner argument; set at execution)
 const requestTx = await secureOwnable.transferOwnershipRequest(
-  newOwner,
   { from: currentOwner }
 )
 
-// Step 2: Wait for time lock period
-await new Promise(resolve => setTimeout(resolve, timeLockPeriod * 1000))
+// Step 2: Wait for time lock period, then get txId from getPendingTransactions() / getTransaction
 
 // Step 3: Approve the transfer
 const approveTx = await secureOwnable.transferOwnershipDelayedApproval(
@@ -149,88 +144,48 @@ const approveTx = await secureOwnable.transferOwnershipDelayedApproval(
 ### **Meta-Transaction Workflow (Recovery Update)**
 
 ```typescript
-// Single transaction with immediate approval
+// Owner signs a meta-tx for recovery update; broadcaster submits updateRecoveryRequestAndApprove(metaTx, { from: broadcaster })
 const txHash = await secureOwnable.updateRecoveryRequestAndApprove(
-  newRecovery,
-  { from: account.address }
+  signedMetaTx,
+  { from: broadcasterAddress }
 )
 ```
 
 ### **Hybrid Workflow (Broadcaster Update)**
 
 ```typescript
-// Option 1: Time-delay request
+// Option 1: Time-delay request (newBroadcaster + location index)
 const requestTx = await secureOwnable.updateBroadcasterRequest(
   newBroadcaster,
+  locationIndex,
   { from: account.address }
 )
 
-// Option 2: Meta-transaction (if supported)
-const metaTx = await secureOwnable.updateBroadcasterRequestAndApprove(
-  newBroadcaster,
-  { from: account.address }
-)
+// Option 2: Meta-transaction approval (signer = owner, executor = broadcaster)
+const metaTx = await createSignedMetaTxForBroadcasterApproval(txId)
+await secureOwnable.updateBroadcasterApprovalWithMetaTx(metaTx, { from: broadcasterAddress })
 ```
 
 ## 📡 **Event Monitoring**
 
-### **Listen for Ownership Events**
+Contracts emit a unified **`ComponentEvent(bytes4 functionSelector, bytes data)`**. Decode `data` according to the emitting function (use `functionSelector` to identify). See generated [contract API](../../docs/) and NatSpec for payload layouts.
+
+### **Listen for ComponentEvent**
 
 ```typescript
-// Ownership transfer requested
-const unwatchRequest = publicClient.watchContractEvent({
+const unwatch = publicClient.watchContractEvent({
   address: contractAddress,
   abi: secureOwnable.abi,
-  eventName: 'OwnershipTransferRequested',
+  eventName: 'ComponentEvent',
   onLogs: (logs) => {
     logs.forEach(log => {
-      console.log('Ownership transfer requested:', {
-        from: log.args.from,
-        to: log.args.to,
-        txId: log.args.txId,
-        releaseTime: log.args.releaseTime
-      })
+      // log.args.functionSelector identifies the emitting function
+      // log.args.data is ABI-encoded; decode with abi.decode based on selector
+      console.log('ComponentEvent', log.args.functionSelector, log.args.data)
     })
   }
 })
-
-// Ownership transfer approved
-const unwatchApproval = publicClient.watchContractEvent({
-  address: contractAddress,
-  abi: secureOwnable.abi,
-  eventName: 'OwnershipTransferApproved',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Ownership transfer approved:', {
-        txId: log.args.txId,
-        newOwner: log.args.newOwner
-      })
-    })
-  }
-})
-
-// Stop watching
-unwatchRequest()
-unwatchApproval()
-```
-
-### **Listen for Administrative Events**
-
-```typescript
-// Broadcaster updated
-const unwatchBroadcaster = publicClient.watchContractEvent({
-  address: contractAddress,
-  abi: secureOwnable.abi,
-  eventName: 'BroadcasterUpdated',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Broadcaster updated:', {
-        oldBroadcaster: log.args.oldBroadcaster,
-        newBroadcaster: log.args.newBroadcaster
-      })
-    })
-  }
-})
+unwatch()
 ```
 
 ## 🛡️ **Security Features**
@@ -256,10 +211,10 @@ Operations are split into request and approval phases:
 
 ```typescript
 // Phase 1: Request
-const requestTx = await secureOwnable.transferOwnershipRequest(newOwner)
+const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.address })
 
-// Phase 2: Approval (after time lock)
-const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId)
+// Phase 2: Approval (after time lock; use txId from getPendingTransactions / getTransaction)
+const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: account.address })
 ```
 
 ### **3. Meta-Transaction Support**
@@ -267,8 +222,8 @@ const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId)
 Some operations support immediate execution:
 
 ```typescript
-// Immediate approval for non-critical operations
-const txHash = await secureOwnable.updateRecoveryRequestAndApprove(newRecovery)
+// Immediate approval for recovery/time-lock uses meta-tx: owner signs, broadcaster calls updateRecoveryRequestAndApprove(metaTx) or updateTimeLockRequestAndApprove(metaTx)
+const txHash = await secureOwnable.updateRecoveryRequestAndApprove(signedMetaTx, { from: broadcasterAddress })
 ```
 
 ## 🔧 **Advanced Usage**
@@ -276,27 +231,18 @@ const txHash = await secureOwnable.updateRecoveryRequestAndApprove(newRecovery)
 ### **Batch Operations**
 
 ```typescript
-// Update multiple administrative functions
-const operations = [
-  secureOwnable.updateRecoveryRequestAndApprove(newRecovery),
-  secureOwnable.updateTimeLockRequestAndApprove(newTimeLock)
-]
-
-const results = await Promise.allSettled(operations)
-results.forEach((result, index) => {
-  if (result.status === 'fulfilled') {
-    console.log(`Operation ${index} successful:`, result.value)
-  } else {
-    console.error(`Operation ${index} failed:`, result.reason)
-  }
-})
+// Run multiple meta-tx flows (e.g. recovery + time lock updates)
+const results = await Promise.allSettled([
+  secureOwnable.updateRecoveryRequestAndApprove(metaTxRecovery, { from: broadcaster }),
+  secureOwnable.updateTimeLockRequestAndApprove(metaTxTimeLock, { from: broadcaster })
+])
 ```
 
 ### **Error Handling**
 
 ```typescript
 try {
-  const txHash = await secureOwnable.transferOwnershipRequest(newOwner)
+  const txHash = await secureOwnable.transferOwnershipRequest({ from: account.address })
   console.log('Transaction successful:', txHash)
 } catch (error) {
   if (error.message.includes('Only owner')) {
@@ -317,7 +263,7 @@ const gasEstimate = await publicClient.estimateContractGas({
   address: contractAddress,
   abi: secureOwnable.abi,
   functionName: 'transferOwnershipRequest',
-  args: [newOwner],
+  args: [],
   account: account.address
 })
 
@@ -325,11 +271,7 @@ console.log('Estimated gas:', gasEstimate)
 
 // Use gas estimate in transaction
 const txHash = await secureOwnable.transferOwnershipRequest(
-  newOwner,
-  { 
-    from: account.address,
-    gas: gasEstimate * 120n / 100n // Add 20% buffer
-  }
+  { from: account.address, gas: gasEstimate * 120n / 100n }
 )
 ```
 
@@ -348,8 +290,8 @@ describe('SecureOwnable', () => {
   })
 
   it('should request ownership transfer', async () => {
-    const txHash = await secureOwnable.transferOwnershipRequest(newOwner)
-    expect(txHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    const txHash = await secureOwnable.transferOwnershipRequest({ from: account.address })
+    expect(txHash.hash).toBeDefined()
   })
 })
 ```
@@ -360,17 +302,15 @@ describe('SecureOwnable', () => {
 describe('SecureOwnable Integration', () => {
   it('should complete ownership transfer workflow', async () => {
     // Request transfer
-    const requestTx = await secureOwnable.transferOwnershipRequest(newOwner)
+    await secureOwnable.transferOwnershipRequest({ from: currentOwner })
     
-    // Wait for time lock
+    // Wait for time lock, then get txId from getPendingTransactions()
     await new Promise(resolve => setTimeout(resolve, timeLockPeriod * 1000))
     
-    // Approve transfer
-    const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId)
+    const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: currentOwner })
     
-    // Verify new owner
-    const currentOwner = await secureOwnable.owner()
-    expect(currentOwner).toBe(newOwner)
+    const currentOwnerAfter = await secureOwnable.owner()
+    expect(currentOwnerAfter).toBe(newOwner)
   })
 })
 ```
@@ -393,9 +333,8 @@ describe('SecureOwnable Integration', () => {
 
 - [API Reference](./api-reference.md) - Complete API documentation
 - [Getting Started](./getting-started.md) - Basic setup guide
-- [Workflow Analysis](./workflow-generation.md) - Analyzing SecureOwnable workflows
 - [Best Practices](./best-practices.md) - Development guidelines
 
 ---
 
-**Ready to explore RuntimeRBAC?** Check out the [RuntimeRBAC Guide](./dynamic-rbac.md) for role-based access control.
+**Next:** [RuntimeRBAC Guide](./runtime-rbac.md) for role-based access control.

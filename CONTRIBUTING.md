@@ -273,11 +273,14 @@ npm run test:coverage
 
 ## Documentation
 
+**Source of truth:** Solidity contracts are the source of truth for protocol API and behavior. The `docs/` directory is generated from contract NatSpec; do not edit those generated files by hand. For the full documentation map, updating process, and audit checklist, see **[CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md)**.
+
 ### Contract Documentation
 - **NatSpec comments** for all public functions
 - **Security annotations** for sensitive operations
 - **Usage examples** in comments
 - **Parameter descriptions** for all inputs/outputs
+- **Regenerate API docs** after contract changes: `npm run docgen` (see [docgen/README.md](docgen/README.md))
 
 ### SDK Documentation
 - **JSDoc comments** for all public methods

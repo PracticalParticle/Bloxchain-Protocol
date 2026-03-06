@@ -175,7 +175,9 @@ npm run docgen && npm run format    # docs & format
 
 ## 📚 Documentation
 
+- **[Codebase documentation process & audit checklist](CODEBASE_DOCUMENTATION.md)** – Source of truth, how to update docs, audit-ready checklist
 - [Protocol Architecture](./sdk/typescript/docs/bloxchain-architecture.md) · [State Machine](./sdk/typescript/docs/state-machine-engine.md) · [Getting Started](./sdk/typescript/docs/getting-started.md) · [API Reference](./sdk/typescript/docs/api-reference.md) · [SecureOwnable](./sdk/typescript/docs/secure-ownable.md) · [RuntimeRBAC](./sdk/typescript/docs/dynamic-rbac.md) · [Best Practices](./sdk/typescript/docs/best-practices.md) · [Examples](./sdk/typescript/docs/examples-basic.md)
+- **Contract API (generated):** [docs/](docs/) – generated from Solidity NatSpec via `npm run docgen`
 
 ## 🛡️ Security Features
 

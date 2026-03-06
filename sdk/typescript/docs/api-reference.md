@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for all Guardian TypeScript SDK classes, methods, and types.
+Complete reference for Bloxchain TypeScript SDK classes and methods. Contract source of truth: Solidity in `contracts/`. See [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md).
 
 ## 📚 **Core Classes**
 
@@ -41,85 +41,55 @@ Returns the time lock period in seconds.
 const period = await secureOwnable.getTimeLockPeriodSec()
 ```
 
-##### `broadcaster(): Promise<Address>`
-Returns the current broadcaster address.
+##### `getBroadcasters(): Promise<Address[]>`
+Returns all broadcaster addresses for the broadcaster role.
 
 ```typescript
-const broadcaster = await secureOwnable.broadcaster()
+const broadcasters = await secureOwnable.getBroadcasters()
 ```
 
-##### `recovery(): Promise<Address>`
-Returns the current recovery address.
+##### `getRecovery(): Promise<Address>`
+Returns the recovery address.
 
 ```typescript
-const recovery = await secureOwnable.recovery()
+const recovery = await secureOwnable.getRecovery()
 ```
 
-##### `eventForwarder(): Promise<Address>`
-Returns the current event forwarder address.
+##### `initialized(): Promise<boolean>`
+Returns whether the contract is initialized.
 
 ```typescript
-const forwarder = await secureOwnable.eventForwarder()
-```
-
-##### `isInitialized(): Promise<boolean>`
-Checks if the contract is initialized.
-
-```typescript
-const initialized = await secureOwnable.isInitialized()
+const isInit = await secureOwnable.initialized()
 ```
 
 #### **Write Methods**
 
-##### `transferOwnershipRequest(newOwner: Address, options?: TransactionOptions): Promise<Hash>`
-Requests a transfer of ownership.
+##### `transferOwnershipRequest(options?: TransactionOptions): Promise<TransactionResult>`
+Requests a transfer of ownership. No new-owner argument; the new owner is set when the pending transaction is approved and executed.
 
 ```typescript
-const txHash = await secureOwnable.transferOwnershipRequest(
+const result = await secureOwnable.transferOwnershipRequest({ from: account.address })
+```
+
+##### `transferOwnershipDelayedApproval(txId: bigint, options?: TransactionOptions): Promise<TransactionResult>`
+Approves a pending ownership transfer after the time lock.
+
+##### `updateBroadcasterRequest(newBroadcaster: Address, location: bigint, options?: TransactionOptions): Promise<TransactionResult>`
+Requests a broadcaster update at the given index (location in the broadcaster role set).
+
+```typescript
+const result = await secureOwnable.updateBroadcasterRequest(
   '0x...',
+  locationIndex,
   { from: account.address }
 )
 ```
 
-##### `transferOwnershipDelayedApproval(txId: bigint, options?: TransactionOptions): Promise<Hash>`
-Approves a delayed ownership transfer.
+##### `updateRecoveryRequestAndApprove(metaTx: MetaTransaction, options?: TransactionOptions): Promise<TransactionResult>`
+Requests and approves a recovery update using a signed meta-transaction (owner signs, broadcaster submits).
 
-```typescript
-const txHash = await secureOwnable.transferOwnershipDelayedApproval(
-  1n,
-  { from: account.address }
-)
-```
-
-##### `updateBroadcasterRequest(newBroadcaster: Address, options?: TransactionOptions): Promise<Hash>`
-Requests a broadcaster update.
-
-```typescript
-const txHash = await secureOwnable.updateBroadcasterRequest(
-  '0x...',
-  { from: account.address }
-)
-```
-
-##### `updateRecoveryRequestAndApprove(newRecovery: Address, options?: TransactionOptions): Promise<Hash>`
-Requests and approves a recovery update.
-
-```typescript
-const txHash = await secureOwnable.updateRecoveryRequestAndApprove(
-  '0x...',
-  { from: account.address }
-)
-```
-
-##### `updateTimeLockRequestAndApprove(newPeriod: bigint, options?: TransactionOptions): Promise<Hash>`
-Requests and approves a time lock period update.
-
-```typescript
-const txHash = await secureOwnable.updateTimeLockRequestAndApprove(
-  3600n, // 1 hour
-  { from: account.address }
-)
-```
+##### `updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options?: TransactionOptions): Promise<TransactionResult>`
+Requests and approves a time lock period update using a signed meta-transaction.
 
 ### **RuntimeRBAC**
 
@@ -139,12 +109,7 @@ constructor(
 #### **Read Methods**
 
 ##### `getRole(roleHash: Hex): Promise<Role>`
-Gets role information by hash.
-
-```typescript
-const role = await runtimeRBAC.getRole('0x...')
-// Returns: { roleName, roleHashReturn, maxWallets, walletCount, isProtected }
-```
+Gets role information by hash. Return shape includes `roleName`, `roleHash` (or `roleHashReturn`), `maxWallets`, `walletCount`, `isProtected`.
 
 ##### `hasRole(roleHash: Hex, wallet: Address): Promise<boolean>`
 Checks if a wallet has a specific role.
@@ -258,22 +223,22 @@ interface TransactionOptions {
 ## 📊 **Error Types**
 
 ```typescript
-class GuardianError extends Error {
+class BloxchainError extends Error {
   code: string
   details?: any
 }
 
-class ContractError extends GuardianError {
+class ContractError extends BloxchainError {
   contractAddress: Address
   method: string
 }
 
-class ValidationError extends GuardianError {
+class ValidationError extends BloxchainError {
   field: string
   value: any
 }
 
-class ComplianceError extends GuardianError {
+class ComplianceError extends BloxchainError {
   violation: ComplianceViolation
 }
 ```
@@ -283,7 +248,7 @@ class ComplianceError extends GuardianError {
 ### **Basic Contract Interaction**
 
 ```typescript
-import { SecureOwnable } from '@bloxchain/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk'
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
