@@ -1,13 +1,13 @@
 # Solidity API
 
-# GuardianSafeDefinitions
+# PayBloxDefinitions
 
-Library containing predefined definitions for GuardianSafe initialization
-This library holds static data that can be used to initialize GuardianSafe contracts
+Library containing predefined definitions for PayBlox initialization
+This library holds static data that can be used to initialize PayBlox contracts
 without increasing the main contract size
 
 This library implements the IDefinition interface from EngineBlox
-and provides a direct initialization function for GuardianSafe contracts
+and provides a direct initialization function for PayBlox contracts
 
 
 

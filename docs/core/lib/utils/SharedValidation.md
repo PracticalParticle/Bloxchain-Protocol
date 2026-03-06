@@ -539,6 +539,86 @@ Validates that two arrays have the same length
 
 ---
 
+### validateBatchSize
+
+```solidity
+function validateBatchSize(uint256 batchSize, uint256 maxBatchSize) internal pure
+```
+
+Validates that batch size doesn't exceed limit
+
+**Parameters:**
+- `` (): The current batch size
+- `` (): The maximum allowed batch size (0 &#x3D; unlimited)
+
+
+
+---
+
+### validateRoleCount
+
+```solidity
+function validateRoleCount(uint256 currentCount, uint256 maxRoles) internal pure
+```
+
+Validates that role count doesn't exceed limit
+
+**Parameters:**
+- `` (): The current role count
+- `` (): The maximum allowed roles (0 &#x3D; unlimited)
+
+
+
+---
+
+### validateHookCount
+
+```solidity
+function validateHookCount(uint256 currentCount, uint256 maxHooks) internal pure
+```
+
+Validates that hook count doesn't exceed limit
+
+**Parameters:**
+- `` (): The current hook count
+- `` (): The maximum allowed hooks (0 &#x3D; unlimited)
+
+
+
+---
+
+### validateFunctionCount
+
+```solidity
+function validateFunctionCount(uint256 currentCount, uint256 maxFunctions) internal pure
+```
+
+Validates that function count doesn't exceed limit
+
+**Parameters:**
+- `` (): The current function count
+- `` (): The maximum allowed functions (0 &#x3D; unlimited)
+
+
+
+---
+
+### validateRangeSize
+
+```solidity
+function validateRangeSize(uint256 rangeSize, uint256 maxRangeSize) internal pure
+```
+
+Validates that range size doesn't exceed limit
+
+**Parameters:**
+- `` (): The range size
+- `` (): The maximum allowed range size (0 &#x3D; unlimited)
+
+
+
+---
+
 ### validateIndexInBounds
 
 ```solidity

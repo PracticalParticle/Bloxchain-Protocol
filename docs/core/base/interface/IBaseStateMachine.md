@@ -141,20 +141,19 @@ Returns if a wallet is authorized for a role
 
 ---
 
-### isActionSupportedByFunction
+### getFunctionSchema
 
 ```solidity
-function isActionSupportedByFunction(bytes4 functionSelector, enum EngineBlox.TxAction action) external view returns (bool)
+function getFunctionSchema(bytes4 functionSelector) external view returns (struct EngineBlox.FunctionSchema)
 ```
 
-Returns if an action is supported by a function
+Gets function schema information
 
 **Parameters:**
-- `` (): The function selector to check
-- `` (): The action to check
+- `` (): The function selector to get information for
 
 **Returns:**
-- True if the action is supported by the function, false otherwise
+- The full FunctionSchema struct
 
 
 ---

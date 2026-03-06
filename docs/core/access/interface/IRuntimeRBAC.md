@@ -21,27 +21,10 @@ such as getRole(), hasRole(), getActiveRolePermissions(), getSupportedRoles(), e
 
 ## Functions
 
-### roleConfigBatchExecutionParams
-
-```solidity
-function roleConfigBatchExecutionParams(struct IRuntimeRBAC.RoleConfigAction[] actions) external pure returns (bytes)
-```
-
-Creates execution params for a RBAC configuration batch
-
-**Parameters:**
-- `` (): Encoded role configuration actions
-
-**Returns:**
-- The execution params for EngineBlox
-
-
----
-
 ### roleConfigBatchRequestAndApprove
 
 ```solidity
-function roleConfigBatchRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
+function roleConfigBatchRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 Requests and approves a RBAC configuration batch using a meta-transaction
@@ -55,63 +38,8 @@ Requests and approves a RBAC configuration batch using a meta-transaction
 
 ---
 
-### getFunctionSchema
-
-```solidity
-function getFunctionSchema(bytes4 functionSelector) external view returns (string, bytes4, bytes32, string, enum EngineBlox.TxAction[], bool)
-```
-
-Gets function schema information
-
-**Parameters:**
-- `` (): The function selector to get information for
-
-**Returns:**
-- The function signature or name
-- The function selector
-- The operation type
-- The operation name
-- The supported actions
-- Whether the function schema is protected
-
-
----
-
-### getWalletsInRole
-
-```solidity
-function getWalletsInRole(bytes32 roleHash) external view returns (address[])
-```
-
-Gets all authorized wallets for a role
-
-**Parameters:**
-- `` (): The role hash to get wallets for
-
-**Returns:**
-- Array of authorized wallet addresses
-
-
----
-
 
 ## Events
-
-### RoleConfigApplied
-
-```solidity
-event RoleConfigApplied(enum IRuntimeRBAC.RoleConfigActionType actionType, bytes32 roleHash, bytes4 functionSelector, bytes data)
-```
-
-Unified event for all RBAC configuration changes applied via batches
-
-**Parameters:**
-- `` (): The type of configuration action
-- `` (): Affected role hash (if applicable, otherwise 0)
-- `` (): Affected function selector (if applicable, otherwise 0)
-- `` (): Optional action-specific payload
-
----
 
 
 ## Structs

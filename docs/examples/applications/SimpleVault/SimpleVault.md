@@ -71,7 +71,7 @@ function getTokenBalance(address token) public view returns (uint256)
 ### withdrawEthRequest
 
 ```solidity
-function withdrawEthRequest(address to, uint256 amount) public nonpayable returns (struct EngineBlox.TxRecord)
+function withdrawEthRequest(address to, uint256 amount) public nonpayable returns (uint256)
 ```
 
 
@@ -87,7 +87,7 @@ function withdrawEthRequest(address to, uint256 amount) public nonpayable return
 ### withdrawTokenRequest
 
 ```solidity
-function withdrawTokenRequest(address token, address to, uint256 amount) public nonpayable returns (struct EngineBlox.TxRecord)
+function withdrawTokenRequest(address token, address to, uint256 amount) public nonpayable returns (uint256)
 ```
 
 
@@ -104,7 +104,7 @@ function withdrawTokenRequest(address token, address to, uint256 amount) public 
 ### approveWithdrawalAfterDelay
 
 ```solidity
-function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (uint256)
 ```
 
 
@@ -119,7 +119,7 @@ function approveWithdrawalAfterDelay(uint256 txId) public nonpayable returns (st
 ### approveWithdrawalWithMetaTx
 
 ```solidity
-function approveWithdrawalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function approveWithdrawalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 
@@ -134,7 +134,7 @@ function approveWithdrawalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) p
 ### cancelWithdrawal
 
 ```solidity
-function cancelWithdrawal(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function cancelWithdrawal(uint256 txId) public nonpayable returns (uint256)
 ```
 
 

@@ -47,7 +47,7 @@ Initializes the SecureOperationState with the specified time lock period and rol
 ### updateTimeLockPeriod
 
 ```solidity
-function updateTimeLockPeriod(struct EngineBlox.SecureOperationState self, uint256 _newTimeLockPeriodSec) public nonpayable
+function updateTimeLockPeriod(struct EngineBlox.SecureOperationState self, uint256 periodSec) public nonpayable
 ```
 
 Updates the time lock period for the SecureOperationState.
@@ -99,6 +99,32 @@ Requests a transaction with the specified parameters.
 
 **Returns:**
 - The created TxRecord.
+
+
+---
+
+### txRequestWithPayment
+
+```solidity
+function txRequestWithPayment(struct EngineBlox.SecureOperationState self, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams, struct EngineBlox.PaymentDetails paymentDetails) public nonpayable returns (struct EngineBlox.TxRecord)
+```
+
+Requests a transaction with payment details attached from the start.
+
+**Parameters:**
+- `` (): The SecureOperationState to modify.
+- `` (): The address of the requester.
+- `` (): The target contract address for the transaction.
+- `` (): The value to send with the transaction.
+- `` (): The gas limit for the transaction.
+- `` (): The type of operation.
+- `` (): The function selector of the handler/request function.
+- `` (): The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
+- `` (): The encoded parameters for the function (empty for simple native token transfers).
+- `` (): The payment details to attach to the transaction.
+
+**Returns:**
+- The created TxRecord with payment set.
 
 
 ---
@@ -195,23 +221,6 @@ Requests and immediately approves a transaction.
 
 ---
 
-### updatePaymentForTransaction
-
-```solidity
-function updatePaymentForTransaction(struct EngineBlox.SecureOperationState self, uint256 txId, struct EngineBlox.PaymentDetails paymentDetails) public nonpayable
-```
-
-Updates payment details for a pending transaction
-
-**Parameters:**
-- `` (): The SecureOperationState to modify
-- `` (): The transaction ID to update payment for
-- `` (): The new payment details
-
-
-
----
-
 ### getRole
 
 ```solidity
@@ -226,6 +235,24 @@ Gets the role by its hash.
 
 **Returns:**
 - The role associated with the hash, or Role(0) if the role doesn&#x27;t exist.
+
+
+---
+
+### getFunctionSchema
+
+```solidity
+function getFunctionSchema(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (struct EngineBlox.FunctionSchema)
+```
+
+Gets the function schema by selector.
+
+**Parameters:**
+- `` (): The SecureOperationState to read from.
+- `` (): The function selector to get the schema for.
+
+**Returns:**
+- The FunctionSchema struct (memory copy).
 
 
 ---
@@ -427,22 +454,23 @@ Checks if a specific role has permission for a function and action.
 
 ---
 
-### createFunctionSchema
+### registerFunction
 
 ```solidity
-function createFunctionSchema(struct EngineBlox.SecureOperationState self, string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool isProtected, bytes4[] handlerForSelectors) public nonpayable
+function registerFunction(struct EngineBlox.SecureOperationState self, string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool enforceHandlerRelations, bool isProtected, bytes4[] handlerForSelectors) public nonpayable
 ```
 
-Creates a function access control with specified permissions.
+Registers a function access control with specified permissions.
 
 **Parameters:**
 - `` (): The SecureOperationState to check.
 - `` (): Function signature (e.g., &quot;transfer(address,uint256)&quot;) or function name.
 - `` (): Hash identifier for the function.
-- `` (): The name of the operation type (operation type is derived from this).
+- `` (): The name of the operation type.
 - `` (): Bitmap of permissions required to execute this function.
+- `` (): When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference).
 - `` (): Whether the function schema is protected from removal.
-- `` (): Empty array for execution selector permissions.
+- `` (): Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
 
 
 
@@ -460,29 +488,8 @@ Unregisters a function schema from the system.
 - `` (): The SecureOperationState to modify.
 - `` (): The function selector to unregister.
 - `` (): If true, reverts with ResourceAlreadyExists when any role still references this function.
-       The safeRemoval check is done inside this function (iterating supportedRolesSet directly) to avoid
-       calling getSupportedRoles/getRoleFunctionPermissions, which use _validateAnyRole and would
-       revert NoPermission when the caller is the contract itself (e.g. during executeRoleConfigBatch).
+       The safeRemoval check is done inside this function (iterating supportedRolesSet directly) for efficiency.
 
-
-
----
-
-### isActionSupportedByFunction
-
-```solidity
-function isActionSupportedByFunction(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, enum EngineBlox.TxAction action) public view returns (bool)
-```
-
-Checks if a specific action is supported by a function.
-
-**Parameters:**
-- `` (): The SecureOperationState to check.
-- `` (): The function selector to check.
-- `` (): The action to check for support.
-
-**Returns:**
-- True if the action is supported by the function, false otherwise.
 
 
 ---
@@ -521,10 +528,10 @@ Removes a target address from the whitelist for a function selector.
 
 ---
 
-### _validateFunctionTargetWhitelist
+### _validateTargetWhitelist
 
 ```solidity
-function _validateFunctionTargetWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) internal view
+function _validateTargetWhitelist(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, address target) internal view
 ```
 
 Validates that the target address is whitelisted for the given function selector.
@@ -553,6 +560,39 @@ Returns all whitelisted target addresses for a function selector.
 
 **Returns:**
 - Array of whitelisted target addresses.
+
+
+---
+
+### addMacroSelector
+
+```solidity
+function addMacroSelector(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public nonpayable
+```
+
+Adds a function selector to the system macro selectors set.
+     Macro selectors are allowed to target address(this) for system-level operations (e.g. native transfer).
+
+**Parameters:**
+- `` (): The SecureOperationState to modify.
+- `` (): The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR).
+
+
+
+---
+
+### isMacroSelector
+
+```solidity
+function isMacroSelector(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) public view returns (bool)
+```
+
+Returns true if the given function selector is in the system macro selectors set.
+
+**Parameters:**
+- `` (): The SecureOperationState to check.
+- `` (): The function selector to check.
+
 
 
 ---
@@ -633,10 +673,8 @@ Returns all function schemas that use a specific operation type.
 function _getFunctionsByOperationType(struct EngineBlox.SecureOperationState self, bytes32 operationType) internal view returns (bytes4[])
 ```
 
-Internal: Returns all function schemas that use a specific operation type, without _validateAnyRole.
-Used by `unregisterFunction` when called from contract-internal paths (e.g. `_unregisterFunction`)
-where `msg.sender` is the contract and would fail `_validateAnyRole`.
-Also used by getFunctionsByOperationType after role validation.
+Internal: Returns all function schemas that use a specific operation type.
+Used by unregisterFunction and getFunctionsByOperationType.
 
 
 
@@ -666,7 +704,7 @@ Gets all pending transaction IDs
 function getSupportedRoles(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
-Gets all supported roles as an array for backward compatibility
+Gets all supported roles as an array
 
 **Parameters:**
 - `` (): The SecureOperationState to check
@@ -683,7 +721,7 @@ Gets all supported roles as an array for backward compatibility
 function getSupportedFunctions(struct EngineBlox.SecureOperationState self) public view returns (bytes4[])
 ```
 
-Gets all supported function selectors as an array for backward compatibility
+Gets all supported function selectors as an array
 
 **Parameters:**
 - `` (): The SecureOperationState to check
@@ -700,7 +738,7 @@ Gets all supported function selectors as an array for backward compatibility
 function getSupportedOperationTypes(struct EngineBlox.SecureOperationState self) public view returns (bytes32[])
 ```
 
-Gets all supported operation types as an array for backward compatibility
+Gets all supported operation types as an array
 
 **Parameters:**
 - `` (): The SecureOperationState to check
@@ -730,6 +768,24 @@ Gets the authorized wallet at a specific index from a role
 
 ---
 
+### getAuthorizedWallets
+
+```solidity
+function getAuthorizedWallets(struct EngineBlox.SecureOperationState self, bytes32 roleHash) public view returns (address[])
+```
+
+Gets all authorized wallets for a role
+
+**Parameters:**
+- `` (): The SecureOperationState to check
+- `` (): The role hash
+
+**Returns:**
+- Array of authorized wallet addresses
+
+
+---
+
 ### getRoleFunctionPermissions
 
 ```solidity
@@ -744,6 +800,24 @@ Gets all function permissions for a role as an array for backward compatibility
 
 **Returns:**
 - Array of function permissions with arrays (for external API)
+
+
+---
+
+### getWalletRoles
+
+```solidity
+function getWalletRoles(struct EngineBlox.SecureOperationState self, address wallet) public view returns (bytes32[])
+```
+
+Gets all roles assigned to a wallet using the reverse index
+
+**Parameters:**
+- `` (): The SecureOperationState to check
+- `` (): The wallet address to get roles for
+
+**Returns:**
+- Array of role hashes assigned to the wallet
 
 
 ---
@@ -976,6 +1050,22 @@ Validates that a role exists by checking if its hash is not zero
 
 ---
 
+### _validateFunctionSchemaExists
+
+```solidity
+function _validateFunctionSchemaExists(struct EngineBlox.SecureOperationState self, bytes4 functionSelector) internal view
+```
+
+Validates that a function schema exists for the given selector.
+
+**Parameters:**
+- `` (): The SecureOperationState to check.
+- `` (): The function selector to validate.
+
+
+
+---
+
 ### _validateTxStatus
 
 ```solidity
@@ -1012,6 +1102,23 @@ Validates that a wallet has permission for both execution selector and handler s
 
 ---
 
+### _validateHandlerForSelectors
+
+```solidity
+function _validateHandlerForSelectors(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, bytes4[] handlerForSelectors) internal view
+```
+
+Validates that all handlerForSelectors are present in the schema's handlerForSelectors array
+
+**Parameters:**
+- `` (): The SecureOperationState to validate against
+- `` (): The function selector for which the permission is defined
+- `` (): The handlerForSelectors array from the permission to validate
+
+
+
+---
+
 ### _validateMetaTxPermissions
 
 ```solidity
@@ -1026,6 +1133,41 @@ Validates meta-transaction permissions for a function permission
 
 
 **Security:** This function prevents conflicting meta-sign and meta-execute permissions
+
+---
+
+### _validateMetaTxAction
+
+```solidity
+function _validateMetaTxAction(struct EngineBlox.MetaTransaction metaTx, enum EngineBlox.TxAction expectedAction) internal pure
+```
+
+Validates that the meta-transaction uses the expected signer action for the current workflow.
+
+**Parameters:**
+- `` (): The meta-transaction to validate.
+- `` (): The TxAction that must be used as the signer action.
+
+
+**Security:** Enforces strict separation between SIGN_META_REQUEST_AND_APPROVE,
+                 SIGN_META_APPROVE and SIGN_META_CANCEL workflows.
+
+---
+
+### _validateActionsSupportedByFunction
+
+```solidity
+function _validateActionsSupportedByFunction(struct EngineBlox.SecureOperationState self, bytes4 functionSelector, uint16 bitmap) internal view
+```
+
+Validates that all actions present in the bitmap are supported by the function schema.
+
+**Parameters:**
+- `` (): The SecureOperationState to check.
+- `` (): The function selector to check.
+- `` (): The granted actions bitmap to validate.
+
+
 
 ---
 
@@ -1093,6 +1235,21 @@ Generic helper to convert Bytes32Set (containing bytes4 selectors) to bytes4 arr
 
 **Returns:**
 - Array of bytes4 function selectors
+
+
+---
+
+### _emptyPayment
+
+```solidity
+function _emptyPayment() internal pure returns (struct EngineBlox.PaymentDetails)
+```
+
+Returns an empty PaymentDetails struct for use when no payment is attached.
+
+
+**Returns:**
+- Empty payment details (recipient and amounts zero).
 
 
 ---

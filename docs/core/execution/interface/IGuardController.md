@@ -6,8 +6,8 @@ Interface for GuardController contract that GuardianSafeV3 and other contracts d
 
 
 **Notice:** This interface defines only GuardController-specific methods
-Functions from BaseStateMachine (createMetaTxParams, generateUnsignedMetaTransaction*, getTransaction, functionSchemaExists, owner, getBroadcaster, getRecovery) should be accessed via IBaseStateMachine
-Functions from RuntimeRBAC (registerFunction, unregisterFunction, getFunctionSchema, createNewRole, addWalletToRole, revokeWallet) should be accessed via IRuntimeRBAC
+Functions from BaseStateMachine (createMetaTxParams, generateUnsignedMetaTransaction*, getTransaction, functionSchemaExists, getFunctionSchema, owner, getBroadcaster, getRecovery) should be accessed via IBaseStateMachine
+Functions from RuntimeRBAC (registerFunction, unregisterFunction, createNewRole, addWalletToRole, revokeWallet) should be accessed via IRuntimeRBAC
 
 **Security Contact:** security@particlecrypto.com
 
@@ -54,20 +54,42 @@ Requests a time-locked execution via EngineBlox workflow
 
 ---
 
+### executeWithPayment
+
+```solidity
+function executeWithPayment(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType, struct EngineBlox.PaymentDetails paymentDetails) external nonpayable returns (uint256)
+```
+
+Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
+
+**Parameters:**
+- `` (): The address of the target contract
+- `` (): The ETH value to send (0 for standard function calls)
+- `` (): The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+- `` (): The encoded parameters for the function (empty for simple native token transfers)
+- `` (): The gas limit for execution
+- `` (): The operation type hash
+- `` (): The payment details to attach to the transaction
+
+**Returns:**
+- The transaction ID for the requested operation (use getTransaction(txId) for full record)
+
+
+---
+
 ### approveTimeLockExecution
 
 ```solidity
-function approveTimeLockExecution(uint256 txId, bytes32 expectedOperationType) external nonpayable returns (bytes)
+function approveTimeLockExecution(uint256 txId) external nonpayable returns (uint256)
 ```
 
 Approves and executes a time-locked transaction
 
 **Parameters:**
 - `` (): The transaction ID
-- `` (): The expected operation type for validation
 
 **Returns:**
-- The execution result
+- txId The transaction ID (use getTransaction(txId) for full record and result)
 
 
 ---
@@ -75,17 +97,16 @@ Approves and executes a time-locked transaction
 ### cancelTimeLockExecution
 
 ```solidity
-function cancelTimeLockExecution(uint256 txId, bytes32 expectedOperationType) external nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTimeLockExecution(uint256 txId) external nonpayable returns (uint256)
 ```
 
 Cancels a time-locked transaction
 
 **Parameters:**
 - `` (): The transaction ID
-- `` (): The expected operation type for validation
 
 **Returns:**
-- The updated transaction record
+- txId The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
@@ -93,18 +114,16 @@ Cancels a time-locked transaction
 ### approveTimeLockExecutionWithMetaTx
 
 ```solidity
-function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
+function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 Approves a time-locked transaction using a meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction containing the transaction record and signature
-- `` (): The expected operation type for validation
-- `` (): The handler selector for validation
 
 **Returns:**
-- The updated transaction record
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
@@ -112,18 +131,16 @@ Approves a time-locked transaction using a meta-transaction
 ### cancelTimeLockExecutionWithMetaTx
 
 ```solidity
-function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx, bytes32 expectedOperationType, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 Cancels a time-locked transaction using a meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction containing the transaction record and signature
-- `` (): The expected operation type for validation
-- `` (): The handler selector for validation
 
 **Returns:**
-- The updated transaction record
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
@@ -131,17 +148,16 @@ Cancels a time-locked transaction using a meta-transaction
 ### requestAndApproveExecution
 
 ```solidity
-function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx, bytes4 requiredSelector) external nonpayable returns (struct EngineBlox.TxRecord)
+function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 Requests and approves a transaction in one step using a meta-transaction
 
 **Parameters:**
 - `` (): The meta-transaction containing the transaction record and signature
-- `` (): The handler selector for validation
 
 **Returns:**
-- The transaction record after request and approval
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---

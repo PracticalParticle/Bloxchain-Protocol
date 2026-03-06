@@ -15,7 +15,7 @@ module.exports = {
     }
   },
   paths: {
-    // Reference parent directory's contracts, artifacts, and cache
+    // Root at parent so contracts are "inside" the project; use --config hardhat.config.cjs so this CJS file is loaded
     root: path.resolve(__dirname, ".."),
     sources: path.resolve(__dirname, "../contracts"),
     tests: path.resolve(__dirname, "../test"),

@@ -10,7 +10,6 @@ execution patterns including time-locked transactions, meta-transactions, and pa
 
 Key Features:
 - Core state machine functionality from BaseStateMachine
-- Function schema query support via BaseStateMachine (functionSchemaExists, getFunctionSchema)
 - STANDARD execution type only (function selector + params)
 - Meta-transaction support for delegated approvals and cancellations
 - Payment management for native tokens and ERC20 tokens
@@ -40,9 +39,8 @@ Workflows Available:
 - Meta-transaction workflows: signed approvals/cancellations
 
 Whitelist Management:
-- addTargetToWhitelist: Add a target address to whitelist (OWNER_ROLE only)
-- removeTargetFromWhitelist: Remove a target address from whitelist (OWNER_ROLE only)
-- getAllowedTargets: Query whitelisted targets for a role and function selector
+- executeGuardConfigBatch: Batch execution for adding/removing targets from whitelist (OWNER_ROLE only)
+- getAllowedTargets: Query whitelisted targets for a function selector
 
 
 **Notice:** This contract is modular and can be combined with RuntimeRBAC and SecureOwnable
@@ -87,7 +85,7 @@ See {IERC165-supportsInterface}.
 ### executeWithTimeLock
 
 ```solidity
-function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) public nonpayable returns (struct EngineBlox.TxRecord)
+function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) public nonpayable returns (uint256)
 ```
 
 Requests a time-locked execution via EngineBlox workflow
@@ -101,7 +99,30 @@ Requests a time-locked execution via EngineBlox workflow
 - `` (): The operation type hash
 
 **Returns:**
-- txId The transaction ID for the requested operation
+- The transaction ID for the requested operation
+
+
+---
+
+### executeWithPayment
+
+```solidity
+function executeWithPayment(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType, struct EngineBlox.PaymentDetails paymentDetails) public nonpayable returns (uint256)
+```
+
+Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
+
+**Parameters:**
+- `` (): The address of the target contract
+- `` (): The ETH value to send (0 for standard function calls)
+- `` (): The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+- `` (): The encoded parameters for the function (empty for simple native token transfers)
+- `` (): The gas limit for execution
+- `` (): The operation type hash
+- `` (): The payment details to attach to the transaction
+
+**Returns:**
+- The transaction ID for the requested operation (use getTransaction(txId) for full record)
 
 
 ---
@@ -109,7 +130,7 @@ Requests a time-locked execution via EngineBlox workflow
 ### approveTimeLockExecution
 
 ```solidity
-function approveTimeLockExecution(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function approveTimeLockExecution(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Approves and executes a time-locked transaction
@@ -126,7 +147,7 @@ Approves and executes a time-locked transaction
 ### cancelTimeLockExecution
 
 ```solidity
-function cancelTimeLockExecution(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTimeLockExecution(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Cancels a time-locked transaction
@@ -143,7 +164,7 @@ Cancels a time-locked transaction
 ### approveTimeLockExecutionWithMetaTx
 
 ```solidity
-function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function approveTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Approves a time-locked transaction using a meta-transaction
@@ -160,7 +181,7 @@ Approves a time-locked transaction using a meta-transaction
 ### cancelTimeLockExecutionWithMetaTx
 
 ```solidity
-function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTimeLockExecutionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Cancels a time-locked transaction using a meta-transaction
@@ -177,7 +198,7 @@ Cancels a time-locked transaction using a meta-transaction
 ### requestAndApproveExecution
 
 ```solidity
-function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function requestAndApproveExecution(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Requests and approves a transaction in one step using a meta-transaction
@@ -207,67 +228,16 @@ Validates that GuardController is not attempting to access internal execution fu
 
 ---
 
-### _addTargetToWhitelist
+### guardConfigBatchRequestAndApprove
 
 ```solidity
-function _addTargetToWhitelist(bytes4 functionSelector, address target) internal nonpayable
+function guardConfigBatchRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
-Internal helper to add a target address to the whitelist for a function selector
+Requests and approves a Guard configuration batch using a meta-transaction
 
 **Parameters:**
-- `` (): The function selector
-- `` (): The target address to whitelist
-
-
-
----
-
-### _removeTargetFromWhitelist
-
-```solidity
-function _removeTargetFromWhitelist(bytes4 functionSelector, address target) internal nonpayable
-```
-
-Internal helper to remove a target address from the whitelist
-
-**Parameters:**
-- `` (): The function selector
-- `` (): The target address to remove
-
-
-
----
-
-### updateTargetWhitelistExecutionParams
-
-```solidity
-function updateTargetWhitelistExecutionParams(bytes4 functionSelector, address target, bool isAdd) public pure returns (bytes)
-```
-
-Creates execution params for updating the target whitelist for a function selector
-
-**Parameters:**
-- `` (): The function selector
-- `` (): The target address to add or remove
-- `` (): True to add the target, false to remove
-
-**Returns:**
-- The execution params to be used in a meta-transaction
-
-
----
-
-### updateTargetWhitelistRequestAndApprove
-
-```solidity
-function updateTargetWhitelistRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
-```
-
-Requests and approves a whitelist update using a meta-transaction
-
-**Parameters:**
-- `` (): The meta-transaction describing the whitelist update
+- `` (): The meta-transaction
 
 **Returns:**
 - The transaction record
@@ -275,71 +245,134 @@ Requests and approves a whitelist update using a meta-transaction
 
 ---
 
-### executeUpdateTargetWhitelist
+### executeGuardConfigBatch
 
 ```solidity
-function executeUpdateTargetWhitelist(bytes4 functionSelector, address target, bool isAdd) external nonpayable
+function executeGuardConfigBatch(struct IGuardController.GuardConfigAction[] actions) external nonpayable
 ```
 
-External execution entrypoint for whitelist updates.
-     Can only be called by the contract itself during protected EngineBlox workflows.
+External function that can only be called by the contract itself to execute a Guard configuration batch
 
 **Parameters:**
-- `` (): The function selector
-- `` (): The target address to add or remove
-- `` (): True to add the target, false to remove
+- `` (): Encoded guard configuration actions
 
 
 
 ---
 
-### getAllowedTargets
+### _executeGuardConfigBatch
 
 ```solidity
-function getAllowedTargets(bytes4 functionSelector) external view returns (address[])
+function _executeGuardConfigBatch(struct IGuardController.GuardConfigAction[] actions) internal nonpayable
 ```
 
-Gets all whitelisted targets for a function selector
+Internal helper to execute a Guard configuration batch
 
 **Parameters:**
-- `` (): The function selector
+- `` (): Encoded guard configuration actions
+
+
+
+---
+
+### _executeAddTargetToWhitelist
+
+```solidity
+function _executeAddTargetToWhitelist(bytes data) internal nonpayable
+```
+
+Executes ADD_TARGET_TO_WHITELIST: adds a target address to a function's call whitelist
+
+**Parameters:**
+- `` (): ABI-encoded (bytes4 functionSelector, address target)
+
+
+
+---
+
+### _executeRemoveTargetFromWhitelist
+
+```solidity
+function _executeRemoveTargetFromWhitelist(bytes data) internal nonpayable
+```
+
+Executes REMOVE_TARGET_FROM_WHITELIST: removes a target address from a function's call whitelist
+
+**Parameters:**
+- `` (): ABI-encoded (bytes4 functionSelector, address target)
+
+
+
+---
+
+### _executeRegisterFunction
+
+```solidity
+function _executeRegisterFunction(bytes data) internal nonpayable
+```
+
+Executes REGISTER_FUNCTION: registers a new function schema with signature, operation name, and supported actions
+
+**Parameters:**
+- `` (): ABI-encoded (string functionSignature, string operationName, TxAction[] supportedActions)
+
+
+
+---
+
+### _executeUnregisterFunction
+
+```solidity
+function _executeUnregisterFunction(bytes data) internal nonpayable
+```
+
+Executes UNREGISTER_FUNCTION: unregisters a function schema by selector
+
+**Parameters:**
+- `` (): ABI-encoded (bytes4 functionSelector, bool safeRemoval)
+
+
+
+---
+
+### _logGuardConfigEvent
+
+```solidity
+function _logGuardConfigEvent(enum IGuardController.GuardConfigActionType actionType, bytes4 functionSelector, address target) internal nonpayable
+```
+
+Encodes and logs a guard config event via ComponentEvent. Payload decodes as (GuardConfigActionType, bytes4 functionSelector, address target).
+
+**Parameters:**
+- `` (): The guard config action type
+- `` (): The function selector (or zero for N/A)
+- `` (): The target address (or zero for N/A)
+
+
+
+---
+
+### _registerGuardedFunction
+
+```solidity
+function _registerGuardedFunction(string functionSignature, string operationName, enum EngineBlox.TxAction[] supportedActions) internal nonpayable returns (bytes4)
+```
+
+Internal helper to register a new function schema
+
+**Parameters:**
+- `` (): The function signature
+- `` (): The operation name
+- `` (): Array of supported actions
 
 **Returns:**
-- Array of whitelisted target addresses
+- The derived function selector
 
 
 ---
 
 
 ## Events
-
-### TargetAddedToWhitelist
-
-```solidity
-event TargetAddedToWhitelist(bytes4 functionSelector, address target)
-```
-
-Emitted when a target address is added to the whitelist
-
-**Parameters:**
-- `` (): The function selector
-- `` (): The target address that was whitelisted
-
----
-
-### TargetRemovedFromWhitelist
-
-```solidity
-event TargetRemovedFromWhitelist(bytes4 functionSelector, address target)
-```
-
-Emitted when a target address is removed from the whitelist
-
-**Parameters:**
-- `` (): The function selector
-- `` (): The target address that was removed
-
----
 
 
 ## Structs
