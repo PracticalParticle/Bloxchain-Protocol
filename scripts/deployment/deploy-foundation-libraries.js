@@ -109,7 +109,6 @@ async function main() {
   console.log(`\n🚀 Deploying Foundation Libraries on ${networkName} (viem)`);
   console.log(`📋 Deployer: ${deployerAddress}\n`);
 
-  const addresses = {};
   const deployed = {};
 
   for (const contractName of FOUNDATION_LIBRARIES) {

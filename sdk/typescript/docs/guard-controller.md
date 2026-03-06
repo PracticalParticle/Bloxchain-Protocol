@@ -214,13 +214,12 @@ console.log('Whitelisted targets:', targets)
 
 Function schema registration is now handled by GuardController (moved from RuntimeRBAC).
 
-#### **Check Function Schema Exists**
-```typescript
-const exists = await guardController.functionSchemaExists('0xa9059cbb')
-console.log('Function schema exists:', exists)
-```
-
 #### **Get Function Schema**
+```typescript
+const schema = await guardController.getFunctionSchema('0xa9059cbb')
+// Reverts if the function is not registered. Check supported functions via getSupportedFunctions() if needed.
+console.log('Function schema:', { ...schema })
+```
 ```typescript
 const schema = await guardController.getFunctionSchema('0xa9059cbb')
 console.log('Function schema:', {
@@ -299,25 +298,23 @@ const txHash = await guardController.requestAndApproveExecution(
 
 ### **Listen for Guard Configuration Events**
 
+Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For guard config, filter by the executeGuardConfigBatch selector and decode `data` as `(GuardConfigActionType, bytes4 functionSelector, address target)`. See [contract API](../../docs/).
+
 ```typescript
-const unwatchGuardConfig = publicClient.watchContractEvent({
+const unwatch = publicClient.watchContractEvent({
   address: contractAddress,
   abi: guardController.abi,
-  eventName: 'GuardConfigApplied',
+  eventName: 'ComponentEvent',
   onLogs: (logs) => {
     logs.forEach(log => {
-      console.log('Guard config applied:', {
-        actionType: log.args.actionType,
-        functionSelector: log.args.functionSelector,
-        target: log.args.target,
-        data: log.args.data
-      })
+      if (log.args.functionSelector === executeGuardConfigBatchSelector) {
+        const decoded = decodeAbiParameters(/* ... */, log.args.data)
+        console.log('Guard config:', decoded)
+      }
     })
   }
 })
-
-// Stop watching
-unwatchGuardConfig()
+unwatch()
 ```
 
 ## 🛡️ **Security Features**
@@ -433,9 +430,9 @@ describe('GuardController', () => {
     expect(Array.isArray(targets)).toBe(true)
   })
 
-  it('should check function schema exists', async () => {
-    const exists = await guardController.functionSchemaExists(functionSelector)
-    expect(typeof exists).toBe('boolean')
+  it('should check function schema', async () => {
+    const schema = await guardController.getFunctionSchema(functionSelector)
+    expect(schema).toBeDefined()
   })
 })
 ```
@@ -454,8 +451,8 @@ describe('GuardController Integration', () => {
     await guardController.guardConfigBatchRequestAndApprove(metaTx, { from: broadcaster })
 
     // Verify function registered
-    const exists = await guardController.functionSchemaExists(functionSelector)
-    expect(exists).toBe(true)
+    const schema = await guardController.getFunctionSchema(functionSelector)
+    expect(schema.functionSelector).toBe(functionSelector)
 
     // Add target to whitelist
     const whitelistAction = {
@@ -492,7 +489,7 @@ describe('GuardController Integration', () => {
 
 ## 📚 **Related Documentation**
 
-- [RuntimeRBAC Guide](./dynamic-rbac.md) - Role and permission management
+- [RuntimeRBAC Guide](./runtime-rbac.md) - Role and permission management
 - [API Reference](./api-reference.md) - Complete API documentation
 - [State Machine Engine](./state-machine-engine.md) - State machine architecture
 - [Best Practices](./best-practices.md) - Development guidelines

@@ -151,7 +151,7 @@ enum RoleConfigActionType {
 }
 ```
 
-**Note**: Function schema registration (REGISTER_FUNCTION/UNREGISTER_FUNCTION) has been moved to GuardController. See [GuardController documentation](./guard-controller.md) for function schema management.
+- [GuardController documentation](./guard-controller.md) for function schema management.
 
 ### **Create Role via Batch**
 
@@ -258,26 +258,23 @@ const addFunctionToRoleAction = {
 
 ### **Listen for Role Configuration Events**
 
+Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For RBAC config, filter by `executeRoleConfigBatch` selector and decode `data` as `(RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, address wallet)`. See [contract API](../../docs/) and NatSpec.
+
 ```typescript
-// Role configuration applied
-const unwatchRoleConfig = publicClient.watchContractEvent({
+const unwatch = publicClient.watchContractEvent({
   address: contractAddress,
   abi: runtimeRBAC.abi,
-  eventName: 'RoleConfigApplied',
+  eventName: 'ComponentEvent',
   onLogs: (logs) => {
     logs.forEach(log => {
-      console.log('Role config applied:', {
-        actionType: log.args.actionType,
-        roleHash: log.args.roleHash,
-        functionSelector: log.args.functionSelector,
-        data: log.args.data
-      })
+      if (log.args.functionSelector === executeRoleConfigBatchSelector) {
+        const decoded = decodeAbiParameters(/* ... */, log.args.data)
+        console.log('Role config:', decoded)
+      }
     })
   }
 })
-
-// Stop watching
-unwatchRoleConfig()
+unwatch()
 ```
 
 ## 🛡️ **Security Features**

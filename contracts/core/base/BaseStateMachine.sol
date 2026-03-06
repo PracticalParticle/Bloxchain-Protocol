@@ -520,6 +520,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
      * @return The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, enforceHandlerRelations, isProtected, handlerForSelectors)
+     * @notice Reverts with ResourceNotFound if the schema does not exist
      */
     function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory) {
         _validateAnyRole();

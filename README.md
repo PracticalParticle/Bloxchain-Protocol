@@ -111,16 +111,16 @@ Addresses are written to **`deployed-addresses.json`**.
 
 | Contract | Address |
 |----------|---------|
-| EngineBlox | [`0xd0db4bcfac215e86371c55ba9d91030082fe7adb`](https://sepolia.etherscan.io/address/0xd0db4bcfac215e86371c55ba9d91030082fe7adb) |
-| SecureOwnableDefinitions | [`0xd21e88564377cbbed7885416cf0462b1a7e424aa`](https://sepolia.etherscan.io/address/0xd21e88564377cbbed7885416cf0462b1a7e424aa) |
-| RuntimeRBACDefinitions | [`0x03156b0dcbd104c397aa3463705964b933ed4d3f`](https://sepolia.etherscan.io/address/0x03156b0dcbd104c397aa3463705964b933ed4d3f) |
-| GuardControllerDefinitions | [`0x4b828c8575fcb375158d0926fd2ca01e5f41ca1f`](https://sepolia.etherscan.io/address/0x4b828c8575fcb375158d0926fd2ca01e5f41ca1f) |
+| EngineBlox | [`0xb2cb295d62b1296d426344bcaea7f13e6415db33`](https://sepolia.etherscan.io/address/0xb2cb295d62b1296d426344bcaea7f13e6415db33) |
+| SecureOwnableDefinitions | [`0x58a6f5cb9b5bbbc4700b26dca21a07b5d628a329`](https://sepolia.etherscan.io/address/0x58a6f5cb9b5bbbc4700b26dca21a07b5d628a329) |
+| RuntimeRBACDefinitions | [`0xc897e8cc3d33f22153edee9bc82bf62d62dd7c94`](https://sepolia.etherscan.io/address/0xc897e8cc3d33f22153edee9bc82bf62d62dd7c94) |
+| GuardControllerDefinitions | [`0x922454de0599640a7cd223e2f955d45025f3cfda`](https://sepolia.etherscan.io/address/0x922454de0599640a7cd223e2f955d45025f3cfda) |
 
 #### Account
 
 | Contract | Address |
 |----------|---------|
-| AccountBlox | [`0x5886d5760551fae5f826ebb71d5b8a125da57a15`](https://sepolia.etherscan.io/address/0x5886d5760551fae5f826ebb71d5b8a125da57a15) |
+| AccountBlox | [`0xb73f8e5f08e30a9326d7127aaffe897a26c49f70`](https://sepolia.etherscan.io/address/0xb73f8e5f08e30a9326d7127aaffe897a26c49f70) |
 
 #### Examples
 
@@ -175,7 +175,9 @@ npm run docgen && npm run format    # docs & format
 
 ## 📚 Documentation
 
+- **[Codebase documentation process & audit checklist](CODEBASE_DOCUMENTATION.md)** – Source of truth, how to update docs, audit-ready checklist
 - [Protocol Architecture](./sdk/typescript/docs/bloxchain-architecture.md) · [State Machine](./sdk/typescript/docs/state-machine-engine.md) · [Getting Started](./sdk/typescript/docs/getting-started.md) · [API Reference](./sdk/typescript/docs/api-reference.md) · [SecureOwnable](./sdk/typescript/docs/secure-ownable.md) · [RuntimeRBAC](./sdk/typescript/docs/dynamic-rbac.md) · [Best Practices](./sdk/typescript/docs/best-practices.md) · [Examples](./sdk/typescript/docs/examples-basic.md)
+- **Contract API (generated):** [docs/](docs/) – generated from Solidity NatSpec via `npm run docgen`
 
 ## 🛡️ Security Features
 

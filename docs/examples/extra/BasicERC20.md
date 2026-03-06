@@ -2,10 +2,12 @@
 
 # BasicERC20
 
-A simple ERC20 token contract with access control for minting
-This token uses OpenZeppelin AccessControl to manage minter roles
+A simple ERC20 token contract with access control for minting.
+Uses OpenZeppelin AccessControl to manage minter roles.
 
 
+**Notice:** When used with Bloxchain, the minter is typically the AccountBlox contract address
+        (from deployed-addresses.json), so AccountBlox can mint via GuardController execution.
 
 
 ## Functions
@@ -22,7 +24,7 @@ Constructor that mints the total supply to the deployer and grants minter role
 - `` (): The name of the token
 - `` (): The symbol of the token
 - `` (): The total supply of tokens to mint (in wei/smallest unit)
-- `` (): The address that will be granted the MINTER_ROLE
+- `` (): The address granted the MINTER_ROLE (typically AccountBlox from deployed-addresses.json)
 
 
 

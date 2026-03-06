@@ -109,6 +109,54 @@ Adds recovery role permissions
 
 ---
 
+### updateRecoveryExecutionParams
+
+```solidity
+function updateRecoveryExecutionParams(address newRecoveryAddress) public pure returns (bytes)
+```
+
+Creates execution params for updating the recovery address (pure helper for EngineBlox).
+
+**Parameters:**
+- `` (): The new recovery address
+
+**Returns:**
+- The execution params for executeRecoveryUpdate
+
+
+---
+
+### updateTimeLockExecutionParams
+
+```solidity
+function updateTimeLockExecutionParams(uint256 newTimeLockPeriodSec) public pure returns (bytes)
+```
+
+Creates execution params for updating the time lock period (pure helper for EngineBlox).
+
+**Parameters:**
+- `` (): The new time lock period in seconds
+
+**Returns:**
+- The execution params for executeTimeLockUpdate
+
+
+---
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external pure returns (bool)
+```
+
+ERC165: report support for IDefinition and IERC165 when this library is used at an address.
+IDefinition extends IERC165; both interface IDs must be reported for ERC165 compliance.
+
+
+
+
+---
+
 
 ## Events
 

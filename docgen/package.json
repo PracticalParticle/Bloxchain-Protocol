@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "Documentation generation workspace for Bloxchain protocol (isolated Hardhat 2.x dependencies)",
   "private": true,
+  "type": "commonjs",
   "scripts": {
-    "docgen": "hardhat docgen",
+    "docgen": "hardhat docgen --config hardhat.config.cjs",
     "install-deps": "npm install"
   },
   "devDependencies": {
     "hardhat": "^2.28.3",
-    "solidity-docgen": "^0.6.0-beta.36"
+    "solidity-docgen": "^0.6.0-beta.36",
+    "ts-node": "^10.9.2"
   }
 }

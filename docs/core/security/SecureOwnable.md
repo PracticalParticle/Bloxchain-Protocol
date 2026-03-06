@@ -19,6 +19,9 @@ The contract implements four primary secure operation types:
 Each operation follows a request -> approval workflow with appropriate time locks
 and authorization checks. Operations can be cancelled within specific time windows.
 
+At most one ownership-transfer or broadcaster-update request may be pending at a time:
+a pending request of either type blocks new requests until it is approved or cancelled.
+
 This contract focuses purely on security logic while leveraging the BaseStateMachine
 for transaction management, meta-transactions, and state machine operations.
 
@@ -62,14 +65,14 @@ See {IERC165-supportsInterface}.
 ### transferOwnershipRequest
 
 ```solidity
-function transferOwnershipRequest() public nonpayable returns (struct EngineBlox.TxRecord)
+function transferOwnershipRequest() public nonpayable returns (uint256)
 ```
 
 Requests a transfer of ownership
 
 
 **Returns:**
-- The transaction record
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
@@ -77,7 +80,7 @@ Requests a transfer of ownership
 ### transferOwnershipDelayedApproval
 
 ```solidity
-function transferOwnershipDelayedApproval(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function transferOwnershipDelayedApproval(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Approves a pending ownership transfer transaction after the release time
@@ -86,7 +89,7 @@ Approves a pending ownership transfer transaction after the release time
 - `` (): The transaction ID
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -94,7 +97,7 @@ Approves a pending ownership transfer transaction after the release time
 ### transferOwnershipApprovalWithMetaTx
 
 ```solidity
-function transferOwnershipApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function transferOwnershipApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Approves a pending ownership transfer transaction using a meta-transaction
@@ -103,7 +106,7 @@ Approves a pending ownership transfer transaction using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -111,7 +114,7 @@ Approves a pending ownership transfer transaction using a meta-transaction
 ### transferOwnershipCancellation
 
 ```solidity
-function transferOwnershipCancellation(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function transferOwnershipCancellation(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Cancels a pending ownership transfer transaction
@@ -120,7 +123,7 @@ Cancels a pending ownership transfer transaction
 - `` (): The transaction ID
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -128,7 +131,7 @@ Cancels a pending ownership transfer transaction
 ### transferOwnershipCancellationWithMetaTx
 
 ```solidity
-function transferOwnershipCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function transferOwnershipCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Cancels a pending ownership transfer transaction using a meta-transaction
@@ -137,7 +140,7 @@ Cancels a pending ownership transfer transaction using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -145,16 +148,17 @@ Cancels a pending ownership transfer transaction using a meta-transaction
 ### updateBroadcasterRequest
 
 ```solidity
-function updateBroadcasterRequest(address newBroadcaster) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateBroadcasterRequest(address newBroadcaster, uint256 location) public nonpayable returns (uint256)
 ```
 
-Updates the broadcaster address
+Requests an update to the broadcaster at a specific location (index).
 
 **Parameters:**
-- `` (): The new broadcaster address
+- `` (): The new broadcaster address (zero address to revoke at location)
+- `` (): The index in the broadcaster role&#x27;s authorized wallets set
 
 **Returns:**
-- The execution options
+- The transaction ID for the pending request (use getTransaction(txId) for full record)
 
 
 ---
@@ -162,7 +166,7 @@ Updates the broadcaster address
 ### updateBroadcasterDelayedApproval
 
 ```solidity
-function updateBroadcasterDelayedApproval(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateBroadcasterDelayedApproval(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Approves a pending broadcaster update transaction after the release time
@@ -171,7 +175,7 @@ Approves a pending broadcaster update transaction after the release time
 - `` (): The transaction ID
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -179,7 +183,7 @@ Approves a pending broadcaster update transaction after the release time
 ### updateBroadcasterApprovalWithMetaTx
 
 ```solidity
-function updateBroadcasterApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateBroadcasterApprovalWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Approves a pending broadcaster update transaction using a meta-transaction
@@ -188,7 +192,7 @@ Approves a pending broadcaster update transaction using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -196,7 +200,7 @@ Approves a pending broadcaster update transaction using a meta-transaction
 ### updateBroadcasterCancellation
 
 ```solidity
-function updateBroadcasterCancellation(uint256 txId) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateBroadcasterCancellation(uint256 txId) public nonpayable returns (uint256)
 ```
 
 Cancels a pending broadcaster update transaction
@@ -205,7 +209,7 @@ Cancels a pending broadcaster update transaction
 - `` (): The transaction ID
 
 **Returns:**
-- The updated transaction record
+- The transaction ID
 
 
 ---
@@ -213,7 +217,7 @@ Cancels a pending broadcaster update transaction
 ### updateBroadcasterCancellationWithMetaTx
 
 ```solidity
-function updateBroadcasterCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateBroadcasterCancellationWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Cancels a pending broadcaster update transaction using a meta-transaction
@@ -222,24 +226,7 @@ Cancels a pending broadcaster update transaction using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The updated transaction record
-
-
----
-
-### updateRecoveryExecutionParams
-
-```solidity
-function updateRecoveryExecutionParams(address newRecoveryAddress) public view returns (bytes)
-```
-
-Creates execution params for updating the recovery address
-
-**Parameters:**
-- `` (): The new recovery address
-
-**Returns:**
-- The execution params
+- The transaction ID
 
 
 ---
@@ -247,7 +234,7 @@ Creates execution params for updating the recovery address
 ### updateRecoveryRequestAndApprove
 
 ```solidity
-function updateRecoveryRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateRecoveryRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Requests and approves a recovery address update using a meta-transaction
@@ -256,24 +243,7 @@ Requests and approves a recovery address update using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The transaction record
-
-
----
-
-### updateTimeLockExecutionParams
-
-```solidity
-function updateTimeLockExecutionParams(uint256 newTimeLockPeriodSec) public view returns (bytes)
-```
-
-Creates execution params for updating the time lock period
-
-**Parameters:**
-- `` (): The new time lock period in seconds
-
-**Returns:**
-- The execution params
+- The transaction ID
 
 
 ---
@@ -281,7 +251,7 @@ Creates execution params for updating the time lock period
 ### updateTimeLockRequestAndApprove
 
 ```solidity
-function updateTimeLockRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function updateTimeLockRequestAndApprove(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 Requests and approves a time lock period update using a meta-transaction
@@ -290,7 +260,7 @@ Requests and approves a time lock period update using a meta-transaction
 - `` (): The meta-transaction
 
 **Returns:**
-- The transaction record
+- The transaction ID
 
 
 ---
@@ -313,13 +283,14 @@ External function that can only be called by the contract itself to execute owne
 ### executeBroadcasterUpdate
 
 ```solidity
-function executeBroadcasterUpdate(address newBroadcaster) external nonpayable
+function executeBroadcasterUpdate(address newBroadcaster, uint256 location) external nonpayable
 ```
 
 External function that can only be called by the contract itself to execute broadcaster update
 
 **Parameters:**
-- `` (): The new broadcaster address
+- `` (): The new broadcaster address (zero address to revoke at location)
+- `` (): The index in the broadcaster role&#x27;s authorized wallets set
 
 
 
@@ -351,6 +322,68 @@ External function that can only be called by the contract itself to execute time
 **Parameters:**
 - `` (): The new timelock period in seconds
 
+
+
+---
+
+### _requireNoPendingRequest
+
+```solidity
+function _requireNoPendingRequest() internal view
+```
+
+Reverts if an ownership-transfer or broadcaster-update request is already pending.
+
+
+
+
+---
+
+### _validateBroadcasterAndOwnerSigner
+
+```solidity
+function _validateBroadcasterAndOwnerSigner(struct EngineBlox.MetaTransaction metaTx) internal view
+```
+
+Validates that the caller is the broadcaster and that the meta-tx signer is the owner.
+
+**Parameters:**
+- `` (): The meta-transaction to validate
+
+
+
+---
+
+### _completeApprove
+
+```solidity
+function _completeApprove(struct EngineBlox.TxRecord updatedRecord) internal nonpayable returns (uint256)
+```
+
+Completes ownership/broadcaster flow after approval: resets flag and returns txId.
+
+**Parameters:**
+- `` (): The updated transaction record from approval
+
+**Returns:**
+- The transaction ID
+
+
+---
+
+### _completeCancel
+
+```solidity
+function _completeCancel(struct EngineBlox.TxRecord updatedRecord) internal nonpayable returns (uint256)
+```
+
+Completes ownership/broadcaster flow after cancellation: resets flag, logs txId, returns txId.
+
+**Parameters:**
+- `` (): The updated transaction record from cancellation
+
+**Returns:**
+- The transaction ID
 
 
 ---
@@ -409,16 +442,17 @@ Updates the recovery address
 
 ---
 
-### _updateTimeLockPeriod
+### _logAddressPairEvent
 
 ```solidity
-function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal nonpayable
+function _logAddressPairEvent(address a, address b) internal nonpayable
 ```
 
-Updates the time lock period
+Emits ComponentEvent with ABI-encoded (address, address) payload. Reused to reduce contract size.
 
 **Parameters:**
-- `` (): The new time lock period in seconds
+- `` (): First address
+- `` (): Second address
 
 
 
@@ -426,94 +460,6 @@ Updates the time lock period
 
 
 ## Events
-
-### OwnershipTransferRequest
-
-```solidity
-event OwnershipTransferRequest(address currentOwner, address newOwner)
-```
-
-
-
-
----
-
-### OwnershipTransferCancelled
-
-```solidity
-event OwnershipTransferCancelled(uint256 txId)
-```
-
-
-
-
----
-
-### OwnershipTransferUpdated
-
-```solidity
-event OwnershipTransferUpdated(address oldOwner, address newOwner)
-```
-
-
-
-
----
-
-### BroadcasterUpdateRequest
-
-```solidity
-event BroadcasterUpdateRequest(address currentBroadcaster, address newBroadcaster)
-```
-
-
-
-
----
-
-### BroadcasterUpdateCancelled
-
-```solidity
-event BroadcasterUpdateCancelled(uint256 txId)
-```
-
-
-
-
----
-
-### BroadcasterUpdated
-
-```solidity
-event BroadcasterUpdated(address oldBroadcaster, address newBroadcaster)
-```
-
-
-
-
----
-
-### RecoveryAddressUpdated
-
-```solidity
-event RecoveryAddressUpdated(address oldRecovery, address newRecovery)
-```
-
-
-
-
----
-
-### TimeLockPeriodUpdated
-
-```solidity
-event TimeLockPeriodUpdated(uint256 oldPeriod, uint256 newPeriod)
-```
-
-
-
-
----
 
 
 ## Structs

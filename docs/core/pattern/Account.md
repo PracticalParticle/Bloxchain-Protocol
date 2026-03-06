@@ -1,16 +1,20 @@
 # Solidity API
 
-# AccountBlox
+# Account
 
-Complete controller implementation using GuardController, RuntimeRBAC, and SecureOwnable
+Abstract account pattern combining GuardController, RuntimeRBAC, and SecureOwnable.
 
-This contract combines:
+Use this as the base for account-style contracts (e.g. AccountBlox) to avoid duplicating
+initialization, interface support, and receive/fallback boilerplate.
+
+Combines:
 - GuardController: Execution workflows and time-locked transactions
 - RuntimeRBAC: Runtime role creation and management
 - SecureOwnable: Secure ownership transfer and management
 
 
 
+**Security Contact:** security@particlecs.com
 
 ## Functions
 
@@ -46,16 +50,17 @@ See {IERC165-supportsInterface}.
 
 ---
 
-### deposit
+### receive
 
 ```solidity
-function deposit() external payable
+function receive() external payable
 ```
 
+Accepts plain ETH transfers (no calldata).
 
 
 
-
+**Security:** No external calls—reentrancy-safe; outgoing ETH only via GuardController execution. Uses simple emit to stay within 2,300 gas stipend (transfer/send compatible).
 
 ---
 
@@ -65,20 +70,7 @@ function deposit() external payable
 function fallback() external payable
 ```
 
-Fallback function to reject accidental calls
-
-
-
-
----
-
-### receive
-
-```solidity
-function receive() external payable
-```
-
-
+Rejects calls with unknown selector (with or without value).
 
 
 
@@ -91,11 +83,14 @@ function receive() external payable
 ### EthReceived
 
 ```solidity
-event EthReceived(address from, uint256 amount)
+event EthReceived(address sender, uint256 value)
 ```
 
-Explicit deposit function for ETH deposits
+Emitted when plain ETH is received (receive()).
 
+**Parameters:**
+- `` (): Address that sent the ETH
+- `` (): Amount of wei received
 
 ---
 

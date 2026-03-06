@@ -44,6 +44,19 @@ Returns predefined role hashes and their corresponding function permissions
 
 ---
 
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external pure returns (bool)
+```
+
+ERC165: report support for IDefinition when this library is used at an address
+
+
+
+
+---
+
 
 ## Events
 

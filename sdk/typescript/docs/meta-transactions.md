@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Meta-Transaction system provides a standardized way to create and sign meta-transactions for the Guardian system. This utility leverages the contract's own EIP-712 message hash generation to ensure signature compatibility and avoid JavaScript replication issues.
+The Meta-Transaction system provides a standardized way to create and sign meta-transactions for the Bloxchain system. This utility leverages the contract's own EIP-712 message hash generation to ensure signature compatibility and avoid JavaScript replication issues.
 
 ## Key Features
 
@@ -582,11 +582,11 @@ console.log('✍️ Signature created:', signature);
 console.log('✅ Signature verified successfully');
 ```
 
-## Integration with Guardian System
+## Integration with Bloxchain System
 
 ### Contract Integration
 
-The utility integrates with the Guardian system through:
+The utility integrates with the Bloxchain system through:
 
 1. **SecureOwnable Contract**: Uses the contract's meta-transaction functions
 2. **EngineBlox Library**: Leverages the library's EIP-712 implementation
@@ -594,7 +594,7 @@ The utility integrates with the Guardian system through:
 
 ### Workflow Integration
 
-Meta-transactions integrate into the Guardian workflow:
+Meta-transactions integrate into the Bloxchain workflow:
 
 1. **Request Phase**: Create and sign meta-transaction for new operations
 2. **Approval Phase**: Sign meta-transactions to approve pending operations
@@ -690,6 +690,6 @@ sdk/typescript/utils/metaTx/
 
 ## Conclusion
 
-The Meta-Transaction system provides a robust, secure, and easy-to-use solution for creating and signing meta-transactions in the Guardian system. By leveraging the contract's own EIP-712 implementation, it ensures perfect compatibility and eliminates common JavaScript replication issues.
+The Meta-Transaction system provides a robust, secure, and easy-to-use solution for creating and signing meta-transactions in the Bloxchain system. By leveraging the contract's own EIP-712 implementation, it ensures perfect compatibility and eliminates common JavaScript replication issues.
 
 The new architecture provides the same functionality while enabling new integration patterns for frontend wallets and hybrid workflows, making it suitable for both backend automation and frontend user interactions.
