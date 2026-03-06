@@ -12,7 +12,7 @@ import "../../lib/EngineBlox.sol";
  * 
  * Key Features:
  * - Batch-based role configuration (atomic operations)
- * - Runtime function schema registration
+ * - Role and permission management (function schema registration is handled by GuardController)
  * - Integration with EngineBlox for secure operations
  * - Query functions for role and permission inspection
  * 
@@ -47,7 +47,7 @@ interface IRuntimeRBAC {
     /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID of the applied batch
      */
     function roleConfigBatchRequestAndApprove(
         EngineBlox.MetaTransaction memory metaTx

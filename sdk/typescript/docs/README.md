@@ -1,6 +1,6 @@
-# Guardian TypeScript SDK Documentation
+# Bloxchain TypeScript SDK Documentation
 
-Welcome to the Guardian TypeScript SDK documentation. This comprehensive guide covers all aspects of the SDK, from basic usage to advanced workflow analysis.
+Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
 
 ## 📚 **Documentation Structure**
 
@@ -9,31 +9,25 @@ Welcome to the Guardian TypeScript SDK documentation. This comprehensive guide c
 - [**API Reference**](./api-reference.md) - Complete API documentation
 - [**SecureOwnable**](./secure-ownable.md) - SecureOwnable contract integration
 - [**RuntimeRBAC**](./runtime-rbac.md) - RuntimeRBAC contract integration
-- [**Definitions**](./definition-contract.md) - Dynamic definition library interaction
+- [**Definitions**](./definition-contract.md) - Definition library interaction (IDefinition)
 - [**Meta-Transactions**](./meta-transactions.md) - Meta-transaction workflows and signing
 - [**Types & Interfaces**](./types-interfaces.md) - TypeScript type definitions
 
 
 ### **Advanced Topics**
 - [**Best Practices**](./best-practices.md) - Development guidelines and patterns
-- [**Error Handling**](./error-handling.md) - Error management and debugging
-- [**Performance Optimization**](./performance.md) - Optimization techniques
-- [**Testing Guide**](./testing.md) - Testing strategies and examples
 
 ### **Examples & Tutorials**
 - [**Basic Examples**](./examples-basic.md) - Simple usage examples
-- [**Advanced Examples**](./examples-advanced.md) - Complex scenarios
-- [**Integration Examples**](./examples-integration.md) - Real-world integrations
 
-### **Deployment & Configuration**
-- [**Deployment Guide**](./deployment.md) - Contract deployment
-- [**Network Configuration**](./network-config.md) - Network setup
-- [**Migration Guide**](./migration.md) - Upgrading and migrations
+### **Architecture & Concepts**
+- [**Bloxchain Architecture**](./bloxchain-architecture.md) - Protocol and state machine
+- [**State Machine Engine**](./state-machine-engine.md) - State machine details
 
 ## 🚀 **Quick Start**
 
 ```typescript
-import { SecureOwnable } from '@bloxchain/sdk/typescript'
+import { SecureOwnable } from '@bloxchain/sdk'
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -66,32 +60,22 @@ console.log('Contract owner:', owner)
 6. [Meta-Transactions](./meta-transactions.md)
 7. [Types & Interfaces](./types-interfaces.md)
 8. [Best Practices](./best-practices.md)
-9. [Error Handling](./error-handling.md)
-10. [Performance Optimization](./performance.md)
-11. [Testing Guide](./testing.md)
-12. [Basic Examples](./examples-basic.md)
-13. [Advanced Examples](./examples-advanced.md)
-14. [Integration Examples](./examples-integration.md)
-15. [Deployment Guide](./deployment.md)
-16. [Network Configuration](./network-config.md)
-17. [Migration Guide](./migration.md)
+9. [Basic Examples](./examples-basic.md)
+10. [Bloxchain Architecture](./bloxchain-architecture.md)
+11. [State Machine Engine](./state-machine-engine.md)
 
 ## 🔗 **External Resources**
 
-- [Guardian Protocol Documentation](../README.md)
-- [Contract ABIs](../../abi/)
-- [Migration Scripts](../../../migrations/)
-- [Test Examples](../../../test/)
+- [Bloxchain Protocol README](../../README.md)
+- [Contract API (generated)](../../docs/) – from Solidity NatSpec via `npm run docgen`
+- [Codebase documentation process](../../CODEBASE_DOCUMENTATION.md)
 
 ## 📞 **Support**
 
-For questions, issues, or contributions:
-- GitHub Issues: [Create an issue](https://github.com/PracticalParticle/Guardian/issues)
-- Documentation: [Improve docs](https://github.com/PracticalParticle/Guardian/tree/main/sdk/typescript/docs)
-- Security: [Report security issues](mailto:security@particlecrypto.com)
+- **Issues:** [GitHub Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues)
+- **Security:** [Report security issues](mailto:security@particlecrypto.com)
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: September 2025  
+**Version**: 1.0.0-alpha.16 (see [package.json](../package.json))  
 **License**: MPL-2.0

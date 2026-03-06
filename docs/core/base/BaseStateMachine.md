@@ -14,8 +14,8 @@ by security-specific contracts. It handles:
 
 The contract is designed to be inherited by security-specific contracts that implement
 their own operation types and business logic while leveraging the core state machine.
-Implementing contracts can call EngineBlox library functions directly for
-transaction management operations.
+All access to EngineBlox library functions is centralized through BaseStateMachine
+wrapper functions to ensure consistency and maintainability.
 
 Key Features:
 - State initialization with role and permission setup
@@ -130,6 +130,30 @@ Centralized function to request a transaction with common validation
 
 ---
 
+### _requestTransactionWithPayment
+
+```solidity
+function _requestTransactionWithPayment(address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 functionSelector, bytes params, struct EngineBlox.PaymentDetails paymentDetails) internal nonpayable returns (struct EngineBlox.TxRecord)
+```
+
+Centralized function to request a transaction with payment details attached from the start
+
+**Parameters:**
+- `` (): The address requesting the transaction
+- `` (): The target contract address
+- `` (): The ETH value to send (0 for standard function calls)
+- `` (): The gas limit for execution
+- `` (): The type of operation
+- `` (): The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
+- `` (): The encoded parameters for the function (empty for simple native token transfers)
+- `` (): The payment details to attach to the transaction
+
+**Returns:**
+- The created transaction record with payment set
+
+
+---
+
 ### _approveTransaction
 
 ```solidity
@@ -211,6 +235,73 @@ Centralized function to request and approve a transaction using meta-transaction
 
 **Returns:**
 - The transaction record
+
+
+---
+
+### _postActionHook
+
+```solidity
+function _postActionHook(struct EngineBlox.TxRecord txRecord) internal nonpayable
+```
+
+Post-action hook invoked after any transaction operation that produces a TxRecord.
+     Override in derived contracts to add centralized post-tx logic (e.g. notifications, side effects).
+
+**Parameters:**
+- `` (): The transaction record produced by the operation
+
+
+
+---
+
+### _setHook
+
+```solidity
+function _setHook(bytes4 functionSelector, address hook) internal nonpayable
+```
+
+Sets the hook contract for a function selector (internal; no access control).
+     Extensions (e.g. HookManager) may expose an external setHook with owner check.
+
+**Parameters:**
+- `` (): The function selector
+- `` (): The hook contract address (must not be zero)
+
+
+
+---
+
+### _clearHook
+
+```solidity
+function _clearHook(bytes4 functionSelector, address hook) internal nonpayable
+```
+
+Clears the hook contract for a function selector (internal; no access control).
+     Extensions may expose an external clearHook with owner check.
+
+**Parameters:**
+- `` (): The function selector
+- `` (): The hook contract address to remove (must not be zero)
+
+
+
+---
+
+### getHooks
+
+```solidity
+function getHooks(bytes4 functionSelector) public view returns (address[])
+```
+
+Returns all configured hooks for a function selector
+
+**Parameters:**
+- `` (): The function selector
+
+**Returns:**
+- Array of hook contract addresses
 
 
 ---
@@ -368,20 +459,53 @@ Returns if a wallet is authorized for a role
 
 ---
 
-### isActionSupportedByFunction
+### getWalletRoles
 
 ```solidity
-function isActionSupportedByFunction(bytes4 functionSelector, enum EngineBlox.TxAction action) public view returns (bool)
+function getWalletRoles(address wallet) public view returns (bytes32[])
 ```
 
-Returns if an action is supported by a function
+Gets all roles assigned to a wallet
 
 **Parameters:**
-- `` (): The function selector to check
-- `` (): The action to check
+- `` (): The wallet address to get roles for
 
 **Returns:**
-- True if the action is supported by the function, false otherwise
+- Array of role hashes assigned to the wallet
+
+
+---
+
+### getAuthorizedWallets
+
+```solidity
+function getAuthorizedWallets(bytes32 roleHash) public view returns (address[])
+```
+
+Gets all authorized wallets for a role
+
+**Parameters:**
+- `` (): The role hash to get wallets for
+
+**Returns:**
+- Array of authorized wallet addresses
+
+
+---
+
+### getFunctionSchema
+
+```solidity
+function getFunctionSchema(bytes4 functionSelector) external view returns (struct EngineBlox.FunctionSchema)
+```
+
+Gets function schema information
+
+**Parameters:**
+- `` (): The function selector to get information for
+
+**Returns:**
+- The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, enforceHandlerRelations, isProtected, handlerForSelectors)
 
 
 ---
@@ -530,6 +654,72 @@ Centralized function to get all authorized wallets for a role
 
 ---
 
+### _createRole
+
+```solidity
+function _createRole(string roleName, uint256 maxWallets, bool isProtected) internal nonpayable returns (bytes32)
+```
+
+Centralized function to create a new role
+
+**Parameters:**
+- `` (): The name of the role
+- `` (): The maximum number of wallets allowed for this role
+- `` (): Whether the role is protected from removal
+
+**Returns:**
+- roleHash The hash of the created role
+
+
+---
+
+### _removeRole
+
+```solidity
+function _removeRole(bytes32 roleHash) internal nonpayable
+```
+
+Centralized function to remove a role
+
+**Parameters:**
+- `` (): The hash of the role to remove
+
+
+
+---
+
+### _assignWallet
+
+```solidity
+function _assignWallet(bytes32 roleHash, address wallet) internal nonpayable
+```
+
+Centralized function to assign a wallet to a role
+
+**Parameters:**
+- `` (): The role hash
+- `` (): The wallet address to assign
+
+
+
+---
+
+### _revokeWallet
+
+```solidity
+function _revokeWallet(bytes32 roleHash, address wallet) internal nonpayable
+```
+
+Centralized function to revoke a wallet from a role
+
+**Parameters:**
+- `` (): The role hash
+- `` (): The wallet address to revoke
+
+
+
+---
+
 ### _updateWallet
 
 ```solidity
@@ -547,10 +737,264 @@ Centralized function to update wallet for a role (replaces oldWallet with newWal
 
 ---
 
+### _updateTimeLockPeriod
+
+```solidity
+function _updateTimeLockPeriod(uint256 newTimeLockPeriodSec) internal nonpayable
+```
+
+Centralized function to update the time lock period
+
+**Parameters:**
+- `` (): The new time lock period in seconds
+
+
+
+---
+
+### _registerFunction
+
+```solidity
+function _registerFunction(string functionSignature, bytes4 functionSelector, string operationName, uint16 supportedActionsBitmap, bool enforceHandlerRelations, bool isProtected, bytes4[] handlerForSelectors) internal nonpayable
+```
+
+Centralized function to register a function schema
+
+**Parameters:**
+- `` (): The function signature
+- `` (): The function selector
+- `` (): The operation name
+- `` (): The bitmap of supported actions
+- `` (): Whether to enforce strict handler/schema alignment
+- `` (): Whether the function schema is protected
+- `` (): Array of handler selectors
+
+
+
+---
+
+### _unregisterFunction
+
+```solidity
+function _unregisterFunction(bytes4 functionSelector, bool safeRemoval) internal nonpayable
+```
+
+Centralized function to unregister a function schema
+
+**Parameters:**
+- `` (): The function selector to unregister
+- `` (): Whether to perform safe removal (check for role references)
+
+
+
+---
+
+### _addFunctionToRole
+
+```solidity
+function _addFunctionToRole(bytes32 roleHash, struct EngineBlox.FunctionPermission functionPermission) internal nonpayable
+```
+
+Centralized function to add a function permission to a role
+
+**Parameters:**
+- `` (): The role hash
+- `` (): The function permission to add
+
+
+
+---
+
+### _removeFunctionFromRole
+
+```solidity
+function _removeFunctionFromRole(bytes32 roleHash, bytes4 functionSelector) internal nonpayable
+```
+
+Centralized function to remove a function permission from a role
+
+**Parameters:**
+- `` (): The role hash
+- `` (): The function selector to remove
+
+
+
+---
+
+### _validateAnyRole
+
+```solidity
+function _validateAnyRole() internal view
+```
+
+Centralized function to validate that the caller has any role
+
+
+
+
+---
+
+### _validateRoleExists
+
+```solidity
+function _validateRoleExists(bytes32 roleHash) internal view
+```
+
+Centralized function to validate that a role exists
+
+**Parameters:**
+- `` (): The role hash to validate
+
+
+
+---
+
+### _validateExecuteBySelf
+
+```solidity
+function _validateExecuteBySelf() internal view
+```
+
+Centralized function to validate that the caller is the contract itself (for execution-only entry points).
+
+
+
+
+---
+
+### _validateBatchSize
+
+```solidity
+function _validateBatchSize(uint256 length) internal pure
+```
+
+Centralized function to validate batch size against EngineBlox.MAX_BATCH_SIZE.
+
+**Parameters:**
+- `` (): The batch length to validate
+
+
+
+---
+
+### _addMacroSelector
+
+```solidity
+function _addMacroSelector(bytes4 functionSelector) internal nonpayable
+```
+
+Adds a function selector to the system macro selectors set.
+     Macro selectors are allowed to target address(this) for system-level operations.
+
+**Parameters:**
+- `` (): The function selector to add (e.g. NATIVE_TRANSFER_SELECTOR).
+
+
+
+---
+
+### _isMacroSelector
+
+```solidity
+function _isMacroSelector(bytes4 functionSelector) internal view returns (bool)
+```
+
+Returns true if the given function selector is in the system macro selectors set.
+
+**Parameters:**
+- `` (): The function selector to check.
+
+
+
+---
+
+### _convertBitmapToActions
+
+```solidity
+function _convertBitmapToActions(uint16 bitmap) internal pure returns (enum EngineBlox.TxAction[])
+```
+
+Centralized function to convert a bitmap to an array of actions
+
+**Parameters:**
+- `` (): The bitmap to convert
+
+**Returns:**
+- Array of TxAction values
+
+
+---
+
+### _createBitmapFromActions
+
+```solidity
+function _createBitmapFromActions(enum EngineBlox.TxAction[] actions) internal pure returns (uint16)
+```
+
+Centralized function to create a bitmap from an array of actions
+
+**Parameters:**
+- `` (): Array of TxAction values
+
+**Returns:**
+- The bitmap representation
+
+
+---
+
+### _addTargetToWhitelist
+
+```solidity
+function _addTargetToWhitelist(bytes4 functionSelector, address target) internal nonpayable
+```
+
+Centralized function to add a target address to the whitelist for a function selector
+
+**Parameters:**
+- `` (): The function selector
+- `` (): The target address to whitelist
+
+
+
+---
+
+### _removeTargetFromWhitelist
+
+```solidity
+function _removeTargetFromWhitelist(bytes4 functionSelector, address target) internal nonpayable
+```
+
+Centralized function to remove a target address from the whitelist for a function selector
+
+**Parameters:**
+- `` (): The function selector
+- `` (): The target address to remove
+
+
+
+---
+
+### getFunctionWhitelistTargets
+
+```solidity
+function getFunctionWhitelistTargets(bytes4 functionSelector) public view returns (address[])
+```
+
+Gets all whitelisted targets for a function selector
+
+**Parameters:**
+- `` (): The function selector
+
+**Returns:**
+- Array of whitelisted target addresses
+
+
+---
+
 ### _loadDefinitions
 
 ```solidity
-function _loadDefinitions(struct EngineBlox.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct EngineBlox.FunctionPermission[] functionPermissions) internal nonpayable
+function _loadDefinitions(struct EngineBlox.FunctionSchema[] functionSchemas, bytes32[] roleHashes, struct EngineBlox.FunctionPermission[] functionPermissions, bool requireProtected) internal nonpayable
 ```
 
 Loads definitions directly into the secure state
@@ -560,6 +1004,7 @@ This function initializes the secure state with all predefined definitions
 - `` (): Array of function schema definitions
 - `` (): Array of role hashes
 - `` (): Array of function permissions (parallel to roleHashes)
+- `` (): When true, all function schemas must be protected; reverts if any is not
 
 
 
@@ -614,50 +1059,37 @@ Internal helper to validate that a caller has the BROADCASTER_ROLE
 
 ---
 
+### _logComponentEvent
+
+```solidity
+function _logComponentEvent(bytes data) internal nonpayable
+```
+
+Centralized component event logging for SecureOwnable, GuardController, RuntimeRBAC.
+Uses msg.sig as the event index so callers only pass encoded data.
+
+**Parameters:**
+- `` (): abi.encode of event parameters
+
+
+
+---
+
 
 ## Events
 
-### TransactionRequested
+### ComponentEvent
 
 ```solidity
-event TransactionRequested(uint256 txId, address requester, bytes32 operationType, uint256 releaseTime)
+event ComponentEvent(bytes4 functionSelector, bytes data)
 ```
 
+Unified component event for SecureOwnable, GuardController, RuntimeRBAC.
+Indexers filter by functionSelector (msg.sig at emit site) and decode data (abi-encoded payload).
 
-
-
----
-
-### TransactionApproved
-
-```solidity
-event TransactionApproved(uint256 txId, bytes32 operationType, address approver)
-```
-
-
-
-
----
-
-### TransactionCancelled
-
-```solidity
-event TransactionCancelled(uint256 txId, bytes32 operationType, address canceller)
-```
-
-
-
-
----
-
-### TransactionExecuted
-
-```solidity
-event TransactionExecuted(uint256 txId, bytes32 operationType, bool success)
-```
-
-
-
+**Parameters:**
+- `` (): The function selector (msg.sig) at the emit site; used by indexers to filter
+- `` (): ABI-encoded payload associated with the event
 
 ---
 

@@ -81,6 +81,7 @@ export class Definitions implements IDefinition {
         operationType: item.operationType as Hex,
         operationName: item.operationName as string,
         supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
+        enforceHandlerRelations: item.enforceHandlerRelations as boolean,
         isProtected: item.isProtected as boolean,
         handlerForSelectors: item.handlerForSelectors.map((selector: any) => selector as Hex) as Hex[]
       }));

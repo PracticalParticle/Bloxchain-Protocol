@@ -187,19 +187,19 @@ function runTests() {
   exec('npm run test:foundry');
   logSuccess('Foundry tests passed');
   // Sanity tests require deploy/chain; optional for prepare
-  log('Running sanity:core (may require deployed contracts)...', 'yellow');
-  const sanityOk = exec('npm run test:sanity:core', { throwOnError: false });
-  if (!sanityOk) {
-    logWarning('test:sanity:core failed or skipped; continuing. Run manually if needed.');
-  } else {
-    logSuccess('Sanity core tests passed');
-  }
   log('Running sanity-sdk:core (may require deployed contracts)...', 'yellow');
   const sanitySdkOk = exec('npm run test:sanity-sdk:core', { throwOnError: false });
   if (!sanitySdkOk) {
     logWarning('test:sanity-sdk:core failed or skipped; continuing. Run manually if needed.');
   } else {
     logSuccess('Sanity SDK tests passed');
+  }
+  log('Running sanity:core (may require deployed contracts)...', 'yellow');
+  const sanityOk = exec('npm run test:sanity:core', { throwOnError: false });
+  if (!sanityOk) {
+    logWarning('test:sanity:core failed or skipped; continuing. Run manually if needed.');
+  } else {
+    logSuccess('Sanity core tests passed');
   }
 }
 

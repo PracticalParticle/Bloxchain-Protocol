@@ -25,6 +25,7 @@ This directory contains a separate npm workspace for generating documentation us
 
 ## Configuration
 
-- Hardhat config: `hardhat.config.cjs`
+- Hardhat config: `hardhat.config.cjs` (script uses `--config hardhat.config.cjs` so the parent’s `hardhat.config.ts` is not loaded).
 - Templates: `templates/contract.hbs`
 - Output: `../docs/` (parent directory)
+- Requires `ts-node` as a devDependency (Hardhat 2.x detects TypeScript from the repo and expects it).

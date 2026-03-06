@@ -140,7 +140,7 @@ function setDelegatedCallEnabled(bool enabled) external nonpayable
 ### requestTransaction
 
 ```solidity
-function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayable returns (struct EngineBlox.TxRecord)
+function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayable returns (uint256)
 ```
 
 
@@ -155,7 +155,7 @@ function requestTransaction(struct GuardianSafe.SafeTx safeTx) external nonpayab
 ### approveTransactionAfterDelay
 
 ```solidity
-function approveTransactionAfterDelay(uint256 txId) external nonpayable returns (struct EngineBlox.TxRecord)
+function approveTransactionAfterDelay(uint256 txId) external nonpayable returns (uint256)
 ```
 
 
@@ -170,7 +170,7 @@ function approveTransactionAfterDelay(uint256 txId) external nonpayable returns 
 ### approveTransactionWithMetaTx
 
 ```solidity
-function approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
+function approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 
@@ -185,7 +185,7 @@ function approveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) 
 ### cancelTransaction
 
 ```solidity
-function cancelTransaction(uint256 txId) external nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTransaction(uint256 txId) external nonpayable returns (uint256)
 ```
 
 
@@ -200,7 +200,7 @@ function cancelTransaction(uint256 txId) external nonpayable returns (struct Eng
 ### cancelTransactionWithMetaTx
 
 ```solidity
-function cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (struct EngineBlox.TxRecord)
+function cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) external nonpayable returns (uint256)
 ```
 
 
@@ -215,7 +215,7 @@ function cancelTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) e
 ### requestAndApproveTransactionWithMetaTx
 
 ```solidity
-function requestAndApproveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function requestAndApproveTransactionWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 

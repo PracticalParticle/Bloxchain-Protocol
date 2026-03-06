@@ -34,7 +34,7 @@ function initialize(string name, string symbol, address initialOwner, address br
 ### mintWithMetaTx
 
 ```solidity
-function mintWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function mintWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 
@@ -43,7 +43,7 @@ function mintWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpaya
 - `` (): Meta transaction data containing mint parameters
 
 **Returns:**
-- The transaction record
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
@@ -51,7 +51,7 @@ function mintWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpaya
 ### burnWithMetaTx
 
 ```solidity
-function burnWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (struct EngineBlox.TxRecord)
+function burnWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpayable returns (uint256)
 ```
 
 
@@ -60,7 +60,7 @@ function burnWithMetaTx(struct EngineBlox.MetaTransaction metaTx) public nonpaya
 - `` (): Meta transaction data containing burn parameters
 
 **Returns:**
-- The transaction record
+- The transaction ID (use getTransaction(txId) for full record)
 
 
 ---
