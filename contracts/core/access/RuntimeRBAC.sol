@@ -71,7 +71,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     /**
      * @dev Requests and approves a RBAC configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID of the applied batch
      * @notice OWNER signs, BROADCASTER executes according to RuntimeRBACDefinitions
      */
     function roleConfigBatchRequestAndApprove(

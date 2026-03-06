@@ -32,7 +32,7 @@ import "./interface/IGuardController.sol";
  * 
  * Usage Flow:
  * 1. Deploy GuardController (or combine with RuntimeRBAC/SecureOwnable for role management)
- * 2. Function schemas should be registered via definitions or RuntimeRBAC if combined
+ * 2. Function schemas are registered via definitions at init or via GuardController guard config batch (REGISTER_FUNCTION)
  * 3. Create roles and assign function permissions with action bitmaps (via RuntimeRBAC if combined)
  * 4. Assign wallets to roles (via RuntimeRBAC if combined)
      * 5. Configure target whitelists per function selector (REQUIRED for execution)
@@ -173,7 +173,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Approves and executes a time-locked transaction
      * @param txId The transaction ID
-     * @return result The execution result
+     * @return txId The transaction ID
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_APPROVE permission for the execution function
      */
     function approveTimeLockExecution(
@@ -191,7 +191,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Cancels a time-locked transaction
      * @param txId The transaction ID
-     * @return The updated transaction record
+     * @return The transaction ID
      * @notice Requires STANDARD execution type and EXECUTE_TIME_DELAY_CANCEL permission for the execution function
      */
     function cancelTimeLockExecution(
@@ -209,7 +209,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Approves a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
-     * @return The updated transaction record
+     * @return The transaction ID
      * @notice Requires STANDARD execution type and EXECUTE_META_APPROVE permission for the execution function
      */
     function approveTimeLockExecutionWithMetaTx(
@@ -226,7 +226,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Cancels a time-locked transaction using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
-     * @return The updated transaction record
+     * @return The transaction ID
      * @notice Requires STANDARD execution type and EXECUTE_META_CANCEL permission for the execution function
      */
     function cancelTimeLockExecutionWithMetaTx(
@@ -243,7 +243,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Requests and approves a transaction in one step using a meta-transaction
      * @param metaTx The meta-transaction containing the transaction record and signature
-     * @return The transaction record after request and approval
+     * @return The transaction ID
      * @notice Requires STANDARD execution type
      * @notice Validates function schema and permissions for the execution function (same as executeWithTimeLock)
      * @notice Requires EXECUTE_META_REQUEST_AND_APPROVE permission for the execution function selector
@@ -304,7 +304,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Requests and approves a Guard configuration batch using a meta-transaction
      * @param metaTx The meta-transaction
-     * @return The transaction record
+     * @return The transaction ID
      * @notice OWNER signs, BROADCASTER executes according to GuardControllerDefinitions
      */
     function guardConfigBatchRequestAndApprove(
