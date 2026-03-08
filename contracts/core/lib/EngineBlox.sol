@@ -868,19 +868,27 @@ library EngineBlox {
             self.walletRoles[wallets[i]].remove(roleHash);
         }
         
-        // Clear the role data from roles mapping
-        // Remove the role from the supported roles set (O(1) operation)
-        // NOTE: Mappings (functionPermissions, authorizedWallets, functionSelectorsSet)
-        // are not deleted by Solidity's delete operator. This is acceptable because:
-        // 1. Role is removed from supportedRolesSet, making it inaccessible via role queries
-        // 2. Reverse index (walletRoles) is cleaned up above, so permission checks won't find this role
-        // 3. All access checks use the reverse index (walletRoles) for O(1) lookups, so orphaned data is unreachable
-        // 4. Role recreation with same name would pass roleHash check but mappings
-        //    would be effectively reset since role is reinitialized from scratch
-        delete self.roles[roleHash];  
+        // Clear the role's authorizedWallets set so storage is clean if role is recreated with same name
+        for (uint256 i = 0; i < walletCount; i++) {
+            roleData.authorizedWallets.remove(wallets[i]);
+        }
+        
+        // Clear function permissions and functionSelectorsSet (same reason: no stale data on role recreation)
+        uint256 selectorCount = roleData.functionSelectorsSet.length();
+        bytes32[] memory selectors = new bytes32[](selectorCount);
+        for (uint256 i = 0; i < selectorCount; i++) {
+            selectors[i] = roleData.functionSelectorsSet.at(i);
+        }
+        for (uint256 i = 0; i < selectorCount; i++) {
+            roleData.functionSelectorsSet.remove(selectors[i]);
+            delete roleData.functionPermissions[bytes4(selectors[i])];
+        }
+        
+        // Delete role and remove from supported set (cleanup above ensures no stale RBAC data)
+        delete self.roles[roleHash];
         if (!self.supportedRolesSet.remove(roleHash)) {
             revert SharedValidation.ResourceNotFound(roleHash);
-        }   
+        }
     }
 
     /**
