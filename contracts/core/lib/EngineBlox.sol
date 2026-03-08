@@ -488,6 +488,7 @@ library EngineBlox {
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxStatus(self, txId, TxStatus.PENDING);
         _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
+        _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
