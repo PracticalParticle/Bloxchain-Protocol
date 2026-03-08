@@ -514,6 +514,10 @@ library EngineBlox {
      * @return The updated TxRecord.
      * @notice This function skips permission validation and should only be called from functions
      *         that have already validated permissions.
+     * @custom:security TIMELOCK: The releaseTime (timelock) is intentionally NOT enforced on this path.
+     *         This is by design: the meta-tx workflow allows authorized signers to approve execution
+     *         without waiting for releaseTime, providing a hybrid synergy between timelock workflows
+     *         (direct path enforces releaseTime) and meta-tx workflows (delegated, time-flexible approval).
      */
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
