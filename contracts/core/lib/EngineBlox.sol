@@ -483,6 +483,7 @@ library EngineBlox {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -517,6 +518,7 @@ library EngineBlox {
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -2113,6 +2115,37 @@ library EngineBlox {
         TxStatus currentStatus = self.txRecords[txId].status;
         if (currentStatus != expectedStatus) {
             revert SharedValidation.TransactionStatusMismatch(uint8(expectedStatus), uint8(currentStatus));
+        }
+    }
+
+    /**
+     * @dev Validates that the meta-transaction txRecord matches the stored record for the given txId.
+     *      Ensures the signer's intent (as reflected in the stored tx from the request phase) is what
+     *      is approved or cancelled; override by meta-tx payload is not allowed for approve/cancel flows.
+     * @param self The SecureOperationState containing the stored tx record.
+     * @param txId The transaction ID.
+     * @param metaTxRecord The TxRecord from the meta-transaction calldata.
+     * @notice Reverts with MetaTxRecordMismatchStoredTx if any execution-affecting or permission-affecting field differs.
+     */
+    function _validateMetaTxMatchRecord(
+        SecureOperationState storage self,
+        uint256 txId,
+        TxRecord memory metaTxRecord
+    ) internal view {
+        TxRecord storage stored = self.txRecords[txId];
+        TxParams storage sp = stored.params;
+        TxParams memory mp = metaTxRecord.params;
+        if (
+            sp.executionSelector != mp.executionSelector ||
+            sp.target != mp.target ||
+            sp.value != mp.value ||
+            sp.requester != mp.requester ||
+            sp.gasLimit != mp.gasLimit ||
+            sp.operationType != mp.operationType ||
+            keccak256(sp.executionParams) != keccak256(mp.executionParams) ||
+            stored.releaseTime != metaTxRecord.releaseTime
+        ) {
+            revert SharedValidation.MetaTxRecordMismatchStoredTx(txId);
         }
     }
 

@@ -73,6 +73,7 @@ library SharedValidation {
     error InvalidVValue(uint8 v);
     error ECDSAInvalidSignature(address recoveredSigner);
     error GasPriceExceedsMax(uint256 currentGasPrice, uint256 maxGasPrice);
+    error MetaTxRecordMismatchStoredTx(uint256 txId);
     
     // Consolidated resource errors
     error ResourceNotFound(bytes32 resourceId);
