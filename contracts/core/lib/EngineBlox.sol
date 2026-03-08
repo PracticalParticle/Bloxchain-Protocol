@@ -150,9 +150,11 @@ library EngineBlox {
         bytes32 operationType;
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
-        bool enforceHandlerRelations;  // When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference)
+        /// @dev When true (strict mode): handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time.
+        ///      When false (flexible mode): no such check; forward references and unregistered selectors in handlerForSelectors are allowed at registration.
+        bool enforceHandlerRelations;
         bool isProtected;
-        bytes4[] handlerForSelectors; 
+        bytes4[] handlerForSelectors;
     }
 
     // ============ DEFINITION STRUCTS ============
@@ -847,6 +849,9 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The hash of the role to remove.
      * @notice Security: Cannot remove protected roles to maintain system integrity.
+     * @custom:security PROTECTED-ROLE POLICY: This library enforces the protected-role check for
+     *         REMOVE_ROLE. RuntimeRBAC does not duplicate this check; defense is in layers. The
+     *         only component authorized to modify system wallets (protected roles) is SecureOwnable.
      */
     function removeRole(
         SecureOperationState storage self,
@@ -1137,9 +1142,12 @@ library EngineBlox {
      * @param functionSelector Hash identifier for the function.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
-     * @param enforceHandlerRelations When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference).
+     * @param enforceHandlerRelations When true (strict mode), handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time. When false (flexible mode), forward references are allowed.
      * @param isProtected Whether the function schema is protected from removal.
-     * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
+     * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors.
+     * @custom:security OPERATIONAL MODES: We do not require handlerForSelectors[i] to be in supportedFunctionsSet at registration.
+     *         - Strict mode (enforceHandlerRelations == true): at use time (_validateHandlerForSelectors) we require role permissions' handlerForSelectors to match this schema's handlerForSelectors; registration order is flexible.
+     *         - Flexible mode (enforceHandlerRelations == false): validation is skipped; forward references and unregistered selectors are allowed by design. Callers select the mode per schema.
      */
     function registerFunction(
         SecureOperationState storage self,
@@ -1161,12 +1169,10 @@ library EngineBlox {
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
 
-        // Validate handlerForSelectors: non-empty and all selectors are non-zero
-        // NOTE:
-        // - Empty arrays are NOT allowed anymore. Execution selectors must have
-        //   at least one entry pointing to themselves (self-reference), and
-        //   handler selectors must point to valid execution selectors.
-        // - bytes4(0) is never allowed in this array.
+        // Validate handlerForSelectors: non-empty and all selectors are non-zero.
+        // We do NOT require handlerForSelectors[i] to be in supportedFunctionsSet here.
+        // Operational mode is controlled by enforceHandlerRelations: strict mode validates at use time;
+        // flexible mode allows forward references and unregistered selectors by design. See @custom:security OPERATIONAL MODES above.
         if (handlerForSelectors.length == 0) {
             revert SharedValidation.OperationFailed();
         }
@@ -2241,12 +2247,14 @@ library EngineBlox {
     }
 
     /**
-     * @dev Validates that all handlerForSelectors are present in the schema's handlerForSelectors array
+     * @dev Validates that all handlerForSelectors are present in the schema's handlerForSelectors array.
+     *      When schema.enforceHandlerRelations is false (flexible mode), validation is skipped and this function returns immediately.
+     *      When true (strict mode), every permission handlerForSelector must appear in the schema's handlerForSelectors.
      * @param self The SecureOperationState to validate against
      * @param functionSelector The function selector for which the permission is defined
      * @param handlerForSelectors The handlerForSelectors array from the permission to validate
-     * @notice Reverts with HandlerForSelectorMismatch if any handlerForSelector is not found in the schema's array
-     * @notice Special case: Execution function permissions should include functionSelector in handlerForSelectors (self-reference)
+     * @notice Reverts with HandlerForSelectorMismatch if any handlerForSelector is not found in the schema's array (strict mode only).
+     * @notice Special case: Execution function permissions should include functionSelector in handlerForSelectors (self-reference).
      */
     function _validateHandlerForSelectors(
         SecureOperationState storage self,
