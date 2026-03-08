@@ -207,6 +207,7 @@ library EngineBlox {
     
     // EIP-712 Type Hashes
     bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant PAYMENT_DETAILS_TYPE_HASH = keccak256("PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
 
@@ -523,6 +524,7 @@ library EngineBlox {
         uint256 txId = metaTx.txRecord.txId;
         _validateTxStatus(self, txId, TxStatus.PENDING);
         _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
+        _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -1679,7 +1681,9 @@ library EngineBlox {
     }
 
     /**
-     * @dev Generates a message hash for the specified meta-transaction following EIP-712
+     * @dev Generates a message hash for the specified meta-transaction following EIP-712.
+     *      The signer commits to TxParams and PaymentDetails (recipient, amounts, token) so
+     *      an executor cannot alter payment without invalidating the signature.
      * @param metaTx The meta-transaction to generate the hash for
      * @return The generated message hash
      */
@@ -1692,6 +1696,15 @@ library EngineBlox {
             address(this)
         ));
 
+        PaymentDetails memory payment = metaTx.txRecord.payment;
+        bytes32 paymentStructHash = keccak256(abi.encode(
+            PAYMENT_DETAILS_TYPE_HASH,
+            payment.recipient,
+            payment.nativeTokenAmount,
+            payment.erc20TokenAddress,
+            payment.erc20TokenAmount
+        ));
+
         bytes32 structHash = keccak256(abi.encode(
             TYPE_HASH,
             keccak256(abi.encode(
@@ -1702,7 +1715,8 @@ library EngineBlox {
                 metaTx.txRecord.params.gasLimit,
                 metaTx.txRecord.params.operationType,
                 metaTx.txRecord.params.executionSelector,
-                keccak256(metaTx.txRecord.params.executionParams)
+                keccak256(metaTx.txRecord.params.executionParams),
+                paymentStructHash
             )),
             metaTx.params.chainId,
             metaTx.params.nonce,
@@ -2150,6 +2164,31 @@ library EngineBlox {
             stored.releaseTime != metaTxRecord.releaseTime
         ) {
             revert SharedValidation.MetaTxRecordMismatchStoredTx(txId);
+        }
+    }
+
+    /**
+     * @dev Validates that the meta-transaction payment matches the stored record for the given txId.
+     *      Ensures the signed payment (recipient, amounts, token) equals what will be executed.
+     * @param self The SecureOperationState containing the stored tx record.
+     * @param txId The transaction ID.
+     * @param metaTxRecord The TxRecord from the meta-transaction calldata.
+     * @notice Reverts with MetaTxPaymentMismatchStoredTx if any payment field differs from stored.
+     */
+    function _validateMetaTxPaymentMatchRecord(
+        SecureOperationState storage self,
+        uint256 txId,
+        TxRecord memory metaTxRecord
+    ) internal view {
+        PaymentDetails storage storedPayment = self.txRecords[txId].payment;
+        PaymentDetails memory metaPayment = metaTxRecord.payment;
+        if (
+            storedPayment.recipient != metaPayment.recipient ||
+            storedPayment.nativeTokenAmount != metaPayment.nativeTokenAmount ||
+            storedPayment.erc20TokenAddress != metaPayment.erc20TokenAddress ||
+            storedPayment.erc20TokenAmount != metaPayment.erc20TokenAmount
+        ) {
+            revert SharedValidation.MetaTxPaymentMismatchStoredTx(txId);
         }
     }
 
