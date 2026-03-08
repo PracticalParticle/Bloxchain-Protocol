@@ -1690,7 +1690,12 @@ library EngineBlox {
 
     /**
      * @dev Generates the EIP-712 message hash for the meta-transaction.
-     *      Uses selective MetaTxRecord (txId, params, payment only). Sign with eth_signTypedData_v4.
+     *      Uses selective MetaTxRecord (txId, params, payment only).
+     *      Integrators must sign the contract-provided digest (metaTx.message) directly—e.g. via
+     *      personal_sign(metaTx.message)—and must NOT use generic eth_signTypedData_v4 serializers.
+     *      The contract builds the domain separator with abi.encodePacked for the version string and
+     *      uses a custom META_TX_TYPE_HASH (single concatenated type string); standard
+     *      eth_signTypedData_v4 implementations will therefore produce incompatible hashes.
      * @param metaTx The meta-transaction to generate the hash for
      * @return The EIP-712 digest (no prefix; use standard recovery)
      */
@@ -1760,7 +1765,10 @@ library EngineBlox {
 
     /**
      * @dev Recovers the signer from the EIP-712 digest and signature. Uses standard EIP-712 recovery (no message prefix).
-     *      Clients must sign with eth_signTypedData_v4 using the selective MetaTxRecord type.
+     *      Integrators must sign the contract-provided digest (metaTx.message) directly—e.g. via
+     *      personal_sign(metaTx.message)—and must NOT use generic eth_signTypedData_v4. The contract
+     *      uses abi.encodePacked for the domain version and a custom META_TX_TYPE_HASH concatenation,
+     *      so standard serializers produce incompatible hashes. Sign metaTx.message as the digest.
      * @param messageHash The EIP-712 digest (keccak256("\x19\x01" || domainSeparator || structHash))
      * @param signature The signature (r, s, v)
      * @return The address of the signer

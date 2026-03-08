@@ -513,11 +513,11 @@ Validates that a role name is not empty
 function validateLessThan(uint256 from, uint256 to) internal pure
 ```
 
-Validates that the first value is less than the second value
+Validates that the first value is less than or equal to the second value (allows inclusive range: from <= to).
 
 **Parameters:**
-- `` (): The first value (should be less than &#x27;to&#x27;)
-- `` (): The second value (should be greater than &#x27;from&#x27;)
+- `` (): The first value (must be <= &#x27;to&#x27; for a valid range)
+- `` (): The second value (must be >= &#x27;from&#x27;)
 
 
 

@@ -101,10 +101,11 @@ export class EngineBlox {
       throw new Error(`Invalid signature length: expected 65 bytes (132 hex chars), got ${(signature.length - 2) / 2} bytes`);
     }
     try {
-      return recoverAddress({
+      const signer = await recoverAddress({
         hash: messageHash,
         signature
       });
+      return signer;
     } catch (error) {
       throw new Error(`Failed to recover signer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
