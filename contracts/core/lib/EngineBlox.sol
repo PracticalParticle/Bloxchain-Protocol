@@ -3,7 +3,6 @@ pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Local imports
@@ -53,7 +52,6 @@ library EngineBlox {
     /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
     uint256 public constant MAX_FUNCTIONS = 2000;
     
-    using MessageHashUtils for bytes32;
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -205,8 +203,11 @@ library EngineBlox {
     bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__()"));
     bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
     
-    // EIP-712 Type Hashes
-    bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    // EIP-712 Type Hashes (selective meta-tx payload: MetaTxRecord = txId + params + payment only)
+    bytes32 private constant META_TX_TYPE_HASH = keccak256("MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256("MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant TX_PARAMS_TYPE_HASH = keccak256("TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)");
+    bytes32 private constant META_TX_PARAMS_TYPE_HASH = keccak256("MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)");
     bytes32 private constant PAYMENT_DETAILS_TYPE_HASH = keccak256("PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
@@ -1681,11 +1682,10 @@ library EngineBlox {
     }
 
     /**
-     * @dev Generates a message hash for the specified meta-transaction following EIP-712.
-     *      The signer commits to TxParams and PaymentDetails (recipient, amounts, token) so
-     *      an executor cannot alter payment without invalidating the signature.
+     * @dev Generates the EIP-712 message hash for the meta-transaction.
+     *      Uses selective MetaTxRecord (txId, params, payment only). Sign with eth_signTypedData_v4.
      * @param metaTx The meta-transaction to generate the hash for
-     * @return The generated message hash
+     * @return The EIP-712 digest (no prefix; use standard recovery)
      */
     function generateMessageHash(MetaTransaction memory metaTx) private view returns (bytes32) {
         bytes32 domainSeparator = keccak256(abi.encode(
@@ -1694,6 +1694,18 @@ library EngineBlox {
             keccak256(abi.encodePacked(VERSION_MAJOR, ".", VERSION_MINOR, ".", VERSION_PATCH)),
             block.chainid,
             address(this)
+        ));
+
+        TxParams memory tp = metaTx.txRecord.params;
+        bytes32 txParamsStructHash = keccak256(abi.encode(
+            TX_PARAMS_TYPE_HASH,
+            tp.requester,
+            tp.target,
+            tp.value,
+            tp.gasLimit,
+            tp.operationType,
+            tp.executionSelector,
+            keccak256(tp.executionParams)
         ));
 
         PaymentDetails memory payment = metaTx.txRecord.payment;
@@ -1705,27 +1717,31 @@ library EngineBlox {
             payment.erc20TokenAmount
         ));
 
+        bytes32 metaTxRecordStructHash = keccak256(abi.encode(
+            META_TX_RECORD_TYPE_HASH,
+            metaTx.txRecord.txId,
+            txParamsStructHash,
+            paymentStructHash
+        ));
+
+        MetaTxParams memory mp = metaTx.params;
+        bytes32 metaTxParamsStructHash = keccak256(abi.encode(
+            META_TX_PARAMS_TYPE_HASH,
+            mp.chainId,
+            mp.nonce,
+            mp.handlerContract,
+            mp.handlerSelector,
+            uint8(mp.action),
+            mp.deadline,
+            mp.maxGasPrice,
+            mp.signer
+        ));
+
         bytes32 structHash = keccak256(abi.encode(
-            TYPE_HASH,
-            keccak256(abi.encode(
-                metaTx.txRecord.txId,
-                metaTx.txRecord.params.requester,
-                metaTx.txRecord.params.target,
-                metaTx.txRecord.params.value,
-                metaTx.txRecord.params.gasLimit,
-                metaTx.txRecord.params.operationType,
-                metaTx.txRecord.params.executionSelector,
-                keccak256(metaTx.txRecord.params.executionParams),
-                paymentStructHash
-            )),
-            metaTx.params.chainId,
-            metaTx.params.nonce,
-            metaTx.params.handlerContract,
-            metaTx.params.handlerSelector,
-            uint8(metaTx.params.action),
-            metaTx.params.deadline,
-            metaTx.params.maxGasPrice,
-            metaTx.params.signer
+            META_TX_TYPE_HASH,
+            metaTxRecordStructHash,
+            metaTxParamsStructHash,
+            keccak256(metaTx.data)
         ));
 
         return keccak256(abi.encodePacked(
@@ -1736,10 +1752,11 @@ library EngineBlox {
     }
 
     /**
-     * @dev Recovers the signer address from a message hash and signature.
-     * @param messageHash The hash of the message that was signed.
-     * @param signature The signature to recover the address from.
-     * @return The address of the signer.
+     * @dev Recovers the signer from the EIP-712 digest and signature. Uses standard EIP-712 recovery (no message prefix).
+     *      Clients must sign with eth_signTypedData_v4 using the selective MetaTxRecord type.
+     * @param messageHash The EIP-712 digest (keccak256("\x19\x01" || domainSeparator || structHash))
+     * @param signature The signature (r, s, v)
+     * @return The address of the signer
      */
     function recoverSigner(bytes32 messageHash, bytes memory signature) public pure returns (address) {
         SharedValidation.validateSignatureLength(signature);
@@ -1768,7 +1785,7 @@ library EngineBlox {
         // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}
         SharedValidation.validateSignatureParams(s, v);
 
-        address signer = ecrecover(messageHash.toEthSignedMessageHash(), v, r, s);
+        address signer = ecrecover(messageHash, v, r, s);
         SharedValidation.validateRecoveredSigner(signer);
 
         return signer;

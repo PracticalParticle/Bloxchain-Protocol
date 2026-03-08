@@ -11,7 +11,6 @@ import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/standards/hooks/IOnActionHook.sol";
 import "../helpers/MockContracts.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveGasExhaustionFuzzTest
@@ -92,8 +91,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         vm.prank(broadcaster);
@@ -475,8 +473,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         uint256 gasBefore = gasleft();
@@ -676,8 +673,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Execute batch operation
@@ -1112,8 +1108,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             
             uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
             bytes32 messageHash = metaTx.message;
-            bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
             metaTx.signature = abi.encodePacked(r, s, v);
             
             vm.prank(broadcaster);
@@ -1338,8 +1333,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         vm.prank(broadcaster);
@@ -1398,8 +1392,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         return metaTx;
@@ -1436,8 +1429,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
         
         metaTx.signature = signature;
