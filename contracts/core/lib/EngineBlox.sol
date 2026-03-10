@@ -2230,14 +2230,16 @@ library EngineBlox {
     }
 
     /**
-     * @dev Validates that a wallet has permission for both execution selector and handler selector for a given action
-     * @param self The SecureOperationState to check
-     * @param wallet The wallet address to check permissions for
-     * @param executionSelector The execution function selector (underlying operation)
-     * @param handlerSelector The handler/calling function selector
-     * @param action The action to validate permissions for
-     * @notice This function consolidates the repeated dual permission check pattern to reduce contract size
-     * @notice Reverts with NoPermission if either permission check fails
+     * @dev Validates that a wallet has permission for both execution selector and handler selector for a given action.
+     * @param self The SecureOperationState to check.
+     * @param wallet The wallet address to check permissions for.
+     * @param executionSelector The execution function selector (underlying operation).
+     * @param handlerSelector The handler/calling function selector.
+     * @param action The action to validate permissions for.
+     * @notice This function consolidates the repeated dual permission check pattern to reduce contract size.
+     * @notice Reverts with NoPermission if either permission check fails.
+     * @notice Strict mode enforces that the handler's *schema-level* handlerForSelectors flow allows the execution selector;
+     *         it does not bind this relation to a specific role's FunctionPermission, which may further narrow pairings.
      */
     function _validateExecutionAndHandlerPermissions(
         SecureOperationState storage self,
@@ -2259,8 +2261,9 @@ library EngineBlox {
             revert SharedValidation.NoPermission(wallet);
         }
 
-        // In strict mode, enforce that the executionSelector is part of the handlerSelector's schema flow.
-        // Handler schemas declare which execution selectors they are allowed to trigger.
+        // In strict mode, enforce that the executionSelector is part of the handlerSelector's schema-level flow.
+        // Handler schemas declare which execution selectors they are allowed to trigger globally; role permissions
+        // can still narrow which selectors a given wallet may use via FunctionPermission.handlerForSelectors.
         FunctionSchema storage handlerSchema = self.functions[handlerSelector];
         if (handlerSchema.enforceHandlerRelations) {
             if (!_schemaHasHandlerSelector(handlerSchema, executionSelector)) {
