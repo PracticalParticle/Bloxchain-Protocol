@@ -1691,11 +1691,15 @@ library EngineBlox {
     /**
      * @dev Generates the EIP-712 message hash for the meta-transaction.
      *      Uses selective MetaTxRecord (txId, params, payment only).
-     *      Integrators must sign the contract-provided digest (metaTx.message) directly—e.g. via
-     *      personal_sign(metaTx.message)—and must NOT use generic eth_signTypedData_v4 serializers.
-     *      The contract builds the domain separator with abi.encodePacked for the version string and
-     *      uses a custom META_TX_TYPE_HASH (single concatenated type string); standard
-     *      eth_signTypedData_v4 implementations will therefore produce incompatible hashes.
+     *      Integrators must sign this digest as a raw hash with no EIP-191 or personal_sign prefix—
+     *      e.g. account.sign({ hash: contractDigest }) or equivalent raw-hash signing API—so that
+     *      signatures match the raw ecrecover(messageHash, v, r, s) verification in recoverSigner.
+     *      Do NOT use personal_sign or generic eth_signTypedData_v4; the contract uses
+     *      abi.encodePacked for the version string and a custom META_TX_TYPE_HASH, so those produce
+     *      incompatible hashes.
+     *      The resulting digest is also written into the `message` field of the helper-built
+     *      `MetaTransaction` structs (see `createMetaTransactionForSigning`) so integrators can use
+     *      it directly without recomputing the hash client-side.
      * @param metaTx The meta-transaction to generate the hash for
      * @return The EIP-712 digest (no prefix; use standard recovery)
      */
@@ -1765,10 +1769,11 @@ library EngineBlox {
 
     /**
      * @dev Recovers the signer from the EIP-712 digest and signature. Uses standard EIP-712 recovery (no message prefix).
-     *      Integrators must sign the contract-provided digest (metaTx.message) directly—e.g. via
-     *      personal_sign(metaTx.message)—and must NOT use generic eth_signTypedData_v4. The contract
-     *      uses abi.encodePacked for the domain version and a custom META_TX_TYPE_HASH concatenation,
-     *      so standard serializers produce incompatible hashes. Sign metaTx.message as the digest.
+     *      Integrators must sign the digest returned by generateMessageHash as a raw hash—e.g.
+     *      account.sign({ hash: contractDigest }) or equivalent raw-hash signing API—with no
+     *      EIP-191/personal prefix, so signatures match this ecrecover(messageHash, v, r, s) verification.
+     *      Do NOT use personal_sign or generic eth_signTypedData_v4; the contract uses abi.encodePacked
+     *      for the domain version and a custom META_TX_TYPE_HASH, so those produce incompatible hashes.
      * @param messageHash The EIP-712 digest (keccak256("\x19\x01" || domainSeparator || structHash))
      * @param signature The signature (r, s, v)
      * @return The address of the signer
