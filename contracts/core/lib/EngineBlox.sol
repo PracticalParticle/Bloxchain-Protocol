@@ -2258,6 +2258,18 @@ library EngineBlox {
         if (!hasActionPermission(self, wallet, handlerSelector, action)) {
             revert SharedValidation.NoPermission(wallet);
         }
+
+        // In strict mode, enforce that the executionSelector is part of the handlerSelector's schema flow.
+        // Handler schemas declare which execution selectors they are allowed to trigger.
+        FunctionSchema storage handlerSchema = self.functions[handlerSelector];
+        if (handlerSchema.enforceHandlerRelations) {
+            if (!_schemaHasHandlerSelector(handlerSchema, executionSelector)) {
+                revert SharedValidation.HandlerForSelectorMismatch(
+                    executionSelector,
+                    handlerSelector
+                );
+            }
+        }
     }
 
     /**
@@ -2275,12 +2287,7 @@ library EngineBlox {
         bytes4 functionSelector,
         bytes4[] memory handlerForSelectors
     ) internal view {
-        bytes32 functionSelectorHash = bytes32(functionSelector);
-
-        // Ensure the function schema exists
-        if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
-            revert SharedValidation.ResourceNotFound(functionSelectorHash);
-        }
+        _validateFunctionSchemaExists(self, functionSelector);
 
         FunctionSchema storage schema = self.functions[functionSelector];
 
@@ -2293,20 +2300,31 @@ library EngineBlox {
         for (uint256 j = 0; j < handlerForSelectors.length; j++) {
             bytes4 handlerForSelector = handlerForSelectors[j];
 
-            bool found = false;
-            for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
-                if (schema.handlerForSelectors[i] == handlerForSelector) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!_schemaHasHandlerSelector(schema, handlerForSelector)) {
                 revert SharedValidation.HandlerForSelectorMismatch(
                     bytes4(0), // Cannot return array, use 0 as placeholder
                     handlerForSelector
                 );
             }
         }
+    }
+
+    /**
+     * @dev Checks whether a given handler selector is present in a function schema's handlerForSelectors array.
+     * @param schema The function schema to inspect.
+     * @param handlerSelector The handler selector to search for.
+     * @return True if the handler selector is present, false otherwise.
+     */
+    function _schemaHasHandlerSelector(
+        FunctionSchema storage schema,
+        bytes4 handlerSelector
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
+            if (schema.handlerForSelectors[i] == handlerSelector) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
