@@ -73,6 +73,8 @@ library SharedValidation {
     error InvalidVValue(uint8 v);
     error ECDSAInvalidSignature(address recoveredSigner);
     error GasPriceExceedsMax(uint256 currentGasPrice, uint256 maxGasPrice);
+    error MetaTxRecordMismatchStoredTx(uint256 txId);
+    error MetaTxPaymentMismatchStoredTx(uint256 txId);
     
     // Consolidated resource errors
     error ResourceNotFound(bytes32 resourceId);
@@ -405,12 +407,12 @@ library SharedValidation {
     // ============ UTILITY FUNCTIONS ============
     
     /**
-     * @dev Validates that the first value is less than the second value
-     * @param from The first value (should be less than 'to')
-     * @param to The second value (should be greater than 'from')
+     * @dev Validates that the first value is not greater than the second (allows inclusive range: from <= to)
+     * @param from The first value (must be <= 'to' for a valid range)
+     * @param to The second value (must be >= 'from')
      */
     function validateLessThan(uint256 from, uint256 to) internal pure {
-        if (from >= to) revert InvalidRange(from, to);
+        if (from > to) revert InvalidRange(from, to);
     }
     
     /**

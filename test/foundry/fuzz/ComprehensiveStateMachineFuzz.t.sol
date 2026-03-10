@@ -13,7 +13,6 @@ import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveStateMachineFuzzTest
@@ -256,8 +255,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;
@@ -307,8 +305,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Sign meta-transaction
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Execute meta-transaction
@@ -352,8 +349,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Sign meta-transaction
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Execute meta-transaction
@@ -795,8 +791,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         // Sign meta-transaction
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Execute meta-transaction (bypasses time-lock as designed)

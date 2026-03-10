@@ -183,8 +183,10 @@ contract PaymentTestHelper is BaseStateMachine {
         
         // Register approveTransaction function schema if not already registered
         bytes4 approveTxSelector = this.approveTransaction.selector;
-        bytes4[] memory approveTxHandlers = new bytes4[](1);
-        approveTxHandlers[0] = approveTxSelector; // Self-reference
+        // Handler selectors include self-reference and the execution selector this approval is allowed to trigger.
+        bytes4[] memory approveTxHandlers = new bytes4[](2);
+        approveTxHandlers[0] = approveTxSelector;      // Self-reference
+        approveTxHandlers[1] = nativeTransferSelector; // Allowed execution selector (NATIVE_TRANSFER_SELECTOR)
         
         if (!state.supportedFunctionsSet.contains(bytes32(approveTxSelector))) {
             EngineBlox.registerFunction(

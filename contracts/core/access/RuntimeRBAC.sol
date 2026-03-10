@@ -12,18 +12,28 @@ import "./interface/IRuntimeRBAC.sol";
 /**
  * @title RuntimeRBAC
  * @dev Minimal Runtime Role-Based Access Control system based on EngineBlox
- * 
+ *
  * This contract provides essential runtime RBAC functionality:
  * - Creation of non-protected roles
  * - Basic wallet assignment to roles
  * - Function permission management per role
  * - Integration with EngineBlox for secure operations
- * 
+ *
  * Key Features:
  * - Only non-protected roles can be created dynamically
  * - Protected roles (OWNER, BROADCASTER, RECOVERY) are managed by SecureOwnable
  * - Minimal interface for core RBAC operations
  * - Essential role management functions only
+ *
+ * @custom:security PROTECTED-ROLE POLICY (defense in layers):
+ * - RuntimeRBAC is **unauthorized** to modify protected roles (wallet add/revoke/remove).
+ * - For ADD_WALLET and REVOKE_WALLET we call _requireRoleNotProtected so batch ops cannot
+ *   change who holds system roles. For REMOVE_ROLE we rely on EngineBlox.removeRole, which
+ *   enforces the same policy at the library layer (cannot remove protected roles).
+ * - The **only** place to modify system wallets (protected roles) is the SecureOwnable
+ *   security component (e.g. transferOwnershipRequest, broadcaster/recovery changes).
+ * - This layering is intentional: RBAC cannot touch protected roles; SecureOwnable is the
+ *   single source of truth for system wallet changes.
  */
 abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     using EngineBlox for EngineBlox.SecureOperationState;
@@ -85,6 +95,13 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     /**
      * @dev External function that can only be called by the contract itself to execute a RBAC configuration batch
      * @param actions Encoded role configuration actions
+     *
+     * ## Role config batch ordering (required to avoid revert and gas waste)
+     *
+     * Actions must be ordered so that dependencies are satisfied:
+     * - **CREATE_ROLE** must appear before **ADD_WALLET** or **ADD_FUNCTION_TO_ROLE** for the same role; otherwise the role does not exist and the add will revert.
+     * - **REMOVE_ROLE** should be used only for an existing role; use **REVOKE_WALLET** first if the role has assigned wallets (optional but recommended for clarity).
+     * - For a given role, typical order: CREATE_ROLE → ADD_WALLET / ADD_FUNCTION_TO_ROLE as needed; to remove: REVOKE_WALLET (and REMOVE_FUNCTION_FROM_ROLE) as needed → REMOVE_ROLE.
      */
     function executeRoleConfigBatch(IRuntimeRBAC.RoleConfigAction[] calldata actions) external {
         _validateExecuteBySelf();
@@ -95,6 +112,9 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
 
     /**
      * @dev Reverts if the role is protected (prevents editing OWNER, BROADCASTER, RECOVERY via batch).
+     *      Used for ADD_WALLET and REVOKE_WALLET so RuntimeRBAC cannot change who holds system roles.
+     *      REMOVE_ROLE is not checked here; EngineBlox.removeRole enforces protected-role policy at
+     *      the library layer. See contract-level @custom:security PROTECTED-ROLE POLICY.
      * @param roleHash The role hash to check
      */
     function _requireRoleNotProtected(bytes32 roleHash) internal view {
@@ -106,6 +126,10 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     /**
      * @dev Internal helper to execute a RBAC configuration batch
      * @param actions Encoded role configuration actions
+     *
+     * @custom:order Required ordering to avoid revert and gas waste:
+     *   1. CREATE_ROLE before any ADD_WALLET or ADD_FUNCTION_TO_ROLE for that role.
+     *   2. REMOVE_ROLE only for a role that exists; prefer REVOKE_WALLET (and REMOVE_FUNCTION_FROM_ROLE) before REMOVE_ROLE when the role has members.
      */
     function _executeRoleConfigBatch(IRuntimeRBAC.RoleConfigAction[] calldata actions) internal {
         _validateBatchSize(actions.length);
@@ -142,7 +166,11 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     }
 
     /**
-     * @dev Executes REMOVE_ROLE: removes a role by hash
+     * @dev Executes REMOVE_ROLE: removes a role by hash.
+     *      Protected-role check is enforced in EngineBlox.removeRole (library layer); RuntimeRBAC
+     *      does not duplicate it here. SecureOwnable is the only component authorized to change
+     *      system wallets; RBAC is unauthorized to modify protected roles. See @custom:security
+     *      PROTECTED-ROLE POLICY on the contract.
      * @param data ABI-encoded (bytes32 roleHash)
      */
     function _executeRemoveRole(bytes calldata data) internal {
@@ -174,8 +202,11 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     }
 
     /**
-     * @dev Executes ADD_FUNCTION_TO_ROLE: adds a function permission to a role
+     * @dev Executes ADD_FUNCTION_TO_ROLE: adds a function permission to a role.
      * @param data ABI-encoded (bytes32 roleHash, FunctionPermission functionPermission)
+     * @custom:security By design we allow adding function permissions to protected roles (OWNER, BROADCASTER, RECOVERY)
+     *                 to retain flexibility to grant new function permissions to system roles; only wallet add/revoke
+     *                 are restricted on protected roles.
      */
     function _executeAddFunctionToRole(bytes calldata data) internal {
         (
@@ -187,8 +218,11 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     }
 
     /**
-     * @dev Executes REMOVE_FUNCTION_FROM_ROLE: removes a function permission from a role
+     * @dev Executes REMOVE_FUNCTION_FROM_ROLE: removes a function permission from a role.
      * @param data ABI-encoded (bytes32 roleHash, bytes4 functionSelector)
+     * @custom:security By design we allow removing function permissions from protected roles (OWNER, BROADCASTER, RECOVERY)
+     *                 to retain flexibility to adjust which functions system roles can call; only wallet add/revoke
+     *                 are restricted on protected roles.
      */
     function _executeRemoveFunctionFromRole(bytes calldata data) internal {
         (bytes32 roleHash, bytes4 functionSelector) = abi.decode(data, (bytes32, bytes4));

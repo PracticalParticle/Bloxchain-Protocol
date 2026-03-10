@@ -9,10 +9,95 @@ import {
   MetaTransaction, 
   TxRecord, 
   MetaTxParams, 
-  TxParams
+  TxParams,
+  PaymentDetails
 } from '../../interfaces/lib.index';
 import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../abi/BaseStateMachine.abi.json';
+
+/** EIP-712 domain and types matching EngineBlox (selective MetaTxRecord: txId, params, payment only) */
+const META_TX_DOMAIN = {
+  name: 'Bloxchain' as const,
+  version: '1.0.0' as const,
+  chainId: 0, // set per sign
+  verifyingContract: '0x' as Address // set per sign
+};
+
+const META_TX_TYPES = {
+  MetaTransaction: [
+    { name: 'txRecord', type: 'MetaTxRecord' },
+    { name: 'params', type: 'MetaTxParams' },
+    { name: 'data', type: 'bytes' }
+  ],
+  MetaTxRecord: [
+    { name: 'txId', type: 'uint256' },
+    { name: 'params', type: 'TxParams' },
+    { name: 'payment', type: 'PaymentDetails' }
+  ],
+  TxParams: [
+    { name: 'requester', type: 'address' },
+    { name: 'target', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'gasLimit', type: 'uint256' },
+    { name: 'operationType', type: 'bytes32' },
+    { name: 'executionSelector', type: 'bytes4' },
+    { name: 'executionParams', type: 'bytes' }
+  ],
+  MetaTxParams: [
+    { name: 'chainId', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'handlerContract', type: 'address' },
+    { name: 'handlerSelector', type: 'bytes4' },
+    { name: 'action', type: 'uint8' },
+    { name: 'deadline', type: 'uint256' },
+    { name: 'maxGasPrice', type: 'uint256' },
+    { name: 'signer', type: 'address' }
+  ],
+  PaymentDetails: [
+    { name: 'recipient', type: 'address' },
+    { name: 'nativeTokenAmount', type: 'uint256' },
+    { name: 'erc20TokenAddress', type: 'address' },
+    { name: 'erc20TokenAmount', type: 'uint256' }
+  ]
+} as const;
+
+/** EIP-712 message shape for MetaTransaction (for reference; signing uses contract digest) */
+function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, unknown> {
+  const params = metaTx.txRecord.params;
+  const payment = metaTx.txRecord.payment;
+  const metaParams = metaTx.params;
+  return {
+    txRecord: {
+      txId: metaTx.txRecord.txId,
+      params: {
+        requester: params.requester,
+        target: params.target,
+        value: params.value,
+        gasLimit: params.gasLimit,
+        operationType: params.operationType,
+        executionSelector: params.executionSelector,
+        executionParams: params.executionParams
+      },
+      payment: {
+        recipient: payment.recipient,
+        nativeTokenAmount: payment.nativeTokenAmount,
+        erc20TokenAddress: payment.erc20TokenAddress,
+        erc20TokenAmount: payment.erc20TokenAmount
+      }
+    },
+    params: {
+      chainId: metaParams.chainId,
+      nonce: metaParams.nonce,
+      handlerContract: metaParams.handlerContract,
+      handlerSelector: metaParams.handlerSelector,
+      action: Number(metaParams.action),
+      deadline: metaParams.deadline,
+      maxGasPrice: metaParams.maxGasPrice,
+      signer: metaParams.signer
+    },
+    data: metaTx.data ?? ('0x' as Hex)
+  };
+}
 
 /**
  * @title MetaTransactionSigner
@@ -92,8 +177,10 @@ export class MetaTransactionSigner {
   }
 
   /**
-   * @dev Signs an unsigned meta-transaction using private key (for remote Ganache compatibility)
-   * @param unsignedMetaTx Unsigned meta-transaction
+   * @dev Signs an unsigned meta-transaction using private key (standard EIP-712 digest; no personal_sign prefix).
+   *      Uses the contract's message hash as the digest (EngineBlox uses a custom EIP-712 type order that
+   *      differs from viem's alphabetical type order), so we sign the digest returned by the contract directly.
+   * @param unsignedMetaTx Unsigned meta-transaction (message = EIP-712 digest from contract)
    * @param signerAddress Address of the signer
    * @param privateKey Private key for signing (required for remote Ganache)
    * @returns Complete signed meta-transaction
@@ -103,27 +190,25 @@ export class MetaTransactionSigner {
     signerAddress: Address,
     privateKey: Hex
   ): Promise<MetaTransaction> {
-    // Use private key signing directly (matches sanity test pattern)
     const { privateKeyToAccount } = await import('viem/accounts');
     const account = privateKeyToAccount(privateKey);
-    
-    // Sign the message hash using the account
-    const signature = await account.signMessage({
-      message: { raw: unsignedMetaTx.message }
-    });
 
-    // Verify signature matches expected signer
-    const recoveredAddress = await this.client.verifyMessage({
-      address: signerAddress,
-      message: { raw: unsignedMetaTx.message },
+    const contractDigest = (typeof unsignedMetaTx.message === 'string'
+      ? unsignedMetaTx.message
+      : unsignedMetaTx.message) as Hex;
+
+    const signature = await account.sign({ hash: contractDigest });
+
+    const { recoverAddress } = await import('viem');
+    const recoveredAddress = await recoverAddress({
+      hash: contractDigest,
       signature
     });
 
-    if (!recoveredAddress) {
+    if (recoveredAddress.toLowerCase() !== signerAddress.toLowerCase()) {
       throw new Error('Signature verification failed');
     }
 
-    // Return complete signed meta-transaction
     return {
       ...unsignedMetaTx,
       signature
@@ -269,23 +354,20 @@ export class MetaTransactionSigner {
 
 
   /**
-   * @dev Verifies a signature against a message hash and expected signer
-   * @param messageHash The message hash
-   * @param signature The signature to verify
-   * @param expectedSigner The expected signer address
+   * @dev Verifies a signature against the EIP-712 message hash and expected signer (contract uses raw digest recovery).
    */
   private async verifySignature(
     messageHash: Hex,
     signature: Hex,
     expectedSigner: Address
   ): Promise<void> {
-    const recoveredAddress = await this.client.verifyMessage({
-      address: expectedSigner,
-      message: { raw: messageHash },
+    const { recoverAddress } = await import('viem');
+    const recoveredAddress = await recoverAddress({
+      hash: messageHash,
       signature
     });
 
-    if (!recoveredAddress) {
+    if (recoveredAddress.toLowerCase() !== expectedSigner.toLowerCase()) {
       throw new Error('Signature verification failed');
     }
   }
