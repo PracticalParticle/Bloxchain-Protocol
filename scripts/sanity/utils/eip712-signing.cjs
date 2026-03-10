@@ -162,29 +162,30 @@ class EIP712Signer {
             const messageHash = await this.generateMessageHash(metaTx, contract);
             console.log(`📝 Contract Message Hash: ${messageHash}`);
             
-            // Sign the message hash
-            const signature = await this.web3.eth.accounts.sign(messageHash, privateKey);
-            console.log(`✍️ Signature: ${signature.signature}`);
-            console.log(`🔑 Signer: ${signature.address}`);
-            
-            // Verify the signature
-            const recoveredAddress = this.web3.eth.accounts.recover(messageHash, signature.signature);
-            console.log(`🔑 Recovered Address: ${recoveredAddress}`);
-            console.log(`🔑 Expected Address: ${signature.address}`);
-            
-            // Use recovered address if signature.address is undefined (Web3.js issue)
-            const signerAddress = signature.address || recoveredAddress;
-            console.log(`🔑 Using Signer Address: ${signerAddress}`);
-            
+            // Sign the raw EIP-712 digest (no personal_sign prefix). The contract uses
+            // ecrecover(messageHash, v, r, s) on the raw digest, so we must sign the
+            // 32-byte hash directly. web3.eth.accounts.sign() would add the Ethereum
+            // signed message prefix and break verification on-chain.
+            const signatureHex = await this._signRawDigest(messageHash, privateKey);
+            const signature = { signature: signatureHex, messageHash, v: null, r: null, s: null };
+            // Recover for verification (viem recoverAddress on raw hash)
+            const { recoverAddress } = await import('viem');
+            const recoveredAddress = await recoverAddress({
+                hash: messageHash,
+                signature: signatureHex
+            });
+            console.log(`✍️ Signature: ${signatureHex}`);
+            console.log(`🔑 Signer: ${recoveredAddress}`);
+
+            const signerAddress = (metaTx.params && metaTx.params.signer) ? metaTx.params.signer : recoveredAddress;
             if (recoveredAddress.toLowerCase() !== signerAddress.toLowerCase()) {
-                throw new Error('Signature verification failed');
+                throw new Error(`Signature verification failed: recovered ${recoveredAddress} !== signer ${signerAddress}`);
             }
             console.log('✅ Signature verified successfully');
-            
-            // Return the signed meta-transaction
+
             return {
                 ...metaTx,
-                signature: signature.signature,
+                signature: signatureHex,
                 message: messageHash
             };
             
@@ -195,7 +196,18 @@ class EIP712Signer {
     }
 
     /**
-     * Verify a signed meta-transaction using the contract's own process
+     * Sign a raw 32-byte digest (EIP-712 hash) without any prefix. Contract uses ecrecover(digest, v, r, s).
+     * Uses viem so the signature is over the digest directly (v will be 27 or 28).
+     */
+    async _signRawDigest(messageHashHex, privateKey) {
+        const pk = typeof privateKey === 'string' && !privateKey.startsWith('0x') ? '0x' + privateKey : privateKey;
+        const { privateKeyToAccount } = await import('viem/accounts');
+        const account = privateKeyToAccount(pk);
+        const sig = await account.sign({ hash: messageHashHex });
+        return sig;
+    }
+
+    /**
      * @param signedMetaTx The signed meta-transaction to verify
      * @param contract The SecureOwnable contract instance
      * @returns True if valid, false otherwise
@@ -208,8 +220,12 @@ class EIP712Signer {
             const messageHash = await this.generateMessageHash(signedMetaTx, contract);
             console.log(`📝 Contract Message Hash: ${messageHash}`);
             
-            // Recover the signer
-            const recoveredAddress = this.web3.eth.accounts.recover(messageHash, signedMetaTx.signature);
+            // Recover the signer (signature is over raw digest; use viem)
+            const { recoverAddress } = await import('viem');
+            const recoveredAddress = await recoverAddress({
+                hash: messageHash,
+                signature: signedMetaTx.signature
+            });
             console.log(`🔑 Recovered Signer: ${recoveredAddress}`);
             console.log(`📋 Expected Signer: ${signedMetaTx.params.signer}`);
             

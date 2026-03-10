@@ -6,7 +6,6 @@ import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ProtectedResourceFuzzTest
@@ -240,12 +239,10 @@ contract ProtectedResourceFuzzTest is CommonBase {
             metaTxParams
         );
 
-        // Sign the meta-transaction using the message hash from the contract
-        // The contract uses toEthSignedMessageHash() when recovering, so we must sign with the same format
+        // Sign the meta-transaction (standard EIP-712 digest, no prefix)
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
-        bytes32 messageHash = metaTx.message; // Use the message hash from contract (EIP-712 hash)
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash); // Add Ethereum signed message prefix
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        bytes32 messageHash = metaTx.message;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;

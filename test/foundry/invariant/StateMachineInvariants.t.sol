@@ -2,14 +2,23 @@
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
+import "forge-std/StdInvariant.sol";
 
 /**
  * @title StateMachineInvariantsTest
- * @dev Invariant tests for state machine
+ * @dev Invariant tests for state machine. Targets AccountBlox but excludes permissioned
+ *      execute* selectors so the fuzzer does not call them with random senders (NoPermission).
  */
 contract StateMachineInvariantsTest is CommonBase {
     function setUp() public override {
         super.setUp();
+        targetContract(address(accountBlox));
+        bytes4[] memory excluded = new bytes4[](4);
+        excluded[0] = TRANSFER_OWNERSHIP_SELECTOR;
+        excluded[1] = UPDATE_BROADCASTER_SELECTOR;
+        excluded[2] = UPDATE_RECOVERY_SELECTOR;
+        excluded[3] = UPDATE_TIMELOCK_SELECTOR;
+        excludeSelector(StdInvariant.FuzzSelector({ addr: address(accountBlox), selectors: excluded }));
     }
 
     function invariant_OwnerRoleSingleWallet() public {

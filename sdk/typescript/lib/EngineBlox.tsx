@@ -90,55 +90,22 @@ export class EngineBlox {
   // ============ PURE FUNCTIONS ============
 
   /**
-   * @dev Recovers the signer address from a message hash and signature
-   * @param messageHash The hash of the message that was signed (bytes32)
-   * @param signature The signature to recover the address from (65 bytes)
+   * @dev Recovers the signer address from the EIP-712 digest and signature (standard EIP-712; no EIP-191 prefix).
+   * @param messageHash The EIP-712 digest (keccak256("\x19\x01" || domainSeparator || structHash))
+   * @param signature The signature (65 bytes)
    * @returns Promise that resolves to the address of the signer
-   * @throws Error if signature is invalid or recovery fails
-   * 
-   * @notice This matches the contract's recoverSigner function which uses
-   *         messageHash.toEthSignedMessageHash() to convert to EIP-191 format
-   * 
-   * @example
-   * ```typescript
-   * const messageHash = "0x1234...";
-   * const signature = "0xabcd...";
-   * const signer = await EngineBlox.recoverSigner(messageHash, signature);
-   * ```
+   * @notice Matches the contract's recoverSigner which uses ecrecover(messageHash, v, r, s) on the raw digest.
    */
   static async recoverSigner(messageHash: Hex, signature: Hex): Promise<Address> {
-    // Validate signature length (65 bytes = 130 hex chars + '0x' prefix)
     if (signature.length !== 132) {
-      throw new Error(`Invalid signature length: expected 65 bytes (132 hex chars), got ${signature.length - 2} bytes`);
+      throw new Error(`Invalid signature length: expected 65 bytes (132 hex chars), got ${(signature.length - 2) / 2} bytes`);
     }
-
     try {
-      // The contract uses messageHash.toEthSignedMessageHash() which converts to EIP-191 format
-      // EIP-191 format for 32-byte hash: keccak256("\x19Ethereum Signed Message:\n32" + messageHash)
-      // We need to create the EIP-191 formatted hash and then recover from it
-      const prefix = '\x19Ethereum Signed Message:\n32';
-      const messageHashBytes = Buffer.from(messageHash.slice(2), 'hex');
-      
-      // Concatenate prefix and hash
-      const eip191Message = Buffer.concat([
-        Buffer.from(prefix, 'utf8'),
-        messageHashBytes
-      ]);
-      
-      // Convert Buffer to Uint8Array for viem
-      const eip191MessageBytes = new Uint8Array(eip191Message);
-      
-      // Hash the EIP-191 formatted message
-      const eip191Hash = (await k256(eip191MessageBytes)) as Hex;
-
-      // Recover address from the EIP-191 formatted hash
-      // Note: recoverAddress is async in viem
-      const recovered: Address = await recoverAddress({
-        hash: eip191Hash,
-        signature: signature
+      const signer = await recoverAddress({
+        hash: messageHash,
+        signature
       });
-      
-      return recovered;
+      return signer;
     } catch (error) {
       throw new Error(`Failed to recover signer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

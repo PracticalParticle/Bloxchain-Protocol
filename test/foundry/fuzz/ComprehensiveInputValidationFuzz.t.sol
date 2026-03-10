@@ -7,7 +7,6 @@ import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.so
 import "../../../contracts/core/execution/GuardController.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveInputValidationFuzzTest
@@ -529,8 +528,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;

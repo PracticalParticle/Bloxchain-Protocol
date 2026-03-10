@@ -13,7 +13,6 @@ import "../helpers/HookTestBlox.sol";
 import "../helpers/MockContracts.sol";
 import "../helpers/PaymentTestHelper.sol";
 import "../helpers/TestHelpers.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveSecurityEdgeCasesFuzzTest
@@ -266,8 +265,7 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;

@@ -3,7 +3,6 @@ pragma solidity 0.8.34;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // Local imports
@@ -53,7 +52,6 @@ library EngineBlox {
     /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
     uint256 public constant MAX_FUNCTIONS = 2000;
     
-    using MessageHashUtils for bytes32;
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -152,9 +150,11 @@ library EngineBlox {
         bytes32 operationType;
         string operationName;
         uint16 supportedActionsBitmap; // Bitmap for TxAction enum (9 bits max)
-        bool enforceHandlerRelations;  // When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference)
+        /// @dev When true (strict mode): handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time.
+        ///      When false (flexible mode): no such check; forward references and unregistered selectors in handlerForSelectors are allowed at registration.
+        bool enforceHandlerRelations;
         bool isProtected;
-        bytes4[] handlerForSelectors; 
+        bytes4[] handlerForSelectors;
     }
 
     // ============ DEFINITION STRUCTS ============
@@ -205,8 +205,12 @@ library EngineBlox {
     bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__()"));
     bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
     
-    // EIP-712 Type Hashes
-    bytes32 private constant TYPE_HASH = keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    // EIP-712 Type Hashes (selective meta-tx payload: MetaTxRecord = txId + params + payment only)
+    bytes32 private constant META_TX_TYPE_HASH = keccak256("MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256("MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    bytes32 private constant TX_PARAMS_TYPE_HASH = keccak256("TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)");
+    bytes32 private constant META_TX_PARAMS_TYPE_HASH = keccak256("MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)");
+    bytes32 private constant PAYMENT_DETAILS_TYPE_HASH = keccak256("PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
     bytes32 private constant DOMAIN_SEPARATOR_TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
 
@@ -483,6 +487,8 @@ library EngineBlox {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_CANCEL);
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
+        _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -513,10 +519,16 @@ library EngineBlox {
      * @return The updated TxRecord.
      * @notice This function skips permission validation and should only be called from functions
      *         that have already validated permissions.
+     * @custom:security TIMELOCK: The releaseTime (timelock) is intentionally NOT enforced on this path.
+     *         This is by design: the meta-tx workflow allows authorized signers to approve execution
+     *         without waiting for releaseTime, providing a hybrid synergy between timelock workflows
+     *         (direct path enforces releaseTime) and meta-tx workflows (delegated, time-flexible approval).
      */
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
         uint256 txId = metaTx.txRecord.txId;
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
+        _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
         
         incrementSignerNonce(self, metaTx.params.signer);
@@ -838,6 +850,9 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The hash of the role to remove.
      * @notice Security: Cannot remove protected roles to maintain system integrity.
+     * @custom:security PROTECTED-ROLE POLICY: This library enforces the protected-role check for
+     *         REMOVE_ROLE. RuntimeRBAC does not duplicate this check; defense is in layers. The
+     *         only component authorized to modify system wallets (protected roles) is SecureOwnable.
      */
     function removeRole(
         SecureOperationState storage self,
@@ -868,19 +883,27 @@ library EngineBlox {
             self.walletRoles[wallets[i]].remove(roleHash);
         }
         
-        // Clear the role data from roles mapping
-        // Remove the role from the supported roles set (O(1) operation)
-        // NOTE: Mappings (functionPermissions, authorizedWallets, functionSelectorsSet)
-        // are not deleted by Solidity's delete operator. This is acceptable because:
-        // 1. Role is removed from supportedRolesSet, making it inaccessible via role queries
-        // 2. Reverse index (walletRoles) is cleaned up above, so permission checks won't find this role
-        // 3. All access checks use the reverse index (walletRoles) for O(1) lookups, so orphaned data is unreachable
-        // 4. Role recreation with same name would pass roleHash check but mappings
-        //    would be effectively reset since role is reinitialized from scratch
-        delete self.roles[roleHash];  
+        // Clear the role's authorizedWallets set so storage is clean if role is recreated with same name
+        for (uint256 i = 0; i < walletCount; i++) {
+            roleData.authorizedWallets.remove(wallets[i]);
+        }
+        
+        // Clear function permissions and functionSelectorsSet (same reason: no stale data on role recreation)
+        uint256 selectorCount = roleData.functionSelectorsSet.length();
+        bytes32[] memory selectors = new bytes32[](selectorCount);
+        for (uint256 i = 0; i < selectorCount; i++) {
+            selectors[i] = roleData.functionSelectorsSet.at(i);
+        }
+        for (uint256 i = 0; i < selectorCount; i++) {
+            roleData.functionSelectorsSet.remove(selectors[i]);
+            delete roleData.functionPermissions[bytes4(selectors[i])];
+        }
+        
+        // Delete role and remove from supported set (cleanup above ensures no stale RBAC data)
+        delete self.roles[roleHash];
         if (!self.supportedRolesSet.remove(roleHash)) {
             revert SharedValidation.ResourceNotFound(roleHash);
-        }   
+        }
     }
 
     /**
@@ -1120,9 +1143,12 @@ library EngineBlox {
      * @param functionSelector Hash identifier for the function.
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
-     * @param enforceHandlerRelations When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference).
+     * @param enforceHandlerRelations When true (strict mode), handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time. When false (flexible mode), forward references are allowed.
      * @param isProtected Whether the function schema is protected from removal.
-     * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors
+     * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors.
+     * @custom:security OPERATIONAL MODES: We do not require handlerForSelectors[i] to be in supportedFunctionsSet at registration.
+     *         - Strict mode (enforceHandlerRelations == true): at use time (_validateHandlerForSelectors) we require role permissions' handlerForSelectors to match this schema's handlerForSelectors; registration order is flexible.
+     *         - Flexible mode (enforceHandlerRelations == false): validation is skipped; forward references and unregistered selectors are allowed by design. Callers select the mode per schema.
      */
     function registerFunction(
         SecureOperationState storage self,
@@ -1144,12 +1170,10 @@ library EngineBlox {
         // Derive operation type from operation name
         bytes32 derivedOperationType = keccak256(bytes(operationName));
 
-        // Validate handlerForSelectors: non-empty and all selectors are non-zero
-        // NOTE:
-        // - Empty arrays are NOT allowed anymore. Execution selectors must have
-        //   at least one entry pointing to themselves (self-reference), and
-        //   handler selectors must point to valid execution selectors.
-        // - bytes4(0) is never allowed in this array.
+        // Validate handlerForSelectors: non-empty and all selectors are non-zero.
+        // We do NOT require handlerForSelectors[i] to be in supportedFunctionsSet here.
+        // Operational mode is controlled by enforceHandlerRelations: strict mode validates at use time;
+        // flexible mode allows forward references and unregistered selectors by design. See @custom:security OPERATIONAL MODES above.
         if (handlerForSelectors.length == 0) {
             revert SharedValidation.OperationFailed();
         }
@@ -1665,9 +1689,19 @@ library EngineBlox {
     }
 
     /**
-     * @dev Generates a message hash for the specified meta-transaction following EIP-712
+     * @dev Generates the EIP-712 message hash for the meta-transaction.
+     *      Uses selective MetaTxRecord (txId, params, payment only).
+     *      Integrators must sign this digest as a raw hash with no EIP-191 or personal_sign prefix—
+     *      e.g. account.sign({ hash: contractDigest }) or equivalent raw-hash signing API—so that
+     *      signatures match the raw ecrecover(messageHash, v, r, s) verification in recoverSigner.
+     *      Do NOT use personal_sign or generic eth_signTypedData_v4; the contract uses
+     *      abi.encodePacked for the version string and a custom META_TX_TYPE_HASH, so those produce
+     *      incompatible hashes.
+     *      The resulting digest is also written into the `message` field of the helper-built
+     *      `MetaTransaction` structs (see `createMetaTransactionForSigning`) so integrators can use
+     *      it directly without recomputing the hash client-side.
      * @param metaTx The meta-transaction to generate the hash for
-     * @return The generated message hash
+     * @return The EIP-712 digest (no prefix; use standard recovery)
      */
     function generateMessageHash(MetaTransaction memory metaTx) private view returns (bytes32) {
         bytes32 domainSeparator = keccak256(abi.encode(
@@ -1678,26 +1712,52 @@ library EngineBlox {
             address(this)
         ));
 
+        TxParams memory tp = metaTx.txRecord.params;
+        bytes32 txParamsStructHash = keccak256(abi.encode(
+            TX_PARAMS_TYPE_HASH,
+            tp.requester,
+            tp.target,
+            tp.value,
+            tp.gasLimit,
+            tp.operationType,
+            tp.executionSelector,
+            keccak256(tp.executionParams)
+        ));
+
+        PaymentDetails memory payment = metaTx.txRecord.payment;
+        bytes32 paymentStructHash = keccak256(abi.encode(
+            PAYMENT_DETAILS_TYPE_HASH,
+            payment.recipient,
+            payment.nativeTokenAmount,
+            payment.erc20TokenAddress,
+            payment.erc20TokenAmount
+        ));
+
+        bytes32 metaTxRecordStructHash = keccak256(abi.encode(
+            META_TX_RECORD_TYPE_HASH,
+            metaTx.txRecord.txId,
+            txParamsStructHash,
+            paymentStructHash
+        ));
+
+        MetaTxParams memory mp = metaTx.params;
+        bytes32 metaTxParamsStructHash = keccak256(abi.encode(
+            META_TX_PARAMS_TYPE_HASH,
+            mp.chainId,
+            mp.nonce,
+            mp.handlerContract,
+            mp.handlerSelector,
+            uint8(mp.action),
+            mp.deadline,
+            mp.maxGasPrice,
+            mp.signer
+        ));
+
         bytes32 structHash = keccak256(abi.encode(
-            TYPE_HASH,
-            keccak256(abi.encode(
-                metaTx.txRecord.txId,
-                metaTx.txRecord.params.requester,
-                metaTx.txRecord.params.target,
-                metaTx.txRecord.params.value,
-                metaTx.txRecord.params.gasLimit,
-                metaTx.txRecord.params.operationType,
-                metaTx.txRecord.params.executionSelector,
-                keccak256(metaTx.txRecord.params.executionParams)
-            )),
-            metaTx.params.chainId,
-            metaTx.params.nonce,
-            metaTx.params.handlerContract,
-            metaTx.params.handlerSelector,
-            uint8(metaTx.params.action),
-            metaTx.params.deadline,
-            metaTx.params.maxGasPrice,
-            metaTx.params.signer
+            META_TX_TYPE_HASH,
+            metaTxRecordStructHash,
+            metaTxParamsStructHash,
+            keccak256(metaTx.data)
         ));
 
         return keccak256(abi.encodePacked(
@@ -1708,10 +1768,15 @@ library EngineBlox {
     }
 
     /**
-     * @dev Recovers the signer address from a message hash and signature.
-     * @param messageHash The hash of the message that was signed.
-     * @param signature The signature to recover the address from.
-     * @return The address of the signer.
+     * @dev Recovers the signer from the EIP-712 digest and signature. Uses standard EIP-712 recovery (no message prefix).
+     *      Integrators must sign the digest returned by generateMessageHash as a raw hash—e.g.
+     *      account.sign({ hash: contractDigest }) or equivalent raw-hash signing API—with no
+     *      EIP-191/personal prefix, so signatures match this ecrecover(messageHash, v, r, s) verification.
+     *      Do NOT use personal_sign or generic eth_signTypedData_v4; the contract uses abi.encodePacked
+     *      for the domain version and a custom META_TX_TYPE_HASH, so those produce incompatible hashes.
+     * @param messageHash The EIP-712 digest (keccak256("\x19\x01" || domainSeparator || structHash))
+     * @param signature The signature (r, s, v)
+     * @return The address of the signer
      */
     function recoverSigner(bytes32 messageHash, bytes memory signature) public pure returns (address) {
         SharedValidation.validateSignatureLength(signature);
@@ -1740,7 +1805,7 @@ library EngineBlox {
         // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}
         SharedValidation.validateSignatureParams(s, v);
 
-        address signer = ecrecover(messageHash.toEthSignedMessageHash(), v, r, s);
+        address signer = ecrecover(messageHash, v, r, s);
         SharedValidation.validateRecoveredSigner(signer);
 
         return signer;
@@ -2109,6 +2174,62 @@ library EngineBlox {
     }
 
     /**
+     * @dev Validates that the meta-transaction txRecord matches the stored record for the given txId.
+     *      Ensures the signer's intent (as reflected in the stored tx from the request phase) is what
+     *      is approved or cancelled; override by meta-tx payload is not allowed for approve/cancel flows.
+     * @param self The SecureOperationState containing the stored tx record.
+     * @param txId The transaction ID.
+     * @param metaTxRecord The TxRecord from the meta-transaction calldata.
+     * @notice Reverts with MetaTxRecordMismatchStoredTx if any execution-affecting or permission-affecting field differs.
+     */
+    function _validateMetaTxMatchRecord(
+        SecureOperationState storage self,
+        uint256 txId,
+        TxRecord memory metaTxRecord
+    ) internal view {
+        TxRecord storage stored = self.txRecords[txId];
+        TxParams storage sp = stored.params;
+        TxParams memory mp = metaTxRecord.params;
+        if (
+            sp.executionSelector != mp.executionSelector ||
+            sp.target != mp.target ||
+            sp.value != mp.value ||
+            sp.requester != mp.requester ||
+            sp.gasLimit != mp.gasLimit ||
+            sp.operationType != mp.operationType ||
+            keccak256(sp.executionParams) != keccak256(mp.executionParams) ||
+            stored.releaseTime != metaTxRecord.releaseTime
+        ) {
+            revert SharedValidation.MetaTxRecordMismatchStoredTx(txId);
+        }
+    }
+
+    /**
+     * @dev Validates that the meta-transaction payment matches the stored record for the given txId.
+     *      Ensures the signed payment (recipient, amounts, token) equals what will be executed.
+     * @param self The SecureOperationState containing the stored tx record.
+     * @param txId The transaction ID.
+     * @param metaTxRecord The TxRecord from the meta-transaction calldata.
+     * @notice Reverts with MetaTxPaymentMismatchStoredTx if any payment field differs from stored.
+     */
+    function _validateMetaTxPaymentMatchRecord(
+        SecureOperationState storage self,
+        uint256 txId,
+        TxRecord memory metaTxRecord
+    ) internal view {
+        PaymentDetails storage storedPayment = self.txRecords[txId].payment;
+        PaymentDetails memory metaPayment = metaTxRecord.payment;
+        if (
+            storedPayment.recipient != metaPayment.recipient ||
+            storedPayment.nativeTokenAmount != metaPayment.nativeTokenAmount ||
+            storedPayment.erc20TokenAddress != metaPayment.erc20TokenAddress ||
+            storedPayment.erc20TokenAmount != metaPayment.erc20TokenAmount
+        ) {
+            revert SharedValidation.MetaTxPaymentMismatchStoredTx(txId);
+        }
+    }
+
+    /**
      * @dev Validates that a wallet has permission for both execution selector and handler selector for a given action
      * @param self The SecureOperationState to check
      * @param wallet The wallet address to check permissions for
@@ -2137,27 +2258,36 @@ library EngineBlox {
         if (!hasActionPermission(self, wallet, handlerSelector, action)) {
             revert SharedValidation.NoPermission(wallet);
         }
+
+        // In strict mode, enforce that the executionSelector is part of the handlerSelector's schema flow.
+        // Handler schemas declare which execution selectors they are allowed to trigger.
+        FunctionSchema storage handlerSchema = self.functions[handlerSelector];
+        if (handlerSchema.enforceHandlerRelations) {
+            if (!_schemaHasHandlerSelector(handlerSchema, executionSelector)) {
+                revert SharedValidation.HandlerForSelectorMismatch(
+                    executionSelector,
+                    handlerSelector
+                );
+            }
+        }
     }
 
     /**
-     * @dev Validates that all handlerForSelectors are present in the schema's handlerForSelectors array
+     * @dev Validates that all handlerForSelectors are present in the schema's handlerForSelectors array.
+     *      When schema.enforceHandlerRelations is false (flexible mode), validation is skipped and this function returns immediately.
+     *      When true (strict mode), every permission handlerForSelector must appear in the schema's handlerForSelectors.
      * @param self The SecureOperationState to validate against
      * @param functionSelector The function selector for which the permission is defined
      * @param handlerForSelectors The handlerForSelectors array from the permission to validate
-     * @notice Reverts with HandlerForSelectorMismatch if any handlerForSelector is not found in the schema's array
-     * @notice Special case: Execution function permissions should include functionSelector in handlerForSelectors (self-reference)
+     * @notice Reverts with HandlerForSelectorMismatch if any handlerForSelector is not found in the schema's array (strict mode only).
+     * @notice Special case: Execution function permissions should include functionSelector in handlerForSelectors (self-reference).
      */
     function _validateHandlerForSelectors(
         SecureOperationState storage self,
         bytes4 functionSelector,
         bytes4[] memory handlerForSelectors
     ) internal view {
-        bytes32 functionSelectorHash = bytes32(functionSelector);
-
-        // Ensure the function schema exists
-        if (!self.supportedFunctionsSet.contains(functionSelectorHash)) {
-            revert SharedValidation.ResourceNotFound(functionSelectorHash);
-        }
+        _validateFunctionSchemaExists(self, functionSelector);
 
         FunctionSchema storage schema = self.functions[functionSelector];
 
@@ -2170,20 +2300,31 @@ library EngineBlox {
         for (uint256 j = 0; j < handlerForSelectors.length; j++) {
             bytes4 handlerForSelector = handlerForSelectors[j];
 
-            bool found = false;
-            for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
-                if (schema.handlerForSelectors[i] == handlerForSelector) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!_schemaHasHandlerSelector(schema, handlerForSelector)) {
                 revert SharedValidation.HandlerForSelectorMismatch(
                     bytes4(0), // Cannot return array, use 0 as placeholder
                     handlerForSelector
                 );
             }
         }
+    }
+
+    /**
+     * @dev Checks whether a given handler selector is present in a function schema's handlerForSelectors array.
+     * @param schema The function schema to inspect.
+     * @param handlerSelector The handler selector to search for.
+     * @return True if the handler selector is present, false otherwise.
+     */
+    function _schemaHasHandlerSelector(
+        FunctionSchema storage schema,
+        bytes4 handlerSelector
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < schema.handlerForSelectors.length; i++) {
+            if (schema.handlerForSelectors[i] == handlerSelector) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

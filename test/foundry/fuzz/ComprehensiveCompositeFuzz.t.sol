@@ -9,7 +9,6 @@ import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinit
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveCompositeFuzzTest
@@ -345,8 +344,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Attempt meta-approval. Success is allowed (privileged bypass); security hinges
@@ -584,8 +582,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;
@@ -644,8 +641,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
 
         vm.prank(broadcaster);
@@ -686,8 +682,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
 
         vm.prank(broadcaster);

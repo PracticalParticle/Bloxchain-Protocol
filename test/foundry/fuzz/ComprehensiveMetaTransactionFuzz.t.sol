@@ -6,7 +6,6 @@ import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title ComprehensiveMetaTransactionFuzzTest
@@ -141,8 +140,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         // Sign with wrong nonce
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(metaTx.message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, metaTx.message);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Attempt to execute - should fail nonce validation
@@ -232,8 +230,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         replayMetaTx.message = metaTxSigner.generateMessageHash(replayMetaTx, address(accountBlox));
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
-        bytes32 replayEthSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(replayMetaTx.message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, replayEthSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, replayMetaTx.message);
         replayMetaTx.signature = abi.encodePacked(r, s, v);
         
         // Attempt to execute replay - should fail
@@ -489,8 +486,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Very long deadline should be allowed (signature still requires permissions)
@@ -556,8 +552,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         metaTx.signature = abi.encodePacked(r, s, v);
         
         // Set gas price above limit
@@ -639,8 +634,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
         
         uint256 signerPrivateKey = _getPrivateKeyForAddress(owner);
         bytes32 messageHash2 = metaTx2.message;
-        bytes32 ethSignedMessageHash2 = MessageHashUtils.toEthSignedMessageHash(messageHash2);
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(signerPrivateKey, ethSignedMessageHash2);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(signerPrivateKey, messageHash2);
         metaTx2.signature = abi.encodePacked(r2, s2, v2);
         
         // Execute first transaction
@@ -906,8 +900,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
 
         uint256 signerPrivateKey = _getPrivateKeyForAddress(signer);
         bytes32 messageHash = metaTx.message;
-        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         metaTx.signature = signature;

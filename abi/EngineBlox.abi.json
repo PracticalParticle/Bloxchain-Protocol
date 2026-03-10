@@ -352,6 +352,28 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "txId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaTxPaymentMismatchStoredTx",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "txId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaTxRecordMismatchStoredTx",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "caller",
         "type": "address"
