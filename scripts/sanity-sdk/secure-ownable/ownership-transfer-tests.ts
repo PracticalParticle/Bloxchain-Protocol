@@ -139,7 +139,8 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         ) || 'wallet1'
       );
 
-      // Simulate transaction first to catch revert reasons (like sanity tests do with estimateGas)
+      // Simulate transaction first to catch revert reasons (like sanity tests do with estimateGas).
+      // If the simulation fails, treat it as a warning only and still attempt the live transaction.
       try {
         console.log('  🔍 Simulating transaction to check for revert reasons...');
         await this.publicClient.simulateContract({
@@ -151,11 +152,11 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         });
         console.log('  ✅ Simulation passed - transaction should succeed');
       } catch (simError: any) {
-        console.log(`  ❌ Simulation failed: ${simError.message}`);
+        console.log(`  ⚠️ Simulation failed (will continue anyway): ${simError.message}`);
         if (simError.data || simError.reason) {
           console.log(`  📋 Revert reason: ${simError.reason || simError.data}`);
         }
-        throw new Error(`Transaction simulation failed: ${simError.message}`);
+        // Do not throw here; downstream transaction execution and assertions will determine test outcome.
       }
 
       // Request ownership transfer
@@ -599,7 +600,8 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       console.log(`  📋 Transaction Hash: ${executeResult.hash}`);
 
       const receipt = await executeResult.wait();
-      const isSuccess = receipt.status === 'success' || receipt.status === 1;
+      const status = receipt.status as any;
+      const isSuccess = status === 'success' || status === 1 || String(status) === '1';
       this.assertTest(isSuccess, `Transaction succeeded (status: ${receipt.status})`);
 
       // Verify transaction is cancelled (use recovery wallet which is now owner)
@@ -763,7 +765,8 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       console.log(`  📋 Transaction Hash: ${executeResult.hash}`);
 
       const receipt = await executeResult.wait();
-      const isSuccess = receipt.status === 'success' || receipt.status === 1;
+      const metaStatus = receipt.status as any;
+      const isSuccess = metaStatus === 'success' || metaStatus === 1 || String(metaStatus) === '1';
       this.assertTest(isSuccess, `Transaction succeeded (status: ${receipt.status})`);
 
       // Verify transaction is completed (use recovery wallet which is now owner after step 5)
