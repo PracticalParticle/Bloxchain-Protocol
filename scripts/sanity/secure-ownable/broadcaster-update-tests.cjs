@@ -473,15 +473,26 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             this.getRoleWalletObject('owner')
         );
 
-        // Try to get the txId from pending transactions
+        const expectedOpType = this.getOperationType('BROADCASTER_UPDATE');
+
+        // Try to find the broadcaster-update request among all pending transactions.
+        // Other workflows (e.g. ERC20 mint) may leave unrelated pending txs around.
         for (let i = 0; i < 5; i++) {
             const pending = await this.callContractMethod(this.contract.methods.getPendingTransactions());
-            if (pending.length > 0) {
-                const txId = pending[0];
-                const txRecord = await this.callContractMethod(this.contract.methods.getTransaction(txId));
-                if (txRecord.params.operationType === this.getOperationType('BROADCASTER_UPDATE')) {
-                    console.log(`  ✅ Broadcaster update request created`);
-                    return txRecord;
+            if (pending && pending.length > 0) {
+                for (const txId of pending) {
+                    const txRecord = await this.callContractMethod(this.contract.methods.getTransaction(txId));
+                    const op = txRecord && txRecord.params && txRecord.params.operationType;
+                    if (
+                        op &&
+                        (op === expectedOpType ||
+                            (typeof op === 'string' &&
+                                typeof expectedOpType === 'string' &&
+                                op.toLowerCase() === expectedOpType.toLowerCase()))
+                    ) {
+                        console.log(`  ✅ Broadcaster update request created (txId: ${txRecord.txId || txId})`);
+                        return txRecord;
+                    }
                 }
             }
             await new Promise(resolve => setTimeout(resolve, 1000));
