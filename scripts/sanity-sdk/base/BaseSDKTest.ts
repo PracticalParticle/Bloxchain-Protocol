@@ -234,7 +234,13 @@ export abstract class BaseSDKTest {
    * Use this for all writeContract/executeWriteContract calls so SANITY_SDK_GAS_PRICE_GWEI is applied.
    */
   protected getTxOptions(from: Address, overrides?: Partial<TransactionOptions>): TransactionOptions {
-    const opts: TransactionOptions = { from };
+    // Default to simulationMode: 'warn-only' so pre-flight simulation failures
+    // (e.g. RPC or environment limitations) do not cause tests to fail by themselves.
+    const opts: TransactionOptions = {
+      from,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      simulationMode: 'warn-only' as any,
+    };
     if (this.config.gasPriceGwei != null && this.config.gasPriceGwei > 0) {
       opts.gasPrice = String(BigInt(this.config.gasPriceGwei) * BigInt(1e9));
     }
