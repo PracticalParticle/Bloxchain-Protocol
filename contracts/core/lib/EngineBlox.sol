@@ -206,8 +206,10 @@ library EngineBlox {
     bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
     
     // EIP-712 Type Hashes (selective meta-tx payload: MetaTxRecord = txId + params + payment only)
-    bytes32 private constant META_TX_TYPE_HASH = keccak256("MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
-    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256("MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
+    // These follow the standard EIP-712 convention so that eth_signTypedData_v4 and equivalent
+    // wallet typed-data signers can reproduce the same hashes when given matching type definitions.
+    bytes32 private constant META_TX_TYPE_HASH = keccak256("MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)");
+    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256("MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)");
     bytes32 private constant TX_PARAMS_TYPE_HASH = keccak256("TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)");
     bytes32 private constant META_TX_PARAMS_TYPE_HASH = keccak256("MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)");
     bytes32 private constant PAYMENT_DETAILS_TYPE_HASH = keccak256("PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
@@ -1690,16 +1692,23 @@ library EngineBlox {
 
     /**
      * @dev Generates the EIP-712 message hash for the meta-transaction.
-     *      Uses selective MetaTxRecord (txId, params, payment only).
-     *      Integrators must sign this digest as a raw hash with no EIP-191 or personal_sign prefix—
-     *      e.g. account.sign({ hash: contractDigest }) or equivalent raw-hash signing API—so that
-     *      signatures match the raw ecrecover(messageHash, v, r, s) verification in recoverSigner.
-     *      Do NOT use personal_sign or generic eth_signTypedData_v4; the contract uses
-     *      abi.encodePacked for the version string and a custom META_TX_TYPE_HASH, so those produce
-     *      incompatible hashes.
-     *      The resulting digest is also written into the `message` field of the helper-built
-     *      `MetaTransaction` structs (see `createMetaTransactionForSigning`) so integrators can use
-     *      it directly without recomputing the hash client-side.
+     *      Uses selective MetaTxRecord (txId, params, payment only) with standard EIP-712 type hashes
+     *      so that eth_signTypedData_v4 (and equivalent) can reproduce the same digest when given
+     *      matching domain + types:
+     *
+     *      - primaryType: MetaTransaction
+     *      - domain: { name: "Bloxchain", version: "1.0.0", chainId, verifyingContract }
+     *      - types: MetaTransaction, MetaTxRecord, TxParams, MetaTxParams, PaymentDetails
+     *
+     *      Integrators MAY:
+     *      - use typed-data signing (eth_signTypedData_v4 / signTypedData) with the above domain/types, or
+     *      - sign the resulting digest as a raw hash (e.g. account.sign({ hash: contractDigest })).
+     *
+     *      In all cases, on-chain verification uses recoverSigner(messageHash, signature) which applies
+     *      ecrecover(messageHash, v, r, s) with no personal_sign / EIP-191 prefix.
+     *
+     *      The resulting digest is also written into the `message` field of helper-built `MetaTransaction`
+     *      structs so integrators can use it directly without recomputing the hash client-side.
      * @param metaTx The meta-transaction to generate the hash for
      * @return The EIP-712 digest (no prefix; use standard recovery)
      */

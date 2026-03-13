@@ -16,14 +16,14 @@ import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../abi/BaseStateMachine.abi.json';
 
 /** EIP-712 domain and types matching EngineBlox (selective MetaTxRecord: txId, params, payment only) */
-const META_TX_DOMAIN = {
+export const META_TX_DOMAIN = {
   name: 'Bloxchain' as const,
   version: '1.0.0' as const,
   chainId: 0, // set per sign
   verifyingContract: '0x' as Address // set per sign
 };
 
-const META_TX_TYPES = {
+export const META_TX_TYPES = {
   MetaTransaction: [
     { name: 'txRecord', type: 'MetaTxRecord' },
     { name: 'params', type: 'MetaTxParams' },
@@ -61,8 +61,8 @@ const META_TX_TYPES = {
   ]
 } as const;
 
-/** EIP-712 message shape for MetaTransaction (for reference; signing uses contract digest) */
-function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, unknown> {
+/** EIP-712 message shape for MetaTransaction (for typed-data signing) */
+export function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, unknown> {
   const params = metaTx.txRecord.params;
   const payment = metaTx.txRecord.payment;
   const metaParams = metaTx.params;
@@ -177,9 +177,44 @@ export class MetaTransactionSigner {
   }
 
   /**
+   * @dev Signs an unsigned meta-transaction using a walletClient via EIP-712 typed data (eth_signTypedData_v4).
+   *      Uses the canonical EIP-712 domain + types so the wallet-computed digest matches EngineBlox.generateMessageHash.
+   * @param unsignedMetaTx Unsigned meta-transaction
+   * @returns Complete signed meta-transaction
+   */
+  async signMetaTransactionWithWallet(unsignedMetaTx: MetaTransaction): Promise<MetaTransaction> {
+    if (!this.walletClient) {
+      throw new Error('MetaTransactionSigner: walletClient is required for typed-data signing');
+    }
+
+    const domain = {
+      ...META_TX_DOMAIN,
+      chainId: this.chain.id,
+      verifyingContract: this.contractAddress
+    };
+
+    const message = buildTypedDataMessage(unsignedMetaTx);
+
+    const signature = await this.walletClient.signTypedData({
+      account: this.walletClient.account!,
+      domain,
+      primaryType: 'MetaTransaction',
+      types: META_TX_TYPES,
+      message
+    } as any);
+
+    // Verify signature matches expected signer using the same raw digest path as the contract
+    await this.verifySignature(unsignedMetaTx.message as Hex, signature as Hex, unsignedMetaTx.params.signer);
+
+    return {
+      ...unsignedMetaTx,
+      signature: signature as Hex
+    };
+  }
+
+  /**
    * @dev Signs an unsigned meta-transaction using private key (standard EIP-712 digest; no personal_sign prefix).
-   *      Uses the contract's message hash as the digest (EngineBlox uses a custom EIP-712 type order that
-   *      differs from viem's alphabetical type order), so we sign the digest returned by the contract directly.
+   *      Uses the contract's message hash as the digest, so we sign the digest returned by the contract directly.
    * @param unsignedMetaTx Unsigned meta-transaction (message = EIP-712 digest from contract)
    * @param signerAddress Address of the signer
    * @param privateKey Private key for signing (required for remote Ganache)
