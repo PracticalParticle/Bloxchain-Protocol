@@ -187,6 +187,11 @@ export class MetaTransactionSigner {
       throw new Error('MetaTransactionSigner: walletClient is required for typed-data signing');
     }
 
+    const account = this.walletClient.account;
+    if (!account) {
+      throw new Error('MetaTransactionSigner: walletClient must have an active account for typed-data signing');
+    }
+
     const domain = {
       ...META_TX_DOMAIN,
       chainId: this.chain.id,
@@ -196,7 +201,7 @@ export class MetaTransactionSigner {
     const message = buildTypedDataMessage(unsignedMetaTx);
 
     const signature = await this.walletClient.signTypedData({
-      account: this.walletClient.account!,
+      account,
       domain,
       primaryType: 'MetaTransaction',
       types: META_TX_TYPES,
