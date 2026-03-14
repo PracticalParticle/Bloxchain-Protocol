@@ -11,6 +11,7 @@ const rootPackageJsonPath = path.join(rootDir, 'package.json');
 const contractsPackageJsonPath = path.join(rootDir, 'package', 'package.json');
 const sdkPackageJsonPath = path.join(rootDir, 'sdk', 'typescript', 'package.json');
 const engineBloxPath = path.join(rootDir, 'contracts', 'core', 'lib', 'EngineBlox.sol');
+const sdkEngineBloxPath = path.join(rootDir, 'sdk', 'typescript', 'lib', 'EngineBlox.tsx');
 
 // Parse command line arguments for tag
 let preReleaseTag = null;
@@ -140,52 +141,20 @@ if (fs.existsSync(engineBloxPath)) {
   let engineBloxContent = fs.readFileSync(engineBloxPath, 'utf8');
   let updated = false;
   
-  // Update VERSION_MAJOR (uses base version, no pre-release tag)
-  const majorRegex = /(uint8\s+public\s+constant\s+VERSION_MAJOR\s*=\s*)(\d+)/;
-  const majorMatch = engineBloxContent.match(majorRegex);
-  if (majorMatch) {
-    const oldMajor = parseInt(majorMatch[2], 10);
-    if (oldMajor !== versionMajor) {
-      engineBloxContent = engineBloxContent.replace(majorRegex, `$1${versionMajor}`);
+  // Update VERSION string (uses base version, no pre-release tag)
+  const versionRegex = /(string\s+public\s+constant\s+VERSION\s*=\s*)"([^"]*)"/;
+  const versionMatch = engineBloxContent.match(versionRegex);
+  if (versionMatch) {
+    const oldVersion = versionMatch[2];
+    if (oldVersion !== baseVersion) {
+      engineBloxContent = engineBloxContent.replace(versionRegex, `$1"${baseVersion}"`);
       updated = true;
-      console.log(`✅ EngineBlox.sol VERSION_MAJOR: ${oldMajor} → ${versionMajor} (base version, no pre-release tag)`);
+      console.log(`✅ EngineBlox.sol VERSION: "${oldVersion}" → "${baseVersion}" (base version, no pre-release tag)`);
     } else {
-      console.log(`✓  EngineBlox.sol VERSION_MAJOR: ${versionMajor} (already synced)`);
+      console.log(`✓  EngineBlox.sol VERSION: "${baseVersion}" (already synced)`);
     }
   } else {
-    console.warn('⚠️  Could not find VERSION_MAJOR constant in EngineBlox.sol');
-  }
-  
-  // Update VERSION_MINOR (uses base version, no pre-release tag)
-  const minorRegex = /(uint8\s+public\s+constant\s+VERSION_MINOR\s*=\s*)(\d+)/;
-  const minorMatch = engineBloxContent.match(minorRegex);
-  if (minorMatch) {
-    const oldMinor = parseInt(minorMatch[2], 10);
-    if (oldMinor !== versionMinor) {
-      engineBloxContent = engineBloxContent.replace(minorRegex, `$1${versionMinor}`);
-      updated = true;
-      console.log(`✅ EngineBlox.sol VERSION_MINOR: ${oldMinor} → ${versionMinor} (base version, no pre-release tag)`);
-    } else {
-      console.log(`✓  EngineBlox.sol VERSION_MINOR: ${versionMinor} (already synced)`);
-    }
-  } else {
-    console.warn('⚠️  Could not find VERSION_MINOR constant in EngineBlox.sol');
-  }
-  
-  // Update VERSION_PATCH (uses base version, no pre-release tag)
-  const patchRegex = /(uint8\s+public\s+constant\s+VERSION_PATCH\s*=\s*)(\d+)/;
-  const patchMatch = engineBloxContent.match(patchRegex);
-  if (patchMatch) {
-    const oldPatch = parseInt(patchMatch[2], 10);
-    if (oldPatch !== versionPatch) {
-      engineBloxContent = engineBloxContent.replace(patchRegex, `$1${versionPatch}`);
-      updated = true;
-      console.log(`✅ EngineBlox.sol VERSION_PATCH: ${oldPatch} → ${versionPatch} (base version, no pre-release tag)`);
-    } else {
-      console.log(`✓  EngineBlox.sol VERSION_PATCH: ${versionPatch} (already synced)`);
-    }
-  } else {
-    console.warn('⚠️  Could not find VERSION_PATCH constant in EngineBlox.sol');
+    console.warn('⚠️  Could not find VERSION constant in EngineBlox.sol');
   }
   
   if (updated) {
@@ -197,6 +166,24 @@ if (fs.existsSync(engineBloxPath)) {
   }
 } else {
   console.warn('⚠️  EngineBlox.sol not found');
+}
+
+// Update SDK EngineBlox.tsx VERSION string (same as contract, base version only)
+if (fs.existsSync(sdkEngineBloxPath)) {
+  let sdkContent = fs.readFileSync(sdkEngineBloxPath, 'utf8');
+  const sdkVersionRegex = /(static readonly VERSION: string = )"([^"]*)"/;
+  const sdkMatch = sdkContent.match(sdkVersionRegex);
+  if (sdkMatch && sdkMatch[2] !== baseVersion) {
+    sdkContent = sdkContent.replace(sdkVersionRegex, `$1"${baseVersion}"`);
+    fs.writeFileSync(sdkEngineBloxPath, sdkContent, 'utf8');
+    console.log(`✅ SDK EngineBlox.tsx VERSION: "${sdkMatch[2]}" → "${baseVersion}"`);
+  } else if (sdkMatch) {
+    console.log(`✓  SDK EngineBlox.tsx VERSION: "${baseVersion}" (already synced)`);
+  } else {
+    console.warn('⚠️  Could not find VERSION in SDK EngineBlox.tsx');
+  }
+} else {
+  console.warn('⚠️  SDK EngineBlox.tsx not found');
 }
 
 console.log('\n✅ Version sync complete!');

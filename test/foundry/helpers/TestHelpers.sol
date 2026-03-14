@@ -92,8 +92,19 @@ library TestHelpers {
 contract MetaTxSigner is Test {
     // EIP-712 type hashes matching EngineBlox (selective MetaTxRecord: txId, params, payment only)
     // These must stay in sync with EngineBlox.META_TX_TYPE_HASH and EngineBlox.META_TX_RECORD_TYPE_HASH.
-    bytes32 private constant META_TX_TYPE_HASH = keccak256("MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)");
-    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256("MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)");
+    bytes32 private constant META_TX_TYPE_HASH = keccak256(
+        "MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)"
+        "MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)"
+        "MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)"
+        "PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)"
+        "TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)"
+    );
+
+    bytes32 private constant META_TX_RECORD_TYPE_HASH = keccak256(
+        "MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)"
+        "PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)"
+        "TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)"
+    );
     bytes32 private constant TX_PARAMS_TYPE_HASH = keccak256("TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)");
     bytes32 private constant META_TX_PARAMS_TYPE_HASH = keccak256("MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)");
     bytes32 private constant PAYMENT_DETAILS_TYPE_HASH = keccak256("PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)");
@@ -120,13 +131,15 @@ contract MetaTxSigner is Test {
         EngineBlox.MetaTransaction memory metaTx,
         address verifyingContract
     ) public view returns (bytes32) {
-        bytes32 domainSeparator = keccak256(abi.encode(
-            DOMAIN_SEPARATOR_TYPE_HASH,
-            PROTOCOL_NAME_HASH,
-            keccak256(abi.encodePacked(uint8(1), ".", uint8(0), ".", uint8(0))),
-            block.chainid,
-            verifyingContract
-        ));
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                DOMAIN_SEPARATOR_TYPE_HASH,
+                PROTOCOL_NAME_HASH,
+                keccak256(bytes("1.0.0")),
+                block.chainid,
+                verifyingContract
+            )
+        );
 
         EngineBlox.TxParams memory tp = metaTx.txRecord.params;
         bytes32 txParamsStructHash = keccak256(abi.encode(

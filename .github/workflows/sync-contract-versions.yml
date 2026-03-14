@@ -73,15 +73,15 @@ jobs:
           DIFF_OUTPUT=$(git diff contracts/core/lib/EngineBlox.sol)
           
           # Check if diff contains only version constant changes
-          # Version constants are: VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH
-          if echo "$DIFF_OUTPUT" | grep -qE "^[-+].*VERSION_(MAJOR|MINOR|PATCH)" && \
-             ! echo "$DIFF_OUTPUT" | grep -vE "^[-+].*VERSION_(MAJOR|MINOR|PATCH)|^@|^index|^---|^\+\+\+" | grep -qE "^[-+]"; then
-            echo "✓ Only version constants changed, safe to commit"
+          # Version constant is: string public constant VERSION = "..."
+          if echo "$DIFF_OUTPUT" | grep -qE "^[-+].*constant\s+VERSION\s*=" && \
+             ! echo "$DIFF_OUTPUT" | grep -vE "^[-+].*constant\s+VERSION\s*=|^@|^index|^---|^\+\+\+" | grep -qE "^[-+]"; then
+            echo "✓ Only version constant changed, safe to commit"
             echo "safe=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ ERROR: Changes detected in EngineBlox.sol are not limited to version constants!"
+            echo "❌ ERROR: Changes detected in EngineBlox.sol are not limited to version constant!"
             echo ""
-            echo "The workflow detected changes beyond VERSION_MAJOR, VERSION_MINOR, or VERSION_PATCH."
+            echo "The workflow detected changes beyond the VERSION constant."
             echo "This could indicate uncommitted changes were accidentally included."
             echo ""
             echo "Full diff:"
