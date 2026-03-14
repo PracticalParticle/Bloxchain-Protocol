@@ -195,7 +195,7 @@ export class MetaTransactionSigner {
 
     const domain = {
       ...META_TX_DOMAIN,
-      chainId: this.chain.id,
+      chainId: Number(unsignedMetaTx.params.chainId),
       verifyingContract: this.contractAddress
     };
 
