@@ -14,11 +14,12 @@ import {
 } from '../../interfaces/lib.index';
 import { TxAction } from '../../types/lib.index';
 import BaseStateMachineABI from '../../abi/BaseStateMachine.abi.json';
+import { EngineBlox } from '../../lib/EngineBlox';
 
 /** EIP-712 domain and types matching EngineBlox (selective MetaTxRecord: txId, params, payment only) */
 export const META_TX_DOMAIN = {
   name: 'Bloxchain' as const,
-  version: '1.0.0' as const,
+  version: EngineBlox.VERSION,
   chainId: 0, // set per sign
   verifyingContract: '0x' as Address // set per sign
 };
