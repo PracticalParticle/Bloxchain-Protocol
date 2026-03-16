@@ -577,13 +577,17 @@ class BaseGuardControllerTest {
         // Provide an explicit gas limit so web3/provider does not call
         // eth_estimateGas (which can hang) or interpret gas as 0.
         const gas = 1_500_000;
+        let timeoutId;
         try {
             const sendPromise = method.send({ from, value, gas });
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);
+                timeoutId = setTimeout(
+                    () => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)),
+                    receiptTimeoutMs
+                );
             });
             const result = await Promise.race([sendPromise, timeoutPromise]);
-            
+            if (timeoutId) clearTimeout(timeoutId);
             // Check if transaction actually succeeded by examining the receipt
             if (result && result.receipt) {
                 console.log(`  🔍 Transaction receipt status: ${result.receipt.status}`);

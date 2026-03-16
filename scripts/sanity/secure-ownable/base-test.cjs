@@ -306,9 +306,9 @@ class BaseSecureOwnableTest {
         // Use an explicit gas limit so web3/provider does not invoke
         // eth_estimateGas (which can be unreliable) or treat gas as 0.
         const gas = 1_500_000;
+        let timeoutId;
         try {
             const sendPromise = method.send({ from, gas });
-            let timeoutId;
             const sendTimeout = new Promise((_, reject) => {
                 timeoutId = setTimeout(
                     () => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)),
@@ -319,6 +319,7 @@ class BaseSecureOwnableTest {
             if (timeoutId) clearTimeout(timeoutId);
             return result;
         } catch (error) {
+            if (timeoutId) clearTimeout(timeoutId);
             let errorMessage = error.message;
             const rawData = error.data?.result ?? error.data;
             if (rawData) {

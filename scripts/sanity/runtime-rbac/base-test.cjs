@@ -485,14 +485,20 @@ class BaseRuntimeRBACTest {
         // first, the underlying send() call may still complete later and change
         // on-chain state. Callers must treat a timeout as "result unknown" rather
         // than assuming the transaction did not execute.
+        let timeoutId;
         try {
             const sendPromise = method.send({ from, gas });
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);
+                timeoutId = setTimeout(
+                    () => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)),
+                    receiptTimeoutMs
+                );
             });
             const result = await Promise.race([sendPromise, timeoutPromise]);
+            if (timeoutId) clearTimeout(timeoutId);
             return result;
         } catch (error) {
+            if (timeoutId) clearTimeout(timeoutId);
             // Try to extract revert reason if available
             let errorMessage = error.message;
             if (error.data) {
