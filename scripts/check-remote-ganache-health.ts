@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createPublicClient, http, Hex, Address } from 'viem';
+import { createPublicClient, http } from 'viem';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -63,14 +63,14 @@ async function main() {
     const rootDir = path.resolve(__dirname, '..');
     const deployedPath = path.join(rootDir, 'deployed-addresses.json');
 
-    let accountBloxAddress: Address | null = null;
+    let accountBloxAddress: `0x${string}` | null = null;
 
     if (fs.existsSync(deployedPath)) {
       try {
         const deployed = JSON.parse(fs.readFileSync(deployedPath, 'utf8'));
         const dev = deployed.development;
         if (dev && dev.AccountBlox?.address) {
-          accountBloxAddress = dev.AccountBlox.address as Address;
+          accountBloxAddress = dev.AccountBlox.address as `0x${string}`;
           console.log(
             `📋 AccountBlox from deployed-addresses.json (development): ${accountBloxAddress}`
           );
@@ -81,7 +81,7 @@ async function main() {
     }
 
     if (!accountBloxAddress && process.env.ACCOUNTBLOX_ADDRESS) {
-      accountBloxAddress = process.env.ACCOUNTBLOX_ADDRESS as Address;
+      accountBloxAddress = process.env.ACCOUNTBLOX_ADDRESS as `0x${string}`;
       console.log(`📋 AccountBlox from ACCOUNTBLOX_ADDRESS (env): ${accountBloxAddress}`);
     }
 
@@ -145,7 +145,7 @@ async function main() {
     } catch (err: any) {
       console.error('❌ AccountBlox read failed (owner/getBroadcasters/getRecovery reverted)');
       console.error(`   Message: ${err?.message || err}`);
-      const data: Hex | undefined =
+      const data: `0x${string}` | undefined =
         err?.data ?? err?.cause?.data ?? err?.cause?.cause?.data;
       if (typeof data === 'string' && data.startsWith('0x')) {
         console.error(`   Revert data: ${data}`);

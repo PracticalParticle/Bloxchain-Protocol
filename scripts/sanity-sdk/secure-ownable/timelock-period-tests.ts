@@ -180,7 +180,9 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
       const secureOwnableBroadcaster = this.createSecureOwnableWithWallet(broadcasterWalletName);
       const result = await secureOwnableBroadcaster.updateTimeLockRequestAndApprove(
         fullMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Provide explicit gas so viem does not call eth_estimateGas for this
+        // complex timelock meta-tx payload (can hang/timeout on remote RPCs).
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
       );
 
       this.assertTest(!!result.hash, 'Timelock update transaction created');

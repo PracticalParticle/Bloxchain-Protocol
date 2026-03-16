@@ -94,11 +94,19 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
         let gasLimit: bigint;
         if (typeof rawGas === 'bigint') {
           gasLimit = rawGas;
+        } else if (typeof rawGas === 'number') {
+          if (!Number.isSafeInteger(rawGas) || rawGas < 0) {
+            throw new Error(
+              `Invalid gas: number inputs must be non-negative safe integers (got "${rawGas}"). ` +
+              'Use a bigint or decimal string for larger values.'
+            );
+          }
+          gasLimit = BigInt(rawGas);
         } else {
           const s = String(rawGas).trim();
           if (!/^\d+$/.test(s)) {
             throw new Error(
-              `Invalid gas: must be a non-negative integer (got "${options.gas}"). Use a number-like value or bigint.`
+              `Invalid gas: must be a non-negative integer (got "${options.gas}"). Use a number-like value, decimal string, or bigint.`
             );
           }
           gasLimit = BigInt(s);
