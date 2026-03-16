@@ -128,19 +128,25 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
                         const signedMetaTx = await this.eip712Signer.signMetaTransaction(unsignedMetaTx, this.getRoleWallet('owner'), this.contract);
                         this.assertTest(signedMetaTx && signedMetaTx.signature && signedMetaTx.signature.length > 0, `Meta-transaction signed successfully for ${description}`);
 
-            // The EIP712Signer already returns the complete signed meta-transaction
+            // Pass back the exact struct from the contract so ABI encoding matches; only override signature and message
             const fullMetaTx = {
-                txRecord: signedMetaTx.txRecord,
-                params: signedMetaTx.params,
+                ...unsignedMetaTx,
                 message: signedMetaTx.message,
-                signature: signedMetaTx.signature,
-                data: signedMetaTx.data
+                signature: signedMetaTx.signature
             };
 
-            const receipt = await this.sendTransaction(
-                this.contract.methods.updateRecoveryRequestAndApprove(fullMetaTx),
-                this.getRoleWalletObject('broadcaster')
-            );
+            console.log(`    📤 Sending updateRecoveryRequestAndApprove...`);
+            let receipt;
+            try {
+                receipt = await this.sendTransaction(
+                    this.contract.methods.updateRecoveryRequestAndApprove(fullMetaTx),
+                    this.getRoleWalletObject('broadcaster')
+                );
+            } catch (sendErr) {
+                console.log(`    ❌ updateRecoveryRequestAndApprove failed: ${sendErr.message}`);
+                if (sendErr.data) console.log(`    📋 Error data: ${typeof sendErr.data === 'object' ? JSON.stringify(sendErr.data) : sendErr.data}`);
+                throw sendErr;
+            }
 
             console.log(`    ✅ Meta-transaction executed successfully for ${description}`);
             console.log(`    📋 Transaction Hash: ${receipt.transactionHash}`);

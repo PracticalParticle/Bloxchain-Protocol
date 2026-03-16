@@ -675,222 +675,27 @@ class GuardControllerTests extends BaseGuardControllerTest {
             console.log('   OWNER_ROLE: SIGN_META_REQUEST_AND_APPROVE');
             console.log('   BROADCASTER_ROLE: EXECUTE_META_REQUEST_AND_APPROVE');
             console.log(`   Function Selector: ${this.NATIVE_TRANSFER_SELECTOR}`);
-            
-            // Get role hashes
+
+            await this.ensureNativeTransferSchemaAndPermissions();
+
+            // Verify (reads only) that the split-permission model is set.
             this.ownerRoleHash = this.getRoleHash('OWNER_ROLE');
             const broadcasterRoleHash = this.getRoleHash('BROADCASTER_ROLE');
-            console.log(`  📋 Owner role hash: ${this.ownerRoleHash}`);
-            console.log(`  📋 Broadcaster role hash: ${broadcasterRoleHash}`);
-            
-            // Check if roles exist
-            const ownerRoleExists = await this.roleExists(this.ownerRoleHash);
-            const broadcasterRoleExists = await this.roleExists(broadcasterRoleHash);
-            const expectedOwnerRoleExists = true;
-            const expectedBroadcasterRoleExists = true;
-            this.assertTest(
-                ownerRoleExists === expectedOwnerRoleExists,
-                `OWNER role exists (expected: ${expectedOwnerRoleExists}, actual: ${ownerRoleExists})`
+            const ownerHasSign = await this.roleHasPermissionForSelector(
+                this.ownerRoleHash,
+                this.NATIVE_TRANSFER_SELECTOR,
+                this.TxAction.SIGN_META_REQUEST_AND_APPROVE
             );
-            this.assertTest(
-                broadcasterRoleExists === expectedBroadcasterRoleExists,
-                `BROADCASTER role exists (expected: ${expectedBroadcasterRoleExists}, actual: ${broadcasterRoleExists})`
+            const broadcasterHasExecute = await this.roleHasPermissionForSelector(
+                broadcasterRoleHash,
+                this.NATIVE_TRANSFER_SELECTOR,
+                this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
             );
-            
-            // Get owner and broadcaster wallets
-            const ownerPrivateKey = this.getRoleWallet('owner');
-            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
-            
-            // Check if permissions already exist
-            console.log('  🔍 Checking if permissions already exist...');
-            const ownerPermissions = await this.callContractMethod(
-                this.contract.methods.getActiveRolePermissions(this.ownerRoleHash)
-            );
-            const broadcasterPermissions = await this.callContractMethod(
-                this.contract.methods.getActiveRolePermissions(broadcasterRoleHash)
-            );
-            
-            const ownerPermission = ownerPermissions.find(perm => 
-                perm.functionSelector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
-            );
-            const broadcasterPermission = broadcasterPermissions.find(perm => 
-                perm.functionSelector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase()
-            );
-            
-            let ownerHasSign = false;
-            let broadcasterHasExecute = false;
-            
-            if (ownerPermission) {
-                const ownerBitmap = parseInt(ownerPermission.grantedActionsBitmap);
-                ownerHasSign = (ownerBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
-            }
-            
-            if (broadcasterPermission) {
-                const broadcasterBitmap = parseInt(broadcasterPermission.grantedActionsBitmap);
-                broadcasterHasExecute = (broadcasterBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
-            }
-            
-            // Add OWNER permission if missing (SIGN only)
-            if (!ownerHasSign) {
-                console.log('  📝 Adding SIGN_META_REQUEST_AND_APPROVE permission to OWNER role...');
-                
-                // Debug: Check the function schema first
-                console.log('  🔍 Checking function schema before adding permission...');
-                const functionSchema = await this.callContractMethod(
-                    this.contract.methods.getFunctionSchema(this.NATIVE_TRANSFER_SELECTOR)
-                );
-                console.log(`  🔍 Function schema handlerForSelectors: ${JSON.stringify(functionSchema.handlerForSelectors ?? functionSchema[6] ?? 'unknown')}`);
-                console.log(`  🔍 Function schema supportedActionsBitmap: ${functionSchema.supportedActionsBitmap ?? functionSchema[4] ?? 'unknown'}`);
-                
-                // Debug: Log the permission we're creating
-                const testPermission = this.createFunctionPermission(
-                    this.NATIVE_TRANSFER_SELECTOR,
-                    [this.TxAction.SIGN_META_REQUEST_AND_APPROVE]
-                );
-                console.log(`  🔍 Creating permission with:`);
-                console.log(`     functionSelector: ${testPermission.functionSelector}`);
-                console.log(`     grantedActionsBitmap: ${testPermission.grantedActionsBitmap}`);
-                console.log(`     handlerForSelectors: ${JSON.stringify(testPermission.handlerForSelectors)}`);
-                
-                // Verify handlerForSelectors match
-                const schemaHandlers = functionSchema.handlerForSelectors ?? functionSchema[6] ?? [];
-                const permissionHandlers = testPermission.handlerForSelectors || [];
-                console.log(`  🔍 Schema handlers: ${JSON.stringify(schemaHandlers)}, Permission handlers: ${JSON.stringify(permissionHandlers)}`);
-                const handlersMatch = JSON.stringify(schemaHandlers.map(h => h.toLowerCase())) === JSON.stringify(permissionHandlers.map(h => h.toLowerCase()));
-                console.log(`  🔍 HandlerForSelectors match: ${handlersMatch ? '✅ YES' : '❌ NO'}`);
-                
-                const ownerReceipt = await this.addFunctionToRole(
-                    this.ownerRoleHash,
-                    this.NATIVE_TRANSFER_SELECTOR,
-                    [this.TxAction.SIGN_META_REQUEST_AND_APPROVE], // SIGN only, not EXECUTE
-                    ownerPrivateKey,
-                    broadcasterWallet
-                );
-                // Validate transaction succeeded
-                const expectedOwnerTxStatus = true;
-                const actualOwnerTxStatus = ownerReceipt.status === true || ownerReceipt.status === 1;
-                this.assertTest(
-                    actualOwnerTxStatus === expectedOwnerTxStatus,
-                    `Add OWNER permission transaction succeeded (expected: ${expectedOwnerTxStatus}, actual: ${actualOwnerTxStatus})`
-                );
-                console.log('  ✅ OWNER permission added successfully');
-                
-                // Immediately check if permission was added (before waiting)
-                console.log('  🔍 Immediately checking if permission was added...');
-                const immediateCheck = await this.callContractMethod(
-                    this.contract.methods.getActiveRolePermissions(this.ownerRoleHash)
-                );
-                const immediatePermission = immediateCheck.find(perm => {
-                    const selector = perm.functionSelector || perm[0];
-                    return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
-                });
-                console.log(`  🔍 Immediate check: permission ${immediatePermission ? 'FOUND' : 'NOT FOUND'}`);
-                if (immediatePermission) {
-                    console.log(`  🔍 Immediate permission details: ${JSON.stringify(immediatePermission, null, 2)}`);
-                }
-            } else {
-                console.log('  ✅ OWNER already has SIGN_META_REQUEST_AND_APPROVE permission');
-            }
-            
-            // Add BROADCASTER permission if missing (EXECUTE only)
-            if (!broadcasterHasExecute) {
-                console.log('  📝 Adding EXECUTE_META_REQUEST_AND_APPROVE permission to BROADCASTER role...');
-                const broadcasterReceipt = await this.addFunctionToRole(
-                    broadcasterRoleHash,
-                    this.NATIVE_TRANSFER_SELECTOR,
-                    [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE], // EXECUTE only, not SIGN
-                    ownerPrivateKey,
-                    broadcasterWallet
-                );
-                // Validate transaction succeeded
-                const expectedBroadcasterTxStatus = true;
-                const actualBroadcasterTxStatus = broadcasterReceipt.status === true || broadcasterReceipt.status === 1;
-                this.assertTest(
-                    actualBroadcasterTxStatus === expectedBroadcasterTxStatus,
-                    `Add BROADCASTER permission transaction succeeded (expected: ${expectedBroadcasterTxStatus}, actual: ${actualBroadcasterTxStatus})`
-                );
-                console.log('  ✅ BROADCASTER permission added successfully');
-            } else {
-                console.log('  ✅ BROADCASTER already has EXECUTE_META_REQUEST_AND_APPROVE permission');
-            }
-            
-            // Wait a bit for state to update (increased from 500ms to 2000ms for blockchain state propagation)
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Verify permissions
-            console.log('  🔍 Verifying permissions...');
-            const finalOwnerPermissions = await this.callContractMethod(
-                this.contract.methods.getActiveRolePermissions(this.ownerRoleHash)
-            );
-            const finalBroadcasterPermissions = await this.callContractMethod(
-                this.contract.methods.getActiveRolePermissions(broadcasterRoleHash)
-            );
-            
-            // Debug: Log what permissions were returned
-            console.log(`  📋 Owner permissions count: ${finalOwnerPermissions ? finalOwnerPermissions.length : 'null'}`);
-            if (finalOwnerPermissions && finalOwnerPermissions.length > 0) {
-                console.log(`  📋 Owner permission selectors: ${finalOwnerPermissions.map(p => p.functionSelector || p[0] || 'unknown').join(', ')}`);
-            }
-            console.log(`  📋 Broadcaster permissions count: ${finalBroadcasterPermissions ? finalBroadcasterPermissions.length : 'null'}`);
-            if (finalBroadcasterPermissions && finalBroadcasterPermissions.length > 0) {
-                console.log(`  📋 Broadcaster permission selectors: ${finalBroadcasterPermissions.map(p => p.functionSelector || p[0] || 'unknown').join(', ')}`);
-            }
-            console.log(`  📋 Looking for NATIVE_TRANSFER_SELECTOR: ${this.NATIVE_TRANSFER_SELECTOR}`);
-            
-            const finalOwnerPermission = finalOwnerPermissions.find(perm => {
-                const selector = perm.functionSelector || perm[0];
-                return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
-            });
-            const finalBroadcasterPermission = finalBroadcasterPermissions.find(perm => {
-                const selector = perm.functionSelector || perm[0];
-                return selector && selector.toLowerCase() === this.NATIVE_TRANSFER_SELECTOR.toLowerCase();
-            });
-            
-            // Expected: Permissions should exist
-            const expectedOwnerPermissionExists = true;
-            const expectedBroadcasterPermissionExists = true;
-            const actualOwnerPermissionExists = finalOwnerPermission !== undefined;
-            const actualBroadcasterPermissionExists = finalBroadcasterPermission !== undefined;
-            
-            this.assertTest(
-                actualOwnerPermissionExists === expectedOwnerPermissionExists,
-                `NATIVE_TRANSFER function permission exists in OWNER role (expected: ${expectedOwnerPermissionExists}, actual: ${actualOwnerPermissionExists})`
-            );
-            this.assertTest(
-                actualBroadcasterPermissionExists === expectedBroadcasterPermissionExists,
-                `NATIVE_TRANSFER function permission exists in BROADCASTER role (expected: ${expectedBroadcasterPermissionExists}, actual: ${actualBroadcasterPermissionExists})`
-            );
-            
-            // Verify permission bitmaps (only if permissions exist)
-            if (!finalOwnerPermission) {
-                throw new Error('Cannot verify OWNER permission bitmap: permission not found');
-            }
-            if (!finalBroadcasterPermission) {
-                throw new Error('Cannot verify BROADCASTER permission bitmap: permission not found');
-            }
-            
-            const ownerBitmap = parseInt(finalOwnerPermission.grantedActionsBitmap || finalOwnerPermission[1] || '0');
-            const broadcasterBitmap = parseInt(finalBroadcasterPermission.grantedActionsBitmap || finalBroadcasterPermission[1] || '0');
-            
-            // Expected: OWNER should have SIGN_META_REQUEST_AND_APPROVE permission (bit 3)
-            const expectedOwnerHasSign = true;
-            const actualOwnerHasSign = (ownerBitmap & (1 << this.TxAction.SIGN_META_REQUEST_AND_APPROVE)) !== 0;
-            this.assertTest(
-                actualOwnerHasSign === expectedOwnerHasSign,
-                `OWNER role has SIGN_META_REQUEST_AND_APPROVE permission (expected: ${expectedOwnerHasSign}, actual: ${actualOwnerHasSign}, bitmap: ${ownerBitmap})`
-            );
-            
-            // Expected: BROADCASTER should have EXECUTE_META_REQUEST_AND_APPROVE permission (bit 6)
-            const expectedBroadcasterHasExecute = true;
-            const actualBroadcasterHasExecute = (broadcasterBitmap & (1 << this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE)) !== 0;
-            this.assertTest(
-                actualBroadcasterHasExecute === expectedBroadcasterHasExecute,
-                `BROADCASTER role has EXECUTE_META_REQUEST_AND_APPROVE permission (expected: ${expectedBroadcasterHasExecute}, actual: ${actualBroadcasterHasExecute}, bitmap: ${broadcasterBitmap})`
-            );
-            
+
+            this.assertTest(ownerHasSign === true, 'OWNER_ROLE has SIGN_META_REQUEST_AND_APPROVE permission');
+            this.assertTest(broadcasterHasExecute === true, 'BROADCASTER_ROLE has EXECUTE_META_REQUEST_AND_APPROVE permission');
+
             console.log('  ✅ Function permissions added successfully');
-            console.log(`     OWNER: SIGN_META_REQUEST_AND_APPROVE permission verified (bitmap: ${ownerBitmap})`);
-            console.log(`     BROADCASTER: EXECUTE_META_REQUEST_AND_APPROVE permission verified (bitmap: ${broadcasterBitmap})`);
-            
             await this.passTest('Add function permissions to OWNER and BROADCASTER roles', 'Permissions verified');
             
         } catch (error) {

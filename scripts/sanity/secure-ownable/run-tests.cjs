@@ -81,10 +81,11 @@ class SecureOwnableTestRunner {
         console.log(`\n🚀 Running ${suiteName} test suite...`);
         console.log('='.repeat(60));
         
+        let timeoutId;
         try {
             // Add timeout protection (5 minutes per test suite)
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => {
+                timeoutId = setTimeout(() => {
                     reject(new Error(`Test suite '${suiteName}' timed out after 5 minutes`));
                 }, 5 * 60 * 1000);
             });
@@ -110,6 +111,8 @@ class SecureOwnableTestRunner {
             console.log(`💥 ${suiteName} test suite ERROR: ${error.message}`);
             this.results.failedSuites++;
             return false;
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
         }
     }
 
@@ -202,7 +205,10 @@ class SecureOwnableTestRunner {
 // Run the test runner if this file is executed directly
 if (require.main === module) {
     const runner = new SecureOwnableTestRunner();
-    runner.run();
+    runner.run().catch((err) => {
+        console.error('💥 Fatal error:', err.message || err);
+        process.exit(1);
+    });
 }
 
 module.exports = SecureOwnableTestRunner;

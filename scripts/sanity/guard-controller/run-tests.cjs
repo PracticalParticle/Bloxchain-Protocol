@@ -197,7 +197,10 @@ class GuardControllerTestRunner {
 // Run the test runner if this file is executed directly
 if (require.main === module) {
     const runner = new GuardControllerTestRunner();
-    runner.run();
+    runner.run().catch((err) => {
+        console.error('💥 Fatal error:', err.message || err);
+        process.exit(1);
+    });
 }
 
 module.exports = GuardControllerTestRunner;

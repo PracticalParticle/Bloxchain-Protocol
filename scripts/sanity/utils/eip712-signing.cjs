@@ -22,17 +22,12 @@ const web3 = new Web3(getWeb3Url());
 
 /**
  * EIP-712 Signing Implementation for Meta-Transactions
- * 
- * This module provides comprehensive EIP-712 signing functionality for the
- * EngineBlox library's meta-transaction system.
- * 
- * Based on the contract analysis:
- * - Domain: "EngineBlox", version "1"
- * - Chain ID: Current blockchain chain ID
- * - Verifying Contract: The contract address
- * 
- * The signing process follows the EIP-712 standard with the specific
- * type definitions from EngineBlox.sol
+ *
+ * Matches EngineBlox.sol EIP-712 format exactly:
+ * - Domain: name "Bloxchain", version "1.0.0" (PROTOCOL_NAME_HASH, keccak256(bytes(VERSION)))
+ * - Primary type: MetaTransaction(MetaTxRecord txRecord, MetaTxParams params, bytes data)
+ * - MetaTxRecord in the hash is selective: (txId, params, payment) only — no releaseTime, status, message, result
+ * - Types: MetaTransaction, MetaTxParams, MetaTxRecord, PaymentDetails, TxParams (alphabetical order in type hash)
  */
 
 class EIP712Signer {
@@ -53,50 +48,39 @@ class EIP712Signer {
 
     /**
      * Get the EIP-712 domain separator
-     * Based on EngineBlox.sol lines 197-198
+     * Must match EngineBlox.sol: DOMAIN_SEPARATOR_TYPE_HASH, PROTOCOL_NAME_HASH, keccak256(bytes(VERSION)), chainId, verifyingContract
      */
     getDomainSeparator() {
-        console.log(`  🔍 Debug: Getting domain separator...`);
-        console.log(`  🔍 Debug: this.chainId = ${this.chainId} (type: ${typeof this.chainId})`);
-        console.log(`  🔍 Debug: this.contractAddress = ${this.contractAddress} (type: ${typeof this.contractAddress})`);
-        
         const domainTypeHash = this.web3.utils.keccak256(
-            this.web3.utils.encodePacked(
-                'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
-            )
+            'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
         );
-
-        // Use abi.encode instead of encodePacked to match Solidity implementation
         const domainSeparator = this.web3.utils.keccak256(
             this.web3.eth.abi.encodeParameters(
                 ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
                 [
                     domainTypeHash,
                     this.web3.utils.keccak256('Bloxchain'),
-                    this.web3.utils.keccak256('1'),
+                    this.web3.utils.keccak256('1.0.0'),
                     this.chainId,
                     this.contractAddress
                 ]
             )
         );
-
-        console.log(`  🔍 Debug: Domain separator created successfully`);
         return domainSeparator;
     }
 
     /**
-     * Get the EIP-712 type hash for MetaTransaction
-     * Based on EngineBlox.sol line 197
+     * Get the EIP-712 primary type hash for MetaTransaction
+     * Must match EngineBlox.sol META_TX_TYPE_HASH: types in alphabetical order (MetaTransaction, MetaTxParams, MetaTxRecord, PaymentDetails, TxParams)
+     * MetaTxRecord in hash is selective: (txId, params, payment) only.
      */
     getTypeHash() {
         return this.web3.utils.keccak256(
-            this.web3.utils.encodePacked(
-                'MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)',
-                'TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)',
-                'TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)',
-                'MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)',
-                'PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)'
-            )
+            'MetaTransaction(MetaTxRecord txRecord,MetaTxParams params,bytes data)' +
+            'MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)' +
+            'MetaTxRecord(uint256 txId,TxParams params,PaymentDetails payment)' +
+            'PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)' +
+            'TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)'
         );
     }
 
@@ -123,25 +107,20 @@ class EIP712Signer {
     }
 
     /**
-     * Generate the EIP-712 message hash for a meta-transaction.
+     * Use the EIP-712 message hash from the contract.
      *
-     * EngineBlox (see EngineBlox.generateMetaTransaction) already computes and
-     * stores the hash in `metaTx.message` inside the unsigned meta-transaction
-     * returned by `generateUnsignedMetaTransactionForNew/Existing`.
-     *
-     * For sanity tests we MUST trust that field and MUST NOT call the contract
-     * again to recreate the hash, because some ABIs contain enum metadata that
-     * breaks generic decoders (\"invalid type: u\").
+     * EngineBlox.generateMetaTransaction populates metaTx.message with the digest from
+     * generateMessageHash (domain "Bloxchain" / "1.0.0", MetaTransaction with MetaTxRecord selective).
+     * We sign that exact hash so on-chain verification matches.
      */
     async generateMessageHash(metaTx, contract) {
         const hex = this._normalizeMessageHex(metaTx.message);
         if (!hex) {
             throw new Error(
                 'Meta-transaction missing valid message hash in `metaTx.message`. ' +
-                'EngineBlox.generateUnsignedMetaTransactionForNew/Existing must populate this field.'
+                'Use generateUnsignedMetaTransactionForNew/Existing so the contract fills this field.'
             );
         }
-
         console.log('  📋 Using metaTx.message from unsigned meta-transaction...');
         console.log(`📝 Message Hash: ${hex}`);
         return hex;
@@ -196,14 +175,18 @@ class EIP712Signer {
     }
 
     /**
-     * Sign a raw 32-byte digest (EIP-712 hash) without any prefix. Contract uses ecrecover(digest, v, r, s).
-     * Uses viem so the signature is over the digest directly (v will be 27 or 28).
+     * Sign the raw 32-byte EIP-712 digest (no EIP-191 prefix). Contract uses ecrecover(messageHash, v, r, s).
+     * Uses viem; hash must be 0x-prefixed 32-byte hex.
      */
     async _signRawDigest(messageHashHex, privateKey) {
         const pk = typeof privateKey === 'string' && !privateKey.startsWith('0x') ? '0x' + privateKey : privateKey;
+        const hash = this._normalizeMessageHex(messageHashHex);
+        if (!hash || hash.length !== 66) {
+            throw new Error('Message hash must be 32-byte hex (0x + 64 hex chars)');
+        }
         const { privateKeyToAccount } = await import('viem/accounts');
         const account = privateKeyToAccount(pk);
-        const sig = await account.sign({ hash: messageHashHex });
+        const sig = await account.sign({ hash });
         return sig;
     }
 

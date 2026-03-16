@@ -135,7 +135,7 @@ contract MetaTxSigner is Test {
             abi.encode(
                 DOMAIN_SEPARATOR_TYPE_HASH,
                 PROTOCOL_NAME_HASH,
-                keccak256(bytes("1.0.0")),
+                keccak256(bytes(EngineBlox.VERSION)),
                 block.chainid,
                 verifyingContract
             )

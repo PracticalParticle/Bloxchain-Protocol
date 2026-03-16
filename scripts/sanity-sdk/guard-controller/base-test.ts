@@ -640,7 +640,13 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     const broadcasterWallet = this.wallets[broadcasterWalletName];
     if (!broadcasterWallet) throw new Error(`Broadcaster wallet not found: ${broadcasterWalletName}`);
     const broadcasterRuntimeRBAC = this.createRuntimeRBACWithWallet(broadcasterWalletName);
-    return broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(signedMetaTx, this.getTxOptions(broadcasterWallet.address));
+    // Provide an explicit gas limit so viem does not call eth_estimateGas for this
+    // large roleConfigBatchRequestAndApprove payload (which can hang or time out
+    // on constrained remote RPCs).
+    return broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(
+      signedMetaTx,
+      this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
+    );
   }
 
   protected createRuntimeRBACWithWallet(walletName: string): RuntimeRBAC {
