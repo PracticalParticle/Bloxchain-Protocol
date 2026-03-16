@@ -546,15 +546,10 @@ class BaseGuardControllerTest {
      * Use when the method's return type causes decode errors (e.g. complex tuple with enum).
      * Uses raw eth_sendTransaction so the contract Method's output formatter is never invoked.
      */
-    async sendTransactionReceiptOnly(method, wallet, value = '0') {
+    async sendTransactionReceiptOnly(method, wallet, value = '0', receiptTimeoutMs = 120000) {
         const from = wallet.address;
         const data = method.encodeABI();
-        let gas;
-        try {
-            gas = await this.web3.eth.estimateGas({ from, to: this.contractAddress, data, value });
-        } catch (e) {
-            gas = 500000;
-        }
+        const gas = 800000;
         const pk = wallet.privateKey || wallet;
         const signed = await this.web3.eth.accounts.signTransaction(
             { to: this.contractAddress, data, gas, value },
@@ -563,26 +558,36 @@ class BaseGuardControllerTest {
         const { transactionHash } = await this.web3.eth.sendSignedTransaction(signed.rawTransaction);
         let receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
         if (!receipt && transactionHash) {
-            const maxWait = 30;
-            for (let i = 0; i < maxWait; i++) {
+            const maxWaitSeconds = Math.floor(receiptTimeoutMs / 1000);
+            for (let i = 0; i < maxWaitSeconds; i++) {
                 await new Promise(r => setTimeout(r, 1000));
                 receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
                 if (receipt) break;
             }
         }
-        if (!receipt) throw new Error('Transaction receipt not found');
+        if (!receipt) throw new Error(`Transaction receipt not found within ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`);
         if (receipt.status === false || receipt.status === '0x0') {
             throw new Error(`Transaction reverted. Receipt status: ${receipt.status}`);
         }
         return receipt;
     }
 
-    async sendTransactionWithValue(method, wallet, value) {
+    async sendTransactionWithValue(method, wallet, value, receiptTimeoutMs = 120000) {
+        const from = wallet.address;
+        // Provide an explicit gas limit so web3/provider does not call
+        // eth_estimateGas (which can hang) or interpret gas as 0.
+        const gas = 1_500_000;
+        let timeoutId;
         try {
-            const from = wallet.address;
-            const gas = await method.estimateGas({ from, value });
-            const result = await method.send({ from, gas, value });
-            
+            const sendPromise = method.send({ from, value, gas });
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(
+                    () => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)),
+                    receiptTimeoutMs
+                );
+            });
+            const result = await Promise.race([sendPromise, timeoutPromise]);
+            if (timeoutId) clearTimeout(timeoutId);
             // Check if transaction actually succeeded by examining the receipt
             if (result && result.receipt) {
                 console.log(`  🔍 Transaction receipt status: ${result.receipt.status}`);
@@ -595,6 +600,20 @@ class BaseGuardControllerTest {
             return result;
         } catch (error) {
             let errorMessage = error.message;
+            // If web3 didn't give revert data for a reverted tx, do a best-effort
+            // eth_call simulation to fetch the revert selector/data for decoding.
+            if (!error.data) {
+                try {
+                    const data = method && typeof method.encodeABI === 'function' ? method.encodeABI() : null;
+                    if (data) {
+                        await this.web3.eth.call({ to: this.contractAddress, from: wallet.address, value, gas, data });
+                    }
+                } catch (callError) {
+                    if (callError && callError.data) {
+                        error.data = callError.data;
+                    }
+                }
+            }
             if (error.data) {
                 try {
                     // Try to decode error
@@ -893,6 +912,59 @@ class BaseGuardControllerTest {
         };
     }
 
+    /**
+     * Call generateUnsignedMetaTransactionForExisting via raw eth_call and decode with the same
+     * minimal tuple schema used for generateUnsignedMetaTransactionForNew.
+     *
+     * @param {string|number|bigint} txId
+     * @param {Object} metaParams - MetaTxParams tuple
+     * @returns {Promise<{txRecord:any, params:any, message:string, signature:string, data:string}>}
+     */
+    async _callGenerateUnsignedMetaTransactionForExistingRaw(txId, metaParams) {
+        const fromWallet = this.roleWallets.owner || this.wallets.wallet1;
+        const method = this.contract.methods.generateUnsignedMetaTransactionForExisting(txId, metaParams);
+        const data = method.encodeABI();
+        const returnHex = await this.web3.eth.call({
+            to: this.contractAddress,
+            data,
+            from: fromWallet.address
+        });
+        const outputs = this._getMinimalGenerateUnsignedOutputs();
+        let decoded;
+        try {
+            decoded = this.web3.eth.abi.decodeParameters(outputs, returnHex);
+        } catch (e) {
+            console.error('  [RAW] generateUnsignedMetaTransactionForExisting decode failed:', e.message);
+            throw e;
+        }
+        const single = decoded.__length__ === 1;
+        const result = single ? decoded[0] : decoded;
+        const tuple = result && (result.txRecord !== undefined || result[0] !== undefined) ? result : (single ? decoded : result);
+        const msg = (tuple && (tuple.message ?? tuple[2])) ?? (result && (result.message ?? result[2]));
+        const sig = (tuple && (tuple.signature ?? tuple[3])) ?? (result && (result.signature ?? result[3]));
+        const dat = (tuple && (tuple.data ?? tuple[4])) ?? (result && (result.data ?? result[4]));
+        const txRecord = (tuple && (tuple.txRecord ?? tuple[0])) ?? (result && (result.txRecord ?? result[0]));
+        const params = (tuple && (tuple.params ?? tuple[1])) ?? (result && (result.params ?? result[1]));
+        let messageHex = msg;
+        if (msg != null) {
+            const raw = typeof msg === 'string' ? msg : this.web3.utils.toHex(msg);
+            messageHex = raw.startsWith('0x') ? raw : '0x' + raw;
+            if (messageHex.length < 66) messageHex = '0x' + messageHex.slice(2).padStart(64, '0');
+        }
+        if (txRecord != null && messageHex != null) {
+            if (typeof txRecord === 'object' && !Array.isArray(txRecord)) {
+                txRecord.message = txRecord.message ?? messageHex;
+            }
+        }
+        return {
+            txRecord,
+            params,
+            message: messageHex,
+            signature: sig !== undefined ? sig : '0x',
+            data: dat
+        };
+    }
+
     assertTest(condition, message) {
         this.testResults.totalTests++;
         
@@ -1146,9 +1218,11 @@ class BaseGuardControllerTest {
                 this.contract
             );
             
-            // Execute meta-transaction via broadcaster (receipt-only to avoid ABI decode of uint256 return)
-            const receipt = await this.sendTransactionReceiptOnly(
-                this.contract.methods.roleConfigBatchRequestAndApprove(signedMetaTx),
+            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
+            // Use sendTransaction so we get revert decoding (instead of a bare status=false receipt)
+            // and to avoid any reliance on eth_estimateGas.
+            const receipt = await this.sendTransaction(
+                this.contract.methods.roleConfigBatchRequestAndApprove(fullMetaTx),
                 broadcasterWallet
             );
             
@@ -1349,11 +1423,9 @@ class BaseGuardControllerTest {
                 this.contract
             );
             
-            // Execute via broadcaster using requestAndApproveExecution
-            // NOTE: Do NOT send ETH with requestAndApproveExecution - the value is in the meta-transaction record
-            // The contract will use the value from record.params.value when executing the transaction
+            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
             const receipt = await this.sendTransaction(
-                this.contract.methods.requestAndApproveExecution(signedMetaTx),
+                this.contract.methods.requestAndApproveExecution(fullMetaTx),
                 broadcasterWallet
             );
             
@@ -1455,16 +1527,21 @@ class BaseGuardControllerTest {
             );
             console.log(`  ✅ Meta-transaction signed`);
             
-            // Execute meta-transaction via broadcaster
+            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
             console.log(`  📤 Executing meta-transaction via broadcaster...`);
             const receipt = await this.sendTransaction(
-                this.contract.methods.guardConfigBatchRequestAndApprove(signedMetaTx),
+                this.contract.methods.guardConfigBatchRequestAndApprove(fullMetaTx),
                 broadcasterWallet
             );
             
             console.log(`  ✅ Transaction sent`);
-            console.log(`     Receipt status: ${receipt.status}`);
-            console.log(`     Receipt logs: ${receipt.logs ? receipt.logs.length : 0}`);
+            if (receipt && receipt.receipt) {
+                console.log(`     Receipt status: ${receipt.receipt.status}`);
+                console.log(`     Receipt logs: ${receipt.receipt.logs ? receipt.receipt.logs.length : 0}`);
+            } else {
+                console.log(`     Receipt status: ${receipt && receipt.status}`);
+                console.log(`     Receipt logs: ${receipt && receipt.logs ? receipt.logs.length : 0}`);
+            }
             
             return receipt;
             
@@ -1759,22 +1836,23 @@ class BaseGuardControllerTest {
     /**
      * Ensure NATIVE_TRANSFER selector is fully configured on the current AccountBlox instance:
      * - Function schema registered for "__bloxchain_native_transfer__()" / "NATIVE_TRANSFER"
-     * - OWNER_ROLE has SIGN_META_REQUEST_AND_APPROVE + EXECUTE_META_REQUEST_AND_APPROVE permissions
+     * - OWNER_ROLE has SIGN_META_REQUEST_AND_APPROVE permission (sign only)
+     * - BROADCASTER_ROLE has EXECUTE_META_REQUEST_AND_APPROVE permission (execute only)
      * - Contract address whitelisted as a valid target for the selector
      *
-     * This mirrors the setup performed by the Solidity PaymentTestHelper, but uses the public
-     * GuardController + RuntimeRBAC config flows exposed through this test harness.
+     * IMPORTANT: On @Branch, EngineBlox enforces that a single role must not contain both
+     * SIGN_* and EXECUTE_* meta-tx permissions for the same selector (ConflictingMetaTxPermissions).
+     * The SDK sanity tests split these permissions across OWNER_ROLE (sign) and BROADCASTER_ROLE (execute).
+     * This helper mirrors that model.
      */
     async ensureNativeTransferSchemaAndPermissions() {
         const nativeSelector = this.NATIVE_TRANSFER_SELECTOR;
         const ownerRoleHash = this.getRoleHash('OWNER_ROLE');
+        const broadcasterRoleHash = this.getRoleHash('BROADCASTER_ROLE');
 
-        // For the GuardController CJS tests we use the meta path:
-        // requestAndApproveExecution(metaTx) with SIGN_META_REQUEST_AND_APPROVE / EXECUTE_META_REQUEST_AND_APPROVE.
-        const fullWorkflowActions = [
-            this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
-            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        ];
+        const signActions = [this.TxAction.SIGN_META_REQUEST_AND_APPROVE];
+        const execActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+        const schemaSupportedActions = [this.TxAction.SIGN_META_REQUEST_AND_APPROVE, this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
 
         // 1) Ensure function schema exists for NATIVE_TRANSFER_SELECTOR
         const hasSchema = await this.functionSchemaExists(nativeSelector);
@@ -1787,39 +1865,53 @@ class BaseGuardControllerTest {
                 nativeSelector,
                 '__bloxchain_native_transfer__()',
                 'NATIVE_TRANSFER',
-                fullWorkflowActions,
+                schemaSupportedActions,
                 ownerPrivateKey,
                 broadcasterWallet
             );
         }
 
-        // 2) Ensure OWNER_ROLE has both SIGN + EXECUTE meta permissions on NATIVE_TRANSFER_SELECTOR
+        // 2) Ensure OWNER_ROLE has SIGN meta permission on NATIVE_TRANSFER_SELECTOR (sign only)
         const ownerHasSign = await this.roleHasPermissionForSelector(
             ownerRoleHash,
             nativeSelector,
             this.TxAction.SIGN_META_REQUEST_AND_APPROVE
         );
-        const ownerHasExecute = await this.roleHasPermissionForSelector(
-            ownerRoleHash,
-            nativeSelector,
-            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
-        );
 
-        if (!ownerHasSign || !ownerHasExecute) {
+        if (!ownerHasSign) {
             const ownerPrivateKey = this.getRoleWallet('owner');
             const broadcasterWallet = this.getRoleWalletObject('broadcaster');
 
-            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: granting OWNER_ROLE meta permissions for NATIVE_TRANSFER...');
+            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: granting OWNER_ROLE SIGN meta permission for NATIVE_TRANSFER...');
             await this.addFunctionToRole(
                 ownerRoleHash,
                 nativeSelector,
-                fullWorkflowActions,
+                signActions,
                 ownerPrivateKey,
                 broadcasterWallet
             );
         }
 
-        // 3) Ensure contract address is whitelisted as a valid target for NATIVE_TRANSFER_SELECTOR
+        // 3) Ensure BROADCASTER_ROLE has EXECUTE meta permission on NATIVE_TRANSFER_SELECTOR (execute only)
+        const broadcasterHasExecute = await this.roleHasPermissionForSelector(
+            broadcasterRoleHash,
+            nativeSelector,
+            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+        );
+        if (!broadcasterHasExecute) {
+            const ownerPrivateKey = this.getRoleWallet('owner');
+            const broadcasterWallet = this.getRoleWalletObject('broadcaster');
+            console.log('  🔧 ensureNativeTransferSchemaAndPermissions: granting BROADCASTER_ROLE EXECUTE meta permission for NATIVE_TRANSFER...');
+            await this.addFunctionToRole(
+                broadcasterRoleHash,
+                nativeSelector,
+                execActions,
+                ownerPrivateKey,
+                broadcasterWallet
+            );
+        }
+
+        // 4) Ensure contract address is whitelisted as a valid target for NATIVE_TRANSFER_SELECTOR
         const contractWhitelisted = await this.isTargetWhitelistedForSelector(nativeSelector, this.contractAddress);
         if (!contractWhitelisted) {
             const ownerPrivateKey = this.getRoleWallet('owner');

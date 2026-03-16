@@ -4,7 +4,7 @@
  */
 
 import { Address, Hex } from 'viem';
-import { BaseSecureOwnableTest } from './base-test.ts';
+import { BaseSecureOwnableTest, TestWallet } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
 
@@ -27,6 +27,77 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
     await this.testSignatureVerification();
 
     console.log('✅ All EIP-712 signing tests completed successfully');
+  }
+
+  /**
+   * Get a suitable OWNERSHIP_TRANSFER transaction ID for meta-tx tests.
+   * Reuses an existing pending tx when available to avoid failing on _hasOpenRequest,
+   * otherwise creates a fresh transferOwnershipRequest from the recovery wallet.
+   */
+  private async getOrCreateOwnershipTransferTxId(
+    secureOwnableRecovery: any,
+    recoveryWallet: TestWallet
+  ): Promise<bigint> {
+    const ownershipOp = this.getOperationType('OWNERSHIP_TRANSFER').toLowerCase();
+    const recoveryAddr = recoveryWallet.address.toLowerCase();
+
+    const findMatchingOwnershipTransfer = async (): Promise<bigint | null> => {
+      const pendingTxs = await secureOwnableRecovery.getPendingTransactions();
+      if (!pendingTxs || pendingTxs.length === 0) return null;
+
+      for (const id of pendingTxs as bigint[]) {
+        const tx = await secureOwnableRecovery.getTransaction(id);
+        const params = (tx as any).params ?? (tx as any)[3];
+        const op = (params?.operationType ?? params?.[4]) as string | undefined;
+        const requester = (params?.requester ?? params?.[0]) as string | undefined;
+
+        const isOwnershipTransfer =
+          !!op && op.toLowerCase() === ownershipOp;
+        const isFromRecovery =
+          !!requester && requester.toLowerCase() === recoveryAddr;
+
+        if (isOwnershipTransfer && isFromRecovery) {
+          console.log(`  📋 Reusing existing OWNERSHIP_TRANSFER txId: ${id}`);
+          return id;
+        }
+      }
+      return null;
+    };
+
+    // Prefer reusing an existing pending ownership-transfer transaction if present.
+    try {
+      const existing = await findMatchingOwnershipTransfer();
+      if (existing !== null) {
+        return existing;
+      }
+    } catch (e: unknown) {
+      const err = e as Error;
+      console.log(
+        `  ⚠️  getPendingTransactions/getTransaction failed while searching for reusable tx: ${err.message}`
+      );
+    }
+
+    // No suitable pending tx; create a fresh ownership transfer request.
+    console.log('  📋 No existing pending ownership transfer found; creating a new request...');
+    const result = await secureOwnableRecovery.transferOwnershipRequest(
+      this.getTxOptions(recoveryWallet.address)
+    );
+
+    const receipt = await result.wait();
+    const status = (receipt as any).status;
+    const ok = status === 'success' || status === 1 || String(status) === '1';
+    if (!ok) {
+      throw new Error('transferOwnershipRequest tx reverted');
+    }
+    // Allow the chain indexer / state to settle before querying again.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const created = await findMatchingOwnershipTransfer();
+    if (created === null) {
+      throw new Error('No OWNERSHIP_TRANSFER transaction found after transferOwnershipRequest');
+    }
+    console.log(`  📋 Using newly created transaction ID: ${created}`);
+    return created;
   }
 
   async testEIP712Initialization(): Promise<void> {
@@ -67,16 +138,8 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableRecovery = this.createSecureOwnableWithWallet(recoveryWalletName);
-      const result = await secureOwnableRecovery.transferOwnershipRequest(this.getTxOptions(recoveryWallet.address));
-
-      await result.wait();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // getPendingTransactions() may require owner/recovery; use recovery-scoped client
-      const pendingTxs = await secureOwnableRecovery.getPendingTransactions();
-      this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
-      const txId = pendingTxs[pendingTxs.length - 1];
-      console.log(`  📋 Using transaction ID: ${txId}`);
+      // Reuse an existing pending OWNERSHIP_TRANSFER tx when possible, otherwise create a new one.
+      const txId = await this.getOrCreateOwnershipTransferTxId(secureOwnableRecovery, recoveryWallet);
 
       // Create meta-transaction parameters (owner signs approval)
       const metaTxParams = await this.createMetaTxParams(

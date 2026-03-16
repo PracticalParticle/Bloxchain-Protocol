@@ -92,7 +92,12 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
+      const result = await secureOwnableOwner.updateBroadcasterRequest(
+        newBroadcaster,
+        0n,
+        // Explicit gas so viem does not call eth_estimateGas for broadcaster update flows (remote RPC may hang).
+        this.getTxOptions(ownerWallet.address, { gas: 500_000n })
+      );
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -159,7 +164,11 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
+      const result = await secureOwnableOwner.updateBroadcasterRequest(
+        newBroadcaster,
+        0n,
+        this.getTxOptions(ownerWallet.address, { gas: 500_000n })
+      );
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -208,7 +217,11 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
+      const result = await secureOwnableOwner.updateBroadcasterRequest(
+        newBroadcaster,
+        0n,
+        this.getTxOptions(ownerWallet.address, { gas: 500_000n })
+      );
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -291,7 +304,11 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       ) || 'wallet1';
 
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
-      const result = await secureOwnableOwner.updateBroadcasterRequest(newBroadcaster, 0n, this.getTxOptions(ownerWallet.address));
+      const result = await secureOwnableOwner.updateBroadcasterRequest(
+        newBroadcaster,
+        0n,
+        this.getTxOptions(ownerWallet.address, { gas: 500_000n })
+      );
 
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));

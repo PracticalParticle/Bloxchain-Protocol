@@ -356,5 +356,25 @@ export abstract class BaseSecureOwnableTest extends BaseSDKTest {
       return false;
     }
   }
+
+  /**
+   * Map high-level SecureOwnable operation names to their EngineBlox operationType hashes.
+   * Mirrors the CJS SecureOwnable base test helper so shared tests can use a single helper.
+   */
+  protected getOperationType(
+    operationName: 'OWNERSHIP_TRANSFER' | 'BROADCASTER_UPDATE' | 'RECOVERY_UPDATE' | 'TIMELOCK_UPDATE'
+  ): Hex {
+    const map: Record<string, Hex> = {
+      OWNERSHIP_TRANSFER: '0xb23d8fa2f62c8a954db45521d1249908693b29ffd3d2dab6348898c4198996b2' as Hex,
+      BROADCASTER_UPDATE: '0xae23396f8eb008d2f5f9673f91ccf20bf248201a6e0dbeaf46c421777ad8dc5b' as Hex,
+      RECOVERY_UPDATE: '0x032398090b003ba6aff30213cf16b7307ece6fbd6d969286006538a576526983' as Hex,
+      TIMELOCK_UPDATE: '0x06e0fdee0e8a4d2e629ae3d26c7bc6342072096facbcbe06d204d6051d97c50f' as Hex
+    };
+    const value = map[operationName];
+    if (!value) {
+      throw new Error(`Unknown operation type: ${operationName}`);
+    }
+    return value;
+  }
 }
 

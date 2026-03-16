@@ -103,7 +103,9 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Provide explicit gas so viem does not call eth_estimateGas for this
+        // large guardConfigBatchRequestAndApprove payload (can hang/timeout on some RPCs).
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
       );
 
       const receipt = await result.wait();
@@ -144,7 +146,7 @@ export class WhitelistTests extends BaseGuardControllerTest {
       }
       this.assertTest(isRegistered, `Function selector must be visible via getFunctionSchema/getSupportedFunctions after ${maxRetries} retries`);
       console.log(`  ✅ Verified function selector is registered (getFunctionSchema/getSupportedFunctions)`);
-
+      
       const status = receipt.status as string | number;
       const txSucceeded =
         status === 'success' || status === 1 || String(status) === '1';
@@ -223,7 +225,8 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Explicit gas to avoid internal eth_estimateGas for this batch payload.
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
       );
 
       const receipt = await result.wait();
@@ -394,7 +397,8 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Explicit gas to avoid internal eth_estimateGas for this batch payload.
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
       );
 
       const receiptRemove = await result.wait();

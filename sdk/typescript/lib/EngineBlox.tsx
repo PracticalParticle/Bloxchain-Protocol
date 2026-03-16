@@ -23,7 +23,7 @@ const keccak256 = (str: string): Hex => {
  * 
  * // Access constants
  * const protocolName = EngineBlox.PROTOCOL_NAME_HASH;
- * const version = `${EngineBlox.VERSION_MAJOR}.${EngineBlox.VERSION_MINOR}.${EngineBlox.VERSION_PATCH}`;
+ * const version = EngineBlox.VERSION;
  * 
  * // Use pure functions
  * const signer = EngineBlox.recoverSigner(messageHash, signature);
@@ -41,19 +41,9 @@ export class EngineBlox {
   static readonly PROTOCOL_NAME_HASH: Hex = keccak256("Bloxchain");
   
   /**
-   * Major version number
+   * Protocol version string (semver, e.g. "1.0.0"). Matches EngineBlox.sol VERSION and EIP-712 domain version.
    */
-  static readonly VERSION_MAJOR: number = 1;
-  
-  /**
-   * Minor version number
-   */
-  static readonly VERSION_MINOR: number = 0;
-  
-  /**
-   * Patch version number
-   */
-  static readonly VERSION_PATCH: number = 0;
+  static readonly VERSION: string = "1.0.0";
 
   // ============ FUNCTION SELECTORS ============
   
