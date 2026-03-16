@@ -115,7 +115,8 @@ class EIP712Signer {
      */
     async generateMessageHash(metaTx, contract) {
         const hex = this._normalizeMessageHex(metaTx.message);
-        if (!hex) {
+        const ZERO_SENTINEL = '0x0000000000000000000000000000000000000000000000000000000000000000';
+        if (!hex || hex === ZERO_SENTINEL) {
             throw new Error(
                 'Meta-transaction missing valid message hash in `metaTx.message`. ' +
                 'Use generateUnsignedMetaTransactionForNew/Existing so the contract fills this field.'

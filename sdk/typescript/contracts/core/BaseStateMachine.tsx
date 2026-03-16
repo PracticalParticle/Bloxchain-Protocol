@@ -88,7 +88,12 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
         }
       }
 
-      // Add gas override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
+      // Forward explicit gas limit when provided so callers can bypass eth_estimateGas.
+      if (options.gas !== undefined) {
+        writeContractParams.gas = options.gas;
+      }
+
+      // Add gas price override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
       if (options.gasPrice !== undefined && options.gasPrice !== '') {
         const raw = options.gasPrice;
         let gasPriceWei: bigint;

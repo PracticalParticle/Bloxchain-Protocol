@@ -2,6 +2,7 @@
 # required by .github/workflows/require-dev-to-main.yml
 version: 2
 updates:
+  # Root workspace / tooling
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -11,3 +12,24 @@ updates:
       npm_and_yarn:
         patterns:
           - "*"
+
+  # Doc generation utilities
+  - package-ecosystem: "npm"
+    directory: "/docgen"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
+
+  # Published contract package
+  - package-ecosystem: "npm"
+    directory: "/package"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
+
+  # TypeScript SDK package
+  - package-ecosystem: "npm"
+    directory: "/sdk/typescript"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
