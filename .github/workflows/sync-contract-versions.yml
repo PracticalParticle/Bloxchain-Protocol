@@ -33,20 +33,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for uncommitted changes in EngineBlox.sol
+      - name: Check for uncommitted changes in version files
         id: check-uncommitted
         run: |
+          SOL_CHANGED=false
+          TSX_CHANGED=false
           if ! git diff --quiet HEAD -- contracts/core/lib/EngineBlox.sol; then
-            echo "❌ ERROR: EngineBlox.sol has uncommitted changes!"
+            SOL_CHANGED=true
+          fi
+          if ! git diff --quiet HEAD -- sdk/typescript/lib/EngineBlox.tsx; then
+            TSX_CHANGED=true
+          fi
+          if [ "$SOL_CHANGED" = true ] || [ "$TSX_CHANGED" = true ]; then
+            echo "❌ ERROR: Version files have uncommitted changes!"
             echo ""
             echo "The workflow cannot safely update version constants when there are uncommitted changes."
-            echo "Please commit or stash your changes to EngineBlox.sol before this workflow runs."
+            echo "Please commit or stash your changes before this workflow runs."
             echo ""
-            echo "Uncommitted changes:"
-            git diff HEAD -- contracts/core/lib/EngineBlox.sol
+            if [ "$SOL_CHANGED" = true ]; then
+              echo "Uncommitted changes in contracts/core/lib/EngineBlox.sol:"
+              git diff HEAD -- contracts/core/lib/EngineBlox.sol
+            fi
+            if [ "$TSX_CHANGED" = true ]; then
+              echo "Uncommitted changes in sdk/typescript/lib/EngineBlox.tsx:"
+              git diff HEAD -- sdk/typescript/lib/EngineBlox.tsx
+            fi
             exit 1
           else
-            echo "✓ EngineBlox.sol is clean, safe to proceed with version sync"
+            echo "✓ EngineBlox.sol and EngineBlox.tsx are clean, safe to proceed with version sync"
             echo "uncommitted=false" >> $GITHUB_OUTPUT
           fi
 
@@ -56,44 +70,61 @@ jobs:
       - name: Check for contract version changes
         id: check-changes
         run: |
+          SOL_CHANGED=false
+          TSX_CHANGED=false
           if ! git diff --quiet contracts/core/lib/EngineBlox.sol; then
+            SOL_CHANGED=true
+          fi
+          if ! git diff --quiet sdk/typescript/lib/EngineBlox.tsx; then
+            TSX_CHANGED=true
+          fi
+          if [ "$SOL_CHANGED" = true ] || [ "$TSX_CHANGED" = true ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "Version changes detected:"
-            git diff contracts/core/lib/EngineBlox.sol
+            [ "$SOL_CHANGED" = true ] && git diff contracts/core/lib/EngineBlox.sol
+            [ "$TSX_CHANGED" = true ] && git diff sdk/typescript/lib/EngineBlox.tsx
           else
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "✓ Contract version constants already in sync"
+            echo "✓ Contract and SDK version constants already in sync"
           fi
 
       - name: Verify only version constants changed
         if: steps.check-changes.outputs.changed == 'true'
         id: verify-changes
         run: |
-          # Get the diff and check if only VERSION_* constants changed
-          DIFF_OUTPUT=$(git diff contracts/core/lib/EngineBlox.sol)
+          # Get the diff for both version files
+          DIFF_OUTPUT=$(git diff contracts/core/lib/EngineBlox.sol sdk/typescript/lib/EngineBlox.tsx)
           
-          # Check if diff contains only version constant changes
-          # Version constant is: string public constant VERSION = "..."
-          if echo "$DIFF_OUTPUT" | grep -qE "^[-+].*constant\s+VERSION\s*=" && \
-             ! echo "$DIFF_OUTPUT" | grep -vE "^[-+].*constant\s+VERSION\s*=|^@|^index|^---|^\+\+\+" | grep -qE "^[-+]"; then
-            echo "✓ Only version constant changed, safe to commit"
-            echo "safe=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ ERROR: Changes detected in EngineBlox.sol are not limited to version constant!"
+          # All added/removed lines must be a VERSION constant change (.sol: constant VERSION = ... or .tsx: static readonly VERSION: string = ...)
+          ADDED_OR_REMOVED=$(echo "$DIFF_OUTPUT" | grep -E "^[-+]" | grep -v -E "^\+\+\+|^---")
+          OTHER_CHANGES=$(echo "$ADDED_OR_REMOVED" | grep -v -E "constant\s+VERSION\s*=" | grep -v -E "static readonly VERSION: string =")
+          
+          if [ -n "$OTHER_CHANGES" ]; then
+            echo "❌ ERROR: Changes are not limited to VERSION constants!"
             echo ""
-            echo "The workflow detected changes beyond the VERSION constant."
+            echo "The workflow detected changes beyond the VERSION constant in EngineBlox.sol or EngineBlox.VERSION in EngineBlox.tsx."
             echo "This could indicate uncommitted changes were accidentally included."
             echo ""
             echo "Full diff:"
             echo "$DIFF_OUTPUT"
             exit 1
           fi
+          
+          # Require at least one VERSION change (sol or tsx)
+          if ! echo "$DIFF_OUTPUT" | grep -qE "^[-+].*constant\s+VERSION\s*=" && \
+             ! echo "$DIFF_OUTPUT" | grep -qE "^[-+].*static readonly VERSION: string ="; then
+            echo "❌ ERROR: No VERSION constant changes found in diff."
+            exit 1
+          fi
+          
+          echo "✓ Only version constants changed (contract + SDK), safe to commit"
+          echo "safe=true" >> $GITHUB_OUTPUT
 
       - name: Commit and push contract version updates
         if: steps.check-changes.outputs.changed == 'true' && steps.verify-changes.outputs.safe == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add contracts/core/lib/EngineBlox.sol
+          git add contracts/core/lib/EngineBlox.sol sdk/typescript/lib/EngineBlox.tsx
           git commit -m "chore: sync contract version constants with package version"
           git push

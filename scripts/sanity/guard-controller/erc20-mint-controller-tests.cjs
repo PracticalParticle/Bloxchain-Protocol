@@ -248,43 +248,34 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             const ownerPrivateKey = this.getRoleWallet('owner');
             const broadcasterWallet = this.getRoleWalletObject('broadcaster');
 
-            // Cleanup check: if permissions are already exactly as expected, skip reconfiguration
+            // Align with sanity-sdk (3-step flow):
+            // (1) MINT_REQUESTOR requests via executeWithTimeLock
+            // (2) MINT_APPROVER signs meta approve/cancel
+            // (3) BROADCASTER executes approve/cancel meta-tx (and needs execution-selector permissions too)
             const requestorRoleHash = this.getRoleHash('MINT_REQUESTOR');
             const approverRoleHash = this.getRoleHash('MINT_APPROVER');
             const broadcasterRoleHash = this.getRoleHash('BROADCASTER_ROLE');
 
-            const requestorOk = await this.roleHasPermissionForSelector(
+            const requestorHasMintRequest = await this.roleHasPermissionForSelector(
                 requestorRoleHash,
                 ERC20_MINT_SELECTOR,
                 this.TxAction.EXECUTE_TIME_DELAY_REQUEST
             );
-            // Controller permission: MINT_REQUESTOR must be able to call executeWithTimeLock for mint
             const requestorHasControllerRequest = await this.roleHasPermissionForSelector(
                 requestorRoleHash,
                 this.EXECUTE_WITH_TIMELOCK_SELECTOR,
                 this.TxAction.EXECUTE_TIME_DELAY_REQUEST
             );
-            const approverHasMetaApprove = await this.roleHasPermissionForSelector(
+            const approverHasMintMetaApprove = await this.roleHasPermissionForSelector(
                 approverRoleHash,
                 ERC20_MINT_SELECTOR,
                 this.TxAction.SIGN_META_APPROVE
             );
-            const approverHasMetaCancel = await this.roleHasPermissionForSelector(
+            const approverHasMintMetaCancel = await this.roleHasPermissionForSelector(
                 approverRoleHash,
                 ERC20_MINT_SELECTOR,
                 this.TxAction.SIGN_META_CANCEL
             );
-            const approverHasHandlerMetaApprove = await this.roleHasPermissionForSelector(
-                approverRoleHash,
-                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-                this.TxAction.SIGN_META_APPROVE
-            );
-            const approverHasHandlerMetaCancel = await this.roleHasPermissionForSelector(
-                approverRoleHash,
-                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-                this.TxAction.SIGN_META_CANCEL
-            );
-            // Controller permissions: MINT_APPROVER must be able to sign approve/cancel meta-tx for the controller
             const approverHasApproveMetaTx = await this.roleHasPermissionForSelector(
                 approverRoleHash,
                 this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
@@ -295,22 +286,38 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
                 this.TxAction.SIGN_META_CANCEL
             );
-            const broadcasterOk = await this.roleHasPermissionForSelector(
+            const broadcasterHasMintExecApprove = await this.roleHasPermissionForSelector(
                 broadcasterRoleHash,
                 ERC20_MINT_SELECTOR,
-                this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+                this.TxAction.EXECUTE_META_APPROVE
+            );
+            const broadcasterHasMintExecCancel = await this.roleHasPermissionForSelector(
+                broadcasterRoleHash,
+                ERC20_MINT_SELECTOR,
+                this.TxAction.EXECUTE_META_CANCEL
+            );
+            const broadcasterHasApproveHandler = await this.roleHasPermissionForSelector(
+                broadcasterRoleHash,
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                this.TxAction.EXECUTE_META_APPROVE
+            );
+            const broadcasterHasCancelHandler = await this.roleHasPermissionForSelector(
+                broadcasterRoleHash,
+                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+                this.TxAction.EXECUTE_META_CANCEL
             );
 
             if (
-                requestorOk &&
+                requestorHasMintRequest &&
                 requestorHasControllerRequest &&
-                approverHasMetaApprove &&
-                approverHasMetaCancel &&
-                approverHasHandlerMetaApprove &&
-                approverHasHandlerMetaCancel &&
+                approverHasMintMetaApprove &&
+                approverHasMintMetaCancel &&
                 approverHasApproveMetaTx &&
                 approverHasCancelMetaTx &&
-                broadcasterOk
+                broadcasterHasMintExecApprove &&
+                broadcasterHasMintExecCancel &&
+                broadcasterHasApproveHandler &&
+                broadcasterHasCancelHandler
             ) {
                 console.log('  ℹ️  Mint role permissions already correctly configured; skipping cleanup batch');
                 await this.verifyStep4RolePermissions();
@@ -321,101 +328,54 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 return;
             }
 
-            console.log('  ℹ️  Mint role permissions not in expected state; performing cleanup (remove + add).');
+            const ensureExactPermission = async (roleHash, functionSelector, requiredActions, label) => {
+                const perms = await this.callContractMethod(this.contract.methods.getActiveRolePermissions(roleHash));
+                const normSel = functionSelector.toLowerCase();
+                const found = (perms || []).find((p) => {
+                    const sel = (p.functionSelector ?? p[0]);
+                    return sel && String(sel).toLowerCase() === normSel;
+                });
+                const requiredBitmap = this.createBitmapFromActions(requiredActions);
+                const currentBitmapRaw = found ? (found.grantedActionsBitmap ?? found[1]) : null;
+                const currentBitmap = currentBitmapRaw != null ? Number(currentBitmapRaw) : null;
 
-            // Remove existing mint/handler permissions first so we always set the correct bitmap (idempotent; ignores ResourceNotFound)
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_REQUESTOR'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_REQUESTOR'), this.EXECUTE_WITH_TIMELOCK_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('MINT_APPROVER'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
-            await this.removeFunctionFromRole(this.getRoleHash('BROADCASTER_ROLE'), this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, ownerPrivateKey, broadcasterWallet);
+                if (currentBitmap === requiredBitmap) {
+                    console.log(`  ✅ ${label} already correct (bitmap=${requiredBitmap})`);
+                    return;
+                }
+
+                if (currentBitmap != null) {
+                    console.log(`  🔧 ${label} bitmap mismatch: current=${currentBitmap}, required=${requiredBitmap}. Replacing...`);
+                    await this.removeFunctionFromRole(roleHash, functionSelector, ownerPrivateKey, broadcasterWallet);
+                } else {
+                    console.log(`  🔧 ${label} missing. Adding...`);
+                }
+
+                await this.addFunctionToRole(roleHash, functionSelector, requiredActions, ownerPrivateKey, broadcasterWallet);
+                await new Promise(r => setTimeout(r, 500));
+            };
 
             const requestorActions = [this.TxAction.EXECUTE_TIME_DELAY_REQUEST];
-            // MINT_APPROVER performs request+approve meta workflow on mint and can cancel
-            const approverActions = [this.TxAction.SIGN_META_REQUEST_AND_APPROVE, this.TxAction.SIGN_META_APPROVE, this.TxAction.SIGN_META_CANCEL];
-            const broadcasterRequestApproveActions = [this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+            const approverMintActions = [this.TxAction.SIGN_META_APPROVE, this.TxAction.SIGN_META_CANCEL];
             const broadcasterApproveCancelActions = [this.TxAction.EXECUTE_META_APPROVE, this.TxAction.EXECUTE_META_CANCEL];
 
-            // Execution selector permissions (mint and handler for requestAndApproveExecution)
-            await this.addFunctionToRole(this.getRoleHash('MINT_REQUESTOR'), ERC20_MINT_SELECTOR, requestorActions, ownerPrivateKey, broadcasterWallet);
-            await this.addFunctionToRole(this.getRoleHash('MINT_APPROVER'), ERC20_MINT_SELECTOR, approverActions, ownerPrivateKey, broadcasterWallet);
-            // Also grant MINT_APPROVER meta-approve/cancel on the handler selector itself so EngineBlox
-            // _validateExecutionAndHandlerPermissions and meta-tx signer checks pass.
-            // IMPORTANT: For handler selectors, handlerForSelectors must point to the underlying execution
-            // selector(s), not to the handler itself, otherwise EngineBlox._validateHandlerForSelectors will
-            // reject the permission. Here the GuardController handler is requestAndApproveExecution, which
-            // acts on the ERC20 mint execution selector, so we explicitly wire that relationship.
-            await this.addFunctionToRoleWithHandlerForSelectors(
-                this.getRoleHash('MINT_APPROVER'),
-                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-                approverActions,
-                [ERC20_MINT_SELECTOR],
-                ownerPrivateKey,
-                broadcasterWallet
-            );
-            await this.addFunctionToRole(this.getRoleHash('BROADCASTER_ROLE'), ERC20_MINT_SELECTOR, broadcasterRequestApproveActions, ownerPrivateKey, broadcasterWallet);
-            // Broadcaster must also have EXECUTE_META_REQUEST_AND_APPROVE on the requestAndApproveExecution
-            // handler selector wired to the mint execution selector so EngineBlox validates both
-            // executionSelector and handlerSelector permissions for the broadcaster.
-            await this.addFunctionToRoleWithHandlerForSelectors(
-                this.getRoleHash('BROADCASTER_ROLE'),
-                this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-                broadcasterRequestApproveActions,
-                [ERC20_MINT_SELECTOR],
-                ownerPrivateKey,
-                broadcasterWallet
-            );
-            // Broadcaster must be able to execute approve/cancel meta flows on the controller for any
-            // ERC20 mint workflows that go through approveTimeLockExecutionWithMetaTx / cancelTimeLockExecutionWithMetaTx.
-            await this.addFunctionToRole(
-                this.getRoleHash('BROADCASTER_ROLE'),
-                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-                broadcasterApproveCancelActions,
-                ownerPrivateKey,
-                broadcasterWallet
-            );
-            await this.addFunctionToRole(
-                this.getRoleHash('BROADCASTER_ROLE'),
-                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-                broadcasterApproveCancelActions,
-                ownerPrivateKey,
-                broadcasterWallet
-            );
+            await ensureExactPermission(requestorRoleHash, ERC20_MINT_SELECTOR, requestorActions, 'MINT_REQUESTOR mint request');
+            await ensureExactPermission(requestorRoleHash, this.EXECUTE_WITH_TIMELOCK_SELECTOR, requestorActions, 'MINT_REQUESTOR executeWithTimeLock');
 
-            // Controller permissions: MINT_REQUESTOR can call executeWithTimeLock (handler schema only allows self-reference; restriction to mint is via execution selector permission already granted).
-            await this.addFunctionToRole(
-                this.getRoleHash('MINT_REQUESTOR'),
-                this.EXECUTE_WITH_TIMELOCK_SELECTOR,
-                requestorActions,
-                ownerPrivateKey,
-                broadcasterWallet
-            );
-            // Controller permissions: MINT_APPROVER can sign approveTimeLockExecutionWithMetaTx and cancelTimeLockExecutionWithMetaTx (handler schemas use self-reference).
-            await this.addFunctionToRole(
-                this.getRoleHash('MINT_APPROVER'),
-                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-                [this.TxAction.SIGN_META_APPROVE],
-                ownerPrivateKey,
-                broadcasterWallet
-            );
-            await this.addFunctionToRole(
-                this.getRoleHash('MINT_APPROVER'),
-                this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-                [this.TxAction.SIGN_META_CANCEL],
-                ownerPrivateKey,
-                broadcasterWallet
-            );
+            await ensureExactPermission(approverRoleHash, ERC20_MINT_SELECTOR, approverMintActions, 'MINT_APPROVER mint sign approve/cancel');
+            await ensureExactPermission(approverRoleHash, this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, [this.TxAction.SIGN_META_APPROVE], 'MINT_APPROVER approveTimeLockExecutionWithMetaTx sign');
+            await ensureExactPermission(approverRoleHash, this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, [this.TxAction.SIGN_META_CANCEL], 'MINT_APPROVER cancelTimeLockExecutionWithMetaTx sign');
+
+            // Broadcaster needs BOTH handler permissions (approve/cancel meta) AND execution-selector permissions (mint)
+            await ensureExactPermission(broadcasterRoleHash, ERC20_MINT_SELECTOR, broadcasterApproveCancelActions, 'BROADCASTER_ROLE mint execute approve/cancel');
+            await ensureExactPermission(broadcasterRoleHash, this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR, broadcasterApproveCancelActions, 'BROADCASTER_ROLE approveTimeLockExecutionWithMetaTx execute');
+            await ensureExactPermission(broadcasterRoleHash, this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR, broadcasterApproveCancelActions, 'BROADCASTER_ROLE cancelTimeLockExecutionWithMetaTx execute');
 
             // AFTER: verify each role has the correct action permission for mint selector
             await this.verifyStep4RolePermissions();
             await this.passTest(
                 'Add function to roles',
-                'MINT_REQUESTOR=request, MINT_APPROVER=SIGN_META_APPROVE+cancel, BROADCASTER=execute'
+                '3-step: requestor requests, approver signs approve/cancel, broadcaster executes approve/cancel'
             );
         } catch (error) {
             await this.failTest('Add function permissions to roles', error);
@@ -439,11 +399,6 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         this.assertTest(requestorHasControllerRequest, 'MINT_REQUESTOR has controller permission for executeWithTimeLock (mint)');
 
         const approverRoleHash = this.getRoleHash('MINT_APPROVER');
-        const approverMintMetaRequestApprove = await this.roleHasPermissionForSelector(
-            approverRoleHash,
-            ERC20_MINT_SELECTOR,
-            this.TxAction.SIGN_META_REQUEST_AND_APPROVE
-        );
         const approverMintMetaApprove = await this.roleHasPermissionForSelector(
             approverRoleHash,
             ERC20_MINT_SELECTOR,
@@ -454,24 +409,10 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             ERC20_MINT_SELECTOR,
             this.TxAction.SIGN_META_CANCEL
         );
-        const approverHandlerMetaApprove = await this.roleHasPermissionForSelector(
-            approverRoleHash,
-            this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            this.TxAction.SIGN_META_APPROVE
-        );
-        const approverHandlerMetaCancel = await this.roleHasPermissionForSelector(
-            approverRoleHash,
-            this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-            this.TxAction.SIGN_META_CANCEL
-        );
 
         console.log('     MINT_APPROVER mint permissions:');
-        console.log(`       SIGN_META_REQUEST_AND_APPROVE (mint): ${approverMintMetaRequestApprove}`);
         console.log(`       SIGN_META_APPROVE            (mint): ${approverMintMetaApprove}`);
         console.log(`       SIGN_META_CANCEL             (mint): ${approverMintMetaCancel}`);
-        console.log('     MINT_APPROVER handler permissions:');
-        console.log(`       SIGN_META_APPROVE (handler): ${approverHandlerMetaApprove}`);
-        console.log(`       SIGN_META_CANCEL  (handler): ${approverHandlerMetaCancel}`);
 
         const approverApproveMetaTx = await this.roleHasPermissionForSelector(
             approverRoleHash,
@@ -487,23 +428,41 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         console.log(`       approveTimeLockExecutionWithMetaTx (SIGN_META_APPROVE): ${approverApproveMetaTx}`);
         console.log(`       cancelTimeLockExecutionWithMetaTx (SIGN_META_CANCEL): ${approverCancelMetaTx}`);
 
-        this.assertTest(approverMintMetaRequestApprove, 'MINT_APPROVER has SIGN_META_REQUEST_AND_APPROVE for mint');
         this.assertTest(approverMintMetaApprove, 'MINT_APPROVER has SIGN_META_APPROVE for mint');
         this.assertTest(approverMintMetaCancel, 'MINT_APPROVER has SIGN_META_CANCEL for mint');
         this.assertTest(approverApproveMetaTx, 'MINT_APPROVER has controller permission for approveTimeLockExecutionWithMetaTx');
         this.assertTest(approverCancelMetaTx, 'MINT_APPROVER has controller permission for cancelTimeLockExecutionWithMetaTx');
 
-        const broadcasterHasExecute = await this.roleHasPermissionForSelector(
-            this.getRoleHash('BROADCASTER_ROLE'),
+        const broadcasterRoleHash = this.getRoleHash('BROADCASTER_ROLE');
+        const broadcasterHasExecApprove = await this.roleHasPermissionForSelector(
+            broadcasterRoleHash,
             ERC20_MINT_SELECTOR,
-            this.TxAction.EXECUTE_META_REQUEST_AND_APPROVE
+            this.TxAction.EXECUTE_META_APPROVE
         );
-        this.assertTest(broadcasterHasExecute, 'BROADCASTER_ROLE has EXECUTE_META_REQUEST_AND_APPROVE for mint');
+        const broadcasterHasExecCancel = await this.roleHasPermissionForSelector(
+            broadcasterRoleHash,
+            ERC20_MINT_SELECTOR,
+            this.TxAction.EXECUTE_META_CANCEL
+        );
+        const broadcasterHasApproveHandler = await this.roleHasPermissionForSelector(
+            broadcasterRoleHash,
+            this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+            this.TxAction.EXECUTE_META_APPROVE
+        );
+        const broadcasterHasCancelHandler = await this.roleHasPermissionForSelector(
+            broadcasterRoleHash,
+            this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
+            this.TxAction.EXECUTE_META_CANCEL
+        );
+        this.assertTest(broadcasterHasExecApprove, 'BROADCASTER_ROLE has EXECUTE_META_APPROVE for mint');
+        this.assertTest(broadcasterHasExecCancel, 'BROADCASTER_ROLE has EXECUTE_META_CANCEL for mint');
+        this.assertTest(broadcasterHasApproveHandler, 'BROADCASTER_ROLE has EXECUTE_META_APPROVE for approveTimeLockExecutionWithMetaTx');
+        this.assertTest(broadcasterHasCancelHandler, 'BROADCASTER_ROLE has EXECUTE_META_CANCEL for cancelTimeLockExecutionWithMetaTx');
         console.log('     Role permissions verified for mint selector');
     }
 
     async testStep5MintFlow() {
-        await this.startTest('Mint 100 tokens to AccountBlox via request+approve meta-tx (one-step)');
+        await this.startTest('Mint 100 tokens to AccountBlox via 3-step flow (timelock request + meta approve)');
         try {
             console.log('  [DEBUG] step5 BEFORE createExternalExecutionMetaTx');
             const tokenAddress = this.getBasicErc20Address();
@@ -542,66 +501,88 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
                 [this.contractAddress, mintAmount.toString()]
             );
 
-            // Use SIGN_META_REQUEST_AND_APPROVE so MINT_APPROVER performs a one-step request+approve meta-tx
-            const unsignedMetaTx = await this.createExternalExecutionMetaTx(
-                this.mintRequestorWallet.address,
-                tokenAddress,
-                '0',
-                200000,
-                this.erc20MintOperationTypeHash,
-                ERC20_MINT_SELECTOR,
-                executionParams,
-                this.mintApproverWallet.address,
-                this.TxAction.SIGN_META_REQUEST_AND_APPROVE
+            // Step 1: time-lock request (MINT_REQUESTOR calls executeWithTimeLock)
+            const requestResult = await this.sendTransaction(
+                this.contract.methods.executeWithTimeLock(
+                    tokenAddress,
+                    '0',
+                    ERC20_MINT_SELECTOR,
+                    executionParams,
+                    200000,
+                    this.erc20MintOperationTypeHash
+                ),
+                this.mintRequestorWallet
             );
-            console.log(`  [DEBUG] step5 AFTER createExternalExecutionMetaTx: message=${unsignedMetaTx.message != null ? 'set' : 'MISSING'}`);
-
-            // Preflight: explicitly verify that the mint approver wallet actually has the MINT_APPROVER role
-            // before EngineBlox checks signer permissions. This helps distinguish "no role" vs "no action permission".
-            try {
-                const signer = this.mintApproverWallet.address;
-                const approverRoleHash = this.getRoleHash('MINT_APPROVER');
-
-                console.log('  [DEBUG] step5 PRECHECK hasRole for meta signer');
-                console.log(`     signer: ${signer}`);
-                console.log(`     approverRoleHash: ${approverRoleHash}`);
-
-                const hasApproverRole = await this.contract.methods
-                    .hasRole(approverRoleHash, signer)
-                    .call();
-
-                console.log(`     hasRole(MINT_APPROVER, signer) = ${hasApproverRole}`);
-            } catch (permCheckError) {
-                console.warn('  [WARN] step5 PRECHECK hasRole call failed:', permCheckError.message || permCheckError);
+            const requestReceipt = requestResult && requestResult.receipt ? requestResult.receipt : requestResult;
+            let requestTxId = this.extractTxIdFromReceipt(requestReceipt);
+            this.assertTest(requestReceipt && (requestReceipt.status === true || requestReceipt.status === 1 || requestReceipt.status === '0x1'), 'executeWithTimeLock tx succeeded');
+            if (requestTxId == null) {
+                // Some RPCs/providers omit logs for reverted/typed tx or web3 returns an empty logs array.
+                // Fallback: read pending transaction IDs then resolve them via getTransaction(txId).
+                try {
+                    const pendingIds = await this.callContractMethod(this.contract.methods.getPendingTransactions());
+                    const requesterNorm = this.mintRequestorWallet.address.toLowerCase();
+                    const targetNorm = tokenAddress.toLowerCase();
+                    const opNorm = String(this.erc20MintOperationTypeHash).toLowerCase();
+                    const selNorm = ERC20_MINT_SELECTOR.toLowerCase();
+                    for (const id of (pendingIds || [])) {
+                        const t = await this.callContractMethod(this.contract.methods.getTransaction(id));
+                        const params = t.params ?? t[3];
+                        const requester = params?.requester ?? params?.[0];
+                        const target = params?.target ?? params?.[1];
+                        const op = params?.operationType ?? params?.[4];
+                        const sel = params?.executionSelector ?? params?.[5];
+                        const isMatch =
+                            requester && String(requester).toLowerCase() === requesterNorm &&
+                            target && String(target).toLowerCase() === targetNorm &&
+                            op && String(op).toLowerCase() === opNorm &&
+                            sel && String(sel).toLowerCase() === selNorm;
+                        if (isMatch) {
+                            requestTxId = id;
+                        }
+                    }
+                    if (requestTxId != null) {
+                        console.log(`  ℹ️  Fallback txId resolved from pending list: ${requestTxId}`);
+                    }
+                } catch (e) {
+                    console.warn('  [WARN] Could not derive txId from getPendingTransactions fallback:', e.message || e);
+                }
             }
-            // Ensure message is set and 66-char hex so signer never calls contract (avoids ABI decode on enum)
-            const rawMsg = unsignedMetaTx.message ?? unsignedMetaTx.txRecord?.message ?? unsignedMetaTx.txRecord?.[4];
-            if (rawMsg != null) {
-                let hex = typeof rawMsg === 'string' ? rawMsg : this.web3.utils.toHex(rawMsg);
-                if (!hex.startsWith('0x')) hex = '0x' + hex;
-                const body = hex.slice(2).replace(/[^0-9a-fA-F]/g, '') || '0';
-                unsignedMetaTx.message = '0x' + (body.length > 64 ? body.slice(-64) : body.padStart(64, '0'));
-            }
+            this.assertTest(requestTxId != null, 'executeWithTimeLock produced a txId (receipt log or pending-tx fallback)');
 
-            console.log('  [DEBUG] step5 BEFORE signMetaTransaction');
-            const signedMetaTx = await this.eip712Signer.signMetaTransaction(
-                unsignedMetaTx,
+            // Step 2: meta approve (MINT_APPROVER signs approve; BROADCASTER executes approveTimeLockExecutionWithMetaTx)
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+            const maxGasPrice = 0;
+            const metaParams = await this._callCreateMetaTxParamsRaw(
+                this.contractAddress,
+                this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+                this.TxAction.SIGN_META_APPROVE,
+                deadline,
+                maxGasPrice,
+                this.mintApproverWallet.address
+            );
+            const unsignedApproveMetaTx = await this._callGenerateUnsignedMetaTransactionForExistingRaw(
+                requestTxId,
+                metaParams
+            );
+            console.log(`  [DEBUG] step5 approve meta unsigned: message=${unsignedApproveMetaTx.message != null ? 'set' : 'MISSING'}`);
+
+            const signedApproveMetaTx = await this.eip712Signer.signMetaTransaction(
+                unsignedApproveMetaTx,
                 this.mintApproverWallet.privateKey,
                 this.contract
             );
-            console.log('  [DEBUG] step5 AFTER signMetaTransaction');
-
             const broadcasterWallet = this.getRoleWalletObject('broadcaster');
-            // requestAndApproveExecution returns uint256 (txId). Use full send wrapper so we get detailed
-            // revert reasons if execution fails (sendTransactionWithValue decodes custom errors).
-            const result = await this.sendTransaction(
-                this.contract.methods.requestAndApproveExecution(signedMetaTx),
+            const fullApproveMetaTx = { ...unsignedApproveMetaTx, message: signedApproveMetaTx.message, signature: signedApproveMetaTx.signature };
+
+            const approveResult = await this.sendTransaction(
+                this.contract.methods.approveTimeLockExecutionWithMetaTx(fullApproveMetaTx),
                 broadcasterWallet
             );
-            this._mintReceipt = result && result.receipt ? result.receipt : result;
-            this._mintTxId = this.extractTxIdFromReceipt(this._mintReceipt);
+            this._mintReceipt = approveResult && approveResult.receipt ? approveResult.receipt : approveResult;
+            this._mintTxId = requestTxId;
             const ok = this._mintReceipt && (this._mintReceipt.status === true || this._mintReceipt.status === 1 || this._mintReceipt.status === '0x1');
-            this.assertTest(ok, `requestAndApproveExecution tx succeeded (txId: ${this._mintTxId})`);
+            this.assertTest(ok, `approveTimeLockExecutionWithMetaTx tx succeeded (txId: ${this._mintTxId})`);
             if (this._mintTxId == null) {
                 console.log('  ⚠️  TxId could not be extracted from receipt (logs may be missing or event shape differs).');
                 console.log('  📋 Mint is NOT confirmed until step 6 verifies balance and totalSupply increase.');

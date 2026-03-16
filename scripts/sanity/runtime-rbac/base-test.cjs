@@ -476,36 +476,18 @@ class BaseRuntimeRBACTest {
         return wallet;
     }
 
-    async sendTransaction(method, wallet) {
+    async sendTransaction(method, wallet, receiptTimeoutMs = 120000) {
+        const from = wallet.address;
+        // Use an explicit gas limit so web3/provider does not call
+        // eth_estimateGas (which can hang) or treat gas as 0.
+        const gas = 1_500_000;
         try {
-            // Estimate gas and include it in the send to avoid provider defaults causing reverts
-            const from = wallet.address;
-            
-            // Try to estimate gas first to catch errors early
-            try {
-                const gas = await method.estimateGas({ from });
-                const result = await method.send({ from, gas });
-                return result;
-            } catch (estimateError) {
-                // If estimation fails, try to decode the error
-                if (estimateError.data) {
-                    const errorData = estimateError.data;
-                    // Try to decode custom errors
-                    try {
-                        // RestrictedBroadcaster(address,address) selector: 0xf37a3442
-                        if (errorData.result && errorData.result.startsWith('0xf37a3442')) {
-                            const decoded = this.web3.eth.abi.decodeParameters(
-                                ['address', 'address'],
-                                '0x' + errorData.result.slice(10)
-                            );
-                            throw new Error(`RestrictedBroadcaster: caller=${decoded[0]}, broadcaster=${decoded[1]}`);
-                        }
-                    } catch (decodeError) {
-                        // Continue with original error
-                    }
-                }
-                throw estimateError;
-            }
+            const sendPromise = method.send({ from, gas });
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);
+            });
+            const result = await Promise.race([sendPromise, timeoutPromise]);
+            return result;
         } catch (error) {
             // Try to extract revert reason if available
             let errorMessage = error.message;
@@ -1042,8 +1024,9 @@ class BaseRuntimeRBACTest {
                 }
             }
             
+            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
             const receipt = await this.sendTransaction(
-                this.contract.methods.roleConfigBatchRequestAndApprove(signedMetaTx),
+                this.contract.methods.roleConfigBatchRequestAndApprove(fullMetaTx),
                 broadcasterWallet
             );
             

@@ -216,8 +216,11 @@ class BaseSecureOwnableTest {
         // Discover dynamic role assignments
         await this.discoverRoleAssignments();
         
-        // Clear any pending transactions to ensure clean test state
-        await this.clearPendingTransactions();
+        // Clear any pending transactions to ensure clean test state (non-fatal if some cannot be cancelled)
+        const cleared = await this.clearPendingTransactions();
+        if (!cleared) {
+            console.log('⚠️  Proceeding with some pending transactions uncancelled (e.g. meta-tx only)\n');
+        }
         
         console.log(`✅ ${this.testName} initialized successfully\n`);
     }
@@ -287,29 +290,37 @@ class BaseSecureOwnableTest {
         return broadcasters[0];
     }
 
-    async sendTransaction(method, wallet) {
+    /**
+     * Normalize operationType from contract (may be BN or string) to lowercase 66-char hex for comparison.
+     */
+    normalizeOperationType(operationType) {
+        if (operationType == null) return null;
+        let hex = typeof operationType === 'string' ? operationType : this.web3.utils.toHex(operationType);
+        if (!hex || !hex.startsWith('0x')) hex = '0x' + hex;
+        const body = hex.slice(2).replace(/[^0-9a-fA-F]/g, '');
+        return '0x' + (body.length >= 64 ? body.slice(-64) : body.padStart(64, '0')).toLowerCase();
+    }
+
+    async sendTransaction(method, wallet, receiptTimeoutMs = 120000) {
+        const from = wallet.address;
+        // Use an explicit gas limit so web3/provider does not invoke
+        // eth_estimateGas (which can be unreliable) or treat gas as 0.
+        const gas = 1_500_000;
         try {
-            // Estimate gas and include it in the send to avoid provider defaults causing reverts
-            const from = wallet.address;
-            const gas = await method.estimateGas({ from });
-            const result = await method.send({ from, gas });
+            const sendPromise = method.send({ from, gas });
+            const sendTimeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);
+            });
+            const result = await Promise.race([sendPromise, sendTimeout]);
             return result;
         } catch (error) {
-            // Try to extract revert reason if available
             let errorMessage = error.message;
-            if (error.data) {
-                // Try to decode revert reason
-                try {
-                    const revertReason = this.web3.eth.abi.decodeParameter('string', error.data);
-                    errorMessage = `${error.message} (Revert reason: ${revertReason})`;
-                } catch (decodeError) {
-                    // If decoding fails, include the raw data
-                    errorMessage = `${error.message} (Data: ${JSON.stringify(error.data)})`;
-                }
+            const rawData = error.data?.result ?? error.data;
+            if (rawData) {
+                const dataStr = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);
+                errorMessage = `${error.message} (Revert/Data: ${dataStr.slice(0, 400)})`;
             }
-            if (error.reason) {
-                errorMessage = `${errorMessage} (Reason: ${error.reason})`;
-            }
+            if (error.reason) errorMessage = `${errorMessage} (Reason: ${error.reason})`;
             throw new Error(`Transaction failed: ${errorMessage}`);
         }
     }
@@ -389,15 +400,17 @@ class BaseSecureOwnableTest {
             for (const txId of pendingTxs) {
                 try {
                     const tx = await this.callContractMethod(this.contract.methods.getTransaction(txId));
-                    const operationType = tx.params.operationType;
+                    const params = tx.params || {};
+                    const operationType = params.operationType != null ? params.operationType : null;
+                    const releaseTime = Number(tx.releaseTime != null ? tx.releaseTime : 0);
                     const currentTime = Math.floor(Date.now() / 1000);
-                    const timeRemaining = tx.releaseTime - currentTime;
+                    const timeRemaining = releaseTime - currentTime;
                     
                     const txDetail = {
                         txId: txId,
                         status: tx.status,
                         operationType: operationType,
-                        requester: tx.params.requester,
+                        requester: params.requester,
                         timeRemaining: timeRemaining,
                         expired: timeRemaining <= 0
                     };
@@ -407,7 +420,7 @@ class BaseSecureOwnableTest {
                     console.log(`   📋 Transaction ${txId}:`);
                     console.log(`      Status: ${tx.status} (${this.getStatusName(tx.status)})`);
                     console.log(`      Operation: ${this.getOperationName(operationType)}`);
-                    console.log(`      Requester: ${tx.params.requester}`);
+                    console.log(`      Requester: ${params.requester || 'N/A'}`);
                     console.log(`      Time Remaining: ${timeRemaining} seconds`);
                     console.log(`      Expired: ${txDetail.expired}`);
                     
@@ -427,11 +440,12 @@ class BaseSecureOwnableTest {
 
     async cancelTransaction(txId, operationType, requester) {
         try {
+            const op = this.normalizeOperationType(operationType);
             // Determine the appropriate cancellation method and wallet based on operation type
             let cancelMethod;
             let wallet;
             
-            switch (operationType) {
+            switch (op) {
                 case '0xb23d8fa2f62c8a954db45521d1249908693b29ffd3d2dab6348898c4198996b2': // OWNERSHIP_TRANSFER
                     cancelMethod = this.contract.methods.transferOwnershipCancellation(txId);
                     wallet = this.getRoleWalletObject('recovery'); // Only recovery can cancel ownership transfers
@@ -453,7 +467,7 @@ class BaseSecureOwnableTest {
                     return false;
                     
                 default:
-                    console.log(`   ⚠️  Unknown operation type: ${operationType}`);
+                    console.log(`   ⚠️  Unknown operation type: ${op || operationType}`);
                     return false;
             }
             
@@ -488,11 +502,11 @@ class BaseSecureOwnableTest {
             for (const txId of pendingTxs) {
                 try {
                     const tx = await this.callContractMethod(this.contract.methods.getTransaction(txId));
-                    const operationType = tx.params.operationType;
+                    const operationType = tx.params && tx.params.operationType != null ? tx.params.operationType : null;
                     
                     console.log(`  🗑️  Cancelling transaction ${txId} (${this.getOperationName(operationType)})`);
                     
-                    const success = await this.cancelTransaction(txId, operationType, tx.params.requester);
+                    const success = await this.cancelTransaction(txId, operationType, tx.params && tx.params.requester);
                     if (success) {
                         clearedCount++;
                         console.log(`    ✅ Transaction ${txId} cancelled successfully`);
@@ -513,7 +527,7 @@ class BaseSecureOwnableTest {
                 console.log('✅ All pending transactions cleared successfully');
                 return true;
             } else {
-                console.log(`⚠️  ${remainingPending.length} transactions still pending`);
+                console.log(`⚠️  ${remainingPending.length} transactions still pending (tests may continue)`);
                 return false;
             }
             
@@ -536,13 +550,14 @@ class BaseSecureOwnableTest {
     }
 
     getOperationName(operationType) {
+        const op = this.normalizeOperationType(operationType);
         const operationMap = {
             '0xb23d8fa2f62c8a954db45521d1249908693b29ffd3d2dab6348898c4198996b2': 'OWNERSHIP_TRANSFER',
             '0xae23396f8eb008d2f5f9673f91ccf20bf248201a6e0dbeaf46c421777ad8dc5b': 'BROADCASTER_UPDATE',
             '0x032398090b003ba6aff30213cf16b7307ece6fbd6d969286006538a576526983': 'RECOVERY_UPDATE',
             '0x06e0fdee0e8a4d2e629ae3d26c7bc6342072096facbcbe06d204d6051d97c50f': 'TIMELOCK_UPDATE'
         };
-        return operationMap[operationType] || 'UNKNOWN';
+        return operationMap[op] || (op ? `UNKNOWN(${op})` : 'UNKNOWN');
     }
 
     async validateWorkflowPermissions(workflowName, requiredPermissions) {
@@ -561,13 +576,19 @@ class BaseSecureOwnableTest {
                 // Get role hash with timeout
                 const roleHash = await this.getRoleHash(role);
                 
-                // Get role permissions with timeout using getActiveRolePermissions
+                // Get role permissions with timeout (30s for slow RPC / large permission sets)
+                const permissionsTimeoutMs = 30000;
+                let timeoutId;
                 const rolePermissionsPromise = this.callContractMethod(this.contract.methods.getActiveRolePermissions(roleHash));
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('getActiveRolePermissions timeout after 5 seconds')), 5000)
-                );
-                
-                const rolePermissions = await Promise.race([rolePermissionsPromise, timeoutPromise]);
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error(`getActiveRolePermissions timeout after ${permissionsTimeoutMs / 1000} seconds`)), permissionsTimeoutMs);
+                });
+                let rolePermissions;
+                try {
+                    rolePermissions = await Promise.race([rolePermissionsPromise, timeoutPromise]);
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
+                }
                 
                 // Find the specific function permission
                 const functionPermission = rolePermissions.find(perm => 

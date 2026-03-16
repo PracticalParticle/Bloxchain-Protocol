@@ -195,7 +195,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Explicit gas so viem does not call eth_estimateGas for this large
+        // guardConfigBatchRequestAndApprove payload (can hang/timeout on some RPCs).
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000 })
       );
       const receipt = await result.wait();
 
@@ -250,9 +252,9 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
   private async step1WhitelistBasicErc20IfNeeded(): Promise<void> {
     console.log('\n🧪 SDK Step 1: Ensure BasicERC20 is whitelisted for mint selector');
+    const token = this.getBasicErc20Address();
     try {
       if (!this.guardController) throw new Error('GuardController not initialized');
-      const token = this.getBasicErc20Address();
 
       const ownerWallet = this.getRoleWallet('owner');
       const ownerWalletName =
@@ -290,7 +292,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Explicit gas to avoid internal eth_estimateGas for this whitelist batch.
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000 })
       );
       const receipt = await result.wait();
 
@@ -775,23 +778,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       }
       this.assertTest(true, 'Mint 100 BASIC via 3-step flow executed successfully');
     } catch (error: any) {
-      // Some RPC/proxy layers reject large estimateGas/write payloads with
-      // a generic "Missing or invalid parameters" error even when the on-chain
-      // configuration is correct. Treat this as an environment limitation and
-      // skip the mint flow step instead of failing the entire sanity suite.
-      const message = String((error && (error.message ?? error.details)) ?? '');
-      const combined = `${message} ${String((error && error.cause && (error.cause as any).message) ?? '')}`;
-      if (/Missing or invalid parameters/i.test(combined)) {
-        console.log(
-          '  ⏭️  Mint 100 BASIC via 3-step flow skipped: RPC rejected payload with "Missing or invalid parameters"; treating as environment limitation.'
-        );
-        this.mintFlowSkipped = true;
-        this.skipTest(
-          'Mint 100 BASIC via 3-step flow skipped due to RPC "Missing or invalid parameters" (likely environment limitation).'
-        );
-        return;
-      }
-
       this.logRevertReason(error);
       this.handleTestError('Mint 100 BASIC via 3-step flow', error);
       throw error;
@@ -974,13 +960,6 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
   private async step3VerifyBalanceIncrease(): Promise<void> {
     console.log('\n🧪 SDK Step 3: Verify tokens minted and passed to destination');
     try {
-      if (this.mintFlowSkipped) {
-        this.skipTest(
-          'Verify tokens minted and passed to destination skipped because mint 3-step flow was skipped due to RPC limitations.'
-        );
-        return;
-      }
-
       if (this.balanceBefore === null) {
         throw new Error('Balance before mint not recorded');
       }
