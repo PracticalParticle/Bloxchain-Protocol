@@ -90,7 +90,20 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
       // Forward explicit gas limit when provided so callers can bypass eth_estimateGas.
       if (options.gas !== undefined) {
-        writeContractParams.gas = options.gas;
+        const rawGas = options.gas;
+        let gasLimit: bigint;
+        if (typeof rawGas === 'bigint') {
+          gasLimit = rawGas;
+        } else {
+          const s = String(rawGas).trim();
+          if (!/^\d+$/.test(s)) {
+            throw new Error(
+              `Invalid gas: must be a non-negative integer (got "${options.gas}"). Use a number-like value or bigint.`
+            );
+          }
+          gasLimit = BigInt(s);
+        }
+        writeContractParams.gas = gasLimit;
       }
 
       // Add gas price override for write only (EIP-1559); viem rejects mixing gasPrice with maxFeePerGas.
