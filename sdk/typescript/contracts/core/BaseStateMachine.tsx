@@ -103,6 +103,9 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
           }
           gasLimit = BigInt(s);
         }
+        if (gasLimit < 0n) {
+          throw new Error(`Invalid gas: must be non-negative (got ${gasLimit.toString()})`);
+        }
         writeContractParams.gas = gasLimit;
       }
 
