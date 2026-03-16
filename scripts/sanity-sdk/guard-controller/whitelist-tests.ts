@@ -397,7 +397,8 @@ export class WhitelistTests extends BaseGuardControllerTest {
 
       const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
         signedMetaTx,
-        this.getTxOptions(broadcasterWallet.address)
+        // Explicit gas to avoid internal eth_estimateGas for this batch payload.
+        this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
       );
 
       const receiptRemove = await result.wait();

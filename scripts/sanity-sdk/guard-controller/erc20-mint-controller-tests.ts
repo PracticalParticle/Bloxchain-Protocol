@@ -252,8 +252,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
 
   private async step1WhitelistBasicErc20IfNeeded(): Promise<void> {
     console.log('\n🧪 SDK Step 1: Ensure BasicERC20 is whitelisted for mint selector');
-    const token = this.getBasicErc20Address();
     try {
+      const token = this.getBasicErc20Address();
       if (!this.guardController) throw new Error('GuardController not initialized');
 
       const ownerWallet = this.getRoleWallet('owner');

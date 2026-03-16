@@ -20,9 +20,19 @@ async function main() {
   const rpcUrl = `${protocol}://${host}:${port}`;
   console.log(`📡 RPC URL: ${rpcUrl}`);
 
-  const timeoutMs = process.env.SANITY_SDK_RPC_TIMEOUT_MS
-    ? parseInt(process.env.SANITY_SDK_RPC_TIMEOUT_MS, 10)
-    : 30_000;
+  const defaultTimeoutMs = 30_000;
+  let timeoutMs = defaultTimeoutMs;
+
+  if (process.env.SANITY_SDK_RPC_TIMEOUT_MS) {
+    const parsed = Number(process.env.SANITY_SDK_RPC_TIMEOUT_MS);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      timeoutMs = parsed;
+    } else {
+      console.warn(
+        `⚠️ SANITY_SDK_RPC_TIMEOUT_MS is invalid ("${process.env.SANITY_SDK_RPC_TIMEOUT_MS}"); using default ${defaultTimeoutMs}ms`
+      );
+    }
+  }
 
   const client = createPublicClient({
     transport: http(rpcUrl, { timeout: timeoutMs }),

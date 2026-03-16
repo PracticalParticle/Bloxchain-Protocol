@@ -550,6 +550,19 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
             }
             this.assertTest(requestTxId != null, 'executeWithTimeLock produced a txId (receipt log or pending-tx fallback)');
 
+            // Wait for the timelock window to elapse before sending the approve meta-tx,
+            // so approveTimeLockExecutionWithMetaTx does not race the unlock time.
+            try {
+                const timeLockSec = await this.callContractMethod(this.contract.methods.getTimeLockPeriodSec());
+                const waitSec = Number(timeLockSec) + 1;
+                if (waitSec > 0 && Number.isFinite(waitSec)) {
+                    console.log(`  ⏳ Waiting ${waitSec}s for timelock to expire before approve meta-tx...`);
+                    await new Promise(r => setTimeout(r, waitSec * 1000));
+                }
+            } catch (e) {
+                console.warn('  [WARN] Could not read timeLockPeriodSec; proceeding without explicit timelock wait:', e.message || e);
+            }
+
             // Step 2: meta approve (MINT_APPROVER signs approve; BROADCASTER executes approveTimeLockExecutionWithMetaTx)
             const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
             const maxGasPrice = 0;

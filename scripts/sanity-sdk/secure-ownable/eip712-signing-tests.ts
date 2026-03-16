@@ -42,12 +42,31 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
     try {
       const pendingTxs = await secureOwnableRecovery.getPendingTransactions();
       if (pendingTxs && pendingTxs.length > 0) {
-        const txId = pendingTxs[pendingTxs.length - 1] as bigint;
-        console.log(`  📋 Reusing existing pending transaction ID: ${txId}`);
-        return txId;
+        for (const id of pendingTxs as bigint[]) {
+          const tx = await secureOwnableRecovery.getTransaction(id);
+          const params = (tx as any).params ?? (tx as any)[3];
+          const op = params?.operationType ?? params?.[4];
+          const requester = params?.requester ?? params?.[0];
+
+          const isOwnershipTransfer =
+            String(op).toLowerCase() ===
+            this.getOperationType('OWNERSHIP_TRANSFER').toLowerCase();
+          const isFromRecovery =
+            requester &&
+            String(recoveryWallet.address).toLowerCase() ===
+              String(requester).toLowerCase();
+
+          if (isOwnershipTransfer && isFromRecovery) {
+            console.log(`  📋 Reusing existing OWNERSHIP_TRANSFER txId: ${id}`);
+            return id;
+          }
+        }
       }
-    } catch (e: any) {
-      console.log(`  ⚠️  getPendingTransactions failed while searching for reusable tx: ${e.message}`);
+    } catch (e: unknown) {
+      const err = e as Error;
+      console.log(
+        `  ⚠️  getPendingTransactions failed while searching for reusable tx: ${err.message}`
+      );
     }
 
     // No suitable pending tx; create a fresh ownership transfer request.
@@ -56,7 +75,12 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
       this.getTxOptions(recoveryWallet.address)
     );
 
-    await result.wait();
+    const receipt = await result.wait();
+    const status = (receipt as any).status;
+    const ok = status === 'success' || status === 1 || String(status) === '1';
+    if (!ok) {
+      throw new Error('transferOwnershipRequest tx reverted');
+    }
     // Allow the chain indexer / state to settle before querying again.
     await new Promise((resolve) => setTimeout(resolve, 1000));
 

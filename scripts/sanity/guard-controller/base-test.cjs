@@ -558,8 +558,8 @@ class BaseGuardControllerTest {
         const { transactionHash } = await this.web3.eth.sendSignedTransaction(signed.rawTransaction);
         let receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
         if (!receipt && transactionHash) {
-            const maxWait = Math.min(30, Math.floor(receiptTimeoutMs / 1000));
-            for (let i = 0; i < maxWait; i++) {
+            const maxWaitSeconds = Math.floor(receiptTimeoutMs / 1000);
+            for (let i = 0; i < maxWaitSeconds; i++) {
                 await new Promise(r => setTimeout(r, 1000));
                 receipt = await this.web3.eth.getTransactionReceipt(transactionHash);
                 if (receipt) break;
@@ -573,11 +573,11 @@ class BaseGuardControllerTest {
     }
 
     async sendTransactionWithValue(method, wallet, value, receiptTimeoutMs = 120000) {
+        const from = wallet.address;
+        // Provide an explicit gas limit so web3/provider does not call
+        // eth_estimateGas (which can hang) or interpret gas as 0.
+        const gas = 1_500_000;
         try {
-            const from = wallet.address;
-            // Provide an explicit gas limit so web3/provider does not call
-            // eth_estimateGas (which can hang) or interpret gas as 0.
-            const gas = 1_500_000;
             const sendPromise = method.send({ from, value, gas });
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);

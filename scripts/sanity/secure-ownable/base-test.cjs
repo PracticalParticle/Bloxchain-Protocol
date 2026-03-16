@@ -308,10 +308,15 @@ class BaseSecureOwnableTest {
         const gas = 1_500_000;
         try {
             const sendPromise = method.send({ from, gas });
+            let timeoutId;
             const sendTimeout = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)), receiptTimeoutMs);
+                timeoutId = setTimeout(
+                    () => reject(new Error(`Transaction receipt timeout after ${receiptTimeoutMs / 1000}s (RPC may be slow or tx stuck)`)),
+                    receiptTimeoutMs
+                );
             });
             const result = await Promise.race([sendPromise, sendTimeout]);
+            if (timeoutId) clearTimeout(timeoutId);
             return result;
         } catch (error) {
             let errorMessage = error.message;

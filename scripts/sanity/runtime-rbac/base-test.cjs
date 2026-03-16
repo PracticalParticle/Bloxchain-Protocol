@@ -481,6 +481,10 @@ class BaseRuntimeRBACTest {
         // Use an explicit gas limit so web3/provider does not call
         // eth_estimateGas (which can hang) or treat gas as 0.
         const gas = 1_500_000;
+        // NOTE: This method uses Promise.race with a timeout. If the timeout fires
+        // first, the underlying send() call may still complete later and change
+        // on-chain state. Callers must treat a timeout as "result unknown" rather
+        // than assuming the transaction did not execute.
         try {
             const sendPromise = method.send({ from, gas });
             const timeoutPromise = new Promise((_, reject) => {
