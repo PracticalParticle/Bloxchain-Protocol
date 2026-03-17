@@ -85,6 +85,7 @@ module.exports = async function(deployer, network, accounts) {
         await deployer.deploy(AccountBlox);
         accountBlox = await AccountBlox.deployed();
         console.log("✅ AccountBlox deployed at:", accountBlox.address);
+
         // Get web3 from deployed contract instance (available for error handling)
         const web3 = accountBlox.constructor.web3 || global.web3;
         
@@ -95,9 +96,6 @@ module.exports = async function(deployer, network, accounts) {
         if (!synced) {
             console.log(`   ⚠️  Warning: Nonce sync failed after max retries, proceeding anyway`);
         }
-        
-        // Save network info to artifact (fixes issue when network_id is "*")
-        await saveArtifactNetwork(AccountBlox, accountBlox.address, web3, network);
         
         // Initialize AccountBlox
         console.log("🔧 Initializing AccountBlox...");
@@ -111,27 +109,60 @@ module.exports = async function(deployer, network, accounts) {
             );
             console.log("✅ AccountBlox initialized successfully");
             console.log("   Transaction hash:", tx.tx);
+
+            // Save network info to artifact only after successful initialization
+            await saveArtifactNetwork(AccountBlox, accountBlox.address, web3, network);
         } catch (error) {
             console.log("❌ AccountBlox initialization failed:");
             console.log("   Error message:", error.message);
             console.log("   Error reason:", error.reason);
             console.log("   Error data:", error.data);
             console.log("   Full error:", JSON.stringify(error, null, 2));
-            
-            // Try to decode the error if it's a revert
-            if (error.data) {
-                try {
-                    const decodedError = await web3.eth.call({
-                        to: accountBlox.address,
-                        data: error.data
-                    });
-                    console.log("   Decoded error data:", decodedError);
-                } catch (decodeError) {
-                    console.log("   Could not decode error data:", decodeError.message);
+
+            // If the provider threw a connection error after broadcasting the tx,
+            // it's possible that the contract was actually initialized on-chain.
+            // Check the owner() state to detect this and avoid double-initializing.
+            let initializedOnChain = false;
+            try {
+                const currentOwner = await accountBlox.owner();
+                if (currentOwner && currentOwner !== "0x0000000000000000000000000000000000000000") {
+                    initializedOnChain = true;
+                    console.log("⚠️  initialize() reported an error, but owner() is set on-chain:", currentOwner);
+                    console.log("   Treating AccountBlox as initialized based on contract state.");
+                } else {
+                    console.log("   owner() check indicates AccountBlox is not initialized (owner is zero address).");
                 }
+            } catch (ownerCheckError) {
+                console.log("   Additional owner() check failed:", ownerCheckError.message);
             }
             
-            console.log("⚠️  Contract deployed but not initialized. This may be expected for upgradeable contracts.");
+            if (initializedOnChain) {
+                // In this case, persist network info so sanity tests and tooling
+                // can still discover the deployed/initialized contract.
+                try {
+                    await saveArtifactNetwork(AccountBlox, accountBlox.address, web3, network);
+                    console.log("✅ Saved AccountBlox network info after owner() state check.");
+                } catch (saveError) {
+                    console.log("⚠️  Failed to save AccountBlox network info after owner() check:", saveError.message);
+                }
+            } else {
+                // Try to decode the error if it's a revert
+                if (error.data) {
+                    try {
+                        const decodedError = await web3.eth.call({
+                            to: accountBlox.address,
+                            data: error.data
+                        });
+                        console.log("   Decoded error data:", decodedError);
+                    } catch (decodeError) {
+                        console.log("   Could not decode error data:", decodeError.message);
+                    }
+                }
+                
+                console.log("⚠️  Contract deployed but not initialized. This must be resolved before using this deployment.");
+                // Fail the migration so callers know initialization did not succeed
+                throw new Error("AccountBlox initialization failed – migration aborted.");
+            }
         }
     } else {
         console.log("\n📦 Step 2: Skipping AccountBlox deployment (disabled)");
