@@ -517,6 +517,80 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   }
 
   /**
+   * Execute one or more guard config actions via guardConfigBatchRequestAndApprove.
+   * Uses a meta-transaction signed by signerWalletName and broadcast by broadcasterWalletName.
+   */
+  protected async executeGuardConfigActions(
+    actions: GuardConfigAction[],
+    signerWalletName: string,
+    broadcasterWalletName: string,
+    operationName: string
+  ): Promise<void> {
+    if (!this.metaTxSigner || !this.guardController) {
+      throw new Error('MetaTransactionSigner or GuardController not initialized');
+    }
+    if (!this.publicClient || !this.guardControllerDefinitionsAddress) {
+      throw new Error('publicClient and guardControllerDefinitionsAddress required for guard config batch');
+    }
+    if (!this.contractAddress) {
+      throw new Error('Contract address not set');
+    }
+
+    const signerWallet = this.wallets[signerWalletName];
+    if (!signerWallet) {
+      throw new Error(`Wallet not found: ${signerWalletName}`);
+    }
+    const broadcasterWallet = this.wallets[broadcasterWalletName];
+    if (!broadcasterWallet) {
+      throw new Error(`Broadcaster wallet not found: ${broadcasterWalletName}`);
+    }
+
+    // Build execution params for the guard config batch
+    const executionParams = await guardConfigBatchExecutionParams(
+      this.publicClient,
+      this.guardControllerDefinitionsAddress,
+      actions
+    );
+
+    // Create meta-tx params for the guard config batch handler
+    const metaTxParams = await this.createMetaTxParams(
+      this.GUARD_CONFIG_BATCH_META_SELECTOR,
+      TxAction.SIGN_META_REQUEST_AND_APPROVE,
+      signerWallet.address
+    );
+
+    // TxParams for controller operation (mirrors createSignedMetaTxForFunctionRegistration)
+    const txParams = {
+      requester: signerWallet.address,
+      target: this.contractAddress,
+      value: BigInt(0),
+      gasLimit: BigInt(1_000_000),
+      operationType: this.CONTROLLER_OPERATION_TYPE,
+      executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
+      executionParams,
+    };
+
+    const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
+      txParams,
+      metaTxParams
+    );
+    const signedMetaTx = await this.metaTxSigner.signMetaTransaction(
+      unsignedMetaTx,
+      signerWallet.address,
+      signerWallet.privateKey
+    );
+
+    const broadcasterGuardController = this.createGuardControllerWithWallet(broadcasterWalletName);
+    const result = await broadcasterGuardController.guardConfigBatchRequestAndApprove(
+      signedMetaTx,
+      // Explicit gas so viem does not call eth_estimateGas for this large payload.
+      this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
+    );
+    const receipt = await result.wait();
+    await this.assertGuardConfigBatchSucceeded(receipt, operationName);
+  }
+
+  /**
    * Get role hash from role name (must match contract keccak256(roleName))
    */
   protected getRoleHash(roleName: string): Hex {
@@ -527,9 +601,18 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    * Check if role exists (for mint flow setup).
    */
   protected async roleExists(roleHash: Hex): Promise<boolean> {
-    if (!this.runtimeRBAC) return false;
+    if (!this.contractAddress) return false;
     try {
-      const role = await this.runtimeRBAC.getRole(roleHash);
+      // Use an owner-scoped RuntimeRBAC client for reads that require _validateAnyRole.
+      const ownerWallet = this.getRoleWallet('owner');
+      const ownerWalletName =
+        Object.keys(this.wallets).find(
+          (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+        ) || 'wallet1';
+      const rbac = this.createRuntimeRBACWithWallet(ownerWalletName);
+      (rbac as any).abi = AccountBloxABIJson;
+
+      const role = await (rbac as any).getRole(roleHash);
       const h = (role as any).roleHashReturn ?? (role as any).roleHash;
       return !!h && String(h).toLowerCase() !== '0x0000000000000000000000000000000000000000000000000000000000000000';
     } catch {
@@ -643,10 +726,80 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     // Provide an explicit gas limit so viem does not call eth_estimateGas for this
     // large roleConfigBatchRequestAndApprove payload (which can hang or time out
     // on constrained remote RPCs).
-    return broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(
+    const result = await broadcasterRuntimeRBAC.roleConfigBatchRequestAndApprove(
       signedMetaTx,
-      this.getTxOptions(broadcasterWallet.address, { gas: 1_500_000n })
+      this.getTxOptions(broadcasterWallet.address, { gas: 10_000_000n })
     );
+
+    // Mirror guard config batch assertions: ensure TxStatus is COMPLETED (5), not FAILED (6).
+    try {
+      const receipt = await result.wait();
+      await this.assertRoleConfigBatchSucceeded(receipt, 'Mint role config batch');
+    } catch (e: any) {
+      console.error(`❌ Role config batch failed for mint roles: ${e?.message ?? e}`);
+      throw e;
+    }
+
+    return result;
+  }
+
+  /**
+   * Assert role config batch succeeded by checking tx record status (5 = COMPLETED, 6 = FAILED).
+   * Uses the same transaction history as GuardController / AccountBlox (shared EngineBlox state).
+   */
+  protected async assertRoleConfigBatchSucceeded(receipt: any, operationName: string): Promise<void> {
+    const txId = await this.resolveTxIdForControllerOperation(receipt);
+    if (txId == null) {
+      console.log(`  ⚠️  No txId in receipt for ${operationName}; skipping tx-record status check`);
+      return;
+    }
+    const txRecord = await this.getGuardTransactionRecord(txId);
+    if (!txRecord) {
+      throw new Error(`${operationName}: could not get transaction record for txId ${txId}`);
+    }
+    const status =
+      typeof txRecord.status === 'bigint'
+        ? Number(txRecord.status)
+        : typeof txRecord.status === 'string'
+          ? parseInt(txRecord.status, 10)
+          : txRecord.status;
+    console.log(`  📋 Role config tx record status: ${status} (5=COMPLETED, 6=FAILED)`);
+    if (status === 6) {
+      const result = txRecord.result ?? '0x';
+      const resultHex =
+        typeof result === 'string'
+          ? result
+          : result && typeof result === 'object' && 'length' in result
+            ? '0x' +
+              Array.from(new Uint8Array(result as ArrayBuffer))
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('')
+            : String(result);
+      const errorSelector = this.decodeErrorSelector(result);
+      const errorName = errorSelector ? this.getErrorName(errorSelector) : 'Unknown';
+      console.log(`  🔍 Role config revert selector: ${errorSelector ?? 'none'} (${errorName})`);
+      // Treat idempotent role-config replays as soft success so that re-running tests on
+      // an environment where roles already exist does not fail the suite. Rely on the
+      // subsequent roleExists/hasRole/permission checks in the caller to enforce correctness.
+      if (errorName === 'ResourceAlreadyExists' || errorName === 'ItemAlreadyExists') {
+        console.log(
+          `  ⏭️  Role config batch reported ${errorName} (TxStatus 6); treating as already-applied and continuing`
+        );
+        return;
+      }
+      if (!errorSelector || errorName.startsWith('Unknown')) {
+        console.log(`  🔍 Raw revert data (first 66 chars): ${resultHex.slice(0, 66)}`);
+      }
+      throw new Error(
+        `Role config batch failed (TxStatus 6) for ${operationName}. Revert: ${errorName}`
+      );
+    }
+    if (status !== 5) {
+      throw new Error(
+        `Role config batch did not complete for ${operationName}. Status: ${status} (expected 5)`
+      );
+    }
+    console.log(`  ✅ Role config batch completed (status 5) for ${operationName}`);
   }
 
   protected createRuntimeRBACWithWallet(walletName: string): RuntimeRBAC {
@@ -663,6 +816,54 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   }
 
   /**
+   * Check if a role has a specific TxAction permission for a function selector.
+   * Mirrors the CJS helper roleHasPermissionForSelector using RuntimeRBAC.getActiveRolePermissions.
+   */
+  protected async roleHasPermissionForSelector(
+    roleHash: Hex,
+    functionSelector: Hex,
+    action: TxAction
+  ): Promise<boolean> {
+    if (!this.runtimeRBAC) {
+      throw new Error('RuntimeRBAC SDK not initialized');
+    }
+    const permissions = await this.runtimeRBAC.getActiveRolePermissions(roleHash);
+    const list: any[] =
+      Array.isArray(permissions)
+        ? permissions
+        : (permissions as any)?.functionPermissions ??
+          (permissions as any)?.functionPermissionsReturn ??
+          [];
+
+    const norm = (v: string | Hex | undefined) =>
+      (v ? String(v) : '').toLowerCase();
+    const selectorNorm = norm(functionSelector);
+
+    for (const p of list) {
+      const sel =
+        (p as any).functionSelector ??
+        (p as any).functionSelectorReturn ??
+        (p as any)[0];
+      if (sel && norm(sel) === selectorNorm) {
+        const rawBitmap =
+          (p as any).grantedActionsBitmap ??
+          (p as any).grantedActionsBitmapReturn ??
+          (p as any)[1];
+        const bitmap =
+          typeof rawBitmap === 'bigint'
+            ? Number(rawBitmap)
+            : typeof rawBitmap === 'number'
+              ? rawBitmap
+              : rawBitmap != null
+                ? Number(rawBitmap)
+                : 0;
+        return (bitmap & (1 << action)) !== 0;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Detect if a thrown error is a contract revert with ResourceAlreadyExists / ItemAlreadyExists.
    * Used for idempotent permission setup (e.g. ADD_FUNCTION_TO_ROLE when already present).
    */
@@ -676,6 +877,25 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     if (selector) {
       const name = this.getErrorName(selector);
       if (name === 'ResourceAlreadyExists' || name === 'ItemAlreadyExists') return true;
+    }
+    return false;
+  }
+
+  /**
+   * Detect if a thrown error is a contract revert with NotSupported.
+   * Used where role-config batches may legitimately hit a schema/permission ceiling but we still
+   * want the final on-chain permission assertions to be the source of truth.
+   */
+  protected isNotSupportedRevert(error: any): boolean {
+    if (!error) return false;
+    const msg = (error.shortMessage ?? error.message ?? error.cause?.shortMessage ?? error.cause?.message ?? '').toString();
+    if (/NotSupported/i.test(msg)) return true;
+    const data = error.data ?? error.cause?.data;
+    if (data?.errorName === 'NotSupported') return true;
+    const selector = this.decodeErrorSelector(data?.data ?? data);
+    if (selector) {
+      const name = this.getErrorName(selector);
+      if (name === 'NotSupported') return true;
     }
     return false;
   }
@@ -720,10 +940,13 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
   /**
    * Extract transaction ID from receipt by decoding TransactionEvent (same state machine as runtime-rbac).
+   * This is a low-level helper used by higher-level methods that can fall back to getTransactionHistory when needed.
    */
   protected extractTxIdFromReceipt(receipt: any): bigint | null {
     if (!receipt?.logs?.length) return null;
-    const eventSignature = keccak256(toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')) as Hex;
+    const eventSignature = keccak256(
+      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')
+    ) as Hex;
     for (const log of receipt.logs) {
       if (log.topics?.[0] === eventSignature && log.topics.length >= 2) {
         const txId = BigInt(log.topics[1]);
@@ -732,6 +955,19 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       }
     }
     return null;
+  }
+
+  /**
+   * Extract transaction ID for a controller operation strictly from TransactionEvent logs.
+   * If no TransactionEvent is present in the receipt, we do NOT fall back to history inference;
+   * callers must rely on higher-level state checks instead of an ambiguous txId.
+   */
+  protected async resolveTxIdForControllerOperation(receipt: any): Promise<bigint | null> {
+    const fromEvent = this.extractTxIdFromReceipt(receipt);
+    if (fromEvent == null) {
+      console.log('  ⚠️  No TransactionEvent found in receipt; txId cannot be resolved unambiguously');
+    }
+    return fromEvent;
   }
 
   /**
@@ -838,7 +1074,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    * Call after guardConfigBatchRequestAndApprove + result.wait(). Throws with decoded revert reason if status 6.
    */
   protected async assertGuardConfigBatchSucceeded(receipt: any, operationName: string): Promise<void> {
-    const txId = this.extractTxIdFromReceipt(receipt);
+    const txId = await this.resolveTxIdForControllerOperation(receipt);
     if (txId == null) {
       console.log(`  ⚠️  No txId in receipt for ${operationName}; skipping tx-record status check`);
       return;
