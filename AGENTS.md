@@ -11,7 +11,7 @@ Focus areas:
 ## 1. Tech Stack & Targets
 
 - **Language / Runtime**
-  - Solidity `0.8.34` (upgradeable, OZ upgradable patterns)
+  - Solidity `0.8.34` (upgradeable, OZ upgradeable patterns)
   - TypeScript (Viem‑based SDK)
 - **Core Domains**
   - `contracts/core` – source of truth for all protocol behavior

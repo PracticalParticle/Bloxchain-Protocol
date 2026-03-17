@@ -76,7 +76,7 @@ const walletClient = createWalletClient({
 });
 
 // 2) Use a deployed Account-based contract (e.g. AccountBlox)
-const accountAddress = '0x...'; // from deployed-addresses.json
+const accountAddress = '0x...' as `0x${string}`; // from deployed-addresses.json
 
 const secureOwnable = new SecureOwnable(publicClient, walletClient, accountAddress, sepolia);
 const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, accountAddress, sepolia);

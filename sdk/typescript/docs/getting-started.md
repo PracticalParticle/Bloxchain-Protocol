@@ -107,8 +107,9 @@ const txRequest = await secureOwnable.transferOwnershipRequest({
 
 await publicClient.waitForTransactionReceipt({ hash: txRequest.hash });
 
-// 2) After the timelock expires, approve the pending transaction (txId from getPendingTransactions / getTransaction)
-const pendingTxIds = await secureOwnable.getPendingTransactions?.(); // or BaseStateMachine wrapper
+// 2) After the timelock expires, approve the pending transaction (txId from BaseStateMachine.getPendingTransactions / getTransaction)
+const baseStateMachine = new BaseStateMachine(publicClient, walletClient, accountAddress, sepolia);
+const pendingTxIds = await baseStateMachine.getPendingTransactions();
 const txId = pendingTxIds[0];
 
 const txApprove = await secureOwnable.transferOwnershipDelayedApproval(txId, {
@@ -133,7 +134,7 @@ const params = '0x...' as `0x${string}`; // abi-encoded params
 const gasLimit = 300_000n;
 const operationType = EngineBlox.NATIVE_TRANSFER_OPERATION; // or custom op type
 
-const txRecordId = await guardController.executeWithTimeLock(
+const txResult = await guardController.executeWithTimeLock(
   target,
   0n,                    // value
   functionSelector,
@@ -143,7 +144,7 @@ const txRecordId = await guardController.executeWithTimeLock(
   { from: account.address },
 );
 
-console.log('Requested guarded execution txId:', txRecordId);
+console.log('Requested guarded execution tx hash:', txResult.hash);
 ```
 
 (Approvals, cancellations, and meta‑tx flows use the same patterns as described in the component‑specific docs.)

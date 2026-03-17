@@ -1,6 +1,6 @@
 # Bloxchain TypeScript SDK Documentation
 
-Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
+Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
 
 ## 📚 **Documentation Structure**
 
