@@ -1,28 +1,29 @@
 # Bloxchain TypeScript SDK Documentation
 
-Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
+Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
 
 ## 📚 **Documentation Structure**
 
 ### **Core SDK**
-- [**Getting Started**](./getting-started.md) - Quick setup and basic usage
-- [**API Reference**](./api-reference.md) - Complete API documentation
-- [**SecureOwnable**](./secure-ownable.md) - SecureOwnable contract integration
-- [**RuntimeRBAC**](./runtime-rbac.md) - RuntimeRBAC contract integration
-- [**Definitions**](./definition-contract.md) - Definition library interaction (IDefinition)
-- [**Meta-Transactions**](./meta-transactions.md) - Meta-transaction workflows and signing
-- [**Types & Interfaces**](./types-interfaces.md) - TypeScript type definitions
-
-
-### **Advanced Topics**
-- [**Best Practices**](./best-practices.md) - Development guidelines and patterns
-
-### **Examples & Tutorials**
-- [**Basic Examples**](./examples-basic.md) - Simple usage examples
+- [**Getting Started**](./getting-started.md) – Quick setup and basic usage
+- [**API Reference**](./api-reference.md) – Core SDK classes and types
+- [**SecureOwnable**](./secure-ownable.md) – SecureOwnable contract integration
+- [**RuntimeRBAC**](./runtime-rbac.md) – RuntimeRBAC contract integration
+- [**GuardController**](./guard-controller.md) – Guarded execution and whitelists
+- [**Definitions**](./definition-contract.md) – Definition library interaction (`IDefinition`)
+- [**Meta-Transactions**](./meta-transactions.md) – Meta‑transaction workflows and signing
+- [**Types & Interfaces**](./types-interfaces.md) – TypeScript type definitions
 
 ### **Architecture & Concepts**
-- [**Bloxchain Architecture**](./bloxchain-architecture.md) - Protocol and state machine
-- [**State Machine Engine**](./state-machine-engine.md) - State machine details
+- [**Bloxchain Architecture**](./bloxchain-architecture.md) – Protocol and state machine
+- [**State Machine Engine**](./state-machine-engine.md) – `SecureOperationState` and EngineBlox
+- [**Core Contract Graph**](./core-contract-graph.md) – Graph of core contracts and SDK wrappers
+
+### **Advanced Topics**
+- [**Best Practices**](./best-practices.md) – Development guidelines and patterns
+
+### **Examples & Tutorials**
+- [**Basic Examples**](./examples-basic.md) – Simple usage examples
 
 ## 🚀 **Quick Start**
 

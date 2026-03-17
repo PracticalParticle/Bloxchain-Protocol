@@ -1,184 +1,85 @@
-# Bloxchain TypeScript SDK Documentation Index
+# Bloxchain TypeScript SDK – Docs Index
 
-Welcome to the comprehensive documentation for the Bloxchain TypeScript SDK. This index provides quick access to all documentation resources.
+Welcome to the Bloxchain TypeScript SDK documentation index. This page links to the current, maintained docs that match the core Solidity contracts under `contracts/core` and the TypeScript SDK under `sdk/typescript`.
 
 ## 📚 **Documentation Structure**
 
 ### **🚀 Getting Started**
-- [**Main Documentation**](./README.md) - Overview and navigation
-- [**Getting Started**](./getting-started.md) - Quick setup and basic usage
-- [**API Reference**](./api-reference.md) - Complete API documentation
+- [**Main Documentation**](./README.md) – Overview and navigation
+- [**Getting Started**](./getting-started.md) – Quick setup and basic usage
+- [**API Reference**](./api-reference.md) – Core SDK classes and method reference
 
-### **🏗️ Bloxchain Architecture**
-- [**Protocol Architecture**](./bloxchain-architecture.md) - Bloxchain protocol overview and design principles
-- [**State Machine Engine**](./state-machine-engine.md) - SecureOperationState engine and state management
-- [**Architecture Patterns**](./architecture-patterns.md) - Design patterns and best practices
+### **🏗️ Architecture & Concepts**
+- [**Bloxchain Architecture**](./bloxchain-architecture.md) – Protocol overview and state machine concepts
+- [**State Machine Engine**](./state-machine-engine.md) – `SecureOperationState` and EngineBlox internals
+- [**Architecture Patterns**](./architecture-patterns.md) – Design patterns and best practices
+- [**State Abstraction**](./state-abstraction.md) – State-machine driven security model
+- [**State vs Account Abstraction**](./state-abstraction-vs-account-abstraction.md) – Conceptual comparison
+- [**Core Contract Graph**](./core-contract-graph.md) – Graph of core contracts and how they relate
 
 ### **🔧 Core SDK Components**
-- [**SecureOwnable**](./secure-ownable.md) - SecureOwnable contract integration
-- [**RuntimeRBAC**](./dynamic-rbac.md) - RuntimeRBAC contract integration (dynamic role-based access control)
-- [**Definitions**](./definition-contract.md) - Dynamic definition library interaction
-- [**Types & Interfaces**](./types-interfaces.md) - TypeScript type definitions
-
+- [**SecureOwnable**](./secure-ownable.md) – Ownership, broadcaster, and recovery workflows
+- [**RuntimeRBAC**](./runtime-rbac.md) – Dynamic role-based access control
+- [**GuardController**](./guard-controller.md) – Guarded execution and whitelisting
+- [**Definitions / IDefinition**](./definition-contract.md) – Definition libraries and schemas
+- [**Types & Interfaces**](./types-interfaces.md) – Shared TypeScript types and interfaces
+- [**Meta-Transactions**](./meta-transactions.md) – Meta-tx params, signing, and execution
 
 ### **📖 Development Guides**
-- [**Best Practices**](./best-practices.md) - Development guidelines and patterns
-- [**Error Handling**](./error-handling.md) - Error management and debugging
-- [**Performance Optimization**](./performance.md) - Optimization techniques
-- [**Testing Guide**](./testing.md) - Testing strategies and examples
+- [**Best Practices**](./best-practices.md) – Development guidelines and security patterns
 
 ### **💡 Examples & Tutorials**
-- [**Basic Examples**](./examples-basic.md) - Simple usage examples
-- [**Advanced Examples**](./examples-advanced.md) - Complex scenarios
-- [**Integration Examples**](./examples-integration.md) - Real-world integrations
+- [**Basic Examples**](./examples-basic.md) – Simple usage and end‑to‑end flows
 
-### **🚀 Deployment & Configuration**
-- [**Deployment Guide**](./deployment.md) - Contract deployment
-- [**Network Configuration**](./network-config.md) - Network setup
-- [**Migration Guide**](./migration.md) - Upgrading and migrations
+## 🎯 **Quick Navigation (By Use Case)**
 
-## 🎯 **Quick Navigation**
-
-### **By Use Case**
-
-**I want to...**
+**I want to…**
 - **Get started quickly** → [Getting Started](./getting-started.md)
-- **Understand Bloxchain architecture** → [Protocol Architecture](./bloxchain-architecture.md)
-- **Learn about the state machine** → [State Machine Engine](./state-machine-engine.md)
-- **Understand the API** → [API Reference](./api-reference.md)
-- **Use SecureOwnable** → [SecureOwnable Guide](./secure-ownable.md)
-- **Use RuntimeRBAC** → [RuntimeRBAC Guide](./dynamic-rbac.md)
-- **Use Definitions** → [Definitions Guide](./definition-contract.md)
-- **See examples** → [Basic Examples](./examples-basic.md)
-- **Follow best practices** → [Best Practices](./best-practices.md)
-- **Deploy contracts** → [Deployment Guide](./deployment.md)
+- **Understand the on-chain architecture** → [Bloxchain Architecture](./bloxchain-architecture.md)
+- **See how contracts relate** → [Core Contract Graph](./core-contract-graph.md)
+- **Understand the state machine** → [State Machine Engine](./state-machine-engine.md)
+- **Use SecureOwnable** → [SecureOwnable](./secure-ownable.md)
+- **Configure roles at runtime** → [RuntimeRBAC](./runtime-rbac.md)
+- **Configure guarded execution / whitelists** → [GuardController](./guard-controller.md)
+- **Work with definitions and schemas** → [Definitions](./definition-contract.md)
+- **Use meta-transactions safely** → [Meta-Transactions](./meta-transactions.md)
+- **Explore SDK types** → [Types & Interfaces](./types-interfaces.md)
+- **See working code** → [Basic Examples](./examples-basic.md)
 
-### **By Component**
+## 📋 **Documentation Status (SDK Docs Folder)**
 
-**Core SDK:**
-- [SecureOwnable](./secure-ownable.md) - Ownership management
-- [RuntimeRBAC](./dynamic-rbac.md) - Role-based access control
-- [Definitions](./definition-contract.md) - Dynamic definition library interaction
-- [Types & Interfaces](./types-interfaces.md) - Type definitions
+| Document | Status | Notes |
+|----------|--------|-------|
+| [README](./README.md) | ✅ Up to date | Entry point for SDK docs |
+| [Getting Started](./getting-started.md) | ✅ Up to date | Basic setup and first calls |
+| [API Reference](./api-reference.md) | ✅ Up to date | Core SDK classes and types |
+| [SecureOwnable](./secure-ownable.md) | ✅ Up to date | Maps to `SecureOwnable.sol` and TS wrapper |
+| [RuntimeRBAC](./runtime-rbac.md) | ✅ Up to date | Maps to `RuntimeRBAC.sol` and TS wrapper |
+| [GuardController](./guard-controller.md) | ✅ Up to date | Maps to `GuardController.sol` and TS wrapper |
+| [Definitions](./definition-contract.md) | ✅ Up to date | Definition libraries and `IDefinition` |
+| [Meta-Transactions](./meta-transactions.md) | ✅ Up to date | EngineBlox meta‑tx flows |
+| [Types & Interfaces](./types-interfaces.md) | ✅ Up to date | Shared TypeScript types |
+| [Best Practices](./best-practices.md) | ✅ Up to date | Security and usage guidance |
+| [Basic Examples](./examples-basic.md) | ✅ Up to date | Sanity‑style examples |
+| [Bloxchain Architecture](./bloxchain-architecture.md) | ✅ Up to date | State machine overview |
+| [State Machine Engine](./state-machine-engine.md) | ✅ Up to date | EngineBlox internals |
+| [Core Contract Graph](./core-contract-graph.md) | ✅ New | Contract relationship graph |
 
-
-**Development:**
-- [Best Practices](./best-practices.md) - Development guidelines
-- [Error Handling](./error-handling.md) - Error management
-- [Performance](./performance.md) - Optimization
-- [Testing](./testing.md) - Testing strategies
-
-**Examples:**
-- [Basic Examples](./examples-basic.md) - Simple scenarios
-- [Advanced Examples](./examples-advanced.md) - Complex scenarios
-- [Integration Examples](./examples-integration.md) - Real-world usage
-
-## 📋 **Documentation Status**
-
-| Document | Status | Last Updated |
-|----------|--------|--------------|
-| [README](./README.md) | ✅ Complete | Sep 2025 |
-| [Getting Started](./getting-started.md) | ✅ Complete | Sep 2025 |
-| [API Reference](./api-reference.md) | ✅ Complete | Sep 2025 |
-| [SecureOwnable](./secure-ownable.md) | ✅ Complete | Sep 2025 |
-| [RuntimeRBAC](./dynamic-rbac.md) | ✅ Complete | Sep 2025 |
-| [Definitions](./definition-contract.md) | ✅ Complete | Sep 2025 |
-| [Types & Interfaces](./types-interfaces.md) | ✅ Complete | Sep 2025 |
-| [Best Practices](./best-practices.md) | ✅ Complete | Sep 2025 |
-| [Error Handling](./error-handling.md) | 🚧 Planned | - |
-| [Performance](./performance.md) | 🚧 Planned | - |
-| [Testing](./testing.md) | 🚧 Planned | - |
-| [Basic Examples](./examples-basic.md) | ✅ Complete | Sep 2025 |
-| [Advanced Examples](./examples-advanced.md) | 🚧 Planned | - |
-| [Integration Examples](./examples-integration.md) | 🚧 Planned | - |
-| [Deployment Guide](./deployment.md) | 🚧 Planned | - |
-| [Network Configuration](./network-config.md) | 🚧 Planned | - |
-| [Migration Guide](./migration.md) | 🚧 Planned | - |
-
-**Legend:**
-- ✅ Complete - Ready for use
-- 🚧 Planned - In development
-- ❌ Missing - Not yet started
+Legend: **✅ Up to date** – in sync with current `contracts/core` and `sdk/typescript` behavior.
 
 ## 🔗 **External Resources**
 
-### **Guardian Protocol**
-- [Main Repository](https://github.com/PracticalParticle/Guardian)
-- [Contract ABIs](../../abi/)
-- [Migration Scripts](../../../migrations/)
-- [Test Examples](../../../test/)
-
-### **Dependencies**
-- [Viem Documentation](https://viem.sh/) - Ethereum library
-- [TypeScript Documentation](https://www.typescriptlang.org/) - Type system
-- [Jest Documentation](https://jestjs.io/) - Testing framework
-
-### **Support**
-- [GitHub Issues](https://github.com/PracticalParticle/Guardian/issues) - Bug reports and feature requests
-- [Discord Community](https://discord.gg/guardian) - Community support
-- [Security Reports](mailto:security@particlecrypto.com) - Security issues
+- [Bloxchain Protocol README](../../README.md) – Protocol overview and repo‑level docs  
+- [Contract API (generated)](../../docs/) – Solidity NatSpec output (`npm run docgen`)  
+- [Codebase documentation process](../../CODEBASE_DOCUMENTATION.md)
 
 ## 📝 **Contributing to Documentation**
 
-### **How to Contribute**
-1. **Fork the repository**
-2. **Create a documentation branch**
-3. **Make your changes**
-4. **Submit a pull request**
+- **Edit docs here:** `sdk/typescript/docs`  
+- **Source of truth:** `contracts/core` and `sdk/typescript` (TS wrappers, helpers, and types)  
+- **When updating contracts:**  
+  - Update NatSpec in Solidity  
+  - Regenerate contract docs if needed  
+  - Sync the relevant markdown guides and the [Core Contract Graph](./core-contract-graph.md)
 
-### **Documentation Standards**
-- Use clear, concise language
-- Include code examples
-- Follow the existing structure
-- Test all code examples
-- Update the status table
-
-### **Documentation Types**
-- **Guides** - Step-by-step instructions
-- **References** - Complete API documentation
-- **Examples** - Practical code samples
-- **Tutorials** - Learning-focused content
-
-## 🎯 **Quick Start Examples**
-
-### **Basic Setup**
-```typescript
-import { SecureOwnable } from '@bloxchain/sdk/typescript'
-import { createPublicClient, http } from 'viem'
-import { mainnet } from 'viem/chains'
-
-const client = createPublicClient({
-  chain: mainnet,
-  transport: http()
-})
-
-const secureOwnable = new SecureOwnable(
-  client,
-  undefined,
-  '0x...',
-  mainnet
-)
-
-const owner = await secureOwnable.owner()
-console.log('Owner:', owner)
-```
-
-
-## 📊 **Documentation Metrics**
-
-- **Total Documents**: 15
-- **Completed**: 8 (53%)
-- **In Progress**: 7 (47%)
-- **Total Words**: ~50,000
-- **Code Examples**: 100+
-
-## 🔄 **Update Schedule**
-
-- **Weekly**: Review and update existing documentation
-- **Monthly**: Add new documentation for features
-- **Quarterly**: Major documentation restructuring
-- **As Needed**: Bug fixes and improvements
-
----
-
-**Need help?** Check out the [Getting Started Guide](./getting-started.md) or [Basic Examples](./examples-basic.md) to begin your journey with the Guardian TypeScript SDK.
+For larger changes, open a PR with a short summary of contract changes and how the docs were updated to match.
