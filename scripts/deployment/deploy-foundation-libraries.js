@@ -191,7 +191,15 @@ async function main() {
     ],
     account: deployerAccount,
   });
-  await waitForTransactionReceipt(publicClient, { hash: initHash });
+  const initReceipt = await waitForTransactionReceipt(publicClient, { hash: initHash });
+  if (initReceipt.status !== "success" && initReceipt.status !== 1n) {
+    console.error(
+      `⚠️ AccountBlox initialization transaction did not succeed (status: ${String(
+        initReceipt.status
+      )}). Please inspect tx: ${initHash}`
+    );
+    throw new Error("AccountBlox initialization failed");
+  }
   console.log(`   ✅ AccountBlox initialized (tx: ${initHash})`);
 
   console.log("\n🎉 Foundation libraries deployment complete.");

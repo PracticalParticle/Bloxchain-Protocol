@@ -597,25 +597,21 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
   }
 
   /**
-   * Extract transaction ID from receipt by decoding TransactionEvent
+   * Extract transaction ID from receipt by decoding TransactionEvent.
+   * Low-level helper used by higher-level methods that may fall back to transaction history.
    */
   protected extractTxIdFromReceipt(receipt: any): bigint | null {
     if (!receipt || !receipt.logs || receipt.logs.length === 0) {
       return null;
     }
 
-    // TransactionEvent signature: TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)
-    const eventSignature = keccak256(toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')) as Hex;
+    const eventSignature = keccak256(
+      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')
+    ) as Hex;
 
     for (const log of receipt.logs) {
       if (log.topics && log.topics[0] === eventSignature) {
         try {
-          // Decode the log - txId is the first indexed parameter (in topics[1])
-          // topics[0] = event signature
-          // topics[1] = txId (indexed uint256)
-          // topics[2] = functionHash (indexed bytes4)
-          // topics[3] = requester (indexed address)
-          // data contains: status (uint8), target (address), operationType (bytes32)
           if (log.topics.length >= 2) {
             const txId = BigInt(log.topics[1]);
             console.log(`  📋 Extracted txId from TransactionEvent: ${txId}`);
