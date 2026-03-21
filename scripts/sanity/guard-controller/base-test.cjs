@@ -176,7 +176,7 @@ class BaseGuardControllerTest {
         ).slice(0, 10);
         
         // GuardController batch config constants
-        this.CONTROLLER_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_OPERATION');
+        this.CONTROLLER_CONFIG_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_CONFIG_OPERATION');
         this.GUARD_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
             'guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
@@ -1593,7 +1593,7 @@ class BaseGuardControllerTest {
                 this.contractAddress,
                 0, // value
                 1000000, // gasLimit
-                this.CONTROLLER_OPERATION_TYPE,
+                this.CONTROLLER_CONFIG_OPERATION_TYPE,
                 this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
                 executionParams,
                 metaParams

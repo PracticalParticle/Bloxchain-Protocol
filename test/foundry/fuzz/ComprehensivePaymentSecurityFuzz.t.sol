@@ -370,6 +370,77 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     }
 
     /**
+     * @dev Test: Reject ERC20 token address zero at request-time
+     * Attack Vector: ERC20 Token Address Manipulation (Quality/validation gap)
+     */
+    function test_ERC20TokenAddressZeroRejectedAtRequestTime(uint256 paymentAmount) public {
+        // request-time validation should fail before execution/payment is attempted
+        paymentAmount = bound(paymentAmount, 1, 1e18);
+
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: address(0x5678),
+            nativeTokenAmount: 0,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: paymentAmount
+        });
+
+        bytes32 operationType = keccak256("NATIVE_TRANSFER");
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.InvalidAddress.selector,
+                address(0)
+            )
+        );
+        paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
+            0,
+            0,
+            operationType,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            "",
+            payment
+        );
+    }
+
+    /**
+     * @dev Test: Reject native recipient zero at request-time
+     * Attack Vector: Native recipient validation gap (quality/validation gap)
+     */
+    function test_NativeRecipientZeroRejectedAtRequestTime(uint256 paymentAmount) public {
+        paymentAmount = bound(paymentAmount, 1, 1e18);
+
+        EngineBlox.PaymentDetails memory payment = EngineBlox.PaymentDetails({
+            recipient: address(0),
+            nativeTokenAmount: paymentAmount,
+            erc20TokenAddress: address(0),
+            erc20TokenAmount: 0
+        });
+
+        bytes32 operationType = keccak256("NATIVE_TRANSFER");
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.InvalidAddress.selector,
+                address(0)
+            )
+        );
+        paymentHelper.requestTransactionWithPayment(
+            owner,
+            address(paymentHelper),
+            0,
+            0,
+            operationType,
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            "",
+            payment
+        );
+    }
+
+    /**
      * @dev Test: Balance drain prevention
      * Attack Vector: Native Token Balance Drain (MEDIUM)
      * 
@@ -460,7 +531,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         address originalRecipient,
         address newRecipient,
         uint256 paymentAmount,
-        uint256 timeAdvance
+        uint256 _timeAdvance
     ) public {
         vm.assume(originalRecipient != address(0));
         vm.assume(newRecipient != address(0));

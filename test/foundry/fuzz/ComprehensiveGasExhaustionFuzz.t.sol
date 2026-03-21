@@ -83,7 +83,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams
@@ -465,7 +465,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams
@@ -665,7 +665,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams
@@ -1100,7 +1100,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 address(accountBlox),
                 0,
                 0,
-                GuardControllerDefinitions.CONTROLLER_OPERATION,
+                GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
                 GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
                 params,
                 metaTxParams
@@ -1325,7 +1325,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams
@@ -1384,7 +1384,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams

@@ -67,7 +67,7 @@ contract BaseStateMachineTest is CommonBase {
         vm.prank(recovery);
         EngineBlox.TxRecord memory tx1 = accountBlox.getTransaction(txId1);
 
-        // Complete it so we can create a second request (only one secure request allowed at a time)
+        // Complete it so we can create a broadcaster request (broadcaster path requires idle queue)
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
         vm.prank(recovery);
         accountBlox.transferOwnershipDelayedApproval(txId1);
