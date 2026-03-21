@@ -16,7 +16,7 @@ import "../../interface/IGuardController.sol";
  * and role permissions for GuardController's public execution functions.
  * 
  * Key Features:
- * - Registers all 7 GuardController public execution functions
+ * - Registers all 9 GuardController public execution functions
  * - Defines role permissions for OWNER_ROLE and BROADCASTER_ROLE
  * - Supports time-delay and meta-transaction workflows
  * - Matches EngineBloxDefinitions pattern for consistency
