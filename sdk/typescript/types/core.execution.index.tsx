@@ -6,6 +6,7 @@ import { keccak256, Hex } from 'viem';
  */
 export const GUARD_CONTROLLER_OPERATION_TYPES = {
   CONTROLLER_OPERATION: keccak256(new TextEncoder().encode("CONTROLLER_OPERATION")),
+  CONTROLLER_CONFIG_OPERATION: keccak256(new TextEncoder().encode("CONTROLLER_CONFIG_OPERATION")),
   NATIVE_TRANSFER: keccak256(new TextEncoder().encode("NATIVE_TRANSFER"))
 } as const;
 

@@ -109,19 +109,39 @@ contract EdgeCasesTest is CommonBase {
     }
 
     function test_ConcurrentOperations() public {
-        // Only one secure request (ownership or broadcaster) may be pending at a time
+        // Broadcaster update requires a fully idle secure queue; ownership pending blocks it
         vm.prank(recovery);
         accountBlox.transferOwnershipRequest();
 
-        // Second request while ownership is pending should revert
         vm.prank(owner);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
         accountBlox.updateBroadcasterRequest(user1, 0);
 
-        // Exactly one should be pending
         vm.prank(owner);
         uint256[] memory pending = accountBlox.getPendingTransactions();
         assertEq(pending.length, 1);
+    }
+
+    function test_OwnershipRequest_AllowedWhileBroadcasterPending() public {
+        vm.prank(owner);
+        accountBlox.updateBroadcasterRequest(user1, 0);
+
+        vm.prank(recovery);
+        uint256 ownTxId = accountBlox.transferOwnershipRequest();
+
+        vm.prank(owner);
+        uint256[] memory pending = accountBlox.getPendingTransactions();
+        assertEq(pending.length, 2);
+
+        vm.prank(owner);
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
+        accountBlox.updateBroadcasterRequest(user2, 0);
+
+        vm.prank(recovery);
+        vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
+        accountBlox.transferOwnershipRequest();
+
+        assertGt(ownTxId, 0);
     }
 
     function test_InvalidTransactionId() public {

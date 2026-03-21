@@ -27,8 +27,10 @@ import "./interface/ISecureOwnable.sol";
  * Each operation follows a request -> approval workflow with appropriate time locks
  * and authorization checks. Operations can be cancelled within specific time windows.
  *
- * At most one ownership-transfer or broadcaster-update request may be pending at a time:
- * a pending request of either type blocks new requests until it is approved or cancelled.
+ * Pending secure requests use separate flags for ownership transfer and broadcaster update.
+ * A new ownership-transfer request is allowed if no ownership transfer is already pending
+ * (a broadcaster update may still be pending). A new broadcaster-update request is allowed only
+ * when neither type has a pending request.
  *
  * This contract focuses purely on security logic while leveraging the BaseStateMachine
  * for transaction management, meta-transactions, and state machine operations.
@@ -36,8 +38,9 @@ import "./interface/ISecureOwnable.sol";
 abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     using SharedValidation for *;
 
-    /// @dev True while any pending ownership transfer or broadcaster update request exists; blocks new requests until handled.
-    bool private _hasOpenRequest;
+    /// @dev Tracks pending secure txs by type. Upgrading from legacy `_hasOpenRequest` / `_pendingBits` requires no pending requests.
+    bool private _hasOpenOwnershipRequest;
+    bool private _hasOpenBroadcasterRequest;
 
     /**
      * @notice Initializer to initialize SecureOwnable state
@@ -83,7 +86,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
      */
     function transferOwnershipRequest() public returns (uint256 txId) {
         SharedValidation.validateRecovery(getRecovery());
-        _requireNoPendingRequest();
+        _requireNoPendingRequest(SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
 
         EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -95,7 +98,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             abi.encode(getRecovery())
         );
 
-        _hasOpenRequest = true;
+        _hasOpenOwnershipRequest = true;
         _logAddressPairEvent(owner(), getRecovery());
         return txRecord.txId;
     }
@@ -143,13 +146,15 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     // Broadcaster Management
     /**
      * @dev Requests an update to the broadcaster at a specific location (index).
+     * @notice Requires no pending broadcaster-update and no pending ownership-transfer request.
      * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
      * @param location The index in the broadcaster role's authorized wallets set
      * @return txId The transaction ID for the pending request (use getTransaction(txId) for full record)
      */
     function updateBroadcasterRequest(address newBroadcaster, uint256 location) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
-        _requireNoPendingRequest();
+        _requireNoPendingRequest(SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        _requireNoPendingRequest(SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
 
         // Get the current broadcaster at the specified location. zero address if no broadcaster at location.
         address currentBroadcaster = location < _getSecureState().roles[EngineBlox.BROADCASTER_ROLE].walletCount
@@ -166,7 +171,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             abi.encode(newBroadcaster, location)
         );
 
-        _hasOpenRequest = true;
+        _hasOpenBroadcasterRequest = true;
         _logAddressPairEvent(currentBroadcaster, newBroadcaster);
         return txRecord.txId;
     }
@@ -281,12 +286,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // ============ INTERNAL FUNCTIONS ============
 
-    /**
-     * @dev Reverts if an ownership-transfer or broadcaster-update request is already pending.
-     */
-    function _requireNoPendingRequest() internal view {
-        if (_hasOpenRequest) revert SharedValidation.PendingSecureRequest();
-    }
 
     /**
      * @dev Validates that the caller is the broadcaster and that the meta-tx signer is the owner.
@@ -298,23 +297,54 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Completes ownership/broadcaster flow after approval: resets flag and returns txId.
+     * @dev Completes ownership/broadcaster flow after approval: clears the matching pending flag and returns txId.
      * @param updatedRecord The updated transaction record from approval
      * @return txId The transaction ID
      */
     function _completeApprove(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
-        _hasOpenRequest = false;
+        _clearPendingFlagForOperation(updatedRecord.params.operationType);
         return updatedRecord.txId;
     }
 
     /**
-     * @dev Completes ownership/broadcaster flow after cancellation: resets flag, logs txId, returns txId.
+     * @dev Completes ownership/broadcaster flow after cancellation: clears the matching pending flag and returns txId.
      * @param updatedRecord The updated transaction record from cancellation
      * @return txId The transaction ID
      */
     function _completeCancel(EngineBlox.TxRecord memory updatedRecord) internal returns (uint256 txId) {
-        _hasOpenRequest = false;
+        _clearPendingFlagForOperation(updatedRecord.params.operationType);
         return updatedRecord.txId;
+    }
+
+    /**
+     * @dev Reverts if the pending flag for `requestOperationType` is already set (one lane per call).
+     *      `OWNERSHIP_TRANSFER` checks only `_hasOpenOwnershipRequest` (a broadcaster update may still be pending).
+     *      `BROADCASTER_UPDATE` checks only `_hasOpenBroadcasterRequest`. Callers that need both lanes idle
+     *      (e.g. `updateBroadcasterRequest`) invoke this once per operation type.
+     * @param requestOperationType Lane to validate (`OWNERSHIP_TRANSFER` or `BROADCASTER_UPDATE`).
+     */
+    function _requireNoPendingRequest(bytes32 requestOperationType) internal view {
+        if (requestOperationType == SecureOwnableDefinitions.OWNERSHIP_TRANSFER) {
+            if (_hasOpenOwnershipRequest) revert SharedValidation.PendingSecureRequest();
+        } else if (requestOperationType == SecureOwnableDefinitions.BROADCASTER_UPDATE) {
+            if (_hasOpenBroadcasterRequest) revert SharedValidation.PendingSecureRequest();
+        } else {
+            revert();
+        }
+    }
+
+    /**
+     * @dev Clears the pending flag for a completed or cancelled secure op (approve/cancel paths).
+     * @param operationType The tx record's `operationType` (`OWNERSHIP_TRANSFER` or `BROADCASTER_UPDATE`).
+     */
+    function _clearPendingFlagForOperation(bytes32 operationType) private {
+        if (operationType == SecureOwnableDefinitions.OWNERSHIP_TRANSFER) {
+            _hasOpenOwnershipRequest = false;
+        } else if (operationType == SecureOwnableDefinitions.BROADCASTER_UPDATE) {
+            _hasOpenBroadcasterRequest = false;
+        } else {
+            revert();
+        }
     }
 
     /**

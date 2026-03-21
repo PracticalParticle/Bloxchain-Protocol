@@ -5,7 +5,6 @@ import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/standards/hooks/IOnActionHook.sol";
-import "../../../contracts/examples/templates/AccountBlox.sol";
 import "../helpers/MockContracts.sol";
 
 /**

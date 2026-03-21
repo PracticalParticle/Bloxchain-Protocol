@@ -64,7 +64,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected metaTxSigner: MetaTransactionSigner | null = null;
 
   // GuardController constants
-  protected readonly CONTROLLER_OPERATION_TYPE: Hex = keccak256(new TextEncoder().encode('CONTROLLER_OPERATION')) as Hex;
+  protected readonly CONTROLLER_CONFIG_OPERATION_TYPE: Hex = keccak256(
+    new TextEncoder().encode('CONTROLLER_CONFIG_OPERATION')
+  ) as Hex;
   protected readonly GUARD_CONFIG_BATCH_META_SELECTOR: Hex = keccak256(
     new TextEncoder().encode('guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
@@ -407,7 +409,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       target: this.contractAddress!,
       value: BigInt(0),
       gasLimit: BigInt(1000000),
-      operationType: this.CONTROLLER_OPERATION_TYPE,
+      operationType: this.CONTROLLER_CONFIG_OPERATION_TYPE,
       executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams: executionParams
     };
@@ -493,7 +495,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       target: this.contractAddress!,
       value: BigInt(0),
       gasLimit: BigInt(1000000),
-      operationType: this.CONTROLLER_OPERATION_TYPE,
+      operationType: this.CONTROLLER_CONFIG_OPERATION_TYPE,
       executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams: executionParams
     };
@@ -559,13 +561,13 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       signerWallet.address
     );
 
-    // TxParams for controller operation (mirrors createSignedMetaTxForFunctionRegistration)
+    // TxParams for controller config operation (mirrors createSignedMetaTxForFunctionRegistration)
     const txParams = {
       requester: signerWallet.address,
       target: this.contractAddress,
       value: BigInt(0),
       gasLimit: BigInt(1_000_000),
-      operationType: this.CONTROLLER_OPERATION_TYPE,
+      operationType: this.CONTROLLER_CONFIG_OPERATION_TYPE,
       executionSelector: this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
       executionParams,
     };

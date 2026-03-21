@@ -376,6 +376,16 @@ library EngineBlox {
         // Validate both execution and handler selector permissions (same as txRequest)
         _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
+        // Request-time validation for attached payment details.
+        // This prevents creating persistent PENDING records that later fail during
+        // `executeAttachedPayment` due to missing/zero payment fields.
+        if (paymentDetails.nativeTokenAmount > 0 || paymentDetails.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
+        }
+        if (paymentDetails.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(paymentDetails.erc20TokenAddress);
+        }
+
         return _txRequest(
             self,
             requester,
@@ -574,6 +584,16 @@ library EngineBlox {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
         
+        // Request-time validation for attached payment details.
+        // `requestAndApprove` creates the request and executes via the same meta-tx flow,
+        // so we validate here to avoid persisting bad PENDING records.
+        if (metaTx.txRecord.payment.nativeTokenAmount > 0 || metaTx.txRecord.payment.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(metaTx.txRecord.payment.recipient);
+        }
+        if (metaTx.txRecord.payment.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(metaTx.txRecord.payment.erc20TokenAddress);
+        }
+
         TxRecord memory txRecord = _txRequest(
             self,
             metaTx.txRecord.params.requester,

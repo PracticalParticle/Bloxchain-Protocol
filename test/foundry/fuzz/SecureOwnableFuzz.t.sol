@@ -2,8 +2,8 @@
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
-import "../../../contracts/examples/templates/AccountBlox.sol";
-import "../../../contracts/core/lib/utils/SharedValidation.sol";
+import "../helpers/AccountPatternTest.sol";
+import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
 
 /**
  * @title SecureOwnableFuzzTest
@@ -20,7 +20,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(timelockPeriod < 365 days);
 
         // Create new contract with fuzzed timelock
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         newContract.initialize(
             owner,
@@ -68,6 +68,28 @@ contract SecureOwnableFuzzTest is CommonBase {
 
         address[] memory broadcasters = accountBlox.getBroadcasters();
         assertEq(broadcasters[0], newBroadcaster);
+    }
+
+    /// @dev Dual pending lanes: recovery may open ownership transfer while a broadcaster update is still pending.
+    function testFuzz_OwnershipRequest_WithBroadcasterUpdatePending(address newBroadcaster) public {
+        vm.assume(newBroadcaster != address(0));
+        vm.assume(newBroadcaster != broadcaster);
+
+        vm.prank(owner);
+        uint256 brTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+
+        vm.prank(recovery);
+        uint256 ownTxId = accountBlox.transferOwnershipRequest();
+
+        vm.prank(owner);
+        EngineBlox.TxRecord memory brTx = accountBlox.getTransaction(brTxId);
+        vm.prank(owner);
+        EngineBlox.TxRecord memory ownTx = accountBlox.getTransaction(ownTxId);
+
+        assertEq(uint8(brTx.status), uint8(EngineBlox.TxStatus.PENDING));
+        assertEq(uint8(ownTx.status), uint8(EngineBlox.TxStatus.PENDING));
+        assertEq(brTx.params.operationType, SecureOwnableDefinitions.BROADCASTER_UPDATE);
+        assertEq(ownTx.params.operationType, SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
     }
 
     function testFuzz_RecoveryUpdate(address newRecovery) public {
