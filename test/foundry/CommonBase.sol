@@ -7,7 +7,7 @@ import "../../contracts/core/access/interface/IRuntimeRBAC.sol";
 import "../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
 import "../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
-import "../../contracts/examples/templates/AccountBlox.sol";
+import "./helpers/AccountPatternTest.sol";
 import "./helpers/MockContracts.sol";
 import "./helpers/TestHelpers.sol";
 
@@ -27,8 +27,8 @@ contract CommonBase is Test {
     address public user4;
     address public user5;
 
-    // Deployed contracts (AccountBlox provides SecureOwnable + RuntimeRBAC + GuardController)
-    AccountBlox public accountBlox;
+    // Deployed contracts (Account pattern: SecureOwnable + RuntimeRBAC + GuardController)
+    AccountPatternTest public accountBlox;
 
     // Mock contracts
     MockERC20 public mockERC20;
@@ -87,8 +87,8 @@ contract CommonBase is Test {
         mockEventForwarder = new MockEventForwarder();
         metaTxSigner = new MetaTxSigner();
 
-        // Deploy and initialize AccountBlox
-        accountBlox = new AccountBlox();
+        // Deploy and initialize (AccountPatternTest mirrors AccountBlox: direct-deploy + initialize)
+        accountBlox = new AccountPatternTest();
         vm.prank(owner);
         accountBlox.initialize(
             owner,

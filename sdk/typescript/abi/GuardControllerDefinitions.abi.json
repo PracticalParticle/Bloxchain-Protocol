@@ -53,6 +53,19 @@
   },
   {
     "inputs": [],
+    "name": "CONTROLLER_CONFIG_OPERATION",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "CONTROLLER_OPERATION",
     "outputs": [
       {

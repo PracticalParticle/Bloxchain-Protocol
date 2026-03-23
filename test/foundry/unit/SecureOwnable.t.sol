@@ -2,7 +2,7 @@
 pragma solidity 0.8.34;
 
 import "../CommonBase.sol";
-import "../../../contracts/examples/templates/AccountBlox.sol";
+import "../helpers/AccountPatternTest.sol";
 import "../../../contracts/core/security/SecureOwnable.sol";
 import "../../../contracts/core/security/interface/ISecureOwnable.sol";
 import "../../../contracts/core/security/lib/definitions/SecureOwnableDefinitions.sol";
@@ -32,7 +32,7 @@ contract SecureOwnableTest is CommonBase {
     // ============ INITIALIZATION TESTS ============
 
     function test_Initialize_WithValidParameters() public {
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         newContract.initialize(
             owner,
@@ -49,7 +49,7 @@ contract SecureOwnableTest is CommonBase {
     }
 
     function test_Initialize_Revert_ZeroOwner() public {
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
@@ -62,7 +62,7 @@ contract SecureOwnableTest is CommonBase {
     }
 
     function test_Initialize_Revert_ZeroRecovery() public {
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         newContract.initialize(
@@ -75,7 +75,7 @@ contract SecureOwnableTest is CommonBase {
     }
 
     function test_Initialize_Revert_ZeroTimelock() public {
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.TimeLockPeriodZero.selector, 0));
         newContract.initialize(
@@ -88,7 +88,7 @@ contract SecureOwnableTest is CommonBase {
     }
 
     function test_Initialize_Revert_DoubleInitialization() public {
-        AccountBlox newContract = new AccountBlox();
+        AccountPatternTest newContract = new AccountPatternTest();
         vm.prank(owner);
         newContract.initialize(
             owner,

@@ -134,7 +134,7 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
     function _executeRoleConfigBatch(IRuntimeRBAC.RoleConfigAction[] calldata actions) internal {
         _validateBatchSize(actions.length);
 
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i = 0; i < actions.length; ++i) {
             IRuntimeRBAC.RoleConfigAction calldata action = actions[i];
 
             if (action.actionType == IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE) {

@@ -2,8 +2,11 @@
 pragma solidity 0.8.34;
 
 import "../execution/GuardController.sol";
+import "../execution/interface/IGuardController.sol";
 import "../access/RuntimeRBAC.sol";
+import "../access/interface/IRuntimeRBAC.sol";
 import "../security/SecureOwnable.sol";
+import "../security/interface/ISecureOwnable.sol";
 import "../lib/utils/SharedValidation.sol";
 
 /**
@@ -51,9 +54,15 @@ abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
 
     /**
      * @dev See {IERC165-supportsInterface}.
+     * @notice GuardController, RuntimeRBAC, and SecureOwnable each extend BaseStateMachine directly; a single
+     *         `super` chain only walks one branch. We OR the three component interface IDs here, then delegate
+     *         once to `super` for IBaseStateMachine / ERC165 — avoids tripling BaseStateMachine+ERC165 work.
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(GuardController, RuntimeRBAC, SecureOwnable) returns (bool) {
-        return GuardController.supportsInterface(interfaceId) || RuntimeRBAC.supportsInterface(interfaceId) || SecureOwnable.supportsInterface(interfaceId);
+        return interfaceId == type(IGuardController).interfaceId
+            || interfaceId == type(IRuntimeRBAC).interfaceId
+            || interfaceId == type(ISecureOwnable).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /**

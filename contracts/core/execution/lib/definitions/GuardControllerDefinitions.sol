@@ -16,7 +16,7 @@ import "../../interface/IGuardController.sol";
  * and role permissions for GuardController's public execution functions.
  * 
  * Key Features:
- * - Registers all 6 GuardController public execution functions
+ * - Registers all 9 GuardController public execution functions
  * - Defines role permissions for OWNER_ROLE and BROADCASTER_ROLE
  * - Supports time-delay and meta-transaction workflows
  * - Matches EngineBloxDefinitions pattern for consistency
@@ -33,6 +33,8 @@ library GuardControllerDefinitions {
     
     // Operation Type Constants
     bytes32 public constant CONTROLLER_OPERATION = keccak256("CONTROLLER_OPERATION");
+    // Guard config batch only (whitelist / register-unregister function); distinct execution operation type bitmap.
+    bytes32 public constant CONTROLLER_CONFIG_OPERATION = keccak256("CONTROLLER_CONFIG_OPERATION");
     
     // Function Selector Constants
     // GuardController: executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)
@@ -86,7 +88,7 @@ library GuardControllerDefinitions {
      * 
      * Function schemas define:
      * - GuardController public execution functions
-     * - What operation types they belong to (CONTROLLER_OPERATION)
+     * - What operation types they belong to (CONTROLLER_OPERATION vs CONTROLLER_CONFIG_OPERATION)
      * - What actions are supported (time-delay request/approve/cancel, meta-tx approve/cancel/request-and-approve)
      * - Whether they are protected
      * 
@@ -96,7 +98,7 @@ library GuardControllerDefinitions {
      * - Role permissions are defined in getRolePermissions() matching EngineBloxDefinitions pattern
      */
     function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
-        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](8);
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](9);
         
         // ============ TIME-DELAY WORKFLOW ACTIONS ============
         // Request action for executeWithTimeLock
@@ -144,6 +146,9 @@ library GuardControllerDefinitions {
         requestAndApproveExecutionHandlerForSelectors[0] = REQUEST_AND_APPROVE_EXECUTION_SELECTOR;
         bytes4[] memory guardConfigBatchExecuteHandlerForSelectors = new bytes4[](1);
         guardConfigBatchExecuteHandlerForSelectors[0] = GUARD_CONFIG_BATCH_EXECUTE_SELECTOR;
+
+        bytes4[] memory executeWithPaymentHandlerForSelectors = new bytes4[](1);
+        executeWithPaymentHandlerForSelectors[0] = EXECUTE_WITH_PAYMENT_SELECTOR;
         
         // Handler selectors point to execution selectors
         bytes4[] memory guardConfigHandlerForSelectors = new bytes4[](1);
@@ -225,8 +230,8 @@ library GuardControllerDefinitions {
         schemas[6] = EngineBlox.FunctionSchema({
             functionSignature: "guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
-            operationType: CONTROLLER_OPERATION,
-            operationName: "CONTROLLER_OPERATION",
+            operationType: CONTROLLER_CONFIG_OPERATION,
+            operationName: "CONTROLLER_CONFIG_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
@@ -241,12 +246,25 @@ library GuardControllerDefinitions {
         schemas[7] = EngineBlox.FunctionSchema({
             functionSignature: "executeGuardConfigBatch((uint8,bytes)[])",
             functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
-            operationType: CONTROLLER_OPERATION,
-            operationName: "CONTROLLER_OPERATION",
+            operationType: CONTROLLER_CONFIG_OPERATION,
+            operationName: "CONTROLLER_CONFIG_OPERATION",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(guardConfigExecutionActions),
             enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
+        });
+
+        // Schema 8: GuardController.executeWithPayment (same time-delay request action as executeWithTimeLock;
+        // OWNER_ROLE grant for this selector may be added manually if the flow is enabled)
+        schemas[8] = EngineBlox.FunctionSchema({
+            functionSignature: "executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))",
+            functionSelector: EXECUTE_WITH_PAYMENT_SELECTOR,
+            operationType: CONTROLLER_OPERATION,
+            operationName: "CONTROLLER_OPERATION",
+            supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
+            enforceHandlerRelations: false,
+            isProtected: true,
+            handlerForSelectors: executeWithPaymentHandlerForSelectors
         });
 
         return schemas;

@@ -6,7 +6,7 @@ import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/interfaces/IDefinition.sol";
-import "../../../contracts/examples/templates/AccountBlox.sol";
+import "../helpers/AccountPatternTest.sol";
 import "../helpers/MaliciousDefinitions.sol";
 import "../helpers/TestStateMachine.sol";
 import "../helpers/TestDefinitionContracts.sol";
@@ -436,7 +436,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
     function test_SystemDefinitionsProtectSystemFunctions() public {
         // Initialize a contract
         vm.prank(owner);
-        AccountBlox testContract = new AccountBlox();
+        AccountPatternTest testContract = new AccountPatternTest();
         testContract.initialize(
             owner,
             broadcaster,
