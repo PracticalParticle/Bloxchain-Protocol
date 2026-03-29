@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.2"
   },
   "peerDependencies": {
     "@bloxchain/contracts": "^1.0.0-alpha.12",
