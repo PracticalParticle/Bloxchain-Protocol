@@ -311,12 +311,12 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param requester The address of the requester.
      * @param target The target contract address for the transaction.
-     * @param value The value to send with the transaction.
+     * @param value The value to send with the transaction (typically 0 for standard calls; non-zero allowed when intentionally forwarding native ETH).
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
      * @param handlerSelector The function selector of the handler/request function.
-     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers).
-     * @param executionParams The encoded parameters for the function (empty for simple native token transfers).
+     * @param executionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR is a convenience selector for native-only transfers).
+     * @param executionParams The encoded parameters for the function (must be empty when using NATIVE_TRANSFER_SELECTOR).
      * @return The created TxRecord.
      */
     function txRequest(
@@ -351,7 +351,7 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param requester The address of the requester.
      * @param target The target contract address for the transaction.
-     * @param value The value to send with the transaction.
+     * @param value The value to send with the transaction (typically 0 for standard calls; non-zero allowed when intentionally forwarding native ETH).
      * @param gasLimit The gas limit for the transaction.
      * @param operationType The type of operation.
      * @param handlerSelector The function selector of the handler/request function.

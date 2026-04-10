@@ -121,7 +121,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Centralized function to request a transaction with common validation
      * @param requester The address requesting the transaction
      * @param target The target contract address
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
      * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
@@ -130,8 +130,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
-     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
+     * @notice Recommended standard calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice Flexible edge case: non-native selectors may intentionally forward ETH to payable targets
+     * @notice Native-only convenience flow: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function _requestTransaction(
         address requester,
@@ -161,7 +162,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Centralized function to request a transaction with payment details attached from the start
      * @param requester The address requesting the transaction
      * @param target The target contract address
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
      * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)

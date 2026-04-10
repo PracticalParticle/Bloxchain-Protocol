@@ -126,8 +126,28 @@ library SharedValidation {
     function validateNotZeroAddress(address addr) internal pure {
         if (addr == address(0)) revert InvalidAddress(addr);
     }
-    
-    
+
+    /**
+     * @dev Validates that payment details are empty (no attached payment).
+     * @param recipient The payment recipient address
+     * @param nativeTokenAmount The native token payment amount
+     * @param erc20TokenAddress The ERC20 token address
+     * @param erc20TokenAmount The ERC20 payment amount
+     */
+    function validateEmptyPayment(
+        address recipient,
+        uint256 nativeTokenAmount,
+        address erc20TokenAddress,
+        uint256 erc20TokenAmount
+    ) internal pure {
+        if (
+            recipient != address(0) ||
+            nativeTokenAmount != 0 ||
+            erc20TokenAddress != address(0) ||
+            erc20TokenAmount != 0
+        ) revert InvalidPayment();
+    }
+
     /**
      * @dev Validates that a new address is different from the current address
      * @param newAddress The proposed new address

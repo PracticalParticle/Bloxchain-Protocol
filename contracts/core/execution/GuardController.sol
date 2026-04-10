@@ -98,7 +98,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Requests a time-locked execution via EngineBlox workflow
      * @param target The address of the target contract
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
      * @param params The encoded parameters for the function (empty for simple native token transfers)
      * @param gasLimit The gas limit for execution
@@ -106,8 +106,9 @@ abstract contract GuardController is BaseStateMachine {
      * @return txId The transaction ID for the requested operation
      * @notice Creates a time-locked transaction that must be approved after the timelock period
      * @notice Requires EXECUTE_TIME_DELAY_REQUEST permission for the function selector
-     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
+     * @notice Recommended standard calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice Flexible edge case: non-native selectors may intentionally forward ETH to payable targets
+     * @notice Native-only convenience flow: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function executeWithTimeLock(
         address target,
@@ -136,7 +137,7 @@ abstract contract GuardController is BaseStateMachine {
     /**
      * @dev Requests a time-locked execution with payment details attached (same permissions as executeWithTimeLock)
      * @param target The address of the target contract
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param functionSelector The function selector to execute (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
      * @param params The encoded parameters for the function (empty for simple native token transfers)
      * @param gasLimit The gas limit for execution
@@ -311,6 +312,12 @@ abstract contract GuardController is BaseStateMachine {
         EngineBlox.MetaTransaction memory metaTx
     ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
+        SharedValidation.validateEmptyPayment(
+            metaTx.txRecord.payment.recipient,
+            metaTx.txRecord.payment.nativeTokenAmount,
+            metaTx.txRecord.payment.erc20TokenAddress,
+            metaTx.txRecord.payment.erc20TokenAmount
+        );
         EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
         return txRecord.txId;
     }

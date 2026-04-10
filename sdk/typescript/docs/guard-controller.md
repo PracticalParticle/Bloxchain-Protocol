@@ -48,7 +48,7 @@ const guardController = new GuardController(
 ```typescript
 const txHash = await guardController.executeWithTimeLock(
   targetAddress,
-  0n, // value (0 for function calls)
+  0n, // value (recommended default for standard function calls)
   '0xa9059cbb', // function selector (transfer)
   executionParams, // encoded params
   500000n, // gas limit
@@ -386,6 +386,9 @@ const metaTx = await guardController.generateUnsignedMetaTransactionForNew(
 
 // Sign and execute
 ```
+
+> Design note: `NATIVE_TRANSFER_SELECTOR` is a convenience path for ETH-only transfers (empty params).
+> Non-native selectors may still intentionally forward ETH to payable targets for edge-case workflows; default practice is to keep `value = 0` for standard function calls.
 
 ### **Time-Locked Operations**
 
