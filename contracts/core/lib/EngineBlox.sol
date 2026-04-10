@@ -49,6 +49,11 @@ library EngineBlox {
     
     /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
     uint256 public constant MAX_FUNCTIONS = 2000;
+
+    /// @dev Maximum bytes copied from call returndata into memory (and later persisted in `TxRecord.result`).
+    ///      Full returndata from the callee may be larger; only the first `MAX_RESULT_PREVIEW_BYTES` are retained.
+    ///      Chosen as 32 KiB to maximize debug/audit surface while bounding memory expansion and storage growth.
+    uint256 public constant MAX_RESULT_PREVIEW_BYTES = 32 * 1024;
     
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -611,6 +616,46 @@ library EngineBlox {
     }
 
     /**
+     * @dev Performs `address.call` without copying unbounded returndata into memory.
+     * @param target Callee address
+     * @param value Native value to forward
+     * @param callGas Gas to forward to the callee
+     * @param data Full calldata for the call
+     * @return success Whether the call returned success
+     * @return result First `min(returndatasize(), MAX_RESULT_PREVIEW_BYTES)` bytes of returndata
+     */
+    function _callWithBoundedReturndata(
+        address target,
+        uint256 value,
+        uint256 callGas,
+        bytes memory data
+    ) private returns (bool success, bytes memory result) {
+        uint256 dataLength = data.length;
+        assembly ("memory-safe") {
+            success := call(
+                callGas,
+                target,
+                value,
+                add(data, 0x20),
+                dataLength,
+                0,
+                0
+            )
+        }
+        uint256 returnSize;
+        assembly ("memory-safe") {
+            returnSize := returndatasize()
+        }
+        uint256 copyLength = returnSize > MAX_RESULT_PREVIEW_BYTES ? MAX_RESULT_PREVIEW_BYTES : returnSize;
+        result = new bytes(copyLength);
+        assembly ("memory-safe") {
+            if gt(copyLength, 0) {
+                returndatacopy(add(result, 0x20), 0, copyLength)
+            }
+        }
+    }
+
+    /**
      * @dev Executes a transaction based on its execution type and attached payment.
      * @param self The SecureOperationState storage reference (for validation)
      * @param record The transaction record to execute.
@@ -624,6 +669,9 @@ library EngineBlox {
      *            causing _validateTxPending to revert in entry functions
      *         4. Status flow is one-way: PENDING → EXECUTING → (COMPLETED/FAILED)
      *         This creates an effective reentrancy guard without additional storage overhead.
+     * @notice Returndata from the target is captured up to `MAX_RESULT_PREVIEW_BYTES` only (low-level `call` with
+     *         zero output area, then bounded `returndatacopy`). This prevents unbounded memory expansion from
+     *         malicious or buggy callees while preserving a large preview for debugging and audits.
      */
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
@@ -639,7 +687,10 @@ library EngineBlox {
         // Execute the main transaction
         // REENTRANCY SAFE: Status is EXECUTING, preventing reentry through entry functions
         // that require PENDING status. Any reentry attempt would fail at _validateTxStatus(..., PENDING).
-        (bool success, bytes memory result) = record.params.target.call{value: record.params.value, gas: gas}(
+        (bool success, bytes memory result) = _callWithBoundedReturndata(
+            record.params.target,
+            record.params.value,
+            gas,
             txData
         );
 

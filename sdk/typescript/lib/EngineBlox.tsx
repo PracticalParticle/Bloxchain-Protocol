@@ -45,6 +45,12 @@ export class EngineBlox {
    */
   static readonly VERSION: string = "1.0.0";
 
+  /**
+   * Maximum bytes retained from callee returndata on guarded execution (`EngineBlox.executeTransaction` path).
+   * Matches `EngineBlox.MAX_RESULT_PREVIEW_BYTES` (32 KiB).
+   */
+  static readonly MAX_RESULT_PREVIEW_BYTES: bigint = 32768n;
+
   // ============ FUNCTION SELECTORS ============
   
   /**
