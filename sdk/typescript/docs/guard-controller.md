@@ -330,6 +330,15 @@ if (!targets.includes(targetAddress)) {
 }
 ```
 
+**Attached payments (`executeWithPayment`):** payout policy uses two extra whitelist keys (registered when GuardController definitions load—same `ADD_TARGET_TO_WHITELIST` batch flow). Base-only state machines that use attached payments without GuardController must register these schemas separately (see `PaymentTestHelper` in tests).
+
+| Selector (see `EngineBlox` SDK / Solidity) | What to whitelist |
+|---------------------------------------------|-------------------|
+| `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` | `payment.recipient` for native and ERC20 attached payouts |
+| `ERC20_TRANSFER_SELECTOR` (`transfer(address,uint256)`) | `payment.erc20TokenAddress` — token contracts the vault may pay out via `safeTransfer` |
+
+Primary execution still uses `TxParams.target` whitelisted under the **execution** function selector (e.g. mint, `NATIVE_TRANSFER_SELECTOR`).
+
 ### **2. Function Schema Protection**
 
 Protected function schemas cannot be unregistered:

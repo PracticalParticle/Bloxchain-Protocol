@@ -45,6 +45,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         // Fund payment helper for tests
         vm.deal(address(paymentHelper), 1000 ether);
         mockERC20.mint(address(paymentHelper), 1000000e18);
+
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(mockERC20), EngineBlox.ERC20_TRANSFER_SELECTOR);
         
         // PaymentTestHelper sets up permissions in initialize() for NATIVE_TRANSFER_SELECTOR
         // and requestTransaction/approveTransaction functions
@@ -83,6 +86,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAddress: address(0),
             erc20TokenAmount: 0
         });
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(newRecipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
@@ -162,6 +167,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAmount: 0
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -230,6 +237,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAddress: address(0),
             erc20TokenAmount: 0
         });
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
@@ -321,6 +330,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAmount: paymentAmount
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -362,6 +373,13 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             bytes4 errorSelector = bytes4(reason);
             if (errorSelector == SharedValidation.NoPermission.selector) {
                 return; // Skip test if permissions not set up
+            }
+            // Unapproved token contracts are rejected at request time via ERC20_TRANSFER_SELECTOR whitelist
+            if (
+                errorSelector == SharedValidation.TargetNotWhitelisted.selector &&
+                tokenAddress != address(mockERC20)
+            ) {
+                return;
             }
             assembly {
                 revert(add(reason, 0x20), mload(reason))
@@ -470,6 +488,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAddress: address(0),
             erc20TokenAmount: 0
         });
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         for (uint256 i = 0; i < numberOfTransactions; i++) {
             vm.prank(owner);
             try paymentHelper.requestTransactionWithPayment(
@@ -553,6 +573,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAmount: 0
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(newRecipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -628,6 +650,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
     function _runFeeOnTransferTest() external {
         MockFeeOnTransferToken feeToken = new MockFeeOnTransferToken("FeeToken", "FEE");
         feeToken.mint(address(paymentHelper), 1000000e18);
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(feeToken), EngineBlox.ERC20_TRANSFER_SELECTOR);
         uint256 amount = 1000e18;
         uint256 recipientBefore = feeToken.balanceOf(user1);
         uint256 helperBefore = feeToken.balanceOf(address(paymentHelper));
@@ -639,6 +663,8 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
             erc20TokenAmount: amount
         });
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(user1, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         vm.prank(owner);
         uint256 txId = paymentHelper.requestTransactionWithPayment(
             owner,
