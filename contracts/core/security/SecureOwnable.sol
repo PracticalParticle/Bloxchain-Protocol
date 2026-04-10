@@ -32,6 +32,24 @@ import "./interface/ISecureOwnable.sol";
  * (a broadcaster update may still be pending). A new broadcaster-update request is allowed only
  * when neither type has a pending request.
  *
+ * **Ownership transfer vs recovery (threat model):**
+ * - `transferOwnershipRequest` snapshots `getRecovery()` into the pending tx `executionParams`. On execution,
+ *   `executeTransferOwnership` receives that snapshotted address as the new owner. Rotating recovery after
+ *   the request does **not** rewrite the pending payload; the beneficiary remains the recovery address
+ *   at request time.
+ * - `transferOwnershipDelayedApproval` authorizes the **current** owner or **current** recovery (`getRecovery()`
+ *   at approval time). It does **not** require the approver to match the snapshotted beneficiary. Integrators
+ *   must treat approval as consent to execute the **stored** transfer, not “transfer to whoever is recovery now.”
+ * - `transferOwnershipCancellation` allows only the **current** recovery to cancel. If owner and broadcaster
+ *   rotate recovery via `updateRecoveryRequestAndApprove` while a transfer is pending, the **previous**
+ *   recovery loses cancel rights immediately; the pending tx still targets the old address until approved,
+ *   cancelled by the new recovery, or superseded operationally.
+ * - Recovery and timelock updates use a request-and-approve meta-tx path without an additional timelock and
+ *   are **not** blocked when an ownership transfer is pending (unlike broadcaster update requests). This is
+ *   intentional: fast recovery rotation when owner and broadcaster still cooperate; operators who need a
+ *   strict “recovery cannot change during pending ownership transfer” invariant must enforce it off-chain or
+ *   extend this contract.
+ *
  * This contract focuses purely on security logic while leveraging the BaseStateMachine
  * for transaction management, meta-transactions, and state machine operations.
  */
@@ -81,7 +99,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // Ownership Management
     /**
-     * @dev Requests a transfer of ownership
+     * @dev Requests a time-delayed transfer of the OWNER role to the **recovery address at request time**.
+     * @notice Encodes `getRecovery()` into `executionParams`; that address becomes the new owner on successful
+     *         execution. Changing recovery later does not update this pending record.
      * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
     function transferOwnershipRequest() public returns (uint256 txId) {
@@ -104,7 +124,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Approves a pending ownership transfer transaction after the release time
+     * @dev Approves a pending ownership transfer after `releaseTime` (timelock on the direct path).
+     * @notice Callable by **current** owner or **current** recovery. Execution still transfers ownership to
+     *         the address snapshotted at request time, which may differ from `getRecovery()` at approval time.
      * @param txId The transaction ID
      * @return The transaction ID
      */
@@ -124,7 +146,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Cancels a pending ownership transfer transaction
+     * @dev Cancels a pending ownership transfer transaction.
+     * @notice Only the **current** `getRecovery()` may cancel. After a recovery rotation, the prior recovery
+     *         address can no longer cancel.
      * @param txId The transaction ID
      * @return The transaction ID
      */
@@ -219,7 +243,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     // Recovery Management
 
     /**
-     * @dev Requests and approves a recovery address update using a meta-transaction
+     * @dev Requests and approves a recovery address update using a meta-transaction (owner signs, broadcaster submits).
+     * @notice Does **not** revert when an ownership transfer is pending. A pending transfer continues to target
+     *         the recovery address snapshotted at its request until executed or cancelled by **current** recovery.
      * @param metaTx The meta-transaction
      * @return The transaction ID
      */
@@ -248,8 +274,9 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // Execution Functions
     /**
-     * @dev External function that can only be called by the contract itself to execute ownership transfer
-     * @param newOwner The new owner address
+     * @dev External function that can only be called by the contract itself to execute ownership transfer.
+     * @param newOwner The new owner; for the OWNERSHIP_TRANSFER flow this is the recovery address encoded at
+     *        request time (see `transferOwnershipRequest`), not necessarily `getRecovery()` at execution time.
      */
     function executeTransferOwnership(address newOwner) external {
         _validateExecuteBySelf();

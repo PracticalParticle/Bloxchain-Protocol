@@ -65,14 +65,14 @@ const isInit = await secureOwnable.initialized()
 #### **Write Methods**
 
 ##### `transferOwnershipRequest(options?: TransactionOptions): Promise<TransactionResult>`
-Requests a transfer of ownership. No new-owner argument; the new owner is set when the pending transaction is approved and executed.
+Requests a time-delayed transfer of the **owner** role to the **recovery address at request time** (snapshotted in the pending tx). Rotating recovery later does not change that stored beneficiary. See the **Ownership transfer vs recovery** section in the [SecureOwnable guide](./secure-ownable.md).
 
 ```typescript
 const result = await secureOwnable.transferOwnershipRequest({ from: account.address })
 ```
 
 ##### `transferOwnershipDelayedApproval(txId: bigint, options?: TransactionOptions): Promise<TransactionResult>`
-Approves a pending ownership transfer after the time lock.
+Approves a pending ownership transfer after the time lock. Callable by **current** owner or **current** recovery; execution still assigns owner to the address snapshotted at request time (may differ from `getRecovery()` at approval time).
 
 ##### `updateBroadcasterRequest(newBroadcaster: Address, location: bigint, options?: TransactionOptions): Promise<TransactionResult>`
 Requests a broadcaster update at the given index (location in the broadcaster role set).
