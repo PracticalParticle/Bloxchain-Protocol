@@ -352,6 +352,22 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "signedContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "entryContract",
+        "type": "address"
+      }
+    ],
+    "name": "MetaTxHandlerContractMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
@@ -625,6 +641,19 @@
   {
     "inputs": [],
     "name": "MAX_HOOKS_PER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_RESULT_PREVIEW_BYTES",
     "outputs": [
       {
         "internalType": "uint256",

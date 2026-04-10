@@ -175,6 +175,38 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "signedContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "entryContract",
+        "type": "address"
+      }
+    ],
+    "name": "MetaTxHandlerContractMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "signedSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "entrySelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "MetaTxHandlerSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "caller",
         "type": "address"
       }
