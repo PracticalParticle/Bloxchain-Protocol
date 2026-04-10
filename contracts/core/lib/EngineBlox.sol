@@ -206,7 +206,14 @@ library EngineBlox {
 
     // Native token transfer selector (reserved signature unlikely to exist in real contracts)
     bytes4 public constant NATIVE_TRANSFER_SELECTOR = bytes4(keccak256("__bloxchain_native_transfer__()"));
-    bytes32 public constant NATIVE_TRANSFER_OPERATION = keccak256("NATIVE_TRANSFER");
+
+    /// @dev Reserved pseudo-selector: whitelist key for `PaymentDetails.recipient` (native and ERC20 attached payments).
+    ///      Function schema is registered by `GuardControllerDefinitions` (and tests/helpers that mirror it), not in `initialize`.
+    bytes4 public constant ATTACHED_PAYMENT_RECIPIENT_SELECTOR = bytes4(keccak256("__bloxchain_attached_payment_recipient__()"));
+
+    /// @dev Standard IERC20 `transfer(address,uint256)`; whitelist key for token contracts used in attached ERC20 payments.
+    ///      Function schema is registered by `GuardControllerDefinitions` (and tests/helpers that mirror it), not in `initialize`.
+    bytes4 public constant ERC20_TRANSFER_SELECTOR = bytes4(keccak256("transfer(address,uint256)"));
     
     // EIP-712 Type Hashes (selective meta-tx payload: MetaTxRecord = txId + params + payment only)
     // These follow the canonical EIP-712 convention so that eth_signTypedData_v4 and equivalent
@@ -381,15 +388,7 @@ library EngineBlox {
         // Validate both execution and handler selector permissions (same as txRequest)
         _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
-        // Request-time validation for attached payment details.
-        // This prevents creating persistent PENDING records that later fail during
-        // `executeAttachedPayment` due to missing/zero payment fields.
-        if (paymentDetails.nativeTokenAmount > 0 || paymentDetails.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
-        }
-        if (paymentDetails.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(paymentDetails.erc20TokenAddress);
-        }
+        _validateAttachedPaymentDetailsAtRequest(self, paymentDetails);
 
         return _txRequest(
             self,
@@ -588,16 +587,8 @@ library EngineBlox {
 
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
-        
-        // Request-time validation for attached payment details.
-        // `requestAndApprove` creates the request and executes via the same meta-tx flow,
-        // so we validate here to avoid persisting bad PENDING records.
-        if (metaTx.txRecord.payment.nativeTokenAmount > 0 || metaTx.txRecord.payment.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(metaTx.txRecord.payment.recipient);
-        }
-        if (metaTx.txRecord.payment.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(metaTx.txRecord.payment.erc20TokenAddress);
-        }
+
+        _validateAttachedPaymentDetailsAtRequest(self, metaTx.txRecord.payment);
 
         TxRecord memory txRecord = _txRequest(
             self,
@@ -723,6 +714,9 @@ library EngineBlox {
      *         4. All entry functions check for PENDING status first, so reentry fails
      *         The external calls (native token transfer, ERC20 transfer) cannot reenter
      *         critical functions because the transaction is no longer in PENDING state.
+     * @notice When payment amounts are non-zero, `payment.recipient` is validated against
+     *         `ATTACHED_PAYMENT_RECIPIENT_SELECTOR`; non-zero ERC20 amounts also require
+     *         `payment.erc20TokenAddress` on `ERC20_TRANSFER_SELECTOR` whitelist.
      */
     function executeAttachedPayment(
         SecureOperationState storage self,
@@ -731,6 +725,9 @@ library EngineBlox {
         // Validate that transaction is still in EXECUTING status
         // This ensures reentrancy protection is maintained throughout payment execution
         _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
+
+        _validateAttachedPaymentPolicy(self, record.payment);
+
         self.txRecords[record.txId].status = TxStatus.PROCESSING_PAYMENT;
         
         PaymentDetails memory payment = record.payment;
@@ -1402,6 +1399,52 @@ library EngineBlox {
     }
 
     /**
+     * @notice Full request-time validation for `PaymentDetails` before a tx record is created with a non-zero payment.
+     * @dev Runs in order: (1) reject zero `recipient` when any payment amount is non-zero; (2) reject zero
+     *      `erc20TokenAddress` when ERC20 amount is non-zero (required even if whitelist selectors are not yet
+     *      registered—see `_validateTargetWhitelist` early return); (3) `_validateAttachedPaymentPolicy` for
+     *      recipient and token allowlists. No-op when both native and ERC20 amounts are zero.
+     * @param self The secure operation state (whitelist storage).
+     * @param payment Attached payment fields from the request or meta-tx payload.
+     */
+    function _validateAttachedPaymentDetailsAtRequest(
+        SecureOperationState storage self,
+        PaymentDetails memory payment
+    ) private view {
+        if (payment.nativeTokenAmount > 0 || payment.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(payment.recipient);
+        }
+        if (payment.erc20TokenAmount > 0) {
+            SharedValidation.validateNotZeroAddress(payment.erc20TokenAddress);
+        }
+        _validateAttachedPaymentPolicy(self, payment);
+    }
+
+    /**
+     * @notice Enforces payout allowlists for attached native and/or ERC20 payments.
+     * @dev When either payment amount is non-zero: validates `payment.recipient` against
+     *      `functionTargetWhitelist[ATTACHED_PAYMENT_RECIPIENT_SELECTOR]` (unless `recipient == address(this)` or
+     *      that selector is unregistered—see `_validateTargetWhitelist`). When `erc20TokenAmount > 0`, also
+     *      validates `payment.erc20TokenAddress` against `ERC20_TRANSFER_SELECTOR` the same way.
+     *      Caller must ensure zero-address fields are already rejected when amounts imply they are used
+     *      (e.g. `_validateAttachedPaymentDetailsAtRequest`). Also invoked at execution in `executeAttachedPayment`.
+     * @param self The secure operation state.
+     * @param payment Attached payment; both amounts zero yields an immediate return.
+     */
+    function _validateAttachedPaymentPolicy(
+        SecureOperationState storage self,
+        PaymentDetails memory payment
+    ) private view {
+        if (payment.nativeTokenAmount == 0 && payment.erc20TokenAmount == 0) {
+            return;
+        }
+        _validateTargetWhitelist(self, ATTACHED_PAYMENT_RECIPIENT_SELECTOR, payment.recipient);
+        if (payment.erc20TokenAmount > 0) {
+            _validateTargetWhitelist(self, ERC20_TRANSFER_SELECTOR, payment.erc20TokenAddress);
+        }
+    }
+
+    /**
      * @dev Validates that the target address is whitelisted for the given function selector.
      *      Internal contract calls (address(this)) are always allowed.
      * @param self The SecureOperationState to check.
@@ -1409,6 +1452,8 @@ library EngineBlox {
      * @param target The target contract address.
      * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
      *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
+     * @notice Attached payments use `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and `ERC20_TRANSFER_SELECTOR`;
+     *         see `_validateAttachedPaymentPolicy`.
      */
     function _validateTargetWhitelist(
         SecureOperationState storage self,
