@@ -226,6 +226,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.txApprovalWithMetaTx(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -258,6 +259,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.txCancellationWithMetaTx(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -275,6 +277,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _requestAndApproveTransaction(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.requestAndApprove(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -755,6 +758,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     // ============ PERMISSION VALIDATION ============
+
+    /**
+     * @dev Binds signed `MetaTxParams` to this wrapper's entrypoint (`msg.sig`) and verifying contract.
+     *      Must run in `BaseStateMachine` context, not inside linked `EngineBlox` library code (delegatecall
+     *      would make `msg.sig` refer to the library function, not the outer wrapper).
+     * @param metaTx The meta-transaction whose `params` are validated against `msg.sig` and `address(this)`.
+     */
+    function _validateMetaTxHandlerBinding(EngineBlox.MetaTransaction memory metaTx) internal view {
+        SharedValidation.validateMetaTxHandlerSelectorBinding(
+            metaTx.params.handlerSelector,
+            bytes4(msg.sig)
+        );
+        SharedValidation.validateMetaTxHandlerContractBinding(metaTx.params.handlerContract);
+    }
 
     /**
      * @dev Centralized function to validate that the caller has any role

@@ -1708,6 +1708,13 @@ library EngineBlox {
             SharedValidation.validateTransactionId(metaTx.txRecord.txId, self.txCounter);
         }
 
+        // Bind signed handlerContract to the verifying contract (EIP-712 verifyingContract).
+        // NOTE: Entrypoint binding to the wrapper selector (msg.sig) must be enforced in the wrapper context
+        // (e.g. BaseStateMachine), not here, because EngineBlox execute via external-library DELEGATECALL.
+        if (metaTx.params.handlerContract != address(this)) {
+            revert SharedValidation.MetaTxHandlerContractMismatch(metaTx.params.handlerContract, address(this));
+        }
+
         // Authorization check - verify signer has meta-transaction signing permissions for the function and action
         bool isHandlerAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.params.handlerSelector, metaTx.params.action);
         bool isExecutionAuthorized = hasActionPermission(self, metaTx.params.signer, metaTx.txRecord.params.executionSelector, metaTx.params.action);
@@ -1925,7 +1932,7 @@ library EngineBlox {
         MetaTxParams memory metaTxParams
     ) private view returns (MetaTransaction memory) {
         SharedValidation.validateChainId(metaTxParams.chainId);
-        SharedValidation.validateHandlerContract(metaTxParams.handlerContract);
+        SharedValidation.validateMetaTxHandlerContractBinding(metaTxParams.handlerContract);
         SharedValidation.validateHandlerSelector(metaTxParams.handlerSelector);
         SharedValidation.validateDeadline(metaTxParams.deadline);
         SharedValidation.validateNotZeroAddress(metaTxParams.signer);

@@ -127,6 +127,16 @@ export interface SignerNotAuthorizedError extends ContractError {
   params: { signer: string }
 }
 
+export interface MetaTxHandlerSelectorMismatchError extends ContractError {
+  name: 'MetaTxHandlerSelectorMismatch'
+  params: { signedSelector: string; entrySelector: string }
+}
+
+export interface MetaTxHandlerContractMismatchError extends ContractError {
+  name: 'MetaTxHandlerContractMismatch'
+  params: { signedContract: string; entryContract: string }
+}
+
 export interface OnlyCallableByContractError extends ContractError {
   name: 'OnlyCallableByContract'
   params: { caller: string; contractAddress: string }
@@ -507,6 +517,8 @@ export type GuardianContractError =
   | RestrictedRecoveryError
   | RestrictedBroadcasterError
   | SignerNotAuthorizedError
+  | MetaTxHandlerSelectorMismatchError
+  | MetaTxHandlerContractMismatchError
   | OnlyCallableByContractError
   | ItemAlreadyExistsError
   | ItemNotFoundError
@@ -663,6 +675,18 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'SignerNotAuthorized',
     params: ['signer'],
     userMessage: (params) => `SignerNotAuthorized: Signer ${params.signer} is not authorized`
+  },
+  '0x7ae1eaa8': {
+    name: 'MetaTxHandlerSelectorMismatch',
+    params: ['signedSelector', 'entrySelector'],
+    userMessage: (params) =>
+      `MetaTxHandlerSelectorMismatch: Signed handler ${params.signedSelector} does not match entrypoint ${params.entrySelector}`
+  },
+  '0x4ffe15c0': {
+    name: 'MetaTxHandlerContractMismatch',
+    params: ['signedContract', 'entryContract'],
+    userMessage: (params) =>
+      `MetaTxHandlerContractMismatch: Signed contract ${params.signedContract} does not match verifying contract ${params.entryContract}`
   },
   '0xf364cb26': {
     name: 'OnlyCallableByContract',
@@ -926,6 +950,8 @@ export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0x92e22b88': 'address, address',
   '0xc26028e0': 'address, address',
   '0x3b94fe24': 'address',
+  '0x7ae1eaa8': 'bytes4, bytes4',
+  '0x4ffe15c0': 'address, address',
   '0xf364cb26': 'address, address',
   '0xa0387940': '',
   '0xc502078d': 'bytes32, bytes32',

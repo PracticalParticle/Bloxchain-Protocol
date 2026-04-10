@@ -431,8 +431,8 @@ export class MetaTransactionBuilder {
 
   /**
    * @dev Creates meta-transaction parameters
-   * @param handlerContract Handler contract address
-   * @param handlerSelector Handler function selector
+   * @param handlerContract Verifying account address (must match EIP-712 `verifyingContract` / `address(this)` on verify)
+   * @param handlerSelector Selector of the **exact** external function that will submit this meta-tx (must equal on-chain `msg.sig`)
    * @param action Transaction action
    * @param deadline Deadline timestamp
    * @param maxGasPrice Maximum gas price

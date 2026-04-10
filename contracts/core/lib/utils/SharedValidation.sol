@@ -51,6 +51,8 @@ library SharedValidation {
     error RestrictedRecovery(address caller, address recovery);
     error RestrictedBroadcaster(address caller, address broadcaster);
     error SignerNotAuthorized(address signer);
+    error MetaTxHandlerSelectorMismatch(bytes4 signedSelector, bytes4 entrySelector);
+    error MetaTxHandlerContractMismatch(address signedContract, address entryContract);
     error OnlyCallableByContract(address caller, address contractAddress);
     
     // Transaction and operation errors with context
@@ -162,6 +164,32 @@ library SharedValidation {
      */
     function validateHandlerContract(address handler) internal pure {
         if (handler == address(0)) revert InvalidAddress(handler);
+    }
+
+    /**
+     * @dev Validates that the signed handler selector matches the live wrapper entrypoint selector.
+     *      IMPORTANT: pass the wrapper selector from wrapper context (`bytes4(msg.sig)` in the wrapper),
+     *      not from external-library context.
+     * @param handlerSelector Selector embedded in signed MetaTxParams
+     * @param entrySelector Selector of the wrapper entrypoint executing the meta-tx
+     */
+    function validateMetaTxHandlerSelectorBinding(
+        bytes4 handlerSelector,
+        bytes4 entrySelector
+    ) internal pure {
+        if (handlerSelector != entrySelector) {
+            revert MetaTxHandlerSelectorMismatch(handlerSelector, entrySelector);
+        }
+    }
+
+    /**
+     * @dev Validates that the signed handler contract matches the active verifying contract (`address(this)`).
+     * @param handlerContract Address embedded in signed MetaTxParams
+     */
+    function validateMetaTxHandlerContractBinding(address handlerContract) internal view {
+        if (handlerContract != address(this)) {
+            revert MetaTxHandlerContractMismatch(handlerContract, address(this));
+        }
     }
     
     // ============ TIME AND DEADLINE VALIDATION FUNCTIONS ============

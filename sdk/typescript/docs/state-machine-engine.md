@@ -259,6 +259,9 @@ function _validateStateTransition(
 
 **Purpose**: Ensure state transitions follow valid patterns.
 
+### 4. **Meta-transaction entrypoint binding**
+On-chain verification requires `MetaTxParams.handlerSelector` to match `msg.sig` (the external function the relayer called) and `handlerContract` to match `address(this)`. That ties the EIP-712 payload to the real wrapper so a signature cannot be executed through a different sibling entrypoint. See [Meta-Transactions](./meta-transactions.md).
+
 ## Event System
 
 ### 1. **State Change Events**

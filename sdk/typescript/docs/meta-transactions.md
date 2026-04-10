@@ -34,6 +34,7 @@ The signing process follows these security principles:
 2. **EIP-712 Compliance**: Full compliance with EIP-712 standard
 3. **Signature Verification**: Automatic verification of generated signatures
 4. **Permission Validation**: Contract-level permission checking
+5. **Entrypoint binding**: On-chain verification requires `MetaTxParams.handlerSelector` to equal the selector of the **actual** public function used to submit the meta-transaction, and `handlerContract` to equal the verifying account address (same as the EIP-712 `verifyingContract`). Do not sign one handler and submit through a different sibling wrapper.
 
 ## Workflow Patterns
 
