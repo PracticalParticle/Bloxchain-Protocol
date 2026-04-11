@@ -255,9 +255,12 @@ library GuardControllerDefinitions {
         });
 
         // Schema 8: GuardController.executeWithPayment (same time-delay request action as executeWithTimeLock).
-        // Default definitions intentionally omit an OWNER_ROLE FunctionPermission for this selector:
-        // deployments that need owner-driven payment execution must add the grant via a guard-config or RBAC batch
-        // after init. This keeps the out-of-the-box permission surface minimal.
+        // Default definitions intentionally omit an OWNER_ROLE FunctionPermission for this selector (minimal surface).
+        // `getGuardConfigActionSpecs()` only exposes whitelist add/remove, REGISTER_FUNCTION, and UNREGISTER_FUNCTION —
+        // there is no guard-config action to attach `executeWithPayment` to a role. Deployments that need owner-driven
+        // `executeWithPayment` must add the FunctionPermission via an RBAC batch (`ADD_FUNCTION_TO_ROLE` / encoders in
+        // `RuntimeRBACDefinitions.sol`), following that file's ordering and action constraints and the handler/schema
+        // rules in this `GuardControllerDefinitions.sol` bundle.
         schemas[8] = EngineBlox.FunctionSchema({
             functionSignature: "executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))",
             functionSelector: EXECUTE_WITH_PAYMENT_SELECTOR,

@@ -13,8 +13,8 @@ This codex serves as a comprehensive knowledge base of attack vectors identified
 **Line numbers and file paths:** Many entries cite `Contract.sol:start-end` line ranges from earlier snapshots. Solidity files evolve; **treat line numbers as approximate**. Prefer locating logic by **function name** (e.g. `EngineBlox.verifySignature`, `BaseStateMachine._validateMetaTxHandlerBinding`) or your editor’s symbol search. **Authoritative behavior** is always `contracts/core/` (and linked experimental paths) plus NatSpec.
 
 **Total Attack Vectors**: 190+  
-**Critical Severity**: 15  
-**High Severity**: 35  
+**Critical Severity**: 14  
+**High Severity**: 36  
 **Medium Severity**: 64  
 **Low Severity**: 43  
 **Informational**: 30+
@@ -589,11 +589,11 @@ MetaTransaction memory metaTx = {
 
 ---
 
-#### CRITICAL: Meta-Tx Entrypoint / Handler Binding (Cross-Wrapper Authorization)
+#### HIGH: Meta-Tx Entrypoint / Handler Binding (Cross-Wrapper Authorization)
 - **ID**: `MT-008`
-- **Finding**: AgentArena #1 (mitigated)
+- **Finding**: AgentArena #1 (mitigated). Same underlying issue as **AUDIT-001** (§19.1).
 - **Location**: `BaseStateMachine.sol:_validateMetaTxHandlerBinding`, `SharedValidation.sol:validateMetaTxHandlerSelectorBinding`, `validateMetaTxHandlerContractBinding`, `EngineBlox.sol:verifySignature` (handler contract binding)
-- **Severity**: CRITICAL (was exploitable if unsigned handler could differ from `msg.sig`)
+- **Severity**: HIGH (matches AgentArena Finding 1 and `AUDIT-001`; high impact if unmitigated — now protected)
 - **Status**: ✅ **PROTECTED**
 
 **Description**:  
@@ -3466,7 +3466,7 @@ Vectors derived from the **AgentArena multi-agent audit** (37 findings, commit `
 
 #### HIGH: Meta-tx Handler Selector Spoofing (Cross-Wrapper Replay)
 - **ID**: `AUDIT-001`
-- **Finding**: AgentArena #1
+- **Finding**: AgentArena #1. Same underlying issue as **MT-008** (§2.1).
 - **Location**: `EngineBlox.sol:verifySignature`, `BaseStateMachine.sol:_validateMetaTxHandlerBinding`, `SharedValidation.sol`
 - **Severity**: HIGH
 - **Status**: ✅ **PROTECTED**
@@ -3709,7 +3709,7 @@ No on-chain maximum for the timelock period. Extremely large values make delayed
 
 | # | Finding | Severity | Vector ID | Status | Test |
 |---|---------|----------|-----------|--------|------|
-| 1 | Meta-tx handler spoofing | **High** | AUDIT-001 | ✅ Protected | `testFuzz_Finding1_HandlerSelectorMismatchRejected`, `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`, `testFuzz_Finding1_HandlerContractMismatchRejected` |
+| 1 | Meta-tx handler spoofing | **High** | AUDIT-001 / MT-008 | ✅ Protected | `testFuzz_Finding1_HandlerSelectorMismatchRejected`, `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`, `testFuzz_Finding1_HandlerContractMismatchRejected` |
 | 3 | Config batch payment rail | **Medium** | AUDIT-003 | ✅ Protected | `testFuzz_Finding3_RBACBatchRejectsNonZeroPayment`, `testFuzz_Finding3_GuardBatchRejectsNonZeroPayment`, `testFuzz_Finding3_RBACBatchRejectsNativeOnlyNonZeroPayment` |
 | 5 | Unbounded returndata DoS | **Medium** | AUDIT-005 | ✅ Protected | `testFuzz_Finding5_MaxResultPreviewBytesIs32KiB` |
 | 6 | Whitelist bypass via payments | **Medium** | AUDIT-006 | ✅ Protected | `testFuzz_Finding6_NonWhitelistedRecipientRejected`, `testFuzz_Finding6_NonWhitelistedERC20Rejected` |

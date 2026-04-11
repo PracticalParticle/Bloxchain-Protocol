@@ -99,14 +99,14 @@ UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve
 
 | From | To | Trigger |
 |------|----|---------|
-| `UNDEFINED` | `PENDING` | `_txRequest` — creates a `TxRecord`, assigns `txId = ++txCounter`, sets `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`. |
-| `PENDING` | `EXECUTING` | **Delayed path:** `txDelayedApproval` (validates `releaseTime` has passed). **Meta path:** `_txApprovalWithMetaTx` (timelock **not** enforced). **Request-and-approve:** `requestAndApprove` (combines request + meta approval in one call). |
+| `UNDEFINED` | `PENDING` | `_txRequest` — creates a `TxRecord` with `txId = self.txCounter + 1`, stores it, increments `txCounter`, sets `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`. |
+| `PENDING` | `EXECUTING` | **Delayed path:** `txDelayedApproval` (validates `releaseTime` has passed). **Meta path:** `txApprovalWithMetaTx` → `_txApprovalWithMetaTx` (timelock **not** enforced). **Request-and-approve:** `requestAndApprove` (combines request + meta approval in one call). |
 | `EXECUTING` | `COMPLETED` | `executeTransaction` succeeds; `_completeTransaction` finalizes. |
 | `EXECUTING` | `PROCESSING_PAYMENT` | Main call succeeded and a non-zero `PaymentDetails.recipient` is present — `executeAttachedPayment` runs. |
 | `PROCESSING_PAYMENT` | `COMPLETED` | Payment succeeds. |
 | `PROCESSING_PAYMENT` | (revert) | Payment fails → entire approval tx reverts (atomic rollback). |
 | `EXECUTING` | `FAILED` | Main call returns `success == false`; `_completeTransaction` records the failure. |
-| `PENDING` | `CANCELLED` | `txCancellation` or `txCancellationWithMetaTx`. |
+| `PENDING` | `CANCELLED` | `txCancellation` (direct) or `txCancellationWithMetaTx` (meta; wrapper selector in `MetaTxParams.handlerSelector`). |
 
 There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`.
 
@@ -129,27 +129,39 @@ The following are **real** function signatures in `contracts/core/lib/EngineBlox
 
 ### 1. **Initialization**
 
-`initialize(SecureOperationState, address owner, address broadcaster, address recovery, uint256 timeLockPeriodSec, address eventForwarder)` — creates the three protected roles, assigns wallets, registers system macro selectors, sets the timelock and forwarder.
+`initialize(SecureOperationState, address owner, address broadcaster, address recovery, uint256 timeLockPeriodSec)` — creates the three protected roles, assigns wallets, registers default system macro selectors, sets the timelock. It does **not** configure the event forwarder.
 
-### 2. **Transaction Request**
+`setEventForwarder(SecureOperationState, address eventForwarder)` — stores the optional `IEventForwarder` used by `logTxEvent` (separate call from `initialize`).
 
-`_txRequest(SecureOperationState, requester, target, value, gasLimit, operationType, executionSelector, executionParams, payment)` — validates inputs, increments `txCounter`, creates a `TxRecord` with `status = PENDING` and `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`.
+### 2. **Transaction request (public) and `_txRequest`**
 
-### 3. **Transaction Approval (delayed)**
+Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`) alongside **`executionSelector`** and **`executionParams`**: that value is the wrapper / external entrypoint selector used with `executionSelector` in `_validateExecutionAndHandlerPermissions` (RBAC and schema wiring). The internal request core does **not** repeat `handlerSelector` on its parameter list.
 
-`txDelayedApproval(SecureOperationState, txId)` — validates `PENDING` status, enforces `releaseTime` (timelock), sets `EXECUTING`, calls `executeTransaction`, finalizes via `_completeTransaction`.
+`txRequest(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams)` — validates permissions, then calls `_txRequest` with an empty `PaymentDetails` struct (no attached payment).
 
-### 4. **Transaction Approval (meta-tx)**
+`txRequestWithPayment(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams, PaymentDetails paymentDetails)` — same permission path as `txRequest`, plus `_validateAttachedPaymentPolicy`, then `_txRequest` with the supplied `paymentDetails`. This is the **payment-specific** request entrypoint.
 
-`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction)` — validates `PENDING` status, verifies EIP-712 signature, increments signer nonce, sets `EXECUTING`, calls `executeTransaction`. Timelock is **not** enforced on this path (by design).
+`_txRequest(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, PaymentDetails payment)` — private: target whitelist, builds the `TxRecord` (`txId = self.txCounter + 1` at creation time, then `txCounter` increments), `status = PENDING`, `releaseTime = block.timestamp + timeLockPeriodSec`, pending set membership, event log.
 
-### 5. **Request and Approve (one-step meta-tx)**
+### 3. **Transaction approval (delayed)**
 
-`requestAndApprove(SecureOperationState, MetaTransaction)` — combines `_txRequest` + `_txApprovalWithMetaTx` in a single call. The `txId` is derived from `txCounter` at request time.
+`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction`.
+
+### 4. **Transaction approval (meta-tx)**
+
+`txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — public entrypoint: validates `SIGN_META_APPROVE`, checks permissions using `metaTx.txRecord.params.executionSelector` and **`metaTx.params.handlerSelector`** (wrapper selector in the typed-data payload), then returns `_txApprovalWithMetaTx(self, metaTx)`.
+
+`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
+
+### 5. **Request and approve (one-step meta-tx)**
+
+`requestAndApprove(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_REQUEST_AND_APPROVE`, execution + **`metaTx.params.handlerSelector`** permissions, attached payment policy, then runs `_txRequest` from fields in `metaTx.txRecord` (the new record’s `txId` is `self.txCounter + 1` at creation, matching `createTxRecord`). It assigns `metaTx.txRecord` to that returned `TxRecord` and calls `_txApprovalWithMetaTx` so execution proceeds in the same transaction. Like other meta approvals, **timelock is not enforced** on this combined path.
 
 ### 6. **Cancellation**
 
-`txCancellation(SecureOperationState, txId)` / `txCancellationWithMetaTx(SecureOperationState, MetaTransaction)` — validates `PENDING`, sets `CANCELLED`, removes from `pendingTransactionsSet`.
+`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet`.
+
+`txCancellationWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_CANCEL`, permissions using **`metaTx.params.handlerSelector`**, record match, signature, then cancels the pending tx.
 
 ## Security Features
 
@@ -159,7 +171,7 @@ Permission checks use `hasActionPermission(SecureOperationState, address, bytes4
 
 ### 2. **Time Lock Enforcement**
 
-`SharedValidation.validateReleaseTime(releaseTime)` reverts if `block.timestamp < releaseTime`. This is called by `txDelayedApproval` (the direct approval path). Meta-tx approval paths (`_txApprovalWithMetaTx`) intentionally **skip** timelock enforcement — the signed meta-tx itself serves as the authorization, enabling time-flexible delegated approval.
+`SharedValidation.validateReleaseTime(releaseTime)` reverts if `block.timestamp < releaseTime`. This is called by `txDelayedApproval` (the direct approval path). Meta-tx approval paths (`txApprovalWithMetaTx` / `_txApprovalWithMetaTx`, including the approval half of `requestAndApprove`) intentionally **skip** timelock enforcement — the signed meta-tx itself serves as the authorization, enabling time-flexible delegated approval.
 
 ### 3. **State Validation**
 

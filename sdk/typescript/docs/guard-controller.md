@@ -512,7 +512,11 @@ describe('GuardController Integration', () => {
 **Solution**: Ensure the function selector in the execution params matches the registered function schema.
 
 ### **Issue: OWNER cannot call `executeWithPayment`**
-**Solution**: Default `GuardControllerDefinitions` registers the **schema** for `executeWithPayment` but intentionally **does not** grant an OWNER role permission for it—the permission surface is kept minimal out of the box. Add the OWNER grant via a **guard-config batch** (`ADD_FUNCTION_TO_ROLE`) or **RBAC batch** after initialization if owner-driven payment execution is required.
+**Solution**: Default `GuardControllerDefinitions` registers the **schema** for `executeWithPayment` (`EXECUTE_WITH_PAYMENT_SELECTOR` in `contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol`) but intentionally **does not** grant an `OWNER_ROLE` `FunctionPermission` for it—the permission surface is kept minimal out of the box.
+
+**You cannot fix this with guard-config:** `getGuardConfigActionSpecs()` / `GuardConfigActionType` only cover whitelist add/remove, `REGISTER_FUNCTION`, and `UNREGISTER_FUNCTION`—there is no guard-config action to attach a selector to a role.
+
+**Add the grant via RBAC (role-config) after init:** use `roleConfigBatchRequestAndApprove` → `executeRoleConfigBatch` with `RoleConfigActionType.ADD_FUNCTION_TO_ROLE`, following the encoders and **batch ordering constraints** in `contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol`, and satisfy **schema / handler rules** from `GuardControllerDefinitions.sol` (e.g. `handlerForSelectors` for `executeWithPayment` must match what `addFunctionToRole` enforces against that schema).
 
 ### **Issue: `NATIVE_TRANSFER_SELECTOR` not found / native ETH flows revert**
 **Solution**: `GuardControllerDefinitions` already registers the `NATIVE_TRANSFER_SELECTOR` pseudo-schema (plus `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and `ERC20_TRANSFER_SELECTOR`). If your contract inherits from a **base-only** state machine **without** loading `GuardControllerDefinitions`, you must register these schemas manually via a guard-config or definition bundle.

@@ -142,7 +142,7 @@ Role permissions store a **`handlerForSelectors`** array on each **`FunctionPerm
 
 3. **Meta / dual-selector paths (`_validateExecutionAndHandlerPermissions`):** Requires **`hasActionPermission`** for both **`executionSelector`** and **`handlerSelector`**. If the **handler** function schema has **`enforceHandlerRelations`**, the engine also requires **`executionSelector`** to appear in **`functions[handlerSelector].handlerForSelectors`** — a **global** handler→execution graph on the **schema**, independent of which role row granted access.
 
-4. **Flexible schemas:** If **`enforceHandlerRelations`** is false for a schema, that global pairing check is skipped by design (see `registerFunction` NatSpec / OPERATIONAL MODES).
+4. **Flexible schemas:** If **`enforceHandlerRelations`** is false for a schema, that global pairing check is skipped by design. The **`@custom:security OPERATIONAL MODES`** discussion (strict vs flexible handler wiring) lives on **`EngineBlox.registerFunction`** in `contracts/core/lib/EngineBlox.sol`—that is the schema-registration entry point (this repository does not expose a separate `registerFunctionSchema` symbol). When wiring roles, whitelists, and meta-tx flows in production, follow the **action ordering and batch constraints** in `contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol` (role-config / meta) and `contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol` (guard-config / macros) so schemas, grants, and calls stay consistent.
 
 ## 🔄 **Batch Configuration Workflow**
 
