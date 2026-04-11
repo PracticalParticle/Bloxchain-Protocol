@@ -151,6 +151,32 @@ console.log('Requested guarded execution tx hash:', txResult.hash);
 
 ---
 
+## Deployment and initialization
+
+Account‑style contracts use OpenZeppelin **Initializable** semantics: there is **no constructor state** on the implementation; a single correct **`initialize(...)`** (or your product’s chained initializer) must run on the **proxy** (or minimal proxy) **before** you rely on ownership, RBAC, or guards.
+
+### **1. Recommended: factory / cloner pattern**
+
+To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. The repo includes **`CopyBlox`** as a reference pattern (`contracts/examples/applications/CopyBlox/CopyBlox.sol`):
+
+- Validates the implementation implements **`IBaseStateMachine`**.
+- **`Clones.clone`** (EIP‑1167) then **`call`s** `initialize(address,address,address,uint256,address)` on the new clone.
+- If initialization **reverts**, the whole transaction **reverts**—you do not end up with a live, uninitialized clone from that path.
+
+Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`).
+
+### **2. Manual proxy deploy checklist**
+
+If you deploy transparent / UUPS proxies by hand, keep an explicit runbook:
+
+1. Deploy **implementation** (never call user‑facing `initialize` on the implementation in production unless you mean to brick or document a pattern—follow OZ guidance).
+2. Deploy **proxy** pointing at the implementation; run **`initialize`** exactly **once** on the **proxy** with owner, broadcaster, recovery, timelock, and `eventForwarder`.
+3. Smoke‑read on‑chain state (`owner()`, `getRecovery()`, `getTimeLockPeriodSec()`, or your product’s equivalents) before funding or granting roles.
+
+More detail: [Best Practices — Deployment](./best-practices.md) (initializer subsection under Deployment) and [Account Pattern](./account-pattern.md).
+
+---
+
 ## 🔒 **Security Basics**
 
 Keep these minimum practices in your integration:

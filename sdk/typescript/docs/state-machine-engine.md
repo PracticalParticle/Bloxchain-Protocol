@@ -288,6 +288,24 @@ function _forwardEvent(bytes memory eventData) internal {
 
 **Purpose**: Forward events to external systems for monitoring and analysis.
 
+### 3. **EngineBlox `logTxEvent` and optional `eventForwarder` (production behavior)**
+
+In **`contracts/core/lib/EngineBlox.sol`**, `logTxEvent` always emits **`TransactionEvent`** on the state-machine contract, then optionally calls **`IEventForwarder.forwardTxEvent`** on the configured **`eventForwarder`** address.
+
+- **Trusted forwarder:** The forwarder is **operator-configured** (initializer / `setEventForwarder`). It should be a **trusted** indexer or integration contract—not an untrusted user-supplied address in adversarial settings.
+- **Silent failure:** The forwarder call is wrapped in **`try` / `catch`**. If the forwarder **reverts** or panics, the Bloxchain contract **continues**; core state updates that already ran are **not** rolled back for that reason alone. **Off-chain** consumers must not assume forwarding succeeded; use **`TransactionEvent`** logs as the **canonical** on-chain audit signal.
+- **Gas tradeoff:** There is **no explicit `{gas: N}` stipend** on the forwarder subcall; gas follows normal **EIP-150** rules (the callee receives a **bounded fraction** of remaining gas, not the entire transaction). A heavy or malicious forwarder can still **increase** the gas cost of the outer transaction. Optional future hardening: stipend + explicit failure event (audit Finding 18 resolution).
+
+See [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md) (Finding 18).
+
+## Read-heavy queries and protocol limits
+
+Several **view** helpers on the engine materialize full `EnumerableSet` contents into memory (for example supported roles, supported functions, pending transaction IDs, per‑role wallet lists). **`eth_call` cost and JSON-RPC response size** scale with how much is stored on that contract—plan pagination or off‑chain indexing for large deployments.
+
+**Execution paths differ:** target whitelist checks use **set membership** (`contains`), which does **not** linearly scan the whole whitelist for each execution in the way a naive “iterate all whitelisted targets” check would.
+
+On-chain growth of key dimensions is also bounded by **immutable constants** in `EngineBlox` (for example `MAX_ROLES`, `MAX_FUNCTIONS`, `MAX_HOOKS_PER_SELECTOR`, `MAX_BATCH_SIZE`). Per‑role `maxWallets` is chosen at role creation and is **not** capped by those globals—very large values increase gas for role removal and for helpers that list all wallets on a role. See NatSpec on `contracts/core/lib/EngineBlox.sol` for the authoritative gas model.
+
 ## Integration with TypeScript SDK
 
 

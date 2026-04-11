@@ -132,6 +132,20 @@ const hasPermission = await runtimeRBAC.hasActionPermission(
 console.log('Has action permission:', hasPermission)
 ```
 
+#### **Handler vs execution selectors (how `EngineBlox` enforces wiring)**
+
+Role permissions store a **`handlerForSelectors`** array on each **`FunctionPermission`**. On-chain behavior is split as follows (see `contracts/core/lib/EngineBlox.sol`):
+
+1. **Grant time (`addFunctionToRole`):** `_validateHandlerForSelectors` checks that every entry in the permission’s `handlerForSelectors` is allowed by the **function schema** for that **`functionSelector`** when the schema has **`enforceHandlerRelations`** (strict mode). This does **not** re-run on every `hasActionPermission` read.
+
+2. **Runtime permission (`hasActionPermission` / `roleHasActionPermission`):** Only whether the wallet’s roles include the **`functionSelector`** and the **`TxAction`** bitmap. The stored **`handlerForSelectors`** list on the role is **not** consulted again on each call.
+
+3. **Meta / dual-selector paths (`_validateExecutionAndHandlerPermissions`):** Requires **`hasActionPermission`** for both **`executionSelector`** and **`handlerSelector`**. If the **handler** function schema has **`enforceHandlerRelations`**, the engine also requires **`executionSelector`** to appear in **`functions[handlerSelector].handlerForSelectors`** — a **global** handler→execution graph on the **schema**, independent of which role row granted access.
+
+4. **Flexible schemas:** If **`enforceHandlerRelations`** is false for a schema, that global pairing check is skipped by design (see `registerFunction` NatSpec / OPERATIONAL MODES).
+
+For audit closure text, see [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md) (Finding 19).
+
 ## 🔄 **Batch Configuration Workflow**
 
 RuntimeRBAC uses batch configuration for all role and function management operations. This allows multiple changes to be applied atomically via meta-transactions.
