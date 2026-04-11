@@ -330,7 +330,7 @@ if (!targets.includes(targetAddress)) {
 }
 ```
 
-**Attached payments (`executeWithPayment`):** payout policy uses two extra whitelist keys (registered when GuardController definitions load—same `ADD_TARGET_TO_WHITELIST` batch flow). Base-only state machines that use attached payments without GuardController must register these schemas separately (see `PaymentTestHelper` in tests).
+**Attached payments (`executeWithPayment`):** payout policy uses two extra whitelist keys (registered when GuardController definitions load—same `ADD_TARGET_TO_WHITELIST` batch flow). Base-only state machines that use attached payments without GuardController must register these schemas separately (see `PaymentTestHelper` in tests). The core engine reverts (`ResourceNotFound`) if whitelist validation runs for a selector that is not yet in the supported-function set—there is no silent skip.
 
 | Selector (see `EngineBlox` SDK / Solidity) | What to whitelist |
 |---------------------------------------------|-------------------|

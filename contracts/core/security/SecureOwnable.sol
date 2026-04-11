@@ -56,7 +56,12 @@ import "./interface/ISecureOwnable.sol";
 abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     using SharedValidation for *;
 
-    /// @dev Tracks pending secure txs by type. Upgrading from legacy `_hasOpenRequest` / `_pendingBits` requires no pending requests.
+    /// @dev Lane flags for **delayed** ownership-transfer and broadcaster-update requests only (`transferOwnershipRequest`,
+    ///      `updateBroadcasterRequest`). Recovery and timelock updates use `_requestAndApproveTransaction` and do **not**
+    ///      read or write these booleans. Each flag is set only after a successful `_requestTransaction` in that same tx;
+    ///      clearing happens only in `_completeApprove` / `_completeCancel` in the **same** transaction as a successful
+    ///      `_approveTransaction` / `_cancelTransaction`, so a revert unwinds engine state and flag writes together.
+    /// @dev Upgrading from legacy `_hasOpenRequest` / `_pendingBits` requires no pending requests.
     bool private _hasOpenOwnershipRequest;
     bool private _hasOpenBroadcasterRequest;
 

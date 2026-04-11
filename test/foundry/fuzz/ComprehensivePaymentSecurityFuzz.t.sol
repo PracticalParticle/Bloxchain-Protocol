@@ -405,6 +405,9 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
 
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(0x5678), EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+
+        vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
                 SharedValidation.InvalidAddress.selector,

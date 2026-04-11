@@ -35,68 +35,78 @@ The signing process follows these security principles:
 3. **Signature Verification**: Automatic verification of generated signatures
 4. **Permission Validation**: Contract-level permission checking
 5. **Entrypoint binding**: On-chain verification requires `MetaTxParams.handlerSelector` to equal the selector of the **actual** public function used to submit the meta-transaction, and `handlerContract` to equal the verifying account address (same as the EIP-712 `verifyingContract`). Do not sign one handler and submit through a different sibling wrapper.
+6. **Raw digest signing**: The contract’s `message` field is the final EIP-712 digest (`\x19\x01` ‖ domain ‖ structHash). Wallets must **not** use `personal_sign` on that 32-byte value—`personal_sign` wraps the payload with the EIP-191 “Ethereum signed message” prefix, so `ecrecover` on-chain will fail. Use Viem `signMessage({ message: { raw: digest } })`, `signTypedData` with the same domain/types as `EngineBlox` (see `signMetaTransactionWithWallet` in `metaTransaction.tsx`), or a local `sign({ hash })` for backend keys.
 
 ## Workflow Patterns
 
 ### **Pattern 1: Programmatic Signing (Backend/Node.js)**
 
 ```typescript
-import { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransactionSigner';
+import { MetaTransactionSigner, MetaTransactionBuilder } from '../utils/metaTx/metaTransaction';
+import type { Address, Hex } from 'viem';
 
-// Initialize with wallet client
-const signer = new MetaTransactionSigner(
+// Option A — Wallet client (e.g. server HSM / browser wallet passed in): EIP-712 typed data via the SDK
+const signerWithWallet = new MetaTransactionSigner(
   publicClient,
-  walletClient, // Required for programmatic signing
+  walletClient,
   contractAddress,
   chain
 );
 
-// Step 1: Create unsigned meta-transaction
-const unsignedMetaTx = await signer.createUnsignedMetaTransactionForNew(
+const unsignedMetaTx = await signerWithWallet.createUnsignedMetaTransactionForNew(
   txParams,
   metaTxParams
 );
 
-// Step 2: Sign programmatically
-const signedMetaTx = await signer.signMetaTransaction(
-  unsignedMetaTx,
-  signerAddress
+const signedMetaTx = await signerWithWallet.signMetaTransactionWithWallet(unsignedMetaTx);
+
+// Option B — Known private key: sign the contract digest directly (no EIP-191 prefix)
+const signer = new MetaTransactionSigner(publicClient, undefined, contractAddress, chain);
+const unsigned = await signer.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
+const signedWithKey = await signer.signMetaTransaction(
+  unsigned,
+  signerAddress as Address,
+  privateKey as Hex
 );
 
-// Or use convenience method (combines steps 1 & 2)
-const signedMetaTx = await signer.createSignedMetaTransactionForNew(
+// Or one-shot with private key
+const signedOneShot = await signer.createSignedMetaTransactionForNew(
   txParams,
   metaTxParams,
-  signerAddress
+  signerAddress as Address,
+  privateKey as Hex
 );
 ```
 
 ### **Pattern 2: Frontend Wallet Integration**
 
-```typescript
-import { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransactionSigner';
+Use a Viem wallet client and sign the **raw** contract digest. This matches on-chain `ecrecover` and mirrors [Guard Controller examples](./guard-controller.md) (`signMessage` with `message: { raw: metaTx.message }`).
 
-// Initialize without wallet client (read-only)
+```typescript
+import { MetaTransactionSigner, MetaTransactionBuilder } from '../utils/metaTx/metaTransaction';
+import { createWalletClient, custom, type Address, type Hex } from 'viem';
+
 const signer = new MetaTransactionSigner(
   publicClient,
-  undefined, // No wallet client needed for unsigned creation
+  undefined,
   contractAddress,
   chain
 );
 
-// Step 1: Create unsigned meta-transaction
-const unsignedMetaTx = await signer.createUnsignedMetaTransactionForNew(
-  txParams,
-  metaTxParams
-);
+const unsignedMetaTx = await signer.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
 
-// Step 2: Sign with frontend wallet (e.g., MetaMask, WalletConnect)
-const signature = await window.ethereum.request({
-  method: 'personal_sign',
-  params: [unsignedMetaTx.message, userAddress]
+const walletClient = createWalletClient({
+  account: userAddress as Address,
+  chain,
+  transport: custom(window.ethereum)
 });
 
-// Step 3: Create signed meta-transaction with external signature
+// Raw digest only — do not use personal_sign on unsignedMetaTx.message
+const signature = await walletClient.signMessage({
+  message: { raw: unsignedMetaTx.message as Hex },
+  account: userAddress as Address
+});
+
 const signedMetaTx = await signer.createSignedMetaTransactionWithSignature(
   unsignedMetaTx,
   signature
@@ -106,30 +116,34 @@ const signedMetaTx = await signer.createSignedMetaTransactionWithSignature(
 ### **Pattern 3: Hybrid Approach (Frontend + Backend)**
 
 ```typescript
+import { MetaTransactionSigner } from '../utils/metaTx/metaTransaction';
+import { createWalletClient, custom, type Address, type Hex } from 'viem';
+
 // Frontend: Create unsigned meta-transaction
 const signer = new MetaTransactionSigner(publicClient, undefined, contractAddress, chain);
 const unsignedMetaTx = await signer.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
 
-// Frontend: Sign with wallet
-const signature = await window.ethereum.request({
-  method: 'personal_sign',
-  params: [unsignedMetaTx.message, userAddress]
+const walletClient = createWalletClient({
+  account: userAddress as Address,
+  chain,
+  transport: custom(window.ethereum)
 });
 
-// Frontend: Send to backend
+const signature = await walletClient.signMessage({
+  message: { raw: unsignedMetaTx.message as Hex },
+  account: userAddress as Address
+});
+
 const response = await fetch('/api/submit-meta-transaction', {
   method: 'POST',
-  body: JSON.stringify({
-    unsignedMetaTx,
-    signature
-  })
+  body: JSON.stringify({ unsignedMetaTx, signature })
 });
 
-// Backend: Verify and submit to contract
+// Backend: Verify digest + signature, then submit
 const backendSigner = new MetaTransactionSigner(publicClient, undefined, contractAddress, chain);
 const signedMetaTx = await backendSigner.createSignedMetaTransactionWithSignature(
   unsignedMetaTx,
-  signature
+  signature as Hex
 );
 ```
 
@@ -138,8 +152,8 @@ const signedMetaTx = await backendSigner.createSignedMetaTransactionWithSignatur
 ### **Basic Setup**
 
 ```typescript
-import { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransactionSigner';
-import { PublicClient, WalletClient, Chain } from 'viem';
+import { MetaTransactionSigner, MetaTransactionBuilder } from '../utils/metaTx/metaTransaction';
+import { PublicClient, WalletClient, Chain, type Address, type Hex } from 'viem';
 
 // Initialize the signer
 const signer = new MetaTransactionSigner(
@@ -180,11 +194,12 @@ const metaTxParams = MetaTransactionBuilder.createMetaTxParams(
   signerAddress
 );
 
-// Create and sign the meta-transaction
+// Create and sign (private key path) — or use signMetaTransactionWithWallet if signer was constructed with walletClient
 const signedMetaTx = await signer.createSignedMetaTransactionForNew(
   txParams,
   metaTxParams,
-  { from: signerAddress }
+  signerAddress as Address,
+  privateKey as Hex
 );
 ```
 
@@ -201,11 +216,11 @@ const metaTxParams = MetaTransactionBuilder.createMetaTxParams(
   signerAddress
 );
 
-// Create signed meta-transaction for existing transaction
 const signedMetaTx = await signer.createSignedMetaTransactionForExisting(
   existingTxId,
   metaTxParams,
-  { from: signerAddress }
+  signerAddress as Address,
+  privateKey as Hex
 );
 ```
 
@@ -222,17 +237,23 @@ const metaTxParams = MetaTransactionBuilder.createMetaTxParams(
   signerAddress
 );
 
-// Create signed meta-transaction for cancellation
 const signedMetaTx = await signer.createSignedMetaTransactionForExisting(
   txIdToCancel,
   metaTxParams,
-  { from: signerAddress }
+  signerAddress as Address,
+  privateKey as Hex
 );
 ```
 
 ### **Frontend Wallet Integration Example**
 
+See also [Guard Controller](./guard-controller.md) for the same `signMessage({ message: { raw } })` pattern on a full config flow.
+
 ```typescript
+import { useState } from 'react';
+import { MetaTransactionSigner, MetaTransactionBuilder } from '../utils/metaTx/metaTransaction';
+import { createWalletClient, custom, type Address, type Hex } from 'viem';
+
 // React component example
 const MetaTransactionComponent = () => {
   const [unsignedMetaTx, setUnsignedMetaTx] = useState(null);
@@ -268,9 +289,14 @@ const MetaTransactionComponent = () => {
     if (!unsignedMetaTx) return;
 
     try {
-      const signature = await window.ethereum.request({
-        method: 'personal_sign',
-        params: [unsignedMetaTx.message, userAddress]
+      const walletClient = createWalletClient({
+        account: userAddress as Address,
+        chain,
+        transport: custom(window.ethereum)
+      });
+      const signature = await walletClient.signMessage({
+        message: { raw: unsignedMetaTx.message as Hex },
+        account: userAddress as Address
       });
 
       const signer = new MetaTransactionSigner(publicClient, undefined, contractAddress, chain);
@@ -311,11 +337,11 @@ class MetaTransactionService {
   }
 
   async processMetaTransactionRequest(request: MetaTransactionRequest) {
-    // Create and sign meta-transaction programmatically
     const signedMetaTx = await this.signer.createSignedMetaTransactionForNew(
       request.txParams,
       request.metaTxParams,
-      request.signerAddress
+      request.signerAddress,
+      request.privateKey
     );
 
     // Submit to contract
@@ -381,11 +407,17 @@ Creates an unsigned meta-transaction for an existing operation.
 - **Returns**: `MetaTransaction` with contract-generated message hash
 - **Use case**: Approving/canceling existing transactions
 
-#### `signMetaTransaction(unsignedMetaTx, signerAddress)`
-Signs an unsigned meta-transaction using the wallet client.
-- **Requires wallet client**
+#### `signMetaTransactionWithWallet(unsignedMetaTx)`
+Signs using the configured `walletClient` and `signTypedData` with the SDK’s `META_TX_DOMAIN` / `META_TX_TYPES` (must match `EngineBlox` on-chain).
+- **Requires** `walletClient` with an active account
 - **Returns**: Complete signed `MetaTransaction`
-- **Use case**: Programmatic signing
+- **Use case**: Browser or server wallet without exporting the private key
+
+#### `signMetaTransaction(unsignedMetaTx, signerAddress, privateKey)`
+Signs the contract-returned digest with `account.sign({ hash })` (raw digest; no EIP-191 prefix).
+- **Requires** the signer’s private key
+- **Returns**: Complete signed `MetaTransaction`
+- **Use case**: Backend automation, tests, custodial signers
 
 #### `createSignedMetaTransactionWithSignature(unsignedMetaTx, signature)`
 Creates a signed meta-transaction with an external signature.
@@ -395,11 +427,11 @@ Creates a signed meta-transaction with an external signature.
 
 ### **Convenience Methods**
 
-#### `createSignedMetaTransactionForNew(txParams, metaTxParams, signerAddress)`
-Combines unsigned creation and programmatic signing for new operations.
+#### `createSignedMetaTransactionForNew(txParams, metaTxParams, signerAddress, privateKey)`
+Combines unsigned creation and private-key signing for new operations.
 
-#### `createSignedMetaTransactionForExisting(txId, metaTxParams, signerAddress)`
-Combines unsigned creation and programmatic signing for existing operations.
+#### `createSignedMetaTransactionForExisting(txId, metaTxParams, signerAddress, privateKey)`
+Combines unsigned creation and private-key signing for existing operations.
 
 ### MetaTransactionSigner Class
 
@@ -416,8 +448,10 @@ constructor(
 
 #### Methods
 
-- `createSignedMetaTransactionForNew(txParams, metaTxParams, options): Promise<MetaTransaction>`
-- `createSignedMetaTransactionForExisting(txId, metaTxParams, options): Promise<MetaTransaction>`
+- `signMetaTransactionWithWallet(unsignedMetaTx): Promise<MetaTransaction>`
+- `signMetaTransaction(unsignedMetaTx, signerAddress, privateKey): Promise<MetaTransaction>`
+- `createSignedMetaTransactionForNew(txParams, metaTxParams, signerAddress, privateKey): Promise<MetaTransaction>`
+- `createSignedMetaTransactionForExisting(txId, metaTxParams, signerAddress, privateKey): Promise<MetaTransaction>`
 
 ### MetaTransactionBuilder Class
 
@@ -444,10 +478,10 @@ The contract implements EIP-712 with:
 - **Type Hash**: Complex nested structure for MetaTransaction
 
 ### **Signature Verification Flow**
-1. Contract generates message hash using its own EIP-712 implementation
-2. SDK signs the message hash using wallet client
-3. SDK verifies signature locally for immediate feedback
-4. Contract verifies signature again during execution
+1. Contract generates the EIP-712 digest (`message`) using its own implementation.
+2. The client signs that digest **without** an extra EIP-191 wrapper: e.g. Viem `signMessage({ message: { raw: message } })`, SDK `signMetaTransactionWithWallet` (typed data matching the contract), or `sign({ hash })` for local keys.
+3. The SDK verifies locally in `createSignedMetaTransactionWithSignature` / `signMetaTransaction` paths before returning.
+4. The contract recovers the signer from the same digest during execution.
 
 ## Security Considerations
 
@@ -484,11 +518,12 @@ try {
   const signedMetaTx = await signer.createSignedMetaTransactionForNew(
     txParams,
     metaTxParams,
-    options
+    signerAddress as Address,
+    privateKey as Hex
   );
 } catch (error) {
-  if (error.message.includes('Wallet client is required')) {
-    // Handle missing wallet client
+  if (error.message.includes('walletClient is required')) {
+    // Use signMessage({ raw }) + createSignedMetaTransactionWithSignature, or pass walletClient
   } else if (error.message.includes('Contract call failed')) {
     // Handle contract interaction errors
   } else if (error.message.includes('Signature verification failed')) {
@@ -529,9 +564,10 @@ try {
   const signedMetaTx = await signer.createSignedMetaTransactionForNew(
     txParams,
     metaTxParams,
-    options
+    signerAddress as Address,
+    privateKey as Hex
   );
-  
+
   // Success handling
   console.log('Meta-transaction created successfully');
   
@@ -563,13 +599,22 @@ const executionType = ExecutionType.STANDARD;
 
 ## Troubleshooting
 
+### Invalid signature / wrong signer (EIP-191 vs raw digest)
+
+If the SDK throws **Signature verification failed** or the contract reverts on meta-tx submit:
+
+- **Wrong:** `personal_sign` (or any API that applies the EIP-191 “Ethereum signed message” prefix) on `unsignedMetaTx.message`. The contract hashes `\x19\x01` ‖ domain ‖ structHash **once**; adding the text-message prefix produces a different digest.
+- **Right:** Viem `walletClient.signMessage({ message: { raw: unsignedMetaTx.message }, account })`, or SDK `signMetaTransactionWithWallet(unsignedMetaTx)` with a wallet client, or `signMetaTransaction` / `sign({ hash })` with the raw digest for local keys.
+
+Full flow examples: [Guard Controller](./guard-controller.md) (raw digest signing).
+
 ### Common Issues
 
-1. **Wallet Client Missing**: Ensure wallet client is properly initialized
-2. **Contract Address Invalid**: Verify the contract address is correct
-3. **Signature Verification Failed**: Check that the signer address matches
-4. **Permission Denied**: Verify the signer has appropriate roles
-5. **Deadline Expired**: Ensure the deadline is in the future
+1. **Wallet client missing**: Required for `signMetaTransactionWithWallet`; use `signMessage` + `createSignedMetaTransactionWithSignature` if you only have an EIP-1193 provider and build `createWalletClient` yourself.
+2. **Contract address invalid**: Verify the contract address is correct
+3. **Signature verification failed**: Confirm the signing API above; confirm `params.signer` matches the account that signed
+4. **Permission denied**: Verify the signer has appropriate roles
+5. **Deadline expired**: Ensure the deadline is in the future
 
 ### Debug Information
 
@@ -624,23 +669,27 @@ Meta-transactions integrate into the Bloxchain workflow:
 ### **From Previous Version**
 
 ```typescript
-// Old: Single method with wallet client requirement
-const signedMetaTx = await signer.createSignedMetaTransactionForNew(
+// Older docs used { from: signerAddress } — the API requires an explicit private key for
+// createSignedMetaTransactionForNew / signMetaTransaction, or a wallet client for signMetaTransactionWithWallet.
+
+// Private key path (unchanged shape; parameters were clarified in docs)
+const signedPk = await signer.createSignedMetaTransactionForNew(
   txParams,
   metaTxParams,
-  { from: signerAddress }
+  signerAddress as Address,
+  privateKey as Hex
 );
 
-// New: Separated workflow
+// Separated workflow (private key)
 const unsignedMetaTx = await signer.createUnsignedMetaTransactionForNew(txParams, metaTxParams);
-const signedMetaTx = await signer.signMetaTransaction(unsignedMetaTx, signerAddress);
-
-// Or use convenience method (same as before)
-const signedMetaTx = await signer.createSignedMetaTransactionForNew(
-  txParams,
-  metaTxParams,
-  signerAddress
+const signedSeparated = await signer.signMetaTransaction(
+  unsignedMetaTx,
+  signerAddress as Address,
+  privateKey as Hex
 );
+
+// Wallet client: typed data via SDK (no private key)
+const signedWallet = await signerWithWallet.signMetaTransactionWithWallet(unsignedMetaTx);
 ```
 
 ## File Structure
@@ -649,9 +698,8 @@ The meta-transaction utilities are organized in a dedicated folder:
 
 ```
 sdk/typescript/utils/metaTx/
-├── metaTransactionSigner.tsx    # Main utility class
-├── MetaTx.abi.json             # Stripped-down ABI
-└── README.md                   # Documentation
+├── metaTransaction.tsx   # MetaTransactionSigner, EIP-712 helpers, BaseStateMachine ABI usage
+└── (ABI imported from ../../abi/BaseStateMachine.abi.json)
 ```
 
 ### Benefits of This Structure
