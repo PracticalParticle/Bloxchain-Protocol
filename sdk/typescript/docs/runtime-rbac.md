@@ -132,6 +132,18 @@ const hasPermission = await runtimeRBAC.hasActionPermission(
 console.log('Has action permission:', hasPermission)
 ```
 
+#### **Handler vs execution selectors (how `EngineBlox` enforces wiring)**
+
+Role permissions store a **`handlerForSelectors`** array on each **`FunctionPermission`**. On-chain behavior is split as follows (see `contracts/core/lib/EngineBlox.sol`):
+
+1. **Grant time (`addFunctionToRole`):** `_validateHandlerForSelectors` checks that every entry in the permission’s `handlerForSelectors` is allowed by the **function schema** for that **`functionSelector`** when the schema has **`enforceHandlerRelations`** (strict mode). This does **not** re-run on every `hasActionPermission` read.
+
+2. **Runtime permission (`hasActionPermission` / `roleHasActionPermission`):** Only whether the wallet’s roles include the **`functionSelector`** and the **`TxAction`** bitmap. The stored **`handlerForSelectors`** list on the role is **not** consulted again on each call.
+
+3. **Meta / dual-selector paths (`_validateExecutionAndHandlerPermissions`):** Requires **`hasActionPermission`** for both **`executionSelector`** and **`handlerSelector`**. If the **handler** function schema has **`enforceHandlerRelations`**, the engine also requires **`executionSelector`** to appear in **`functions[handlerSelector].handlerForSelectors`** — a **global** handler→execution graph on the **schema**, independent of which role row granted access.
+
+4. **Flexible schemas:** If **`enforceHandlerRelations`** is false for a schema, that global pairing check is skipped by design. The **`@custom:security OPERATIONAL MODES`** discussion (strict vs flexible handler wiring) lives on **`EngineBlox.registerFunction`** in `contracts/core/lib/EngineBlox.sol`—that is the schema-registration entry point (this repository does not expose a separate `registerFunctionSchema` symbol). When wiring roles, whitelists, and meta-tx flows in production, follow the **action ordering and batch constraints** in `contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol` (role-config / meta) and `contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol` (guard-config / macros) so schemas, grants, and calls stay consistent.
+
 ## 🔄 **Batch Configuration Workflow**
 
 RuntimeRBAC uses batch configuration for all role and function management operations. This allows multiple changes to be applied atomically via meta-transactions.
@@ -484,6 +496,9 @@ describe('RuntimeRBAC Integration', () => {
 
 ### **Issue: "Handler selector mismatch"**
 **Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
+
+### **Issue: `ResourceAlreadyExists` when adding a function to a role**
+**Solution**: `addFunctionToRole` reverts if the selector is already present on the role. To update bitmap or `handlerForSelectors`, **remove** the function from the role first (`removeFunctionFromRole`), then re-add with the new values. Note: **protected schemas** cannot be removed from roles (`CannotModifyProtected`), so grants of protected selectors are effectively permanent unless the role itself is removed.
 
 ## 📚 **Related Documentation**
 

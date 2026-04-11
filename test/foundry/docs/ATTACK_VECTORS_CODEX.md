@@ -1,7 +1,7 @@
 # Attack Vectors Codex
 
 **Purpose**: Knowledge library of security threats relevant to Bloxchain Protocol  
-**Last Updated**: February 21, 2026  
+**Last Updated**: April 11, 2026  
 **Status**: Living Knowledge Base
 
 ---
@@ -10,11 +10,13 @@
 
 This codex serves as a comprehensive knowledge base of attack vectors identified in the Bloxchain Protocol. Each entry includes attack descriptions, current protections, severity classifications, and verification requirements. This document consolidates information from security analysis documents and serves as the authoritative reference for security threats.
 
-**Total Attack Vectors**: 174+  
+**Line numbers and file paths:** Many entries cite `Contract.sol:start-end` line ranges from earlier snapshots. Solidity files evolve; **treat line numbers as approximate**. Prefer locating logic by **function name** (e.g. `EngineBlox.verifySignature`, `BaseStateMachine._validateMetaTxHandlerBinding`) or your editor’s symbol search. **Authoritative behavior** is always `contracts/core/` (and linked experimental paths) plus NatSpec.
+
+**Total Attack Vectors**: 190+  
 **Critical Severity**: 14  
-**High Severity**: 34  
-**Medium Severity**: 58  
-**Low Severity**: 35  
+**High Severity**: 36  
+**Medium Severity**: 64  
+**Low Severity**: 43  
 **Informational**: 30+
 
 ---
@@ -39,6 +41,7 @@ This codex serves as a comprehensive knowledge base of attack vectors identified
 16. [New Attack Vectors (2026 Security Analysis)](#16-new-attack-vectors-2026-security-analysis)
 17. [Gas Exhaustion & System Limits](#17-gas-exhaustion--system-limits)
 18. [Protocol-Vulnerabilities-Index Derived Vectors](#18-protocol-vulnerabilities-index-derived-vectors)
+19. [AgentArena Audit-Derived Vectors (April 2026)](#19-agentarena-audit-derived-vectors-april-2026)
 
 ---
 
@@ -583,6 +586,28 @@ MetaTransaction memory metaTx = {
 
 **Related Tests**:
 - `testFuzz_GasPriceLimitEnforced`
+
+---
+
+#### HIGH: Meta-Tx Entrypoint / Handler Binding (Cross-Wrapper Authorization)
+- **ID**: `MT-008`
+- **Finding**: AgentArena #1 (mitigated). Same underlying issue as **AUDIT-001** (§19.1).
+- **Location**: `BaseStateMachine.sol:_validateMetaTxHandlerBinding`, `SharedValidation.sol:validateMetaTxHandlerSelectorBinding`, `validateMetaTxHandlerContractBinding`, `EngineBlox.sol:verifySignature` (handler contract binding)
+- **Severity**: HIGH (matches AgentArena Finding 1 and `AUDIT-001`; high impact if unmitigated — now protected)
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+A meta-tx signed for one public wrapper (`handlerSelector` / EIP-712 intent) must not be executable through another sibling entrypoint with different checks (e.g. routing a role-config batch signature through a guard-config batch function).
+
+**Current Protection**:
+- ✅ Wrapper enforces `metaTx.params.handlerSelector == bytes4(msg.sig)` before engine work
+- ✅ Library enforces `metaTx.params.handlerContract == address(this)` in `verifySignature`
+- ✅ Custom errors `MetaTxHandlerSelectorMismatch`, `MetaTxHandlerContractMismatch`
+
+**Related Tests**:
+- `testFuzz_Finding1_HandlerSelectorMismatchRejected`
+- `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`
+- `testFuzz_Finding1_HandlerContractMismatchRejected`
 
 ---
 
@@ -2245,46 +2270,44 @@ Storage layout collision in upgrades causing state corruption.
 
 #### HIGH: Malicious Hook Contract
 - **ID**: `HOOK-001`
-- **Location**: `HookManager.sol:98-204`
+- **Location**: `contracts/experimental/hook/HookManager.sol` — `_executeActionHooks`, `_postActionHook`
 - **Severity**: HIGH
-- **Status**: ✅ **PROTECTED**
+- **Status**: ⚠️ **TRUST MODEL** (not “best-effort” for HookManager stacks)
 
 **Description**:  
-Malicious hook contract performing unauthorized operations during hook execution.
+Malicious or buggy hook contracts invoked after a core operation could harm liveness or try to reenter.
 
 **Attack Scenario**:
 ```solidity
 // Owner sets malicious hook contract
-setHook(HookType.ON_ACTION, maliciousHookContract);
-
-// Hook performs unauthorized operations
-// Attempts to manipulate state
+setHook(selector, maliciousHookContract);
+// Hook runs after state machine step completes for that tx path
 ```
 
-**Current Protection**:
-- ✅ Hook execution is best-effort, doesn't affect core state
-- ✅ Hook failures don't affect transaction execution
-- ✅ Try-catch prevents hook failures from propagating
+**Current Protection** (HookManager, experimental):
+- ✅ Hooks run **after** `super._postActionHook` (core Checks-Effects already applied in the caller frame)
+- ⚠️ **`IOnActionHook.onAction` is a plain external call** — if any hook **reverts** or **runs out of gas**, the **entire parent** request/approve/cancel **reverts** (no try/catch in `_executeActionHooks`). NatSpec: only register **trusted, non-reverting** hooks.
+- ✅ `EngineBlox.MAX_HOOKS_PER_SELECTOR` caps how many hooks can be registered per selector
+- ℹ️ **Account / GuardController / RuntimeRBAC** stacks in `contracts/core/pattern/Account.sol` do **not** include HookManager; this surface exists only when a deployment opts into the experimental hook mixin.
 
 **Verification**:
-- Test with malicious hook contracts
-- Verify hook failures don't affect state
-- Test hook execution isolation
+- Test with reverting hooks (parent tx must revert)
+- Test hook reentrancy against `nonReentrant` entrypoints
+- Prefer `ComprehensiveHookSystemFuzz.t.sol` / `ComprehensiveSecurityEdgeCasesFuzz.t.sol` for hook suites
 
 ---
 
 #### MEDIUM: Hook Reentrancy
 - **ID**: `HOOK-002`
-- **Location**: `HookManager.sol:220-236`
+- **Location**: `contracts/experimental/hook/HookManager.sol`, `BaseStateMachine.sol` (`nonReentrant` on meta / tx entrypoints)
 - **Severity**: MEDIUM
-- **Status**: ✅ **PROTECTED**
+- **Status**: ✅ **PROTECTED** (where HookManager is used)
 
 **Description**:  
-Reentrancy through hook contracts bypassing ReentrancyGuard.
+Reentrancy through hook contracts calling back into the state machine.
 
 **Attack Scenario**:
 ```solidity
-// Malicious hook reenters state machine
 contract MaliciousHook {
     function onAction(...) external {
         stateMachine.approveTimeLockExecution(txId);
@@ -2293,45 +2316,39 @@ contract MaliciousHook {
 ```
 
 **Current Protection**:
-- ✅ `nonReentrant` modifier on hook functions
-- ✅ ReentrancyGuard prevents reentrancy
+- ✅ State-changing entrypoints on `BaseStateMachine` / `GuardController` use **`nonReentrant`**; a second nested entry in the same tx hits the guard
+- ⚠️ Hooks are still **trusted** code; do not rely on hooks alone for authorization
 
 **Verification**:
-- Test hook reentrancy
-- Verify reentrancy protection
-- Test multiple reentrant calls
+- `testFuzz_HookReentrancyPrevented` (ComprehensiveSecurityEdgeCasesFuzz.t.sol)
 
 ---
 
 #### MEDIUM: Hook Gas Exhaustion
 - **ID**: `HOOK-003`
-- **Location**: `HookManager.sol:98-204`
+- **Location**: `contracts/experimental/hook/HookManager.sol:_executeActionHooks`, `EngineBlox.sol` (`MAX_HOOKS_PER_SELECTOR`)
 - **Severity**: MEDIUM
-- **Status**: ✅ **PROTECTED**
+- **Status**: ⚠️ **PARTIAL** — count bound, no per-hook gas stipend
 
 **Description**:  
-Gas exhaustion through malicious hook contracts consuming excessive gas.
+A hook that burns gas or reverts with OOG can **fail the whole operation** (same revert semantics as HOOK-001).
 
 **Attack Scenario**:
 ```solidity
-// Malicious hook consumes excessive gas
 contract GasIntensiveHook {
     function onAction(...) external {
-        // Consumes all gas
-        while(true) { /* ... */ }
+        while (true) { } // OOG or revert
     }
 }
 ```
 
 **Current Protection**:
-- ✅ Hook execution has gas limits
-- ✅ Hook failures don't affect transaction
-- ✅ Try-catch prevents gas exhaustion from affecting core state
+- ✅ At most **`MAX_HOOKS_PER_SELECTOR`** hooks per selector (limits fan-out)
+- ⚠️ **No** explicit `{gas: N}` on `onAction`; hook shares the transaction’s remaining gas (EIP-150 applies to nested calls)
+- ⚠️ **No** try/catch — exhausting gas in a hook **reverts the parent**
 
 **Verification**:
-- Test with gas-intensive hooks
-- Verify gas limits
-- Test hook failure handling
+- `testFuzz_MultipleHooksGasExhaustionPrevented`, `testFuzz_HookExecutionGasConsumptionWithManyHooks` (ComprehensiveGasExhaustionFuzz / SecurityEdgeCases)
 
 ---
 
@@ -2339,7 +2356,7 @@ contract GasIntensiveHook {
 
 #### MEDIUM: Unauthorized Hook Setting
 - **ID**: `HOOK-004`
-- **Location**: `HookManager.sol:59-65`
+- **Location**: `contracts/experimental/hook/HookManager.sol:setHook`, `clearHook`
 - **Severity**: MEDIUM
 - **Status**: ✅ **PROTECTED**
 
@@ -2370,46 +2387,41 @@ setHook(HookType.ON_ACTION, maliciousHook); // Should fail
 
 #### MEDIUM: Malicious Event Forwarder
 - **ID**: `EVENT-001`
-- **Location**: `EngineBlox.sol:1724-1759`
+- **Location**: `EngineBlox.sol:logTxEvent` (forwarder subcall), `IEventForwarder.forwardTxEvent`
 - **Severity**: MEDIUM
-- **Status**: ✅ **PROTECTED**
+- **Status**: ✅ **PROTECTED** (state); ⚠️ **TRUST MODEL** (gas / monitoring)
 
 **Description**:  
-Malicious event forwarder contract performing unauthorized operations.
+Malicious or buggy `eventForwarder` could waste gas or confuse off-chain consumers.
 
 **Attack Scenario**:
 ```solidity
-// Attacker sets malicious event forwarder
 setEventForwarder(maliciousForwarder);
-
-// Forwarder performs unauthorized operations
-// Attempts to manipulate state
+// After tx completes, logTxEvent calls forwardTxEvent
 ```
 
 **Current Protection**:
-- ✅ Try-catch prevents failures from propagating
-- ✅ Event forwarding is non-critical operation
-- ✅ Forwarder failures don't affect core state
+- ✅ **`try` / `catch`** around `forwardTxEvent` — forwarder **revert does not roll back** Bloxchain state updates that already completed in the same tx
+- ✅ **`TransactionEvent`** is emitted **before** the forwarder call — authoritative on-chain trail
+- ⚠️ **No explicit gas stipend** on the forwarder call; EIP-150 bounds the subcall gas share
+- ⚠️ Forwarder failure is **silent** off-chain; monitoring must not assume forwarder delivery (see audit Findings 18 / 35)
 
 **Verification**:
-- Test with malicious event forwarder
-- Verify forwarder failures don't affect state
-- Test event forwarding isolation
+- `testFuzz_MaliciousEventForwarderIsolated` (ComprehensiveEventForwardingFuzz.t.sol)
 
 ---
 
 #### LOW: Event Forwarder Gas Exhaustion
 - **ID**: `EVENT-002`
-- **Location**: `EngineBlox.sol:1746-1758`
+- **Location**: `EngineBlox.sol:logTxEvent`
 - **Severity**: LOW
-- **Status**: ✅ **PROTECTED**
+- **Status**: ✅ **PROTECTED** (liveness of core state); ⚠️ **GAS / OPS**
 
 **Description**:  
-Gas exhaustion through malicious event forwarder.
+Gas-intensive forwarder can burn gas in the same transaction; forwarder can revert and be swallowed.
 
 **Attack Scenario**:
 ```solidity
-// Malicious forwarder consumes excessive gas
 contract GasIntensiveForwarder {
     function forwardTxEvent(...) external {
         while(true) { /* ... */ }
@@ -2418,13 +2430,11 @@ contract GasIntensiveForwarder {
 ```
 
 **Current Protection**:
-- ✅ Try-catch prevents failure propagation
-- ✅ Impact: Low - try-catch prevents failure propagation
+- ✅ `try` / `catch` — forwarder OOG/revert does **not** revert core engine finalization that already reached `logTxEvent`
+- ⚠️ Remaining gas in the frame can still be large; operator should use a **trusted** forwarder
 
 **Verification**:
-- Test with gas-intensive forwarder
-- Verify graceful failure handling
-- Test gas limits
+- `testFuzz_GasIntensiveEventForwarderHandled` (ComprehensiveEventForwardingFuzz.t.sol)
 
 ---
 
@@ -3446,6 +3456,275 @@ This section consolidates attack vectors derived from the [Protocol Vulnerabilit
 
 ---
 
+## 19. AgentArena Audit-Derived Vectors (April 2026)
+
+Vectors derived from the **AgentArena multi-agent audit** (37 findings, commit `8645f1e2`). Each entry tracks the original finding number, the implemented mitigation, and the fuzz test that verifies the fix. Source: `research/audit/agent arena/AUDIT_FINDINGS.md`, `AUDIT_RESOLUTION.md`.
+
+**Test file**: `test/foundry/fuzz/AuditDerivedAttackVectorsFuzz.t.sol` (17 tests)
+
+### 19.1 Meta-Transaction Entrypoint Binding
+
+#### HIGH: Meta-tx Handler Selector Spoofing (Cross-Wrapper Replay)
+- **ID**: `AUDIT-001`
+- **Finding**: AgentArena #1. Same underlying issue as **MT-008** (§2.1).
+- **Location**: `EngineBlox.sol:verifySignature`, `BaseStateMachine.sol:_validateMetaTxHandlerBinding`, `SharedValidation.sol`
+- **Severity**: HIGH
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+A signed meta-tx targeting handler A (e.g. `roleConfigBatchRequestAndApprove`) could be submitted through sibling wrapper B (e.g. `guardConfigBatchRequestAndApprove`), bypassing wrapper-specific checks.
+
+**Current Protection**:
+- ✅ `BaseStateMachine._validateMetaTxHandlerBinding` checks `handlerSelector == msg.sig` at each wrapper entry
+- ✅ `EngineBlox.verifySignature` checks `handlerContract == address(this)` in the library
+- ✅ `EngineBlox.generateMetaTransaction` fail-fast on `handlerContract` mismatch
+- ✅ Custom errors: `MetaTxHandlerSelectorMismatch`, `MetaTxHandlerContractMismatch`
+
+**Related Tests**:
+- `testFuzz_Finding1_HandlerSelectorMismatchRejected`
+- `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`
+- `testFuzz_Finding1_HandlerContractMismatchRejected`
+
+---
+
+#### MEDIUM: Meta-tx Handler Contract Mismatch
+- **ID**: `AUDIT-001b`
+- **Finding**: AgentArena #1 (contract binding)
+- **Location**: `EngineBlox.sol:verifySignature`, `SharedValidation.sol:validateMetaTxHandlerContractBinding`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+`handlerContract` in signed params must match `address(this)` (the verifying EIP-712 domain contract). Prevents cross-contract signature replay.
+
+**Related Tests**:
+- `testFuzz_Finding1_HandlerContractMismatchRejected`
+
+---
+
+### 19.2 Config Batch Payment Rail
+
+#### MEDIUM: RBAC/Guard Batch as Unrestricted Payment Rail
+- **ID**: `AUDIT-003`
+- **Finding**: AgentArena #3
+- **Location**: `RuntimeRBAC.sol:roleConfigBatchRequestAndApprove`, `GuardController.sol:guardConfigBatchRequestAndApprove`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Config batch meta-tx paths could carry non-zero payment fields and drain funds from the contract without executing any actual configuration actions (empty batch + large payment).
+
+**Current Protection**:
+- ✅ `SharedValidation.validateEmptyPayment` enforced before forwarding to engine on both RBAC and Guard batch paths
+- ✅ Reverts with `InvalidPayment` if any payment field is non-zero
+
+**Related Tests**:
+- `testFuzz_Finding3_RBACBatchRejectsNonZeroPayment`
+- `testFuzz_Finding3_GuardBatchRejectsNonZeroPayment`
+- `testFuzz_Finding3_RBACBatchRejectsNativeOnlyNonZeroPayment`
+
+---
+
+### 19.3 Bounded Returndata (DoS Prevention)
+
+#### MEDIUM: Unbounded Returndata Storage in Tx Finalization
+- **ID**: `AUDIT-005`
+- **Finding**: AgentArena #5
+- **Location**: `EngineBlox.sol:executeTransaction`, `EngineBlox.sol:_callWithBoundedReturndata`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+A malicious whitelisted target returning very large returndata could blow up memory/gas during `_completeTransaction`, preventing finalization.
+
+**Current Protection**:
+- ✅ `_callWithBoundedReturndata` with low-level `call` and `returndatacopy` capped at `MAX_RESULT_PREVIEW_BYTES` (32 KiB)
+- ✅ Only the bounded preview is stored in `TxRecord.result`
+
+**Related Tests**:
+- `testFuzz_Finding5_MaxResultPreviewBytesIs32KiB`
+
+---
+
+### 19.4 Payment Whitelist Bypass
+
+#### MEDIUM: Whitelist Bypass via Attached Payment Recipient
+- **ID**: `AUDIT-006`
+- **Finding**: AgentArena #6
+- **Location**: `EngineBlox.sol:_validateAttachedPaymentPolicy`, `executeAttachedPayment`
+- **Severity**: MEDIUM
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Attached payments could route native ETH or ERC20 tokens to addresses not covered by the primary execution target whitelist.
+
+**Current Protection**:
+- ✅ Dedicated `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` whitelist for `payment.recipient`
+- ✅ Dedicated `ERC20_TRANSFER_SELECTOR` whitelist for `payment.erc20TokenAddress`
+- ✅ `_validateAttachedPaymentPolicy` at request time and execution time
+- ✅ Unregistered policy selectors revert `ResourceNotFound`
+
+**Related Tests**:
+- `testFuzz_Finding6_NonWhitelistedRecipientRejected`
+- `testFuzz_Finding6_NonWhitelistedERC20Rejected`
+
+---
+
+### 19.5 Ownership Transfer Recovery Snapshot
+
+#### MEDIUM: Stale Recovery Address in Pending Ownership Transfer
+- **ID**: `AUDIT-007`
+- **Finding**: AgentArena #7
+- **Location**: `SecureOwnable.sol:transferOwnershipRequest`, `executeTransferOwnership`
+- **Severity**: MEDIUM
+- **Status**: ⚠️ **INTENTIONAL BEHAVIOR** (documented)
+
+**Description**:  
+`transferOwnershipRequest` snapshots `getRecovery()` into `executionParams` at request time. If recovery rotates before approval, the pending transfer still targets the old recovery address.
+
+**Current Behavior**:
+- ✅ Snapshot-at-request semantics are intentional and documented
+- ✅ Approvers use current owner/recovery; beneficiary is stored address
+- ✅ NatSpec and `secure-ownable.md` document the asymmetry
+
+**Related Tests**:
+- `testFuzz_Finding7_OwnershipTransferSnapshotsCurrentRecovery`
+
+---
+
+#### MEDIUM: Recovery Update Not Blocked by Pending Ownership Transfer
+- **ID**: `AUDIT-008`
+- **Finding**: AgentArena #8
+- **Location**: `SecureOwnable.sol:updateRecoveryRequestAndApprove`
+- **Severity**: MEDIUM
+- **Status**: ⚠️ **INTENTIONAL BEHAVIOR** (documented)
+
+**Description**:  
+`updateRecoveryRequestAndApprove` has no `_requireNoPendingRequest(OWNERSHIP_TRANSFER)` check. Owner + broadcaster can rotate recovery while an ownership transfer is pending.
+
+**Current Behavior**:
+- ✅ Intentional fast recovery lane; documented threat model
+- ✅ `updateBroadcasterRequest` does block during pending ownership (asymmetric by design)
+
+**Related Tests**:
+- `testFuzz_Finding8_RecoveryUpdateNotBlockedByPendingOwnership`
+
+---
+
+### 19.6 Unregistered Selector Whitelist
+
+#### LOW: Whitelist Validation Skipped for Unregistered Selectors
+- **ID**: `AUDIT-011`
+- **Finding**: AgentArena #11
+- **Location**: `EngineBlox.sol:_validateTargetWhitelist`
+- **Severity**: LOW
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Previously, an unregistered function selector could bypass whitelist validation. Now `_validateTargetWhitelist` reverts `ResourceNotFound` when the selector is not in `supportedFunctionsSet`.
+
+**Related Tests**:
+- `testFuzz_Finding11_UnregisteredSelectorRevertsResourceNotFound`
+
+---
+
+### 19.7 Transaction History Empty Case
+
+#### LOW: getTransactionHistory Reverts When No Transactions Exist
+- **ID**: `AUDIT-022`
+- **Finding**: AgentArena #22
+- **Location**: `BaseStateMachine.sol:getTransactionHistory`
+- **Severity**: LOW
+- **Status**: ✅ **PROTECTED**
+
+**Description**:  
+Previously reverted on empty history or non-overlapping clamped range. Now returns `[]`.
+
+**Related Tests**:
+- `testFuzz_Finding22_EmptyTransactionHistoryReturnsEmptyArray`
+- `testFuzz_Finding22_NonOverlappingRangeReturnsEmpty`
+
+---
+
+### 19.8 Sequential Transaction ID Predictability
+
+#### LOW: Predictable txId Enables Front-Running/Invalidation DoS
+- **ID**: `AUDIT-024`
+- **Finding**: AgentArena #24
+- **Location**: `EngineBlox.sol:txCounter`, `requestAndApprove`
+- **Severity**: LOW
+- **Status**: ⚠️ **INTENTIONAL BEHAVIOR** (documented)
+
+**Description**:  
+`txId` is `txCounter + 1` and observable on-chain. Griefing party can front-run to invalidate signatures committed to a specific txId.
+
+**Current Behavior**:
+- ✅ Same sequential-counter model as per-signer nonce — intentional replay control
+- ✅ Mitigation: observe counter + short deadlines
+
+**Related Tests**:
+- `testFuzz_Finding24_TxIdIsSequentialAndPredictable`
+
+---
+
+### 19.9 Gas Limit Zero Convention
+
+#### LOW: Gas Limit of Zero Causes Uncontrolled Gas Forwarding
+- **ID**: `AUDIT-029`
+- **Finding**: AgentArena #29
+- **Location**: `EngineBlox.sol:executeTransaction`
+- **Severity**: LOW
+- **Status**: ⚠️ **INTENTIONAL BEHAVIOR** (documented)
+
+**Description**:  
+`gasLimit == 0` is treated as "forward all remaining gas" (`gas = gasleft()`).
+
+**Related Tests**:
+- `testFuzz_Finding29_ZeroGasLimitAcceptedInRequest`
+
+---
+
+### 19.10 Timelock Period Upper Bound
+
+#### LOW: No Upper Bound on Timelock Period
+- **ID**: `AUDIT-031`
+- **Finding**: AgentArena #31
+- **Location**: `SharedValidation.sol:validateTimeLockPeriod`, `SecureOwnable`
+- **Severity**: LOW
+- **Status**: ⚠️ **INTENTIONAL BEHAVIOR** (documented)
+
+**Description**:  
+No on-chain maximum for the timelock period. Extremely large values make delayed operations unexecutable.
+
+**Current Behavior**:
+- ✅ `validateTimeLockPeriod` enforces `> 0` but no maximum
+- ✅ Operators validate range in deployment scripts
+
+**Related Tests**:
+- `testFuzz_Finding31_LargeTimelockAccepted`
+
+---
+
+### 19.11 Summary Table
+
+| # | Finding | Severity | Vector ID | Status | Test |
+|---|---------|----------|-----------|--------|------|
+| 1 | Meta-tx handler spoofing | **High** | AUDIT-001 / MT-008 | ✅ Protected | `testFuzz_Finding1_HandlerSelectorMismatchRejected`, `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`, `testFuzz_Finding1_HandlerContractMismatchRejected` |
+| 3 | Config batch payment rail | **Medium** | AUDIT-003 | ✅ Protected | `testFuzz_Finding3_RBACBatchRejectsNonZeroPayment`, `testFuzz_Finding3_GuardBatchRejectsNonZeroPayment`, `testFuzz_Finding3_RBACBatchRejectsNativeOnlyNonZeroPayment` |
+| 5 | Unbounded returndata DoS | **Medium** | AUDIT-005 | ✅ Protected | `testFuzz_Finding5_MaxResultPreviewBytesIs32KiB` |
+| 6 | Whitelist bypass via payments | **Medium** | AUDIT-006 | ✅ Protected | `testFuzz_Finding6_NonWhitelistedRecipientRejected`, `testFuzz_Finding6_NonWhitelistedERC20Rejected` |
+| 7 | Stale recovery snapshot | **Medium** | AUDIT-007 | ⚠️ Intentional | `testFuzz_Finding7_OwnershipTransferSnapshotsCurrentRecovery` |
+| 8 | Recovery update during pending ownership | **Medium** | AUDIT-008 | ⚠️ Intentional | `testFuzz_Finding8_RecoveryUpdateNotBlockedByPendingOwnership` |
+| 11 | Unregistered selector whitelist skip | **Low** | AUDIT-011 | ✅ Protected | `testFuzz_Finding11_UnregisteredSelectorRevertsResourceNotFound` |
+| 22 | getTransactionHistory empty revert | **Low** | AUDIT-022 | ✅ Protected | `testFuzz_Finding22_EmptyTransactionHistoryReturnsEmptyArray`, `testFuzz_Finding22_NonOverlappingRangeReturnsEmpty` |
+| 24 | Predictable txId DoS | **Low** | AUDIT-024 | ⚠️ Intentional | `testFuzz_Finding24_TxIdIsSequentialAndPredictable` |
+| 29 | Gas limit zero convention | **Low** | AUDIT-029 | ⚠️ Intentional | `testFuzz_Finding29_ZeroGasLimitAcceptedInRequest` |
+| 31 | No timelock upper bound | **Low** | AUDIT-031 | ⚠️ Intentional | `testFuzz_Finding31_LargeTimelockAccepted` |
+
+**References**: [AUDIT_FINDINGS.md](../../../research/audit/agent%20arena/AUDIT_FINDINGS.md), [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md), [AUDIT_OVERVIEW.md](../../../research/audit/agent%20arena/AUDIT_OVERVIEW.md).
+
+---
+
 ## Adding New Attack Vectors
 
 When documenting a new attack vector:
@@ -3491,6 +3770,8 @@ When documenting a new attack vector:
 - [Final Coverage Report](./FINAL_COVERAGE_REPORT.md) - Fuzz coverage summary and test counts
 - [Critical Findings & Recommendations](./CRITICAL_FINDINGS_AND_RECOMMENDATIONS.md) - Actionable security items
 - [Documentation README](./README.md) - Documentation overview and navigation
+- [AgentArena Audit Findings](../../../research/audit/agent%20arena/AUDIT_FINDINGS.md) - Source audit findings
+- [AgentArena Audit Resolution](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md) - Detailed mitigations
 
 ---
 

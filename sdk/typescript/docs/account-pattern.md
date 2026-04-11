@@ -27,6 +27,7 @@ Concrete implementations (for example `AccountBlox`) inherit from `Account` and 
       - Secure ownership operations (`SecureOwnableDefinitions`)
       - Runtime role configuration (`RuntimeRBACDefinitions`)
       - Guarded execution and whitelists (`GuardControllerDefinitions`)
+  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. Reference implementation: **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) — validates `IBaseStateMachine`, clones, calls `initialize`, reverts on failure. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
 
 - **Security Model**
   - Protected roles (`OWNER_ROLE`, `BROADCASTER_ROLE`, `RECOVERY_ROLE`) are controlled only by `SecureOwnable`.

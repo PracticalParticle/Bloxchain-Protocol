@@ -677,6 +677,20 @@ app.get('/health', async (req, res) => {
 })
 ```
 
+### **3. Upgradeable contracts: call `initialize` in the deployment transaction**
+
+Account and other **initializer‑based** contracts must have storage wired **once** on the instance users interact with (the proxy or minimal proxy), in the **correct** order for your inheritance chain.
+
+**Prefer a factory** that performs **create + `initialize`** atomically so a failed init never leaves an uninitialized live address. The Solidity reference is **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`): clone via EIP‑1167, then `initialize(address,address,address,uint256,address)`; revert if the call fails.
+
+**If you deploy proxies manually:**
+
+- Run **`initialize` exactly once** on the **proxy**, not only on the implementation (unless your stack explicitly uses a different OZ pattern—document it).
+- Align **parameter order** with your concrete contract (owner, broadcaster, recovery, timelock seconds, `eventForwarder` is the common `BaseStateMachine` surface).
+- After deploy, **verify** critical reads (`owner`, recovery, timelock) before moving liquidity or production traffic.
+
+See also [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
+
 ## 📚 **Documentation Best Practices**
 
 ### **1. Code Documentation**

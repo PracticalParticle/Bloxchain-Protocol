@@ -16,7 +16,7 @@ import "../../interface/IGuardController.sol";
  * and role permissions for GuardController's public execution functions.
  * 
  * Key Features:
- * - Registers all 9 GuardController public execution functions
+ * - Registers all 9 GuardController public execution functions plus 3 attached-payment policy schemas
  * - Defines role permissions for OWNER_ROLE and BROADCASTER_ROLE
  * - Supports time-delay and meta-transaction workflows
  * - Matches EngineBloxDefinitions pattern for consistency
@@ -83,8 +83,8 @@ library GuardControllerDefinitions {
         bytes4(keccak256("executeGuardConfigBatch((uint8,bytes)[])"));
 
     /**
-     * @dev Returns predefined function schemas for GuardController execution functions
-     * @return Array of function schema definitions
+     * @dev Returns predefined function schemas for GuardController execution functions and attached-payment policy keys
+     * @return Array of function schema definitions (12 entries: 9 controller surfaces + 3 payment whitelist selectors)
      * 
      * Function schemas define:
      * - GuardController public execution functions
@@ -98,7 +98,7 @@ library GuardControllerDefinitions {
      * - Role permissions are defined in getRolePermissions() matching EngineBloxDefinitions pattern
      */
     function getFunctionSchemas() public pure returns (EngineBlox.FunctionSchema[] memory) {
-        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](9);
+        EngineBlox.FunctionSchema[] memory schemas = new EngineBlox.FunctionSchema[](12);
         
         // ============ TIME-DELAY WORKFLOW ACTIONS ============
         // Request action for executeWithTimeLock
@@ -254,8 +254,13 @@ library GuardControllerDefinitions {
             handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
         });
 
-        // Schema 8: GuardController.executeWithPayment (same time-delay request action as executeWithTimeLock;
-        // OWNER_ROLE grant for this selector may be added manually if the flow is enabled)
+        // Schema 8: GuardController.executeWithPayment (same time-delay request action as executeWithTimeLock).
+        // Default definitions intentionally omit an OWNER_ROLE FunctionPermission for this selector (minimal surface).
+        // `getGuardConfigActionSpecs()` only exposes whitelist add/remove, REGISTER_FUNCTION, and UNREGISTER_FUNCTION —
+        // there is no guard-config action to attach `executeWithPayment` to a role. Deployments that need owner-driven
+        // `executeWithPayment` must add the FunctionPermission via an RBAC batch (`ADD_FUNCTION_TO_ROLE` / encoders in
+        // `RuntimeRBACDefinitions.sol`), following that file's ordering and action constraints and the handler/schema
+        // rules in this `GuardControllerDefinitions.sol` bundle.
         schemas[8] = EngineBlox.FunctionSchema({
             functionSignature: "executeWithPayment(address,uint256,bytes4,bytes,uint256,bytes32,(address,uint256,address,uint256))",
             functionSelector: EXECUTE_WITH_PAYMENT_SELECTOR,
@@ -265,6 +270,58 @@ library GuardControllerDefinitions {
             enforceHandlerRelations: false,
             isProtected: true,
             handlerForSelectors: executeWithPaymentHandlerForSelectors
+        });
+
+        // Policy-only schemas for `executeWithPayment` whitelist keys; bitmap = all TxActions so roles may grant any action if needed.
+        EngineBlox.TxAction[] memory allTxActions = new EngineBlox.TxAction[](9);
+        allTxActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        allTxActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        allTxActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        allTxActions[3] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        allTxActions[4] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        allTxActions[5] = EngineBlox.TxAction.SIGN_META_CANCEL;
+        allTxActions[6] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        allTxActions[7] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
+        allTxActions[8] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
+        uint16 allActionsBitmap = EngineBlox.createBitmapFromActions(allTxActions);
+
+        bytes4[] memory attachedPaymentRecipientHandlers = new bytes4[](1);
+        attachedPaymentRecipientHandlers[0] = EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR;
+        schemas[9] = EngineBlox.FunctionSchema({
+            functionSignature: "__bloxchain_attached_payment_recipient__()",
+            functionSelector: EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR,
+            operationType: keccak256(bytes("ATTACHED_PAYMENT_RECIPIENT")),
+            operationName: "ATTACHED_PAYMENT_RECIPIENT",
+            supportedActionsBitmap: allActionsBitmap,
+            enforceHandlerRelations: false,
+            isProtected: true,
+            handlerForSelectors: attachedPaymentRecipientHandlers
+        });
+
+        bytes4[] memory nativeTransferHandlers = new bytes4[](1);
+        nativeTransferHandlers[0] = EngineBlox.NATIVE_TRANSFER_SELECTOR;
+        schemas[10] = EngineBlox.FunctionSchema({
+            functionSignature: "__bloxchain_native_transfer__()",
+            functionSelector: EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            operationType: keccak256(bytes("NATIVE_TRANSFER")),
+            operationName: "NATIVE_TRANSFER",
+            supportedActionsBitmap: allActionsBitmap,
+            enforceHandlerRelations: false,
+            isProtected: true,
+            handlerForSelectors: nativeTransferHandlers
+        });
+
+        bytes4[] memory erc20TransferHandlers = new bytes4[](1);
+        erc20TransferHandlers[0] = EngineBlox.ERC20_TRANSFER_SELECTOR;
+        schemas[11] = EngineBlox.FunctionSchema({
+            functionSignature: "transfer(address,uint256)",
+            functionSelector: EngineBlox.ERC20_TRANSFER_SELECTOR,
+            operationType: keccak256(bytes("ERC20_TRANSFER")),
+            operationName: "ERC20_TRANSFER",
+            supportedActionsBitmap: allActionsBitmap,
+            enforceHandlerRelations: false,
+            isProtected: true,
+            handlerForSelectors: erc20TransferHandlers
         });
 
         return schemas;
@@ -505,7 +562,7 @@ library GuardControllerDefinitions {
     /**
      * @dev Encodes data for UNREGISTER_FUNCTION. Use with GuardConfigActionType.UNREGISTER_FUNCTION.
      * @param functionSelector Selector of the function to unregister
-     * @param safeRemoval If true, reverts when the function has whitelisted targets
+     * @param safeRemoval If true, `EngineBlox.unregisterFunction` reverts when **any role** still lists this selector (not a whitelist-emptiness check; whitelist/hook entries may remain).
      */
     function encodeUnregisterFunction(bytes4 functionSelector, bool safeRemoval) public pure returns (bytes memory) {
         return abi.encode(functionSelector, safeRemoval);

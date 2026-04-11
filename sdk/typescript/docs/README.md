@@ -5,7 +5,7 @@ Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usa
 ## 📚 **Documentation Structure**
 
 ### **Core SDK**
-- [**Getting Started**](./getting-started.md) – Quick setup and basic usage
+- [**Getting Started**](./getting-started.md) – Quick setup, basic usage, and [deployment / initializer checklist](./getting-started.md#deployment-and-initialization) (upgradeable Account contracts)
 - [**API Reference**](./api-reference.md) – Core SDK classes and types
 - [**SecureOwnable**](./secure-ownable.md) – SecureOwnable contract integration
 - [**RuntimeRBAC**](./runtime-rbac.md) – RuntimeRBAC contract integration

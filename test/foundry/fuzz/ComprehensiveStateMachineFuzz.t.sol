@@ -695,6 +695,10 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             erc20TokenAmount: paymentAmount
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(maliciousERC20), EngineBlox.ERC20_TRANSFER_SELECTOR);
+        vm.prank(owner);
         uint256 txId = paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -1255,6 +1259,9 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         });
 
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
+
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(user1, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
 
         // Request a transaction with payment attached via PaymentTestHelper
         vm.prank(owner);

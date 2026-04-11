@@ -4,7 +4,8 @@
  */
 
 import { Address, Hex } from 'viem';
-import { BaseSecureOwnableTest, TestWallet } from './base-test.ts';
+import { BaseSecureOwnableTest } from './base-test.ts';
+import type { TestWallet } from '../base/BaseSDKTest.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
 import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
 

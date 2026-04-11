@@ -37,6 +37,10 @@ contract EngineBloxTest is CommonBase {
         assertEq(EngineBlox.NATIVE_TRANSFER_SELECTOR, expected);
     }
 
+    function test_MaxResultPreviewBytes_Constant() public {
+        assertEq(EngineBlox.MAX_RESULT_PREVIEW_BYTES, 32 * 1024);
+    }
+
     // ============ STATE MANAGEMENT TESTS ============
     // Most state management is tested through contract interactions
     // These tests verify state transitions work correctly

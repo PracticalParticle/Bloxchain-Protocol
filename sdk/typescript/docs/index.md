@@ -35,6 +35,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 
 **I want to…**
 - **Get started quickly** → [Getting Started](./getting-started.md)
+- **Deploy or clone an Account / initializer contract safely** → [Deployment and initialization](./getting-started.md#deployment-and-initialization)
 - **Understand the on-chain architecture** → [Bloxchain Architecture](./bloxchain-architecture.md)
 - **See how contracts relate** → [Core Contract Graph](./core-contract-graph.md)
 - **Understand the state machine** → [State Machine Engine](./state-machine-engine.md)
