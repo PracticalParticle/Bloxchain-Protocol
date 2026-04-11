@@ -410,28 +410,29 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param toTxId The ending transaction ID (inclusive)
      * @return The transaction history within the specified range
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     * @notice Returns an empty array when **`txCounter == 0`** or when the range, after clamping to **1..txCounter**,
+     *         does not overlap any transaction ids (e.g. `fromTxId` entirely above the current counter).
      */
     function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (EngineBlox.TxRecord[] memory) {
         _validateAnyRole();
-        
-        // Validate the range
-        fromTxId = fromTxId > 0 ? fromTxId : 1;
-        toTxId = toTxId > _secureState.txCounter ? _secureState.txCounter : toTxId;
-        
-        // Validate that fromTxId is less than toTxId
-        SharedValidation.validateLessThan(fromTxId, toTxId);
 
-        uint256 rangeSize = toTxId - fromTxId + 1;
-        
-        // For larger ranges, use paginated version
-        SharedValidation.validateRangeSize(rangeSize, 1000);
-        
+        uint256 counter = _secureState.txCounter;
+
+        // Normalize bounds to valid transaction id range [1, counter]
+        fromTxId = fromTxId > 0 ? fromTxId : 1;
+        toTxId = toTxId > counter ? counter : toTxId;
+
+        // Empty history: invalid / non-overlapping clamped range (includes txCounter == 0 → toTxId == 0).
+        uint256 rangeSize = fromTxId > toTxId ? 0 : toTxId - fromTxId + 1;
+
+        if (rangeSize > 0) {
+            SharedValidation.validateRangeSize(rangeSize, 1000);
+        }
+
         EngineBlox.TxRecord[] memory history = new EngineBlox.TxRecord[](rangeSize);
-        
         for (uint256 i = 0; i < rangeSize; i++) {
             history[i] = _secureState.getTxRecord(fromTxId + i);
         }
-        
         return history;
     }
 

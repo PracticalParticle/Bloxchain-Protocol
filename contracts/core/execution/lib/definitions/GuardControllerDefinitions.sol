@@ -557,7 +557,7 @@ library GuardControllerDefinitions {
     /**
      * @dev Encodes data for UNREGISTER_FUNCTION. Use with GuardConfigActionType.UNREGISTER_FUNCTION.
      * @param functionSelector Selector of the function to unregister
-     * @param safeRemoval If true, reverts when the function has whitelisted targets
+     * @param safeRemoval If true, `EngineBlox.unregisterFunction` reverts when **any role** still lists this selector (not a whitelist-emptiness check; whitelist/hook entries may remain).
      */
     function encodeUnregisterFunction(bytes4 functionSelector, bool safeRemoval) public pure returns (bytes memory) {
         return abi.encode(functionSelector, safeRemoval);

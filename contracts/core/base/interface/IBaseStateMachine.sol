@@ -71,6 +71,7 @@ interface IBaseStateMachine {
      * @param fromTxId The starting transaction ID (inclusive)
      * @param toTxId The ending transaction ID (inclusive)
      * @return The transaction history within the specified range
+     * @notice Empty array if there are no transactions yet, or if the clamped range does not intersect **1..txCounter**.
      */
     function getTransactionHistory(uint256 fromTxId, uint256 toTxId) external view returns (EngineBlox.TxRecord[] memory);
 
