@@ -79,10 +79,26 @@ contract BaseStateMachineTest is CommonBase {
         vm.prank(recovery);
         EngineBlox.TxRecord memory tx2 = accountBlox.getTransaction(txId2);
 
-        // getTransactionHistory requires fromTxId < toTxId (strictly less than)
+        // Inclusive range [txId1, txId2] after ids are assigned
         vm.prank(recovery);
         EngineBlox.TxRecord[] memory history = accountBlox.getTransactionHistory(txId1, txId2);
         assertGe(history.length, 2);
+    }
+
+    function test_GetTransactionHistory_EmptyWhenNoTransactions() public {
+        // setUp() leaves accountBlox with no tx ids yet (txCounter == 0).
+        vm.prank(owner);
+        EngineBlox.TxRecord[] memory empty = accountBlox.getTransactionHistory(0, type(uint256).max);
+        assertEq(empty.length, 0);
+    }
+
+    function test_GetTransactionHistory_EmptyWhenRangeDoesNotOverlap() public {
+        vm.prank(recovery);
+        accountBlox.transferOwnershipRequest();
+        // Exactly one tx: id 1. Requesting ids entirely above counter yields empty slice (no revert).
+        vm.prank(owner);
+        EngineBlox.TxRecord[] memory empty = accountBlox.getTransactionHistory(5, 10);
+        assertEq(empty.length, 0);
     }
 
     function test_GetPendingTransactions_ReturnsPendingOnly() public {
