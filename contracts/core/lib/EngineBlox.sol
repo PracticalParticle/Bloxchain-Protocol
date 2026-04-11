@@ -388,7 +388,7 @@ library EngineBlox {
         // Validate both execution and handler selector permissions (same as txRequest)
         _validateExecutionAndHandlerPermissions(self, msg.sender, executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_REQUEST);
 
-        _validateAttachedPaymentDetailsAtRequest(self, paymentDetails);
+        _validateAttachedPaymentPolicy(self, paymentDetails);
 
         return _txRequest(
             self,
@@ -428,8 +428,7 @@ library EngineBlox {
         bytes memory executionParams,
         PaymentDetails memory paymentDetails
     ) private returns (TxRecord memory) {
-        SharedValidation.validateNotZeroAddress(target);
-        // enforce that the requested target is whitelisted for this selector.
+        // Target non-zero and whitelist enforced in `_validateTargetWhitelist`.
         _validateTargetWhitelist(self, executionSelector, target);
 
         TxRecord memory txRequestRecord = createTxRecord(
@@ -588,7 +587,7 @@ library EngineBlox {
         // Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, metaTx.txRecord.params.executionSelector, metaTx.params.handlerSelector, TxAction.EXECUTE_META_REQUEST_AND_APPROVE);
 
-        _validateAttachedPaymentDetailsAtRequest(self, metaTx.txRecord.payment);
+        _validateAttachedPaymentPolicy(self, metaTx.txRecord.payment);
 
         TxRecord memory txRecord = _txRequest(
             self,
@@ -1399,37 +1398,13 @@ library EngineBlox {
     }
 
     /**
-     * @notice Full request-time validation for `PaymentDetails` before a tx record is created with a non-zero payment.
-     * @dev Runs in order: (1) reject zero `recipient` when any payment amount is non-zero; (2) reject zero
-     *      `erc20TokenAddress` when ERC20 amount is non-zero (required even if whitelist selectors are not yet
-     *      registered—see `_validateTargetWhitelist` early return); (3) `_validateAttachedPaymentPolicy` for
-     *      recipient and token allowlists. No-op when both native and ERC20 amounts are zero.
-     * @param self The secure operation state (whitelist storage).
-     * @param payment Attached payment fields from the request or meta-tx payload.
-     */
-    function _validateAttachedPaymentDetailsAtRequest(
-        SecureOperationState storage self,
-        PaymentDetails memory payment
-    ) private view {
-        if (payment.nativeTokenAmount > 0 || payment.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(payment.recipient);
-        }
-        if (payment.erc20TokenAmount > 0) {
-            SharedValidation.validateNotZeroAddress(payment.erc20TokenAddress);
-        }
-        _validateAttachedPaymentPolicy(self, payment);
-    }
-
-    /**
-     * @notice Enforces payout allowlists for attached native and/or ERC20 payments.
-     * @dev When either payment amount is non-zero: validates `payment.recipient` against
-     *      `functionTargetWhitelist[ATTACHED_PAYMENT_RECIPIENT_SELECTOR]` (unless `recipient == address(this)` or
-     *      that selector is unregistered—see `_validateTargetWhitelist`). When `erc20TokenAmount > 0`, also
-     *      validates `payment.erc20TokenAddress` against `ERC20_TRANSFER_SELECTOR` the same way.
-     *      Caller must ensure zero-address fields are already rejected when amounts imply they are used
-     *      (e.g. `_validateAttachedPaymentDetailsAtRequest`). Also invoked at execution in `executeAttachedPayment`.
+     * @notice Validates attached `PaymentDetails` at request and execution (whitelist policy).
+     * @dev No-op when both amounts are zero. Otherwise `_validateTargetWhitelist` for
+     *      `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and, when `erc20TokenAmount > 0`, `ERC20_TRANSFER_SELECTOR` (non-zero
+     *      target enforced inside `_validateTargetWhitelist`). Invoked from `txRequestWithPayment`, `requestAndApprove`,
+     *      and `executeAttachedPayment`.
      * @param self The secure operation state.
-     * @param payment Attached payment; both amounts zero yields an immediate return.
+     * @param payment Attached payment fields.
      */
     function _validateAttachedPaymentPolicy(
         SecureOperationState storage self,
@@ -1446,23 +1421,26 @@ library EngineBlox {
 
     /**
      * @dev Validates that the target address is whitelisted for the given function selector.
-     *      Internal contract calls (address(this)) are always allowed.
+     *      Reverts if `target` is the zero address (`validateNotZeroAddress`) first.
+     *      Reverts if `functionSelector` is not registered in `supportedFunctionsSet` (no silent skip).
+     *      Internal contract calls (`target == address(this)`) are always allowed once the selector is registered.
      * @param self The SecureOperationState to check.
      * @param functionSelector The function selector being executed.
      * @param target The target contract address.
      * @notice Target MUST be present in functionTargetWhitelist[functionSelector] unless target is address(this).
      *         If whitelist is empty (no entries), no targets are allowed - explicit deny for security.
      * @notice Attached payments use `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and `ERC20_TRANSFER_SELECTOR`;
-     *         see `_validateAttachedPaymentPolicy`.
+     *         see `_validateAttachedPaymentPolicy`. Deployments using attached payouts must register those schemas.
      */
     function _validateTargetWhitelist(
         SecureOperationState storage self,
         bytes4 functionSelector,
         address target
     ) internal view {
-        // Fast path: selector not registered, skip validation
+        SharedValidation.validateNotZeroAddress(target);
+
         if (!self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
-            return;
+            revert SharedValidation.ResourceNotFound(bytes32(functionSelector));
         }
 
         // SECURITY: Internal contract calls are always allowed
