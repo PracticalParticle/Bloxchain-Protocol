@@ -144,8 +144,6 @@ Role permissions store a **`handlerForSelectors`** array on each **`FunctionPerm
 
 4. **Flexible schemas:** If **`enforceHandlerRelations`** is false for a schema, that global pairing check is skipped by design (see `registerFunction` NatSpec / OPERATIONAL MODES).
 
-For audit closure text, see [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md) (Finding 19).
-
 ## 🔄 **Batch Configuration Workflow**
 
 RuntimeRBAC uses batch configuration for all role and function management operations. This allows multiple changes to be applied atomically via meta-transactions.
@@ -498,6 +496,9 @@ describe('RuntimeRBAC Integration', () => {
 
 ### **Issue: "Handler selector mismatch"**
 **Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
+
+### **Issue: `ResourceAlreadyExists` when adding a function to a role**
+**Solution**: `addFunctionToRole` reverts if the selector is already present on the role. To update bitmap or `handlerForSelectors`, **remove** the function from the role first (`removeFunctionFromRole`), then re-add with the new values. Note: **protected schemas** cannot be removed from roles (`CannotModifyProtected`), so grants of protected selectors are effectively permanent unless the role itself is removed.
 
 ## 📚 **Related Documentation**
 

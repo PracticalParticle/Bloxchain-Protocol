@@ -669,6 +669,10 @@ library EngineBlox {
      * @notice Returndata from the target is captured up to `MAX_RESULT_PREVIEW_BYTES` only (low-level `call` with
      *         zero output area, then bounded `returndatacopy`). This prevents unbounded memory expansion from
      *         malicious or buggy callees while preserving a large preview for debugging and audits.
+     * @notice **Atomicity:** If the main call succeeds but `executeAttachedPayment` reverts (e.g.
+     *         insufficient balance, whitelist mismatch), the **entire** approval/execute transaction reverts—main
+     *         effect included. This is **intentional all-or-nothing** semantics; splitting finalize vs payment
+     *         would require a separate design with reentrancy and state-machine implications.
      */
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
@@ -676,6 +680,8 @@ library EngineBlox {
         _validateTxStatus(self, record.txId, TxStatus.EXECUTING);
 
         bytes memory txData = buildCallData(record);
+        // gasLimit == 0 → forward all remaining gas (conventional "no cap"). Integrators that want
+        // a strict upper bound must set a positive gasLimit in TxParams at request time.
         uint gas = record.params.gasLimit;
         if (gas == 0) {
             gas = gasleft();
@@ -726,7 +732,7 @@ library EngineBlox {
      * @notice **ERC20 attached payouts** use `safeTransfer` with the **nominal** `erc20TokenAmount`.
      *         **Fee-on-transfer, rebasing, or other non-standard ERC20s are not supported:** the protocol does not
      *         measure balance deltas at the recipient; operators must only attach **standard** tokens where
-     *         transferred amount equals the requested amount (Finding 16 / audit resolution).
+     *         transferred amount equals the requested amount.
      */
     function executeAttachedPayment(
         SecureOperationState storage self,
@@ -1100,6 +1106,10 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The role hash to add the function permission to.
      * @param functionPermission The function permission to add.
+     * @notice Reverts **`ResourceAlreadyExists`** if the selector is already present on the role. To update
+     *         bitmap or `handlerForSelectors`, **`removeFunctionFromRole`** first then re-add.
+     *         Protected schemas cannot be removed from roles (`CannotModifyProtected`), so grants of
+     *         protected selectors to a role are effectively **permanent** unless the role itself is removed.
      */
     function addFunctionToRole(
         SecureOperationState storage self,
@@ -1132,6 +1142,10 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The role hash to remove the function permission from.
      * @param functionSelector The function selector to remove from the role.
+     * @notice **Protected schemas cannot be removed from roles** (`CannotModifyProtected`). Granting a protected
+     *         selector to a role is therefore an **irreversible expansion** of that role's capability unless the
+     *         role itself is removed. Operators should only add protected selectors to roles when the
+     *         permanent authority is intended.
      */
     function removeFunctionFromRole(
         SecureOperationState storage self,
@@ -1325,6 +1339,15 @@ library EngineBlox {
      *        The safeRemoval check is done inside this function (iterating supportedRolesSet directly) for efficiency.
      * @notice Security: Cannot unregister protected function schemas to maintain system integrity.
      * @notice Cleanup: Automatically removes unused operation types from supportedOperationTypesSet.
+     * @notice **Whitelist / hooks:** Per-selector `functionTargetWhitelist` and `functionTargetHooks` are **not**
+     *         cleared on unregister. Stale entries are inert while the selector is absent from
+     *         `supportedFunctionsSet` (whitelist checks revert `ResourceNotFound`). If the selector is re-registered
+     *         later, prior whitelist/hook rows reappear. Operators should clear these via `REMOVE_TARGET_FROM_WHITELIST`
+     *         / `clearHook` before or after unregister if a clean slate is desired.
+     * @notice **Role grants with `safeRemoval == false`:** Roles may retain `FunctionPermission` entries for the
+     *         unregistered selector; execution paths will revert because the schema no longer exists, but
+     *         `roleHasActionPermission` still returns true for the orphan row. Use `safeRemoval == true` or
+     *         strip role grants before unregister when state consistency matters.
      */
     function unregisterFunction(
         SecureOperationState storage self,
@@ -1781,7 +1804,7 @@ library EngineBlox {
      * @param metaTx The meta-transaction containing the signature to verify
      * @return True if the signature is valid, false otherwise
      * @notice Nonce is **per signer** and **strictly sequential** for replay protection (`nonce` must equal `signerNonces[signer]`).
-     *         Different signers have independent counters; same-signer submissions must be ordered by relayers—by design (Finding 17).
+     *         Different signers have independent counters; same-signer submissions must be ordered by relayers—by design.
      */
     function verifySignature(
         SecureOperationState storage self,

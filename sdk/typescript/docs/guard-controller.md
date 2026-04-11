@@ -210,9 +210,9 @@ console.log('Whitelisted targets:', targets)
 
 **Note**: The whitelist is per-function-selector. Multiple functions can have different whitelists.
 
-**Pending transactions and delisting:** The core engine re-validates the stored execution target against the whitelist when **cancelling** or **completing** a pending tx. If you **`REMOVE_TARGET_FROM_WHITELIST`** while matching txs are still **PENDING**, cancel and finalize paths revert until that target is whitelisted again. **Operational mitigation:** (1) clear or cancel pendings **before** delisting, or (2) temporarily **`ADD_TARGET_TO_WHITELIST`** the same target, cancel or run the approve/execute path to completion, then remove the target again. See **Finding 14** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md).
+**Pending transactions and delisting:** The core engine re-validates the stored execution target against the whitelist when **cancelling** or **completing** a pending tx. If you **`REMOVE_TARGET_FROM_WHITELIST`** while matching txs are still **PENDING**, cancel and finalize paths revert until that target is whitelisted again. **Operational mitigation:** (1) clear or cancel pendings **before** delisting, or (2) temporarily **`ADD_TARGET_TO_WHITELIST`** the same target, cancel or run the approve/execute path to completion, then remove the target again.
 
-**Pending transactions and `UNREGISTER_FUNCTION`:** Unregistering removes the execution selector from the supported-function set. Pending txs that still reference that selector then fail **`_validateTargetWhitelist`** with **`ResourceNotFound`** on cancel/complete until the function is **registered again** (`registerFunction`) and whitelist policy is restored as needed. Prefer **no pending txs** for that selector before unregister, or use **re-register → cancel/complete → unregister**. See **Finding 15** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md).
+**Pending transactions and `UNREGISTER_FUNCTION`:** Unregistering removes the execution selector from the supported-function set. Pending txs that still reference that selector then fail **`_validateTargetWhitelist`** with **`ResourceNotFound`** on cancel/complete until the function is **registered again** (`registerFunction`) and whitelist policy is restored as needed. Prefer **no pending txs** for that selector before unregister, or use **re-register → cancel/complete → unregister**.
 
 ### **4. Function Schema Management**
 
@@ -337,10 +337,8 @@ if (!targets.includes(targetAddress)) {
 **`target == address(this)` (engine vs `GuardController`):**
 
 - **`EngineBlox._validateTargetWhitelist`:** Once the **execution selector** is registered, **`TxParams.target == address(this)`** is **always allowed** and **does not** require `address(this)` to appear in `functionTargetWhitelist[executionSelector]`. That supports **internal / composed** execution (macros, vault logic on the same contract) without bloating every whitelist with the state machine’s own address. **RBAC** (who may request/approve/execute) still applies; the whitelist is not the only control plane.
-- **Attached payouts:** Recipient and ERC20 token contracts are still validated under **`ATTACHED_PAYMENT_RECIPIENT_SELECTOR`** / **`ERC20_TRANSFER_SELECTOR`** when amounts are non-zero (see **Finding 6** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md)).
+- **Attached payouts:** Recipient and ERC20 token contracts are still validated under **`ATTACHED_PAYMENT_RECIPIENT_SELECTOR`** / **`ERC20_TRANSFER_SELECTOR`** when amounts are non-zero.
 - **`GuardController` public entrypoints:** In addition to the engine, **`_validateNotInternalFunction`** blocks **`target == address(this)`** unless the **execution selector** is an allowed **system macro** selector (e.g. native transfer–class flows). So arbitrary “call any internal selector on self” is **not** exposed through the standard `GuardController` execute paths, while the engine’s whitelist rule remains as documented above for other integrations.
-
-See **Finding 20** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md).
 
 **Attached payments (`executeWithPayment`):** payout policy uses two extra whitelist keys (registered when GuardController definitions load—same `ADD_TARGET_TO_WHITELIST` batch flow). Base-only state machines that use attached payments without GuardController must register these schemas separately (see `PaymentTestHelper` in tests). The core engine reverts (`ResourceNotFound`) if whitelist validation runs for a selector that is not yet in the supported-function set—there is no silent skip.
 
@@ -349,7 +347,7 @@ See **Finding 20** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20aren
 | `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` | `payment.recipient` for native and ERC20 attached payouts |
 | `ERC20_TRANSFER_SELECTOR` (`transfer(address,uint256)`) | `payment.erc20TokenAddress` — token contracts the vault may pay out via `safeTransfer` |
 
-**ERC20 token model (attached payouts):** The engine transfers the **nominal** `erc20TokenAmount` via `safeTransfer` and does **not** verify recipient **credits** against balance deltas. **Fee-on-transfer, deflationary, rebasing, or otherwise non-standard ERC20 tokens are not supported** for attached payments—use conventional tokens only, or you risk accounting mismatch and disputes. See **Finding 16** in [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md).
+**ERC20 token model (attached payouts):** The engine transfers the **nominal** `erc20TokenAmount` via `safeTransfer` and does **not** verify recipient **credits** against balance deltas. **Fee-on-transfer, deflationary, rebasing, or otherwise non-standard ERC20 tokens are not supported** for attached payments—use conventional tokens only, or you risk accounting mismatch and disputes.
 
 Primary execution still uses `TxParams.target` whitelisted under the **execution** function selector (e.g. mint, `NATIVE_TRANSFER_SELECTOR`).
 
@@ -508,10 +506,22 @@ describe('GuardController Integration', () => {
 1. Function schema is registered
 2. Target is whitelisted for the function
 3. Caller has appropriate role permissions (via RuntimeRBAC)
-4. Gas limit is sufficient
+4. Gas limit is sufficient (a `gasLimit` of **0** in `TxParams` means "forward all remaining gas" — equivalent to `gasleft()`. Set a positive value for a strict upper bound.)
 
 ### **Issue: "Handler selector mismatch"**
 **Solution**: Ensure the function selector in the execution params matches the registered function schema.
+
+### **Issue: OWNER cannot call `executeWithPayment`**
+**Solution**: Default `GuardControllerDefinitions` registers the **schema** for `executeWithPayment` but intentionally **does not** grant an OWNER role permission for it—the permission surface is kept minimal out of the box. Add the OWNER grant via a **guard-config batch** (`ADD_FUNCTION_TO_ROLE`) or **RBAC batch** after initialization if owner-driven payment execution is required.
+
+### **Issue: `NATIVE_TRANSFER_SELECTOR` not found / native ETH flows revert**
+**Solution**: `GuardControllerDefinitions` already registers the `NATIVE_TRANSFER_SELECTOR` pseudo-schema (plus `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and `ERC20_TRANSFER_SELECTOR`). If your contract inherits from a **base-only** state machine **without** loading `GuardControllerDefinitions`, you must register these schemas manually via a guard-config or definition bundle.
+
+### **Issue: Unregistered function still has whitelist entries / hooks**
+**Solution**: `EngineBlox.unregisterFunction` removes the schema and supported-function membership but does **not** sweep `functionTargetWhitelist` or `functionTargetHooks` for that selector. Stale rows are inert while the selector is absent (whitelist checks revert `ResourceNotFound`), but they **reappear** if the selector is re-registered. Clear them explicitly with `REMOVE_TARGET_FROM_WHITELIST` / `clearHook` before or after unregistering.
+
+### **Issue: Payment failure rolls back the entire execution**
+**Solution**: This is **intentional all-or-nothing** atomicity. If the main call succeeds but `executeAttachedPayment` reverts (e.g. insufficient balance, whitelist mismatch), the whole approval/execute transaction reverts including the main effect. Ensure payment prerequisites (balance, whitelist) are met before submitting.
 
 ## 📚 **Related Documentation**
 

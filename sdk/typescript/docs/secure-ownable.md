@@ -214,9 +214,14 @@ Operations are split into request and approval phases:
 // Phase 1: Request
 const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.address })
 
-// Phase 2: Approval (after time lock; use txId from getPendingTransactions / getTransaction)
+// Phase 2a: Delayed approval (after time lock; use txId from getPendingTransactions / getTransaction)
 const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: account.address })
+
+// Phase 2b: Meta-tx approval (owner signs, broadcaster submits — timelock NOT enforced)
+const metaTxApproval = await secureOwnable.transferOwnershipApprovalWithMetaTx(signedMetaTx, { from: broadcasterAddress })
 ```
+
+**Important:** The **delayed** path (`transferOwnershipDelayedApproval`) enforces `releaseTime` (timelock). The **meta-tx** path (`transferOwnershipApprovalWithMetaTx`) does **not** enforce timelock — the signed meta-transaction itself is the authorization, enabling time-flexible delegated approval. This applies to all meta-tx approval paths across the protocol.
 
 ### **3. Meta-Transaction Support**
 
@@ -241,6 +246,10 @@ SecureOwnable splits power across **owner**, **broadcaster**, and **recovery**, 
 | **Recovery update vs pending ownership** | `updateRecoveryRequestAndApprove` does **not** check for a pending ownership transfer. Owner + broadcaster can still rotate recovery in one meta-tx step while a transfer is pending—fast operational recovery, but prior recovery loses veto via cancel. |
 
 **Threat model:** If **owner and broadcaster** are both compromised, they can rotate recovery and control cancellation/approval paths regardless of timelocks on ownership transfer. Treat that pair as a high-trust escalation path. If you need a hard on-chain rule such as “no recovery rotation while ownership transfer is pending,” enforce it with a contract extension or off-chain policy; the core `SecureOwnable` contract does not encode that invariant.
+
+**Timelock bounds:** `SecureOwnable` validates `timeLockPeriodSec > 0` but enforces **no upper bound**. An extremely large value (e.g. `type(uint256).max`) makes delayed operations practically unexecutable for the deployment's lifetime. Operators should validate the timelock range in deployment scripts or governance checks before calling `updateTimeLockRequestAndApprove`.
+
+**Role separation:** The contract does **not** prevent the same EOA from holding **OWNER**, **BROADCASTER**, and **RECOVERY** roles simultaneously. Collapsing roles is a valid deployment choice (e.g. single multisig controls all), but it **removes** separation-of-duties guarantees that documentation and timelocks otherwise provide. Enforce distinct keys **off-chain** when separation is required.
 
 ## 🔧 **Advanced Usage**
 

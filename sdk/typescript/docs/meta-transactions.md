@@ -36,7 +36,9 @@ The signing process follows these security principles:
 4. **Permission Validation**: Contract-level permission checking
 5. **Entrypoint binding**: On-chain verification requires `MetaTxParams.handlerSelector` to equal the selector of the **actual** public function used to submit the meta-transaction, and `handlerContract` to equal the verifying account address (same as the EIP-712 `verifyingContract`). Do not sign one handler and submit through a different sibling wrapper.
 6. **Raw digest signing**: The contract’s `message` field is the final EIP-712 digest (`\x19\x01` ‖ domain ‖ structHash). Wallets must **not** use `personal_sign` on that 32-byte value—`personal_sign` wraps the payload with the EIP-191 “Ethereum signed message” prefix, so `ecrecover` on-chain will fail. Use Viem `signMessage({ message: { raw: digest } })`, `signTypedData` with the same domain/types as `EngineBlox` (see `signMetaTransactionWithWallet` in `metaTransaction.tsx`), or a local `sign({ hash })` for backend keys.
-7. **Per-signer sequential nonce (replay control, not a throughput bug):** On-chain, `MetaTxParams.nonce` must equal the current **`getSignerNonce(signer)`** for that signer; after a successful meta path the contract increments **only that signer’s** nonce. **Different signers** have **independent** nonce counters, so meta-transactions from distinct signers do not serialize each other. For a **single** signer, relayers must **submit in order**—parallel unrelated intents from the same address without coordination would break replay semantics. New **`SIGN_META_REQUEST_AND_APPROVE`** flows also align with sequential **`txCounter`** / `txId` allocation. See [AUDIT_RESOLUTION.md](../../../research/audit/agent%20arena/AUDIT_RESOLUTION.md) (Finding 17).
+7. **Per-signer sequential nonce (replay control, not a throughput bug):** On-chain, `MetaTxParams.nonce` must equal the current **`getSignerNonce(signer)`** for that signer; after a successful meta path the contract increments **only that signer’s** nonce. **Different signers** have **independent** nonce counters, so meta-transactions from distinct signers do not serialize each other. For a **single** signer, relayers must **submit in order**—parallel unrelated intents from the same address without coordination would break replay semantics. New **`SIGN_META_REQUEST_AND_APPROVE`** flows also align with sequential **`txCounter`** / `txId` allocation.
+8. **Predictable `txId` in `SIGN_META_REQUEST_AND_APPROVE`:** The next `txId` is derived from **`txCounter`**, which is observable on-chain. A griefing party could front-run to bump the counter and invalidate a pre-signed `txId`. Mitigations: **observe** `txCounter` immediately before signing, use **short deadlines**, and **monitor the mempool** for counter-bumping transactions. This is the same operational model as sequential nonces, not a missing check.
+9. **No owner-driven signature invalidation:** The protocol does not provide a global "revoke all pending signatures" mechanism. Signed-but-unsubmitted meta-transactions remain valid until their **deadline** expires or the **signer's nonce** is consumed (by submitting any valid meta-tx for that signer). To invalidate a leaked signature: (a) submit a cheap no-op meta-tx to advance the signer's nonce past the leaked one, (b) rotate the signer off the role via RBAC batch, or (c) wait for deadline. A blanket "owner revoke bitmap" would be a protocol-level addition.
 
 ## Workflow Patterns
 
@@ -473,7 +475,7 @@ constructor(
 
 ### **EIP-712 Implementation**
 The contract implements EIP-712 with:
-- **Domain**: `EngineBlox`, version `1`
+- **Domain**: `Bloxchain`, version `1.0.0`
 - **Chain ID**: Current blockchain chain ID
 - **Verifying Contract**: The contract address
 - **Type Hash**: Complex nested structure for MetaTransaction
