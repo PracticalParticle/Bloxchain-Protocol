@@ -498,7 +498,7 @@ describe('RuntimeRBAC Integration', () => {
 **Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
 
 ### **Issue: `ResourceAlreadyExists` when adding a function to a role**
-**Solution**: `addFunctionToRole` reverts if the selector is already present on the role. To update bitmap or `handlerForSelectors`, **remove** the function from the role first (`removeFunctionFromRole`), then re-add with the new values. Note: **protected schemas** cannot be removed from roles (`CannotModifyProtected`), so grants of protected selectors are effectively permanent unless the role itself is removed.
+**Solution**: Re-adding the same selector with **`RoleConfigActionType.ADD_FUNCTION_TO_ROLE`** hits the same **`ResourceAlreadyExists`** revert as a direct **`addFunctionToRole`** would when the selector is already on the role. To change the stored permission bitmap or **`handlerForSelectors`**, include **`RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE`** in a **`roleConfigBatchRequestAndApprove` → `executeRoleConfigBatch`** flow first, then **`ADD_FUNCTION_TO_ROLE`** with the new values—the engine applies removal through that batch path; there is no supported separate public **`removeFunctionFromRole`** entrypoint for integrators. Note: **protected schemas** cannot be removed from roles (`CannotModifyProtected`), so grants of protected selectors are effectively permanent unless the role itself is removed.
 
 ## 📚 **Related Documentation**
 

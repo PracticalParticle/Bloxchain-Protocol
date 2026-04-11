@@ -165,7 +165,11 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
 
     /**
      * @dev Finding 1 (contract binding): handlerContract must equal address(this).
-     *      Fuzz a random address that is not the account.
+     *      (A) Fail-fast: `generateUnsignedMetaTransactionForNew` → `generateMetaTransaction` uses
+     *      `SharedValidation.validateMetaTxHandlerContractBinding` (same custom error as on-chain).
+     *      (B) On-chain: `EngineBlox.verifySignature` re-checks `metaTx.params.handlerContract` before
+     *      `generateMessageHash` / `recoverSigner`, so a calldata struct tampered after a valid sign
+     *      still reverts `MetaTxHandlerContractMismatch` when submitted via `roleConfigBatchRequestAndApprove`.
      */
     function testFuzz_Finding1_HandlerContractMismatchRejected(address wrongContract) public {
         vm.assume(wrongContract != address(accountBlox));
@@ -179,7 +183,7 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
         });
         bytes memory executionParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
 
-        EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
+        EngineBlox.MetaTxParams memory metaTxParamsBad = accountBlox.createMetaTxParams(
             address(accountBlox),
             ROLE_CONFIG_BATCH_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
@@ -187,10 +191,9 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
             0,
             owner
         );
-        // Tamper the handlerContract before generation
-        metaTxParams.handlerContract = wrongContract;
+        // (A) Tamper the handlerContract before generation
+        metaTxParamsBad.handlerContract = wrongContract;
 
-        // generateUnsignedMetaTransactionForNew should revert with contract mismatch
         vm.expectRevert(
             abi.encodeWithSelector(
                 SharedValidation.MetaTxHandlerContractMismatch.selector,
@@ -206,8 +209,43 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
             ROLE_CONFIG_BATCH_OPERATION_TYPE,
             ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
             executionParams,
-            metaTxParams
+            metaTxParamsBad
         );
+
+        // (B) Valid unsigned meta-tx + signature, then tamper params.handlerContract; submit through production wrapper
+        EngineBlox.MetaTxParams memory metaTxParamsGood = accountBlox.createMetaTxParams(
+            address(accountBlox),
+            ROLE_CONFIG_BATCH_META_SELECTOR,
+            EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE,
+            1 hours,
+            0,
+            owner
+        );
+        EngineBlox.MetaTransaction memory metaTx = accountBlox.generateUnsignedMetaTransactionForNew(
+            owner,
+            address(accountBlox),
+            0,
+            0,
+            ROLE_CONFIG_BATCH_OPERATION_TYPE,
+            ROLE_CONFIG_BATCH_EXECUTE_SELECTOR,
+            executionParams,
+            metaTxParamsGood
+        );
+        uint256 pk = _getPrivateKeyForAddress(owner);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, metaTx.message);
+        metaTx.signature = abi.encodePacked(r, s, v);
+
+        metaTx.params.handlerContract = wrongContract;
+
+        vm.prank(broadcaster);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.MetaTxHandlerContractMismatch.selector,
+                wrongContract,
+                address(accountBlox)
+            )
+        );
+        accountBlox.roleConfigBatchRequestAndApprove(metaTx);
     }
 
     // =========================================================================
@@ -522,19 +560,24 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
     // =========================================================================
 
     /**
-     * @dev Audit Finding 11: _validateTargetWhitelist reverts ResourceNotFound
-     *      when the execution selector is not registered.
+     * @dev Audit Finding 11: unregistered execution selector reverts `ResourceNotFound`
+     *      (`_validateFunctionSchemaExists` in `txRequest` before `_txRequest` / `_validateTargetWhitelist`).
      */
     function testFuzz_Finding11_UnregisteredSelectorRevertsResourceNotFound(bytes4 randomSelector) public {
-        // Avoid collisions with selectors already registered by the Account stack
+        // Avoid selectors registered on `paymentHelper` (schema set) so we hit `ResourceNotFound`, not `NoPermission`
         vm.assume(randomSelector != bytes4(0));
         vm.assume(randomSelector != EngineBlox.NATIVE_TRANSFER_SELECTOR);
         vm.assume(randomSelector != EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         vm.assume(randomSelector != EngineBlox.ERC20_TRANSFER_SELECTOR);
+        vm.assume(randomSelector != paymentHelper.requestTransaction.selector);
+        vm.assume(randomSelector != paymentHelper.requestTransactionWithPayment.selector);
+        vm.assume(randomSelector != paymentHelper.approveTransaction.selector);
+        vm.assume(randomSelector != paymentHelper.cancelTransaction.selector);
 
-        // Try to request a transaction with an unregistered selector
+        vm.expectRevert(
+            abi.encodeWithSelector(SharedValidation.ResourceNotFound.selector, bytes32(randomSelector))
+        );
         vm.prank(owner);
-        vm.expectRevert(); // ResourceNotFound or NoPermission — both block the request
         paymentHelper.requestTransaction(
             owner,
             address(mockTarget),
@@ -544,6 +587,80 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
             randomSelector,
             ""
         );
+    }
+
+    // =========================================================================
+    // Finding 14 — Pending tx after whitelist delist (LOW)
+    // =========================================================================
+
+    /**
+     * @dev Audit Finding 14: A pending tx created while `target` was whitelisted must
+     *      still pass `_validateTargetWhitelist` on cancel/complete. Removing the
+     *      whitelist entry after request must block both cancel and delayed approve.
+     */
+    function testFuzz_Finding14_PendingTxAfterWhitelistDelist_CancelReverts() public {
+        // Keep owner as msg.sender for all helper calls (expectRevert can interact poorly with one-shot prank)
+        vm.startPrank(owner);
+        paymentHelper.whitelistTargetForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
+
+        uint256 txId = paymentHelper.requestTransaction(
+            owner,
+            address(mockTarget),
+            0,
+            100_000,
+            keccak256("NATIVE_TRANSFER"),
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            ""
+        );
+        assertEq(uint8(paymentHelper.getTransaction(txId).status), uint8(EngineBlox.TxStatus.PENDING));
+
+        paymentHelper.removeTargetFromWhitelistForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.TargetNotWhitelisted.selector,
+                address(mockTarget),
+                EngineBlox.NATIVE_TRANSFER_SELECTOR
+            )
+        );
+        paymentHelper.cancelTransaction(txId);
+        vm.stopPrank();
+    }
+
+    /**
+     * @dev Finding 14 (approve path): after delist, delayed approval must revert at
+     *      `_completeTransaction` → `_validateTargetWhitelist` even though the tx was valid at request.
+     */
+    function testFuzz_Finding14_PendingTxAfterWhitelistDelist_ApproveReverts() public {
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
+
+        vm.prank(owner);
+        uint256 txId = paymentHelper.requestTransaction(
+            owner,
+            address(mockTarget),
+            0,
+            100_000,
+            keccak256("NATIVE_TRANSFER"),
+            EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            ""
+        );
+
+        vm.prank(owner);
+        paymentHelper.removeTargetFromWhitelistForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
+
+        vm.warp(block.timestamp + DEFAULT_TIMELOCK_PERIOD + 1);
+
+        vm.startPrank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SharedValidation.TargetNotWhitelisted.selector,
+                address(mockTarget),
+                EngineBlox.NATIVE_TRANSFER_SELECTOR
+            )
+        );
+        paymentHelper.approveTransaction(txId);
+        vm.stopPrank();
     }
 
     // =========================================================================

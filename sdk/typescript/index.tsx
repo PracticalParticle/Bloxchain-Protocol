@@ -44,10 +44,11 @@ export {
   RoleConfigActionType
 } from './types/core.access.index';
 export type { RoleConfigAction } from './types/core.access.index';
-export { 
-  OPERATION_TYPES
+export {
+  OPERATION_TYPES,
+  FUNCTION_SELECTORS
 } from './types/core.security.index';
-export type { OperationType } from './types/core.security.index';
+export type { OperationType, FunctionSelector } from './types/core.security.index';
 export {
   GUARD_CONTROLLER_FUNCTION_SELECTORS,
   GUARD_CONTROLLER_OPERATION_TYPES,
