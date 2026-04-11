@@ -266,6 +266,9 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
         updatedBroadcaster !== null && updatedBroadcaster.toLowerCase() === newBroadcaster.toLowerCase(),
         'Broadcaster updated successfully'
       );
+      if (updatedBroadcaster === null) {
+        throw new Error('Broadcaster missing after successful update assertion');
+      }
 
       // Update internal role tracking
       this.roles.broadcaster = updatedBroadcaster;

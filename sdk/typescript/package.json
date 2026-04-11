@@ -54,11 +54,11 @@
     "access": "public"
   },
   "dependencies": {
-    "viem": "^2.23.7"
+    "viem": "^2.47.10"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
   },
   "peerDependencies": {
     "@bloxchain/contracts": "^1.0.0-alpha.12",
