@@ -211,6 +211,8 @@ if (timePassed < timeLockPeriod) {
 Operations are split into request and approval phases:
 
 ```typescript
+import { FUNCTION_SELECTORS } from '@bloxchain/sdk/typescript'
+
 // Phase 1: Request
 const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.address })
 
@@ -218,10 +220,20 @@ const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.a
 const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: account.address })
 
 // Phase 2b: Meta-tx approval (owner signs, broadcaster submits — timelock NOT enforced)
+// signedMetaTx.params.handlerContract and signedMetaTx.params.handlerSelector must match THIS
+// SecureOwnable deployment and the wrapper you call (here: transferOwnershipApprovalWithMetaTx), or
+// EngineBlox.verifySignature reverts MetaTxHandlerContractMismatch / MetaTxHandlerSelectorMismatch.
+const signedMetaTx /* : MetaTransaction */ = await yourBuildAndSignPipeline(/* txRecord, EIP-712 domain = contractAddress, ... */)
+// The signed `params` must include this handler binding for `transferOwnershipApprovalWithMetaTx` (merge with chainId, nonce, action, deadline, maxGasPrice, signer):
+const handlerBindingForTransferOwnershipApprove = {
+  handlerContract: contractAddress, // `address(this)` when the broadcaster submits here
+  handlerSelector: FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR // `msg.sig` for `transferOwnershipApprovalWithMetaTx`
+}
+
 const metaTxApproval = await secureOwnable.transferOwnershipApprovalWithMetaTx(signedMetaTx, { from: broadcasterAddress })
 ```
 
-**Important:** The **delayed** path (`transferOwnershipDelayedApproval`) enforces `releaseTime` (timelock). The **meta-tx** path (`transferOwnershipApprovalWithMetaTx`) does **not** enforce timelock — the signed meta-transaction itself is the authorization, enabling time-flexible delegated approval. This applies to all meta-tx approval paths across the protocol.
+**Important:** The **delayed** path (`transferOwnershipDelayedApproval`) enforces `releaseTime` (timelock). The **meta-tx** path (`transferOwnershipApprovalWithMetaTx`) does **not** enforce timelock — the signed meta-transaction itself is the authorization, enabling time-flexible delegated approval. This applies to all meta-tx approval paths across the protocol. On every meta-tx path, **`params.handlerContract`** must equal the account you invoke and **`params.handlerSelector`** must equal that function’s selector, or verification fails as above (see also [Meta-Transactions](./meta-transactions.md)).
 
 ### **3. Meta-Transaction Support**
 
@@ -229,6 +241,8 @@ Some operations support immediate execution:
 
 ```typescript
 // Immediate approval for recovery/time-lock uses meta-tx: owner signs, broadcaster calls updateRecoveryRequestAndApprove(metaTx) or updateTimeLockRequestAndApprove(metaTx)
+// Use the same handler binding rule: params.handlerContract === contractAddress and params.handlerSelector
+// matches the function you call (e.g. FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR), or expect the same mismatch reverts.
 const txHash = await secureOwnable.updateRecoveryRequestAndApprove(signedMetaTx, { from: broadcasterAddress })
 ```
 

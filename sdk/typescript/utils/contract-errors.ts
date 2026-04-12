@@ -686,7 +686,7 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'MetaTxHandlerContractMismatch',
     params: ['signedContract', 'entryContract'],
     userMessage: (params) =>
-      `MetaTxHandlerContractMismatch: Signed contract ${params.signedContract} does not match verifying contract ${params.entryContract}`
+      `MetaTxHandlerContractMismatch: Signed contract ${params.signedContract} does not match entry contract ${params.entryContract}`
   },
   '0xf364cb26': {
     name: 'OnlyCallableByContract',

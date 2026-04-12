@@ -68,7 +68,7 @@ struct SecureOperationState {
 
 **Key sub-structures:**
 
-- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`).
+- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field is **not** full callee returndata: `EngineBlox.executeTransaction` runs the target via **`_callWithBoundedReturndata`**, which copies at most the first **`MAX_RESULT_PREVIEW_BYTES`** (32 KiB; see `contracts/core/lib/EngineBlox.sol`) of returndata into `TxRecord.result`. Anything beyond that is discarded on-chain. SDK reads such as **`BaseStateMachine.getTransaction()`** and **`getTransactionHistory()`** return that stored record as-is—do not assume **`result`** contains the complete ABI return payload for large responses.
 - **`Role`** — `roleName`, `roleHash`, `authorizedWallets` (enumerable set), per-selector `functionPermissions`, `maxWallets`, `walletCount`, `isProtected`.
 - **`FunctionSchema`** — `functionSignature`, `functionSelector`, `operationType`, `operationName`, `supportedActionsBitmap`, `enforceHandlerRelations`, `isProtected`, `handlerForSelectors`.
 - **`FunctionPermission`** — `functionSelector`, `grantedActionsBitmap` (9-bit `TxAction` bitmap), `handlerForSelectors`.
@@ -185,18 +185,20 @@ On-chain verification requires `MetaTxParams.handlerSelector` to match `msg.sig`
 
 ### 1. **`TransactionEvent`**
 
-The canonical on-chain event emitted by `logTxEvent`:
+The canonical on-chain event emitted by `logTxEvent` (see `contracts/core/lib/EngineBlox.sol`):
 
 ```solidity
 event TransactionEvent(
     uint256 indexed txId,
-    bytes4 indexed functionSelector,
+    bytes4 indexed functionHash,
     TxStatus status,
-    address requester,
+    address indexed requester,
     address target,
     bytes32 operationType
 );
 ```
+
+The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step); the ABI names the indexed topic **`functionHash`**, not `functionSelector`. **`requester`** is **indexed** so it appears as a log topic for filters. Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** `args` use those names—filter on **`functionHash`** and **`requester`**, not legacy `functionSelector` on this event.
 
 This is the **authoritative** audit trail for all transaction state changes. Components also emit **`ComponentEvent(bytes4, bytes)`** for config changes (guard config, RBAC config).
 

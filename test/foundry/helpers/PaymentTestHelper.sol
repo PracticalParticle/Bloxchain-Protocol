@@ -118,10 +118,11 @@ contract PaymentTestHelper is BaseStateMachine {
         approveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         uint16 approveActionsBitmap = EngineBlox.createBitmapFromActions(approveActions);
         
-        // Create bitmap for both REQUEST and APPROVE actions (NATIVE_TRANSFER needs both)
-        EngineBlox.TxAction[] memory bothActions = new EngineBlox.TxAction[](2);
+        // REQUEST + APPROVE + CANCEL on execution path (cancel/complete re-check whitelist in EngineBlox)
+        EngineBlox.TxAction[] memory bothActions = new EngineBlox.TxAction[](3);
         bothActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         bothActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        bothActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         uint16 bothActionsBitmap = EngineBlox.createBitmapFromActions(bothActions);
         
         // Register NATIVE_TRANSFER_SELECTOR function schema if not already registered
@@ -253,6 +254,38 @@ contract PaymentTestHelper is BaseStateMachine {
             });
             EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
+
+        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL (whitelist re-check on cancel)
+        EngineBlox.TxAction[] memory cancelActions = new EngineBlox.TxAction[](1);
+        cancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        uint16 cancelActionsBitmap = EngineBlox.createBitmapFromActions(cancelActions);
+
+        bytes4 cancelTxSelector = this.cancelTransaction.selector;
+        bytes4[] memory cancelTxHandlers = new bytes4[](2);
+        cancelTxHandlers[0] = cancelTxSelector;
+        cancelTxHandlers[1] = nativeTransferSelector;
+
+        if (!state.supportedFunctionsSet.contains(bytes32(cancelTxSelector))) {
+            EngineBlox.registerFunction(
+                state,
+                "cancelTransaction(uint256)",
+                cancelTxSelector,
+                "TEST_CANCEL",
+                cancelActionsBitmap,
+                true,
+                true,
+                cancelTxHandlers
+            );
+        }
+
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(cancelTxSelector))) {
+            EngineBlox.FunctionPermission memory cancelTxPermission = EngineBlox.FunctionPermission({
+                functionSelector: cancelTxSelector,
+                grantedActionsBitmap: cancelActionsBitmap,
+                handlerForSelectors: cancelTxHandlers
+            });
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, cancelTxPermission);
+        }
     }
     
     // _requestTransaction is inherited from BaseStateMachine and uses msg.sig as handlerSelector
@@ -335,6 +368,14 @@ contract PaymentTestHelper is BaseStateMachine {
         EngineBlox.TxRecord memory txRecord = _approveTransaction(txId);
         return txRecord.txId;
     }
+
+    /**
+     * @notice Exposes _cancelTransaction for testing
+     */
+    function cancelTransaction(uint256 txId) external returns (uint256) {
+        EngineBlox.TxRecord memory txRecord = _cancelTransaction(txId);
+        return txRecord.txId;
+    }
     
     /**
      * @notice Helper function to set up test permissions
@@ -365,6 +406,17 @@ contract PaymentTestHelper is BaseStateMachine {
         // Add target to whitelist using EngineBlox library function
         EngineBlox.SecureOperationState storage state = _getSecureState();
         EngineBlox.addTargetToWhitelist(state, selector, target);
+    }
+
+    /**
+     * @notice Removes a target from the whitelist (owner-only test helper)
+     */
+    function removeTargetFromWhitelistForTesting(address target, bytes4 selector) external {
+        require(msg.sender == owner(), "Only owner can remove whitelist for testing");
+        SharedValidation.validateNotZeroAddress(target);
+        require(selector != bytes4(0), "Selector cannot be zero");
+        EngineBlox.SecureOperationState storage state = _getSecureState();
+        EngineBlox.removeTargetFromWhitelist(state, selector, target);
     }
     
     /**
