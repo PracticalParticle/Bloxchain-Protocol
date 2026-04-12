@@ -41,7 +41,7 @@ Returns predefined function schemas for GuardController execution functions
 
 Function schemas define:
 - GuardController public execution functions
-- What operation types they belong to (`CONTROLLER_OPERATION` for execution paths, `CONTROLLER_CONFIG_OPERATION` for guard config batch)
+- What operation types they belong to (`CONTROLLER_OPERATION` for execution paths, `CONTROLLER_CONFIG_BATCH` for guard config batch)
 - What actions are supported (time-delay request/approve/cancel, meta-tx approve/cancel/request-and-approve)
 - Whether they are protected
 

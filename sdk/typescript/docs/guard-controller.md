@@ -137,7 +137,7 @@ const metaTx = await guardController.generateUnsignedMetaTransactionForNew(
   contractAddress,
   0n, // value
   1000000n, // gas limit
-  GUARD_CONTROLLER_OPERATION_TYPES.CONTROLLER_CONFIG_OPERATION,
+  GUARD_CONTROLLER_OPERATION_TYPES.CONTROLLER_CONFIG_BATCH,
   GUARD_CONTROLLER_FUNCTION_SELECTORS.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
   executionParams,
   metaTxParams

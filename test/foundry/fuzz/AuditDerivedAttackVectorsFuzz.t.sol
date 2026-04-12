@@ -142,7 +142,7 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_BATCH,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             executionParams,
             metaTxParams
@@ -336,7 +336,7 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_BATCH,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             executionParams,
             metaTxParams

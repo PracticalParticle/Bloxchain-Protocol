@@ -34,7 +34,7 @@ library GuardControllerDefinitions {
     // Operation Type Constants
     bytes32 public constant CONTROLLER_OPERATION = keccak256("CONTROLLER_OPERATION");
     // Guard config batch only (whitelist / register-unregister function); distinct execution operation type bitmap.
-    bytes32 public constant CONTROLLER_CONFIG_OPERATION = keccak256("CONTROLLER_CONFIG_OPERATION");
+    bytes32 public constant CONTROLLER_CONFIG_BATCH = keccak256("CONTROLLER_CONFIG_BATCH");
     
     // Function Selector Constants
     // GuardController: executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)
@@ -88,7 +88,7 @@ library GuardControllerDefinitions {
      * 
      * Function schemas define:
      * - GuardController public execution functions
-     * - What operation types they belong to (CONTROLLER_OPERATION vs CONTROLLER_CONFIG_OPERATION)
+     * - What operation types they belong to (CONTROLLER_OPERATION vs CONTROLLER_CONFIG_BATCH)
      * - What actions are supported (time-delay request/approve/cancel, meta-tx approve/cancel/request-and-approve)
      * - Whether they are protected
      * 
@@ -230,8 +230,8 @@ library GuardControllerDefinitions {
         schemas[6] = EngineBlox.FunctionSchema({
             functionSignature: "guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: GUARD_CONFIG_BATCH_META_SELECTOR,
-            operationType: CONTROLLER_CONFIG_OPERATION,
-            operationName: "CONTROLLER_CONFIG_OPERATION",
+            operationType: CONTROLLER_CONFIG_BATCH,
+            operationName: "CONTROLLER_CONFIG_BATCH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
@@ -246,8 +246,8 @@ library GuardControllerDefinitions {
         schemas[7] = EngineBlox.FunctionSchema({
             functionSignature: "executeGuardConfigBatch((uint8,bytes)[])",
             functionSelector: GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
-            operationType: CONTROLLER_CONFIG_OPERATION,
-            operationName: "CONTROLLER_CONFIG_OPERATION",
+            operationType: CONTROLLER_CONFIG_BATCH,
+            operationName: "CONTROLLER_CONFIG_BATCH",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(guardConfigExecutionActions),
             enforceHandlerRelations: false,
             isProtected: true,
