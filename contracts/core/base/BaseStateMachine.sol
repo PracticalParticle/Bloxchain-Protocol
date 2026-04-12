@@ -4,7 +4,7 @@ pragma solidity 0.8.34;
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 // Contracts imports
 import "../lib/EngineBlox.sol";
@@ -36,7 +36,7 @@ import "./interface/IBaseStateMachine.sol";
  * - System configuration queries
  * - Event forwarding for external monitoring
  */
-abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, ReentrancyGuardUpgradeable {
+abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, ReentrancyGuardTransient {
     using EngineBlox for EngineBlox.SecureOperationState;
     using SharedValidation for *;
 
@@ -57,6 +57,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param recovery The recovery address
      * @param timeLockPeriodSec The timelock period in seconds
      * @param eventForwarder The event forwarder address
+     * @dev Reentrancy protection inherits OpenZeppelin {ReentrancyGuardTransient} (EIP-1153 transient storage; requires Cancun+ / configured EVM such as Osaka). No initializer is required.
      */
     function _initializeBaseStateMachine(
         address initialOwner,
@@ -68,7 +69,6 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         // Skip if already initialized (e.g. when multiple components call from Account.initialize)
         if (!_secureState.initialized) {
             __ERC165_init();
-            __ReentrancyGuard_init();
 
             _secureState.initialize(initialOwner, broadcaster, recovery, timeLockPeriodSec);
 
@@ -205,7 +205,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Validates permissions for the calling function (approval function selector), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
+     * @notice Protected by ReentrancyGuardTransient to prevent reentrancy attacks
      */
     function _approveTransaction(
         uint256 txId
@@ -222,7 +222,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice Uses EXECUTE_META_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
+     * @notice Protected by ReentrancyGuardTransient to prevent reentrancy attacks
      */
     function _approveTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
@@ -273,7 +273,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Validates permissions for the calling function (msg.sig) and handler selector from metaTx
      * @notice Uses EXECUTE_META_REQUEST_AND_APPROVE action for permission checking
      * @notice This function is virtual to allow extensions to add hook functionality
-     * @notice Protected by ReentrancyGuard to prevent reentrancy attacks
+     * @notice Protected by ReentrancyGuardTransient to prevent reentrancy attacks
      */
     function _requestAndApproveTransaction(
         EngineBlox.MetaTransaction memory metaTx

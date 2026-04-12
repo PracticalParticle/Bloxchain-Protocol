@@ -31,7 +31,7 @@ import "../../standards/hooks/IOnActionHook.sol";
  * Security model:
  * - Core state transitions and permissions are enforced by EngineBlox
  * - Overrides call super first (Checks/Effects) then invoke external hooks (Interactions)
- * - Approve/meta-approve overrides remain protected by ReentrancyGuard via BaseStateMachine
+ * - Approve/meta-approve overrides remain protected by ReentrancyGuardTransient via BaseStateMachine
  */
 abstract contract HookManager is BaseStateMachine {
     using SharedValidation for *;
