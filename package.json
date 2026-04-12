@@ -75,9 +75,9 @@
     "dotenv": "17.4.1",
     "hardhat": "3.3.0",
     "husky": "9.1.7",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "prettier-plugin-solidity": "2.3.1",
-    "release-please": "17.3.0",
+    "release-please": "17.5.2",
     "typescript": "6.0.2",
     "viem": "2.47.12"
   }
