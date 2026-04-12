@@ -70,6 +70,8 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
             erc20TokenAmount: 0
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(0x1234), EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -254,6 +256,9 @@ contract SystemMacroSelectorSecurityFuzzTest is CommonBase {
         
         bytes32 operationType = keccak256("NATIVE_TRANSFER");
         bytes4 systemMacroSelector = EngineBlox.NATIVE_TRANSFER_SELECTOR;
+
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(address(0x1234), EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         
         // Test 1: System macro selector can target address(this) - should succeed
         EngineBlox.PaymentDetails memory payment1 = EngineBlox.PaymentDetails({

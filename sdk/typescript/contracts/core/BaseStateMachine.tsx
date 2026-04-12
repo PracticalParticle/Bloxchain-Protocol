@@ -244,6 +244,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   // ============ STATE QUERIES ============
 
+  /** Returns `[]` when there are no txs yet or the clamped id range does not overlap `1..txCounter`. */
   async getTransactionHistory(fromTxId: bigint, toTxId: bigint): Promise<TxRecord[]> {
     return this.executeReadContract<TxRecord[]>('getTransactionHistory', [fromTxId, toTxId]);
   }

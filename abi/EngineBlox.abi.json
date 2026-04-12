@@ -352,6 +352,22 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "signedContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "entryContract",
+        "type": "address"
+      }
+    ],
+    "name": "MetaTxHandlerContractMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "txId",
         "type": "uint256"
@@ -598,6 +614,32 @@
   },
   {
     "inputs": [],
+    "name": "ATTACHED_PAYMENT_RECIPIENT_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ERC20_TRANSFER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "MAX_BATCH_SIZE",
     "outputs": [
       {
@@ -637,7 +679,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_ROLES",
+    "name": "MAX_RESULT_PREVIEW_BYTES",
     "outputs": [
       {
         "internalType": "uint256",
@@ -650,12 +692,12 @@
   },
   {
     "inputs": [],
-    "name": "NATIVE_TRANSFER_OPERATION",
+    "name": "MAX_ROLES",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint256",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",

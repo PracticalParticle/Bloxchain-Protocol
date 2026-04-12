@@ -16,7 +16,7 @@ import "../../../core/lib/interfaces/IDefinition.sol";
 library PayBloxDefinitions {
     
     // Operation Type Constants
-    bytes32 public constant NATIVE_PAYMENT = EngineBlox.NATIVE_TRANSFER_OPERATION;
+    bytes32 public constant NATIVE_PAYMENT = keccak256("NATIVE_TRANSFER");
     bytes32 public constant GENERIC_APPROVAL = keccak256("GENERIC_APPROVAL");
     bytes32 public constant GENERIC_CANCELLATION = keccak256("GENERIC_CANCELLATION");
     

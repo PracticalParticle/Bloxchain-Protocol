@@ -328,9 +328,10 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
         // - Misconfigured or unauthorized paths revert with NoPermission / ResourceNotFound
         //
         // Create meta-transaction for approval
+        // handlerSelector must match the actual wrapper entrypoint (Finding 1 binding), not the time-delay-only path.
         EngineBlox.MetaTxParams memory metaTxParams = accountBlox.createMetaTxParams(
             address(accountBlox),
-            bytes4(keccak256("approveTimeLockExecution(uint256)")),
+            GuardControllerDefinitions.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
             EngineBlox.TxAction.SIGN_META_APPROVE,
             1 hours,
             0,
@@ -633,7 +634,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_BATCH,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams
@@ -674,7 +675,7 @@ contract ComprehensiveCompositeFuzzTest is CommonBase {
             address(accountBlox),
             0,
             0,
-            GuardControllerDefinitions.CONTROLLER_CONFIG_OPERATION,
+            GuardControllerDefinitions.CONTROLLER_CONFIG_BATCH,
             GuardControllerDefinitions.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR,
             params,
             metaTxParams

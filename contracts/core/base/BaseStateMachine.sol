@@ -121,7 +121,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Centralized function to request a transaction with common validation
      * @param requester The address requesting the transaction
      * @param target The target contract address
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
      * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
@@ -130,8 +130,9 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @notice Validates permissions for the calling function (request function), not the execution selector
      * @notice Execution functions are internal-only and don't need permission definitions
      * @notice This function is virtual to allow extensions to add hook functionality
-     * @notice For standard function calls: value=0, functionSelector=non-zero, params=encoded data
-     * @notice For simple native token transfers: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
+     * @notice Recommended standard calls: value=0, functionSelector=non-zero, params=encoded data
+     * @notice Flexible edge case: non-native selectors may intentionally forward ETH to payable targets
+     * @notice Native-only convenience flow: value>0, functionSelector=NATIVE_TRANSFER_SELECTOR, params=""
      */
     function _requestTransaction(
         address requester,
@@ -161,7 +162,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @dev Centralized function to request a transaction with payment details attached from the start
      * @param requester The address requesting the transaction
      * @param target The target contract address
-     * @param value The ETH value to send (0 for standard function calls)
+     * @param value The ETH value to send (typically 0 for standard function calls; non-zero is supported for payable edge-case workflows)
      * @param gasLimit The gas limit for execution
      * @param operationType The type of operation
      * @param functionSelector The function selector for execution (NATIVE_TRANSFER_SELECTOR for simple native token transfers)
@@ -226,6 +227,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _approveTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.txApprovalWithMetaTx(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -258,6 +260,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _cancelTransactionWithMetaTx(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.txCancellationWithMetaTx(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -275,6 +278,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     function _requestAndApproveTransaction(
         EngineBlox.MetaTransaction memory metaTx
     ) internal virtual nonReentrant returns (EngineBlox.TxRecord memory) {
+        _validateMetaTxHandlerBinding(metaTx);
         EngineBlox.TxRecord memory txRecord = EngineBlox.requestAndApprove(_getSecureState(), metaTx);
         _postActionHook(txRecord);
         return txRecord;
@@ -406,28 +410,29 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param toTxId The ending transaction ID (inclusive)
      * @return The transaction history within the specified range
      * @notice Requires caller to have any role (via _validateAnyRole) to limit information visibility
+     * @notice Returns an empty array when **`txCounter == 0`** or when the range, after clamping to **1..txCounter**,
+     *         does not overlap any transaction ids (e.g. `fromTxId` entirely above the current counter).
      */
     function getTransactionHistory(uint256 fromTxId, uint256 toTxId) public view returns (EngineBlox.TxRecord[] memory) {
         _validateAnyRole();
-        
-        // Validate the range
-        fromTxId = fromTxId > 0 ? fromTxId : 1;
-        toTxId = toTxId > _secureState.txCounter ? _secureState.txCounter : toTxId;
-        
-        // Validate that fromTxId is less than toTxId
-        SharedValidation.validateLessThan(fromTxId, toTxId);
 
-        uint256 rangeSize = toTxId - fromTxId + 1;
-        
-        // For larger ranges, use paginated version
-        SharedValidation.validateRangeSize(rangeSize, 1000);
-        
+        uint256 counter = _secureState.txCounter;
+
+        // Normalize bounds to valid transaction id range [1, counter]
+        fromTxId = fromTxId > 0 ? fromTxId : 1;
+        toTxId = toTxId > counter ? counter : toTxId;
+
+        // Empty history: invalid / non-overlapping clamped range (includes txCounter == 0 → toTxId == 0).
+        uint256 rangeSize = fromTxId > toTxId ? 0 : toTxId - fromTxId + 1;
+
+        if (rangeSize > 0) {
+            SharedValidation.validateRangeSize(rangeSize, 1000);
+        }
+
         EngineBlox.TxRecord[] memory history = new EngineBlox.TxRecord[](rangeSize);
-        
         for (uint256 i = 0; i < rangeSize; i++) {
             history[i] = _secureState.getTxRecord(fromTxId + i);
         }
-        
         return history;
     }
 
@@ -755,6 +760,20 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     }
 
     // ============ PERMISSION VALIDATION ============
+
+    /**
+     * @dev Binds signed `MetaTxParams` to this wrapper's entrypoint (`msg.sig`) and verifying contract.
+     *      Must run in `BaseStateMachine` context, not inside linked `EngineBlox` library code (delegatecall
+     *      would make `msg.sig` refer to the library function, not the outer wrapper).
+     * @param metaTx The meta-transaction whose `params` are validated against `msg.sig` and `address(this)`.
+     */
+    function _validateMetaTxHandlerBinding(EngineBlox.MetaTransaction memory metaTx) internal view {
+        SharedValidation.validateMetaTxHandlerSelectorBinding(
+            metaTx.params.handlerSelector,
+            bytes4(msg.sig)
+        );
+        SharedValidation.validateMetaTxHandlerContractBinding(metaTx.params.handlerContract);
+    }
 
     /**
      * @dev Centralized function to validate that the caller has any role

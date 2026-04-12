@@ -51,7 +51,8 @@ console.log('Current owner:', owner)
 
 #### **Request Ownership Transfer**
 ```typescript
-// No arguments: creates a time-locked request. New owner is set when the pending tx is approved and executed.
+// No arguments: creates a time-locked request. On execution, the OWNER role is transferred to the **recovery
+// address at request time** (snapshotted in the pending tx). Rotating recovery later does not change that payload.
 const txHash = await secureOwnable.transferOwnershipRequest(
   { from: account.address }
 )
@@ -127,14 +128,14 @@ console.log('Broadcasters:', broadcasters, 'Recovery:', recovery)
 ### **Time-Delay Workflow (Ownership Transfer)**
 
 ```typescript
-// Step 1: Request ownership transfer (no new-owner argument; set at execution)
+// Step 1: Request ownership transfer — pending execution will assign OWNER to getRecovery() **at this moment**
 const requestTx = await secureOwnable.transferOwnershipRequest(
   { from: currentOwner }
 )
 
 // Step 2: Wait for time lock period, then get txId from getPendingTransactions() / getTransaction
 
-// Step 3: Approve the transfer
+// Step 3: Approve the transfer (current owner OR current recovery; beneficiary is still the snapshotted address)
 const approveTx = await secureOwnable.transferOwnershipDelayedApproval(
   txId,
   { from: currentOwner }
@@ -210,12 +211,29 @@ if (timePassed < timeLockPeriod) {
 Operations are split into request and approval phases:
 
 ```typescript
+import { FUNCTION_SELECTORS } from '@bloxchain/sdk/typescript'
+
 // Phase 1: Request
 const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.address })
 
-// Phase 2: Approval (after time lock; use txId from getPendingTransactions / getTransaction)
+// Phase 2a: Delayed approval (after time lock; use txId from getPendingTransactions / getTransaction)
 const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: account.address })
+
+// Phase 2b: Meta-tx approval (owner signs, broadcaster submits — timelock NOT enforced)
+// signedMetaTx.params.handlerContract and signedMetaTx.params.handlerSelector must match THIS
+// SecureOwnable deployment and the wrapper you call (here: transferOwnershipApprovalWithMetaTx), or
+// EngineBlox.verifySignature reverts MetaTxHandlerContractMismatch / MetaTxHandlerSelectorMismatch.
+const signedMetaTx /* : MetaTransaction */ = await yourBuildAndSignPipeline(/* txRecord, EIP-712 domain = contractAddress, ... */)
+// The signed `params` must include this handler binding for `transferOwnershipApprovalWithMetaTx` (merge with chainId, nonce, action, deadline, maxGasPrice, signer):
+const handlerBindingForTransferOwnershipApprove = {
+  handlerContract: contractAddress, // `address(this)` when the broadcaster submits here
+  handlerSelector: FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR // `msg.sig` for `transferOwnershipApprovalWithMetaTx`
+}
+
+const metaTxApproval = await secureOwnable.transferOwnershipApprovalWithMetaTx(signedMetaTx, { from: broadcasterAddress })
 ```
+
+**Important:** The **delayed** path (`transferOwnershipDelayedApproval`) enforces `releaseTime` (timelock). The **meta-tx** path (`transferOwnershipApprovalWithMetaTx`) does **not** enforce timelock — the signed meta-transaction itself is the authorization, enabling time-flexible delegated approval. This applies to all meta-tx approval paths across the protocol. On every meta-tx path, **`params.handlerContract`** must equal the account you invoke and **`params.handlerSelector`** must equal that function’s selector, or verification fails as above (see also [Meta-Transactions](./meta-transactions.md)).
 
 ### **3. Meta-Transaction Support**
 
@@ -223,8 +241,29 @@ Some operations support immediate execution:
 
 ```typescript
 // Immediate approval for recovery/time-lock uses meta-tx: owner signs, broadcaster calls updateRecoveryRequestAndApprove(metaTx) or updateTimeLockRequestAndApprove(metaTx)
+// Use the same handler binding rule: params.handlerContract === contractAddress and params.handlerSelector
+// matches the function you call (e.g. FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR), or expect the same mismatch reverts.
 const txHash = await secureOwnable.updateRecoveryRequestAndApprove(signedMetaTx, { from: broadcasterAddress })
 ```
+
+### **4. Ownership transfer vs recovery (role model)**
+
+SecureOwnable splits power across **owner**, **broadcaster**, and **recovery**, and uses **different timing** per lane. These rules are intentional; misreading them causes false expectations during audits or operations.
+
+| Topic | Behavior |
+|--------|----------|
+| **Who becomes owner** | `transferOwnershipRequest()` stores the **recovery address at request time** in the pending transaction. Execution calls `executeTransferOwnership` with that snapshotted address. |
+| **Recovery rotated while pending** | The pending payload is **not** updated. A new recovery address does **not** automatically become the beneficiary of an old pending transfer. |
+| **Who may approve (delayed path)** | `transferOwnershipDelayedApproval` allows the **current** owner or **current** recovery. The approver may therefore differ from the snapshotted beneficiary—approval means “execute the stored transfer,” not “transfer to current recovery.” |
+| **Who may cancel** | `transferOwnershipCancellation` is only callable by **current** recovery. If recovery is rotated, the **previous** recovery immediately loses cancel rights. |
+| **Broadcaster update vs pending ownership** | Starting a broadcaster update requires **no** pending ownership transfer (and vice versa for the broadcaster lane). Internal pending flags apply only to these **delayed** lanes; recovery and timelock meta flows do not use them, and flags are cleared in the same transaction as successful approve or cancel. |
+| **Recovery update vs pending ownership** | `updateRecoveryRequestAndApprove` does **not** check for a pending ownership transfer. Owner + broadcaster can still rotate recovery in one meta-tx step while a transfer is pending—fast operational recovery, but prior recovery loses veto via cancel. |
+
+**Threat model:** If **owner and broadcaster** are both compromised, they can rotate recovery and control cancellation/approval paths regardless of timelocks on ownership transfer. Treat that pair as a high-trust escalation path. If you need a hard on-chain rule such as “no recovery rotation while ownership transfer is pending,” enforce it with a contract extension or off-chain policy; the core `SecureOwnable` contract does not encode that invariant.
+
+**Timelock bounds:** `SecureOwnable` validates `timeLockPeriodSec > 0` but enforces **no upper bound**. An extremely large value (e.g. `type(uint256).max`) makes delayed operations practically unexecutable for the deployment's lifetime. Operators should validate the timelock range in deployment scripts or governance checks before calling `updateTimeLockRequestAndApprove`.
+
+**Role separation:** The contract does **not** prevent the same EOA from holding **OWNER**, **BROADCASTER**, and **RECOVERY** roles simultaneously. Collapsing roles is a valid deployment choice (e.g. single multisig controls all), but it **removes** separation-of-duties guarantees that documentation and timelocks otherwise provide. Enforce distinct keys **off-chain** when separation is required.
 
 ## 🔧 **Advanced Usage**
 
@@ -301,7 +340,7 @@ describe('SecureOwnable', () => {
 ```typescript
 describe('SecureOwnable Integration', () => {
   it('should complete ownership transfer workflow', async () => {
-    // Request transfer
+    // Request transfer (beneficiary = recovery address at request time)
     await secureOwnable.transferOwnershipRequest({ from: currentOwner })
     
     // Wait for time lock, then get txId from getPendingTransactions()
@@ -310,7 +349,8 @@ describe('SecureOwnable Integration', () => {
     const approveTx = await secureOwnable.transferOwnershipDelayedApproval(txId, { from: currentOwner })
     
     const currentOwnerAfter = await secureOwnable.owner()
-    expect(currentOwnerAfter).toBe(newOwner)
+    // After execution, owner should equal recovery-at-request-time (not an arbitrary newOwner argument)
+    expect(currentOwnerAfter).toBe(recoveryAtRequestTime)
   })
 })
 ```

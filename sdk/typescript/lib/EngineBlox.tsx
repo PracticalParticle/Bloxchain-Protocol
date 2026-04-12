@@ -45,6 +45,12 @@ export class EngineBlox {
    */
   static readonly VERSION: string = "1.0.0";
 
+  /**
+   * Maximum bytes retained from callee returndata on guarded execution (`EngineBlox.executeTransaction` path).
+   * Matches `EngineBlox.MAX_RESULT_PREVIEW_BYTES` (32 KiB).
+   */
+  static readonly MAX_RESULT_PREVIEW_BYTES: bigint = 32768n;
+
   // ============ FUNCTION SELECTORS ============
   
   /**
@@ -59,6 +65,21 @@ export class EngineBlox {
    * Native token transfer operation type hash
    */
   static readonly NATIVE_TRANSFER_OPERATION: Hex = keccak256("NATIVE_TRANSFER");
+
+  /**
+   * Pseudo-selector: whitelist key for attached payment recipients (native + ERC20 payout addresses).
+   * Matches `ATTACHED_PAYMENT_RECIPIENT_SELECTOR` in EngineBlox.sol.
+   */
+  static readonly ATTACHED_PAYMENT_RECIPIENT_SELECTOR: Hex = (
+    '0x' + k256(new TextEncoder().encode('__bloxchain_attached_payment_recipient__()')).slice(2, 10)
+  ) as Hex;
+
+  /**
+   * Standard IERC20 `transfer(address,uint256)` — whitelist key for token contracts in attached ERC20 payments.
+   */
+  static readonly ERC20_TRANSFER_SELECTOR: Hex = (
+    '0x' + k256(new TextEncoder().encode('transfer(address,uint256)')).slice(2, 10)
+  ) as Hex;
   
   // ============ ROLE CONSTANTS ============
   

@@ -26,264 +26,197 @@ State changes trigger events that can be:
 
 ## Core State Components
 
-### System State
+### `SecureOperationState` (canonical struct)
+
+All state lives in a single `SecureOperationState` instance (see `contracts/core/lib/EngineBlox.sol`):
+
 ```solidity
-struct SystemState {
-    bool initialized;           // State machine initialization status
-    uint256 txCounter;         // Global transaction counter
-    uint256 timeLockPeriodSec; // Default time lock period
+struct SecureOperationState {
+    // System state
+    bool initialized;
+    uint256 txCounter;
+    uint256 timeLockPeriodSec;
+
+    // Transaction management
+    mapping(uint256 => TxRecord) txRecords;
+    EnumerableSet.UintSet pendingTransactionsSet;
+
+    // Role-based access control
+    mapping(bytes32 => Role) roles;
+    EnumerableSet.Bytes32Set supportedRolesSet;
+    mapping(address => EnumerableSet.Bytes32Set) walletRoles;  // reverse index
+
+    // Function management
+    mapping(bytes4 => FunctionSchema) functions;
+    EnumerableSet.Bytes32Set supportedFunctionsSet;
+    EnumerableSet.Bytes32Set supportedOperationTypesSet;
+
+    // Meta-transaction nonces
+    mapping(address => uint256) signerNonces;
+
+    // Event forwarding
+    address eventForwarder;
+
+    // Per-function target whitelist & hooks
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetWhitelist;
+    mapping(bytes4 => EnumerableSet.AddressSet) functionTargetHooks;
+
+    // System macro selectors (allowed to target address(this))
+    EnumerableSet.Bytes32Set systemMacroSelectorsSet;
 }
 ```
 
-**Purpose**: Tracks the overall state of the state machine and provides global configuration.
+**Key sub-structures:**
 
-### Transaction Management
-```solidity
-struct TransactionManagement {
-    mapping(uint256 => TxRecord) txRecords;           // Individual transaction records
-    EnumerableSet.UintSet pendingTransactionsSet;     // Set of pending transaction IDs
-}
-```
+- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field is **not** full callee returndata: `EngineBlox.executeTransaction` runs the target via **`_callWithBoundedReturndata`**, which copies at most the first **`MAX_RESULT_PREVIEW_BYTES`** (32 KiB; see `contracts/core/lib/EngineBlox.sol`) of returndata into `TxRecord.result`. Anything beyond that is discarded on-chain. SDK reads such as **`BaseStateMachine.getTransaction()`** and **`getTransactionHistory()`** return that stored record as-is—do not assume **`result`** contains the complete ABI return payload for large responses.
+- **`Role`** — `roleName`, `roleHash`, `authorizedWallets` (enumerable set), per-selector `functionPermissions`, `maxWallets`, `walletCount`, `isProtected`.
+- **`FunctionSchema`** — `functionSignature`, `functionSelector`, `operationType`, `operationName`, `supportedActionsBitmap`, `enforceHandlerRelations`, `isProtected`, `handlerForSelectors`.
+- **`FunctionPermission`** — `functionSelector`, `grantedActionsBitmap` (9-bit `TxAction` bitmap), `handlerForSelectors`.
 
-**Purpose**: Manages the complete lifecycle of all transactions:
-- **Creation**: New transactions are assigned unique IDs
-- **Pending**: Transactions wait for time lock expiry
-- **Approval**: Authorized users can approve transactions
-- **Execution**: Approved transactions are executed
-- **Completion**: Transaction results are recorded
-
-### Role-Based Access Control
-```solidity
-struct RoleBasedAccessControl {
-    mapping(bytes32 => Role) roles;                  // Role definitions
-    EnumerableSet.Bytes32Set supportedRolesSet;      // Set of supported roles
-}
-```
-
-**Purpose**: Implements dynamic, hierarchical access control:
-- **Role Definition**: Define custom roles with specific permissions
-- **Permission Management**: Grant/revoke permissions dynamically
-- **Hierarchical Support**: Roles can inherit from other roles
-- **Audit Trail**: All role changes are logged
-
-### Function Management
-```solidity
-struct FunctionManagement {
-    mapping(bytes4 => FunctionSchema) functions;      // Function definitions
-    EnumerableSet.Bytes32Set supportedFunctionsSet; // Set of supported functions
-}
-```
-
-**Purpose**: Manages function schemas and permissions:
-- **Schema Definition**: Define function parameters and return types
-- **Permission Mapping**: Map functions to required roles/permissions
-- **Validation**: Validate function calls against schemas
-- **Security**: Enforce access control on function calls
-
-### Operation Type Management
-```solidity
-struct OperationTypeManagement {
-    mapping(bytes32 => ReadableOperationType) supportedOperationTypes; // Operation definitions
-    EnumerableSet.Bytes32Set supportedOperationTypesSet;              // Set of supported operations
-}
-```
-
-**Purpose**: Standardizes and manages operation types:
-- **Standard Operations**: Pre-defined operation types (OWNERSHIP_TRANSFER, etc.)
-- **Custom Operations**: Support for custom operation types
-- **Workflow Generation**: Generate valid operation workflows
-- **Validation**: Ensure operations follow defined patterns
+**Design notes:**
+- **Flat RBAC** — Roles are independent; there is no role inheritance. A wallet may hold multiple roles, and permission checks union across all roles.
+- **Operation types** are `bytes32` labels (e.g. `keccak256("OWNERSHIP_TRANSFER")`); the set tracks which types have registered function schemas.
+- **Immutable safety limits** — `MAX_ROLES`, `MAX_FUNCTIONS`, `MAX_HOOKS_PER_SELECTOR`, `MAX_BATCH_SIZE` cap on-chain growth. Per-role `maxWallets` is operator-chosen.
 
 ## State Transition Patterns
 
-### 1. Transaction Lifecycle
+### 1. Transaction Lifecycle (`TxStatus`)
+
+The canonical status enum in `EngineBlox`:
+
 ```
-UNDEFINED → PENDING → APPROVED → EXECUTED → COMPLETED
-     ↓         ↓         ↓         ↓         ↓
-   CREATE   TIMELOCK   APPROVE   EXECUTE   FINALIZE
+UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve) ──► EXECUTING ──► COMPLETED
+                                       │                              │
+                                       ├── (meta approve) ────► EXECUTING ──► COMPLETED
+                                       │                              │
+                                       ├── (cancel) ──────────► CANCELLED    ├──► FAILED
+                                       │                                      │
+                                       │                              (payment)├──► PROCESSING_PAYMENT ──► COMPLETED
+                                       │                                               │
+                                       │                                               └──► revert (atomic rollback)
 ```
 
-**State Transitions**:
-- **UNDEFINED → PENDING**: Transaction is created and validated
-- **PENDING → APPROVED**: Time lock expires and transaction is approved
-- **APPROVED → EXECUTED**: Transaction is executed
-- **EXECUTED → COMPLETED**: Transaction results are finalized
+`TxStatus` also defines **`REJECTED`**, but **`EngineBlox` never assigns it** (there is no “reject” transition in the diagram above). The member is **intentionally unused** in the current engine: abandonment is **`CANCELLED`**; failed execution is **`FAILED`**. **`REJECTED`** stays in the enum for **ABI / layout stability** and **reserved** for possible future protocol or extension behavior — see NatSpec on `TxStatus` in `contracts/core/lib/EngineBlox.sol`.
+
+| From | To | Trigger |
+|------|----|---------|
+| `UNDEFINED` | `PENDING` | `_txRequest` — creates a `TxRecord` with `txId = self.txCounter + 1`, stores it, increments `txCounter`, sets `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`. |
+| `PENDING` | `EXECUTING` | **Delayed path:** `txDelayedApproval` (validates `releaseTime` has passed). **Meta path:** `txApprovalWithMetaTx` → `_txApprovalWithMetaTx` (timelock **not** enforced). **Request-and-approve:** `requestAndApprove` (combines request + meta approval in one call). |
+| `EXECUTING` | `COMPLETED` | `executeTransaction` succeeds; `_completeTransaction` finalizes. |
+| `EXECUTING` | `PROCESSING_PAYMENT` | Main call succeeded and a non-zero `PaymentDetails.recipient` is present — `executeAttachedPayment` runs. |
+| `PROCESSING_PAYMENT` | `COMPLETED` | Payment succeeds. |
+| `PROCESSING_PAYMENT` | (revert) | Payment fails → entire approval tx reverts (atomic rollback). |
+| `EXECUTING` | `FAILED` | Main call returns `success == false`; `_completeTransaction` records the failure. |
+| `PENDING` | `CANCELLED` | `txCancellation` (direct) or `txCancellationWithMetaTx` (meta; wrapper selector in `MetaTxParams.handlerSelector`). |
+
+There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`. There is also **no** runtime use of **`TxStatus.REJECTED`** (see note under the diagram).
 
 ### 2. Role Management
-```
-ROLE_DEFINED → PERMISSIONS_ASSIGNED → ACTIVE → MODIFIED → INACTIVE
-```
 
-**State Transitions**:
-- **ROLE_DEFINED**: Role is created with basic definition
-- **PERMISSIONS_ASSIGNED**: Permissions are granted to the role
-- **ACTIVE**: Role is active and can be used
-- **MODIFIED**: Role permissions are updated
-- **INACTIVE**: Role is deactivated
+Roles are created and configured via `EngineBlox` library functions (exposed through `RuntimeRBAC` batch operations). There is no separate "lifecycle state" enum for roles:
 
-### 3. Operation Type Lifecycle
-```
-OPERATION_DEFINED → SCHEMA_VALIDATED → ACTIVE → DEPRECATED
-```
+- **`createRole`** — registers a new role with `roleName`, `maxWallets`, `isProtected`.
+- **`removeRole`** — deletes the role, revokes all wallets, removes all function permissions. Protected roles cannot be removed.
+- **`assignWallet` / `revokeWallet` / `updateWallet`** — manage membership.
+- **`addFunctionToRole` / `removeFunctionFromRole`** — grant or revoke per-selector `FunctionPermission` entries.
 
-**State Transitions**:
-- **OPERATION_DEFINED**: Operation type is defined
-- **SCHEMA_VALIDATED**: Operation schema is validated
-- **ACTIVE**: Operation type is available for use
-- **DEPRECATED**: Operation type is marked as deprecated
+### 3. Operation Types
 
-## State Machine Operations
+Operation types are `bytes32` labels registered alongside function schemas. They appear in `TxParams.operationType` and in `supportedOperationTypesSet`. When the last function schema with a given operation type is unregistered, the type is automatically removed from the set.
 
-### 1. **State Initialization**
-```solidity
-function initializeStateMachine(
-    uint256 _timeLockPeriod,
-    address _eventForwarder
-) external onlyInitializer {
-    _secureState.initialized = true;
-    _secureState.timeLockPeriodSec = _timeLockPeriod;
-    _secureState.eventForwarder = _eventForwarder;
-}
-```
+## Key `EngineBlox` Library Functions
 
-**Purpose**: Initialize the state machine with required configuration.
+The following are **real** function signatures in `contracts/core/lib/EngineBlox.sol`. Higher-level contracts (`SecureOwnable`, `GuardController`, `RuntimeRBAC`) call into these via `_secureState.<function>(...)`.
 
-### 2. **Transaction Creation**
-```solidity
-function createTransaction(
-    bytes32 operationType,
-    bytes calldata data
-) external returns (uint256 txId) {
-    // Validate operation type
-    require(_secureState.supportedOperationTypesSet.contains(operationType), "Unsupported operation");
-    
-    // Create transaction record
-    txId = _secureState.txCounter++;
-    _secureState.txRecords[txId] = TxRecord({
-        id: txId,
-        operationType: operationType,
-        data: data,
-        status: TransactionStatus.PENDING,
-        createdAt: block.timestamp
-    });
-    
-    // Add to pending set
-    _secureState.pendingTransactionsSet.add(txId);
-}
-```
+### 1. **Initialization**
 
-**Purpose**: Create new transactions and add them to the state machine.
+`initialize(SecureOperationState, address owner, address broadcaster, address recovery, uint256 timeLockPeriodSec)` — creates the three protected roles, assigns wallets, registers default system macro selectors, sets the timelock. It does **not** configure the event forwarder.
 
-### 3. **Transaction Approval**
-```solidity
-function approveTransaction(uint256 txId) external {
-    // Validate authorization
-    require(_hasPermission(msg.sender, txId, "APPROVE"), "Unauthorized");
-    
-    // Update transaction status
-    _secureState.txRecords[txId].status = TransactionStatus.APPROVED;
-    _secureState.pendingTransactionsSet.remove(txId);
-}
-```
+`setEventForwarder(SecureOperationState, address eventForwarder)` — stores the optional `IEventForwarder` used by `logTxEvent` (separate call from `initialize`).
 
-**Purpose**: Approve pending transactions after time lock expiry.
+### 2. **Transaction request (public) and `_txRequest`**
 
-### 4. **Transaction Execution**
-```solidity
-function executeTransaction(uint256 txId) external {
-    TxRecord storage txRecord = _secureState.txRecords[txId];
-    
-    // Validate status
-    require(txRecord.status == TransactionStatus.APPROVED, "Transaction not approved");
-    
-    // Execute transaction
-    _executeTransaction(txRecord);
-    
-    // Update status
-    txRecord.status = TransactionStatus.COMPLETED;
-}
-```
+Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`) alongside **`executionSelector`** and **`executionParams`**: that value is the wrapper / external entrypoint selector used with `executionSelector` in `_validateExecutionAndHandlerPermissions` (RBAC and schema wiring). The internal request core does **not** repeat `handlerSelector` on its parameter list.
 
-**Purpose**: Execute approved transactions and update state.
+`txRequest(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams)` — validates permissions, then calls `_txRequest` with an empty `PaymentDetails` struct (no attached payment).
+
+`txRequestWithPayment(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 handlerSelector, bytes4 executionSelector, bytes executionParams, PaymentDetails paymentDetails)` — same permission path as `txRequest`, plus `_validateAttachedPaymentPolicy`, then `_txRequest` with the supplied `paymentDetails`. This is the **payment-specific** request entrypoint.
+
+`_txRequest(SecureOperationState, address requester, address target, uint256 value, uint256 gasLimit, bytes32 operationType, bytes4 executionSelector, bytes executionParams, PaymentDetails payment)` — private: target whitelist, builds the `TxRecord` (`txId = self.txCounter + 1` at creation time, then `txCounter` increments), `status = PENDING`, `releaseTime = block.timestamp + timeLockPeriodSec`, pending set membership, event log.
+
+### 3. **Transaction approval (delayed)**
+
+`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction`.
+
+### 4. **Transaction approval (meta-tx)**
+
+`txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — public entrypoint: validates `SIGN_META_APPROVE`, checks permissions using `metaTx.txRecord.params.executionSelector` and **`metaTx.params.handlerSelector`** (wrapper selector in the typed-data payload), then returns `_txApprovalWithMetaTx(self, metaTx)`.
+
+`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
+
+### 5. **Request and approve (one-step meta-tx)**
+
+`requestAndApprove(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_REQUEST_AND_APPROVE`, execution + **`metaTx.params.handlerSelector`** permissions, attached payment policy, then runs `_txRequest` from fields in `metaTx.txRecord` (the new record’s `txId` is `self.txCounter + 1` at creation, matching `createTxRecord`). It assigns `metaTx.txRecord` to that returned `TxRecord` and calls `_txApprovalWithMetaTx` so execution proceeds in the same transaction. Like other meta approvals, **timelock is not enforced** on this combined path.
+
+### 6. **Cancellation**
+
+`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet`.
+
+`txCancellationWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_CANCEL`, permissions using **`metaTx.params.handlerSelector`**, record match, signature, then cancels the pending tx.
 
 ## Security Features
 
 ### 1. **Access Control Validation**
-```solidity
-function _hasPermission(
-    address user,
-    uint256 txId,
-    string memory action
-) internal view returns (bool) {
-    // Check user roles
-    bytes32[] memory userRoles = _getUserRoles(user);
-    
-    // Check operation type permissions
-    bytes32 operationType = _secureState.txRecords[txId].operationType;
-    
-    // Validate permissions
-    return _validatePermissions(userRoles, operationType, action);
-}
-```
 
-**Purpose**: Validate user permissions before allowing state changes.
+Permission checks use `hasActionPermission(SecureOperationState, address, bytes4 functionSelector, TxAction)` which unions across all roles the wallet holds. The check returns true if **any** of the wallet's roles include the `functionSelector` with the requested `TxAction` bit set in `grantedActionsBitmap`. Dual-selector paths (`_validateExecutionAndHandlerPermissions`) require `hasActionPermission` for both execution and handler selectors, plus a schema-level wiring check when `enforceHandlerRelations` is enabled.
 
 ### 2. **Time Lock Enforcement**
-```solidity
-function _validateTimeLock(uint256 txId) internal view returns (bool) {
-    TxRecord storage txRecord = _secureState.txRecords[txId];
-    uint256 timeElapsed = block.timestamp - txRecord.createdAt;
-    uint256 requiredTime = _secureState.timeLockPeriodSec;
-    
-    return timeElapsed >= requiredTime;
-}
-```
 
-**Purpose**: Enforce time locks before allowing transaction approval.
+`SharedValidation.validateReleaseTime(releaseTime)` reverts if `block.timestamp < releaseTime`. This is called by `txDelayedApproval` (the direct approval path). Meta-tx approval paths (`txApprovalWithMetaTx` / `_txApprovalWithMetaTx`, including the approval half of `requestAndApprove`) intentionally **skip** timelock enforcement — the signed meta-tx itself serves as the authorization, enabling time-flexible delegated approval.
 
 ### 3. **State Validation**
-```solidity
-function _validateStateTransition(
-    TransactionStatus from,
-    TransactionStatus to
-) internal pure returns (bool) {
-    // Define valid state transitions
-    if (from == TransactionStatus.UNDEFINED && to == TransactionStatus.PENDING) return true;
-    if (from == TransactionStatus.PENDING && to == TransactionStatus.APPROVED) return true;
-    if (from == TransactionStatus.APPROVED && to == TransactionStatus.EXECUTED) return true;
-    if (from == TransactionStatus.EXECUTED && to == TransactionStatus.COMPLETED) return true;
-    
-    return false;
-}
-```
 
-**Purpose**: Ensure state transitions follow valid patterns.
+`_validateTxStatus(SecureOperationState, txId, expectedStatus)` reverts if the stored status does not match. This enforces that each entrypoint only operates on transactions in the expected state (e.g. approval requires `PENDING`, execution requires `EXECUTING`). There is no general transition-matrix function; valid transitions are enforced structurally by which functions set which statuses.
+
+### 4. **Meta-transaction entrypoint binding**
+On-chain verification requires `MetaTxParams.handlerSelector` to match `msg.sig` (the external function the relayer called) and `handlerContract` to match `address(this)`. That ties the EIP-712 payload to the real wrapper so a signature cannot be executed through a different sibling entrypoint. See [Meta-Transactions](./meta-transactions.md).
 
 ## Event System
 
-### 1. **State Change Events**
+### 1. **`TransactionEvent`**
+
+The canonical on-chain event emitted by `logTxEvent` (see `contracts/core/lib/EngineBlox.sol`):
+
 ```solidity
-event StateChanged(
+event TransactionEvent(
     uint256 indexed txId,
-    TransactionStatus indexed from,
-    TransactionStatus indexed to,
-    address indexed actor,
-    uint256 timestamp
+    bytes4 indexed functionHash,
+    TxStatus status,
+    address indexed requester,
+    address target,
+    bytes32 operationType
 );
 ```
 
-**Purpose**: Emit events for all state changes for external monitoring.
+The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step); the ABI names the indexed topic **`functionHash`**, not `functionSelector`. **`requester`** is **indexed** so it appears as a log topic for filters. Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** `args` use those names—filter on **`functionHash`** and **`requester`**, not legacy `functionSelector` on this event.
 
-### 2. **Event Forwarding**
-```solidity
-function _forwardEvent(bytes memory eventData) internal {
-    if (_secureState.eventForwarder != address(0)) {
-        IEventForwarder(_secureState.eventForwarder).forwardEvent(eventData);
-    }
-}
-```
+This is the **authoritative** audit trail for all transaction state changes. Components also emit **`ComponentEvent(bytes4, bytes)`** for config changes (guard config, RBAC config).
 
-**Purpose**: Forward events to external systems for monitoring and analysis.
+### 2. **`logTxEvent` and optional `eventForwarder` (production behavior)**
+
+In **`contracts/core/lib/EngineBlox.sol`**, `logTxEvent` always emits **`TransactionEvent`** on the state-machine contract, then optionally calls **`IEventForwarder.forwardTxEvent`** on the configured **`eventForwarder`** address.
+
+- **Trusted forwarder:** The forwarder is **operator-configured** (initializer / `setEventForwarder`). It should be a **trusted** indexer or integration contract—not an untrusted user-supplied address in adversarial settings.
+- **Silent failure:** The forwarder call is wrapped in **`try` / `catch`**. If the forwarder **reverts** or panics, the Bloxchain contract **continues**; core state updates that already ran are **not** rolled back for that reason alone. **Off-chain** consumers must not assume forwarding succeeded; use **`TransactionEvent`** logs as the **canonical** on-chain audit signal.
+- **Gas tradeoff:** There is **no explicit `{gas: N}` stipend** on the forwarder subcall; gas follows normal **EIP-150** rules (the callee receives a **bounded fraction** of remaining gas, not the entire transaction). A heavy or malicious forwarder can still **increase** the gas cost of the outer transaction. Optional future hardening: stipend + explicit failure event.
+
+## Read-heavy queries and protocol limits
+
+Several **view** helpers on the engine materialize full `EnumerableSet` contents into memory (for example supported roles, supported functions, pending transaction IDs, per‑role wallet lists). **`eth_call` cost and JSON-RPC response size** scale with how much is stored on that contract—plan pagination or off‑chain indexing for large deployments.
+
+**Execution paths differ:** target whitelist checks use **set membership** (`contains`), which does **not** linearly scan the whole whitelist for each execution in the way a naive “iterate all whitelisted targets” check would.
+
+On-chain growth of key dimensions is also bounded by **immutable constants** in `EngineBlox` (for example `MAX_ROLES`, `MAX_FUNCTIONS`, `MAX_HOOKS_PER_SELECTOR`, `MAX_BATCH_SIZE`). Per‑role `maxWallets` is chosen at role creation and is **not** capped by those globals—very large values increase gas for role removal and for helpers that list all wallets on a role. See NatSpec on `contracts/core/lib/EngineBlox.sol` for the authoritative gas model.
 
 ## Integration with TypeScript SDK
 
@@ -310,6 +243,6 @@ function _forwardEvent(bytes memory eventData) internal {
 
 ## Conclusion
 
-The Guardian State Machine Engine provides a robust, secure, and efficient foundation for managing complex blockchain operations. By centralizing state management and implementing strict state transition rules, the engine ensures consistent, auditable, and secure operation of all Guardian contracts.
+The Bloxchain State Machine Engine provides a robust, secure, and efficient foundation for managing complex blockchain operations. By centralizing state management in `SecureOperationState` and implementing strict status-driven transition rules, the engine ensures consistent, auditable, and secure operation of all Bloxchain contracts.
 
-The TypeScript SDK provides comprehensive tools for analyzing, validating, and interacting with the state machine, making it easy for developers to leverage the full power of the Guardian architecture.
+The TypeScript SDK provides comprehensive tools for analyzing, validating, and interacting with the state machine, making it easy for developers to leverage the full power of the Bloxchain architecture.

@@ -452,6 +452,8 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             erc20TokenAmount: 0
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient1, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -515,6 +517,8 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             erc20TokenAmount: 0
         });
         vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(legitimateRecipient, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
+        vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,
             address(paymentHelper),
@@ -570,6 +574,8 @@ contract ComprehensiveSecurityEdgeCasesFuzzTest is CommonBase {
             erc20TokenAddress: address(0),
             erc20TokenAmount: 0
         });
+        vm.prank(owner);
+        paymentHelper.whitelistTargetForTesting(recipient1, EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR);
         vm.prank(owner);
         try paymentHelper.requestTransactionWithPayment(
             owner,

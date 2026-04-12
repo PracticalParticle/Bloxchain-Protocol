@@ -30,6 +30,10 @@ import "./interface/IRuntimeRBAC.sol";
  * - For ADD_WALLET and REVOKE_WALLET we call _requireRoleNotProtected so batch ops cannot
  *   change who holds system roles. For REMOVE_ROLE we rely on EngineBlox.removeRole, which
  *   enforces the same policy at the library layer (cannot remove protected roles).
+ * - Function-permission updates on protected roles are intentionally supported for flexibility,
+ *   but EngineBlox.removeFunctionFromRole still blocks removal of protected function schemas
+ *   (isProtected == true). This prevents bricking core protected operations like ownership flow
+ *   selectors while still allowing policy updates for non-protected selectors.
  * - The **only** place to modify system wallets (protected roles) is the SecureOwnable
  *   security component (e.g. transferOwnershipRequest, broadcaster/recovery changes).
  * - This layering is intentional: RBAC cannot touch protected roles; SecureOwnable is the
@@ -88,6 +92,12 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
         EngineBlox.MetaTransaction memory metaTx
     ) public returns (uint256) {
         _validateBroadcaster(msg.sender);
+        SharedValidation.validateEmptyPayment(
+            metaTx.txRecord.payment.recipient,
+            metaTx.txRecord.payment.nativeTokenAmount,
+            metaTx.txRecord.payment.erc20TokenAddress,
+            metaTx.txRecord.payment.erc20TokenAmount
+        );
         EngineBlox.TxRecord memory txRecord = _requestAndApproveTransaction(metaTx);
         return txRecord.txId;
     }
@@ -222,7 +232,9 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
      * @param data ABI-encoded (bytes32 roleHash, bytes4 functionSelector)
      * @custom:security By design we allow removing function permissions from protected roles (OWNER, BROADCASTER, RECOVERY)
      *                 to retain flexibility to adjust which functions system roles can call; only wallet add/revoke
-     *                 are restricted on protected roles.
+     *                 are restricted on protected roles. EngineBlox.removeFunctionFromRole still blocks
+     *                 removing protected function schemas (isProtected == true), so critical protected
+     *                 selectors cannot be stripped from roles.
      */
     function _executeRemoveFunctionFromRole(bytes calldata data) internal {
         (bytes32 roleHash, bytes4 functionSelector) = abi.decode(data, (bytes32, bytes4));

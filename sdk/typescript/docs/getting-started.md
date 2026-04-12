@@ -151,6 +151,37 @@ console.log('Requested guarded execution tx hash:', txResult.hash);
 
 ---
 
+## Deployment and initialization
+
+Account‑style contracts use OpenZeppelin **Initializable** semantics: there is **no constructor state** on the implementation; a single correct **`initialize(...)`** (or your product’s chained initializer) must run on the **proxy** (or minimal proxy). Treat **initialization as part of deployment**: the address end users call should not appear as a **public, uninitialized** proxy across block boundaries—wire **`initialize` in the same transaction** that creates the proxy (factory, proxy constructor `_data`, or equivalent), then rely on ownership, RBAC, and guards.
+
+### **1. Recommended: factory / cloner pattern**
+
+To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. The repo includes **`CopyBlox`** as a reference pattern (`contracts/examples/applications/CopyBlox/CopyBlox.sol`):
+
+- Validates the implementation implements **`IBaseStateMachine`**.
+- **`Clones.clone`** (EIP‑1167) then **`call`s** `initialize(address,address,address,uint256,address)` on the new clone.
+- If initialization **reverts**, the whole transaction **reverts**—you do not end up with a live, uninitialized clone from that path.
+
+Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`).
+
+### **2. Proxy deploy runbook (atomic `initialize`)**
+
+If you deploy transparent / UUPS / ERC‑1967–style proxies yourself, you still must avoid a **live, public proxy that is uninitialized** between transactions. Prefer **one atomic transaction** that both **creates** the proxy and **runs `initialize`**—for example:
+
+- OpenZeppelin **proxy constructors** that accept **`_data`**: supply ABI‑encoded **`initialize(...)`** calldata so the proxy’s constructor performs the initializer delegatecall before the deployment transaction ends.
+- A **proxy factory** (or deployer helper) whose single entrypoint **`deploy`s** the proxy and **`call`s** `initialize` on the new address in the **same transaction** (any revert aborts the whole deploy; no orphan uninitialized proxy from that path).
+
+Explicit runbook:
+
+1. Deploy **implementation** (never call user‑facing `initialize` on the implementation in production unless you mean to brick or document a pattern—follow OZ guidance).
+2. Create the **proxy** using a pattern where **`initialize`** runs **in the same transaction** as proxy creation, with owner, broadcaster, recovery, timelock, and `eventForwarder` (match your concrete contract’s arity and order). Do **not** rely on a follow‑up transaction to initialize a proxy that is already callable at its deployed address.
+3. **Only after** that atomic creation+initialization transaction succeeds, run smoke‑reads on the **proxy**: **`owner()`**, **`getRecovery()`**, **`getTimeLockPeriodSec()`**, and verify **`eventForwarder`** matches your intent—before funding, granting roles, or sending production traffic.
+
+More detail: [Best Practices — Deployment](./best-practices.md) (initializer subsection under Deployment) and [Account Pattern](./account-pattern.md).
+
+---
+
 ## 🔒 **Security Basics**
 
 Keep these minimum practices in your integration:

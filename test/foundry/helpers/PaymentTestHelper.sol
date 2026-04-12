@@ -56,6 +56,49 @@ contract PaymentTestHelper is BaseStateMachine {
      */
     function _setupPaymentPermissions() internal {
         EngineBlox.SecureOperationState storage state = _getSecureState();
+
+        EngineBlox.TxAction[] memory allTxActions = new EngineBlox.TxAction[](9);
+        allTxActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        allTxActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        allTxActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        allTxActions[3] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        allTxActions[4] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        allTxActions[5] = EngineBlox.TxAction.SIGN_META_CANCEL;
+        allTxActions[6] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        allTxActions[7] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
+        allTxActions[8] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
+        uint16 policySchemaActionsBitmap = EngineBlox.createBitmapFromActions(allTxActions);
+
+        // Same policy schemas as GuardControllerDefinitions (this helper does not load that bundle).
+        if (!state.supportedFunctionsSet.contains(bytes32(EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR))) {
+            bytes4[] memory prh = new bytes4[](1);
+            prh[0] = EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR;
+            EngineBlox.registerFunction(
+                state,
+                "__bloxchain_attached_payment_recipient__()",
+                EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR,
+                "ATTACHED_PAYMENT_RECIPIENT",
+                policySchemaActionsBitmap,
+                false,
+                true,
+                prh
+            );
+        }
+        if (!state.supportedFunctionsSet.contains(bytes32(EngineBlox.ERC20_TRANSFER_SELECTOR))) {
+            bytes4[] memory eth = new bytes4[](1);
+            eth[0] = EngineBlox.ERC20_TRANSFER_SELECTOR;
+            EngineBlox.registerFunction(
+                state,
+                "transfer(address,uint256)",
+                EngineBlox.ERC20_TRANSFER_SELECTOR,
+                "ERC20_TRANSFER",
+                policySchemaActionsBitmap,
+                false,
+                true,
+                eth
+            );
+        }
+
         bytes4 nativeTransferSelector = EngineBlox.NATIVE_TRANSFER_SELECTOR;
         bytes4 requestTxSelector = this.requestTransaction.selector;
         
@@ -75,10 +118,11 @@ contract PaymentTestHelper is BaseStateMachine {
         approveActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
         uint16 approveActionsBitmap = EngineBlox.createBitmapFromActions(approveActions);
         
-        // Create bitmap for both REQUEST and APPROVE actions (NATIVE_TRANSFER needs both)
-        EngineBlox.TxAction[] memory bothActions = new EngineBlox.TxAction[](2);
+        // REQUEST + APPROVE + CANCEL on execution path (cancel/complete re-check whitelist in EngineBlox)
+        EngineBlox.TxAction[] memory bothActions = new EngineBlox.TxAction[](3);
         bothActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         bothActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        bothActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         uint16 bothActionsBitmap = EngineBlox.createBitmapFromActions(bothActions);
         
         // Register NATIVE_TRANSFER_SELECTOR function schema if not already registered
@@ -91,9 +135,9 @@ contract PaymentTestHelper is BaseStateMachine {
                 "__bloxchain_native_transfer__()",
                 nativeTransferSelector,
                 "NATIVE_TRANSFER",
-                bothActionsBitmap, // Support both REQUEST and APPROVE
-                true, // enforceHandlerRelations
-                true, // isProtected = true (required for functions starting with '_')
+                policySchemaActionsBitmap,
+                false,
+                true,
                 nativeTransferHandlers
             );
         }
@@ -210,6 +254,38 @@ contract PaymentTestHelper is BaseStateMachine {
             });
             EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
+
+        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL (whitelist re-check on cancel)
+        EngineBlox.TxAction[] memory cancelActions = new EngineBlox.TxAction[](1);
+        cancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        uint16 cancelActionsBitmap = EngineBlox.createBitmapFromActions(cancelActions);
+
+        bytes4 cancelTxSelector = this.cancelTransaction.selector;
+        bytes4[] memory cancelTxHandlers = new bytes4[](2);
+        cancelTxHandlers[0] = cancelTxSelector;
+        cancelTxHandlers[1] = nativeTransferSelector;
+
+        if (!state.supportedFunctionsSet.contains(bytes32(cancelTxSelector))) {
+            EngineBlox.registerFunction(
+                state,
+                "cancelTransaction(uint256)",
+                cancelTxSelector,
+                "TEST_CANCEL",
+                cancelActionsBitmap,
+                true,
+                true,
+                cancelTxHandlers
+            );
+        }
+
+        if (!ownerRole.functionSelectorsSet.contains(bytes32(cancelTxSelector))) {
+            EngineBlox.FunctionPermission memory cancelTxPermission = EngineBlox.FunctionPermission({
+                functionSelector: cancelTxSelector,
+                grantedActionsBitmap: cancelActionsBitmap,
+                handlerForSelectors: cancelTxHandlers
+            });
+            EngineBlox.addFunctionToRole(state, ownerRoleHash, cancelTxPermission);
+        }
     }
     
     // _requestTransaction is inherited from BaseStateMachine and uses msg.sig as handlerSelector
@@ -292,6 +368,14 @@ contract PaymentTestHelper is BaseStateMachine {
         EngineBlox.TxRecord memory txRecord = _approveTransaction(txId);
         return txRecord.txId;
     }
+
+    /**
+     * @notice Exposes _cancelTransaction for testing
+     */
+    function cancelTransaction(uint256 txId) external returns (uint256) {
+        EngineBlox.TxRecord memory txRecord = _cancelTransaction(txId);
+        return txRecord.txId;
+    }
     
     /**
      * @notice Helper function to set up test permissions
@@ -322,6 +406,17 @@ contract PaymentTestHelper is BaseStateMachine {
         // Add target to whitelist using EngineBlox library function
         EngineBlox.SecureOperationState storage state = _getSecureState();
         EngineBlox.addTargetToWhitelist(state, selector, target);
+    }
+
+    /**
+     * @notice Removes a target from the whitelist (owner-only test helper)
+     */
+    function removeTargetFromWhitelistForTesting(address target, bytes4 selector) external {
+        require(msg.sender == owner(), "Only owner can remove whitelist for testing");
+        SharedValidation.validateNotZeroAddress(target);
+        require(selector != bytes4(0), "Selector cannot be zero");
+        EngineBlox.SecureOperationState storage state = _getSecureState();
+        EngineBlox.removeTargetFromWhitelist(state, selector, target);
     }
     
     /**
