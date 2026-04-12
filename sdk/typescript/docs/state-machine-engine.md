@@ -84,7 +84,7 @@ struct SecureOperationState {
 
 The canonical status enum in `EngineBlox`:
 
-```
+```text
 UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve) ──► EXECUTING ──► COMPLETED
                                        │                              │
                                        ├── (meta approve) ────► EXECUTING ──► COMPLETED

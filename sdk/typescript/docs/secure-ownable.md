@@ -211,7 +211,7 @@ if (timePassed < timeLockPeriod) {
 Operations are split into request and approval phases:
 
 ```typescript
-import { FUNCTION_SELECTORS } from '@bloxchain/sdk/typescript'
+import { SECURITY_FUNCTION_SELECTORS } from '@bloxchain/sdk/typescript'
 
 // Phase 1: Request
 const requestTx = await secureOwnable.transferOwnershipRequest({ from: account.address })
@@ -227,7 +227,7 @@ const signedMetaTx /* : MetaTransaction */ = await yourBuildAndSignPipeline(/* t
 // The signed `params` must include this handler binding for `transferOwnershipApprovalWithMetaTx` (merge with chainId, nonce, action, deadline, maxGasPrice, signer):
 const handlerBindingForTransferOwnershipApprove = {
   handlerContract: contractAddress, // `address(this)` when the broadcaster submits here
-  handlerSelector: FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR // `msg.sig` for `transferOwnershipApprovalWithMetaTx`
+  handlerSelector: SECURITY_FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR // `msg.sig` for `transferOwnershipApprovalWithMetaTx`
 }
 
 const metaTxApproval = await secureOwnable.transferOwnershipApprovalWithMetaTx(signedMetaTx, { from: broadcasterAddress })
@@ -242,7 +242,7 @@ Some operations support immediate execution:
 ```typescript
 // Immediate approval for recovery/time-lock uses meta-tx: owner signs, broadcaster calls updateRecoveryRequestAndApprove(metaTx) or updateTimeLockRequestAndApprove(metaTx)
 // Use the same handler binding rule: params.handlerContract === contractAddress and params.handlerSelector
-// matches the function you call (e.g. FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR), or expect the same mismatch reverts.
+// matches the function you call (e.g. SECURITY_FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR), or expect the same mismatch reverts.
 const txHash = await secureOwnable.updateRecoveryRequestAndApprove(signedMetaTx, { from: broadcasterAddress })
 ```
 
