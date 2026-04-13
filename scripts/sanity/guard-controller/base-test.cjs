@@ -1339,9 +1339,10 @@ class BaseGuardControllerTest {
      */
     async createEthTransferMetaTx(target, value, signerAddress) {
         try {
-            // Create meta-transaction parameters using raw helper to avoid enum ABI decode
+            // handlerContract MUST be address(this) on the verifying contract (AccountBlox).
+            // Recipient of the native transfer is txRecord.params.target, not MetaTxParams.handlerContract.
             const metaParams = await this._callCreateMetaTxParamsRaw(
-                target, // handlerContract (see EngineBlox validation notes above)
+                this.contractAddress,
                 this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR, // handlerSelector for requestAndApproveExecution
                 this.TxAction.SIGN_META_REQUEST_AND_APPROVE,
                 3600, // 1 hour default
@@ -1390,29 +1391,9 @@ class BaseGuardControllerTest {
     async executeEthTransfer(recipient, value, signerPrivateKey, broadcasterWallet) {
         try {
             const signerAddress = this.web3.eth.accounts.privateKeyToAccount(signerPrivateKey).address;
-            
-            // For native transfers via meta-tx, there's a validation issue:
-            // - handlerContract must equal target (EngineBlox validation)
-            // - handlerContract should be AccountBlox (has requestAndApproveExecution)
-            // - target should be recipient (where ETH is sent)
-            // This creates a conflict: handlerContract (contract) != target (recipient wallet)
-            //
-            // SOLUTION: Use target = contract, handlerContract = contract
-            // GuardController allows NATIVE_TRANSFER_SELECTOR to target address(this)
-            // The contract will receive ETH, then we need another mechanism to forward it
-            // But actually, NATIVE_TRANSFER_SELECTOR sends ETH to target, so if target=contract,
-            // ETH goes to contract (not recipient). This doesn't solve the problem.
-            //
-            // ACTUAL ISSUE: The handlerContract == target validation prevents native transfers
-            // to external addresses via meta-tx. This might be a design limitation.
-            //
-            // WORKAROUND: Set target = recipient, handlerContract = recipient
-            // This will fail when calling requestAndApproveExecution on recipient (not a contract)
-            // So this approach won't work.
-            //
-            // Let me check if there's a special case or if we need to use a different method
-            const target = recipient; // Target is where ETH will be sent
-            
+            // Native transfer callee is `target` (recipient); MetaTxParams.handlerContract is always AccountBlox.
+            const target = recipient;
+
             // Create unsigned meta-transaction
             const unsignedMetaTx = await this.createEthTransferMetaTx(target, value, signerAddress);
             
