@@ -1,0 +1,48 @@
+# Changelog
+
+## [1.1.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.0.0...sdk-v1.1.0) (2026-04-17)
+
+
+### Features
+
+* add CannotModifyProtected error to ABI files ([38c7be9](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/38c7be97264784c1343c2685c18381c8417cf29d))
+* add DefinitionNotIDefinition error handling to TypeScript utilities ([31aeca5](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/31aeca54b1cabc76741f4ccb18141b97fef24405))
+* add deployment configurations ([2fd432b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/2fd432bd4dbfdda3fcadcc0c6b544f759e729de8))
+* add EthReceived event to ABI for logging ETH transfers ([bffa510](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/bffa5101238f55afd6899f373de84b03922e3c57))
+* add getHooks function to multiple contracts for enhanced hook management ([1453fbe](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/1453fbe4dd21613aa6f40f19cadeae40eb281cb2))
+* add getWalletsInRole method to BaseStateMachine for role-based wallet retrieval ([5333fac](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/5333fac91c0ebbe25967ea349f3cd89ea0f61a5b))
+* add InvalidPayment error to SharedValidation and update related TypeScript interfaces ([313411c](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/313411c06cba851feb38b6428e3b6d3ce2041e33))
+* add new encoding functions for role and guard management in ABI files ([55f59cf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/55f59cf388813f3175964ec01d4dfe9e64a6dbb2))
+* add new error types for meta-transaction handling and payment validation ([d3ce2a1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d3ce2a149efa193fc46a154c538248c5ae19e162))
+* add NotInitialized error handling to SharedValidation and TypeScript SDK ([0065907](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/0065907bf160b2a2c19fbbc9fd4dd79d1e096b4b))
+* add role and guard configuration action data encoders ([6db31fd](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6db31fd99bdbf8372cd6a47c430a237035012adc))
+* clarify EIP-712 signing process for meta-transactions in EngineBlox library ([6a02b97](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6a02b97188d30a5e94694dcd516b1222af5e9e91))
+* enhance encodeAddFunctionToRole to use flat parameters for ABI decoding ([2cd7e59](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/2cd7e5924a33aad3b831d167bd1767d6bb8d23f5))
+* enhance error handling and test coverage in guard-controller and fuzz testing ([8754d2f](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/8754d2ff0ec8485fdce6303eea7b418ce4995c7b))
+* enhance error handling in contract-errors.ts and update documentation ([dba5165](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/dba5165a054a189408a9d3d10d95f6b38fd1a394))
+* enhance guard-controller and RBAC tests with improved schema handling and error reporting ([e7369e1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e7369e1aa3474cef19a7f70fe9851bc4927de8ef))
+* enhance guard-controller tests with schema pre-checks and improved error handling ([b298043](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b298043b14de723dfdb9266ffade47891810c271))
+* enhance ownership transfer logic and documentation in SecureOwnable contract ([b6ac4bb](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b6ac4bbe9b360a7d2c51d84b6bafdebd99fb81b2))
+* enhance payment validation and documentation in transaction handling ([06a9ee1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/06a9ee19089fb190ea0191714a870616facb33a4))
+* enhance README and test configurations for improved clarity and consistency ([4dca1db](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/4dca1db4c2834b5acce747f5d815f366ad801f8c))
+* enhance typed-data signing validation in MetaTransactionSigner ([c617c59](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c617c5939ff816a514474642be9f83d9049a4b32))
+* expand error handling in contract-errors.ts with new error types ([ffc93ea](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ffc93ead69a5633f20adaca9ac3e5136f9d14ea5))
+* implement meta-transaction handler validation in BaseStateMachine ([5b2c8bf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/5b2c8bfded5c5525ed8d15f80bf4f19f1cf7c53c))
+* integrate definition contract calls for execution parameters ([cba4efe](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/cba4efe85d33b1ecd3a957720df5b9ecad96aa8d))
+* introduce bounded returndata handling in EngineBlox library ([af9ab57](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/af9ab57a2d51f497185bd9a9ac6f7532b05b2717))
+* introduce ContractFunctionMustBeProtected error for enhanced function protection ([e04a672](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e04a6723ccebe499a23715432510032a447aa5db))
+* introduce CONTROLLER_CONFIG_OPERATION and enhance GuardController functionality ([4eef1c8](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/4eef1c89226ea2d969b71ba6d88d2587434966d3))
+* introduce executeWithPayment function for enhanced transaction handling ([719c9f1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/719c9f1d97a8a53c73db9b7f15a52050dfb5fc44))
+* refine EIP-712 message hashing for meta-transactions in EngineBlox library ([3f27b9e](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/3f27b9e0e51c4ce2662510233e5189a4b0f55975))
+* standardize EIP-712 type hashes and signing process in EngineBlox library ([d79d293](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d79d293eb0dbae775e7223f1d87a8c9845015c66))
+* update deployment scripts and add new wallet creation functionality ([0e54b06](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/0e54b0635f794fd707ebff186c5ac7fc4beafafd))
+* update EngineBlox ABI and GuardController definitions for new payment selectors ([7658827](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/76588270597593c0a024d99a7ee5f6e6ad969da3))
+* update transaction handling to return txId across multiple contracts ([9fb529f](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9fb529f192bc93c3b61bf034570e76cf5152ee14))
+
+
+### Bug Fixes
+
+* add validation for non-negative gas limit in BaseStateMachine ([124ec65](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/124ec654801054929f5badd2e8a4380a0b5b7020))
+* correct chainId assignment in MetaTransactionSigner class ([fe3bb37](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/fe3bb379ba7a75255ad3fa15482f87204d3b6119))
+* enhance gas option type handling in TransactionOptions interface ([8553caf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/8553cafebb254d20799046074c4dba5f43f551ab))
+* improve gas limit handling in BaseStateMachine ([3e475ee](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/3e475eed0bfe7eb998bc89a3cef1a3c27ffea89b))
