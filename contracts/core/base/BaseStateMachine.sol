@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 // OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
