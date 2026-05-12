@@ -473,11 +473,11 @@ library EngineBlox {
         uint256 txId,
         bytes4 handlerSelector
     ) public returns (TxRecord memory) {
-        // Validate both execution and handler selector permissions
+        // CHECK: Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE);
         _validateTxStatus(self, txId, TxStatus.PENDING);
-        SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
         _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+        SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
 
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
         self.txRecords[txId].status = TxStatus.EXECUTING;
@@ -561,13 +561,13 @@ library EngineBlox {
      *         (direct path enforces releaseTime) and meta-tx workflows (delegated, time-flexible approval).
      */
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
+        // CHECK: Validate transaction parameters
         uint256 txId = metaTx.txRecord.txId;
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
         _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
-
-        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
 
         incrementSignerNonce(self, metaTx.params.signer);
 
@@ -2263,8 +2263,6 @@ library EngineBlox {
         bool success,
         bytes memory result
     ) private {
-        // Target whitelist is enforced before `executeTransaction` on approval paths (CEI).
-
         // Update storage with new status and result
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;

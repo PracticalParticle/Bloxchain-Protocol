@@ -54,10 +54,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         );
         metaTxParams.deadline = pastDeadline;
 
-        // generateUnsignedMetaTransactionForNew reverts with DeadlineInPast when deadline is in the past
+        // generateUnsignedMetaTransactionForNew reverts with MetaTxExpired when deadline is in the past
         vm.expectRevert(
             abi.encodeWithSelector(
-                SharedValidation.DeadlineInPast.selector,
+                SharedValidation.MetaTxExpired.selector,
                 pastDeadline,
                 block.timestamp
             )

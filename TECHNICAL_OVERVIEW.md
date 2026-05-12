@@ -179,7 +179,7 @@ The protocol deliberately enforces the same security rules in multiple places. A
 ### 6.2 Custom Errors (SharedValidation.sol) — Canonical List
 
 - **Address**: InvalidAddress, NotNewAddress, validateNotZeroAddress, validateAddressUpdate, validateTargetAddress, validateHandlerContract
-- **Time / deadline**: InvalidTimeLockPeriod, TimeLockPeriodZero, DeadlineInPast, MetaTxExpired, BeforeReleaseTime, NewTimelockSame; validateReleaseTime, validateMetaTxDeadline
+- **Time / deadline**: InvalidTimeLockPeriod, TimeLockPeriodZero, MetaTxExpired, BeforeReleaseTime, NewTimelockSame; validateReleaseTime, validateMetaTxDeadline
 - **Permissions**: NoPermission, NoPermissionForFunction, RestrictedOwner, RestrictedOwnerRecovery, RestrictedRecovery, RestrictedBroadcaster, SignerNotAuthorized, OnlyCallableByContract
 - **Transaction / state**: NotSupported, InvalidOperationType, ZeroOperationTypeNotAllowed, TransactionStatusMismatch, AlreadyInitialized, NotInitialized, TransactionIdMismatch, PendingSecureRequest
 - **Signature / meta-tx**: InvalidSignatureLength, InvalidSignature, InvalidNonce, ChainIdMismatch, InvalidHandlerSelector, InvalidSValue, InvalidVValue, ECDSAInvalidSignature, GasPriceExceedsMax

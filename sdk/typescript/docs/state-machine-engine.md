@@ -146,13 +146,13 @@ Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`
 
 ### 3. **Transaction approval (delayed)**
 
-`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction`.
+`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), **`_validateTargetWhitelist` before any external call**, sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction` (status/result/pending set).
 
 ### 4. **Transaction approval (meta-tx)**
 
 `txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — public entrypoint: validates `SIGN_META_APPROVE`, checks permissions using `metaTx.txRecord.params.executionSelector` and **`metaTx.params.handlerSelector`** (wrapper selector in the typed-data payload), then returns `_txApprovalWithMetaTx(self, metaTx)`.
 
-`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
+`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), **`_validateTargetWhitelist` before any external call**, increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
 
 ### 5. **Request and approve (one-step meta-tx)**
 
@@ -160,7 +160,7 @@ Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`
 
 ### 6. **Cancellation**
 
-`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet`.
+`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet` (**no** target whitelist re-check: a pending tx can be cancelled after the target was removed from the whitelist).
 
 `txCancellationWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_CANCEL`, permissions using **`metaTx.params.handlerSelector`**, record match, signature, then cancels the pending tx.
 

@@ -255,7 +255,7 @@ contract PaymentTestHelper is BaseStateMachine {
             EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
 
-        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL (whitelist re-check on cancel)
+        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL
         EngineBlox.TxAction[] memory cancelActions = new EngineBlox.TxAction[](1);
         cancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         uint16 cancelActionsBitmap = EngineBlox.createBitmapFromActions(cancelActions);

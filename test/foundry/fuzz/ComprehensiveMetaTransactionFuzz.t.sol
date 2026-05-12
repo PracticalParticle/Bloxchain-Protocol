@@ -421,7 +421,7 @@ contract ComprehensiveMetaTransactionFuzzTest is CommonBase {
             
             vm.expectRevert(
                 abi.encodeWithSelector(
-                    SharedValidation.DeadlineInPast.selector,
+                    SharedValidation.MetaTxExpired.selector,
                     deadline,
                     block.timestamp
                 )
