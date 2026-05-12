@@ -477,10 +477,11 @@ library EngineBlox {
         _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE);
         _validateTxStatus(self, txId, TxStatus.PENDING);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
-        
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
         self.txRecords[txId].status = TxStatus.EXECUTING;
-        
+
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
@@ -565,12 +566,14 @@ library EngineBlox {
         _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
         _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
-        
+
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
+
         incrementSignerNonce(self, metaTx.params.signer);
-        
+
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
         self.txRecords[txId].status = TxStatus.EXECUTING;
-        
+
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
@@ -673,6 +676,7 @@ library EngineBlox {
      *         insufficient balance, whitelist mismatch), the **entire** approval/execute transaction reverts—main
      *         effect included. This is **intentional all-or-nothing** semantics; splitting finalize vs payment
      *         would require a separate design with reentrancy and state-machine implications.
+     * @notice `record` is a memory copy: final `status` and `result` are written to storage by `_completeTransaction`.
      */
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
@@ -698,16 +702,10 @@ library EngineBlox {
         );
 
         if (success) {
-            record.status = TxStatus.COMPLETED;
-            record.result = result;
-            
             // Execute attached payment if transaction was successful
             if (record.payment.recipient != address(0)) {
                 executeAttachedPayment(self, record);
             }
-        } else {
-            record.status = TxStatus.FAILED;
-            record.result = result;
         }
 
         return (success, result);
@@ -850,8 +848,7 @@ library EngineBlox {
      * @param txId The transaction ID to add to the pending set.
      */
     function addPendingTx(SecureOperationState storage self, uint256 txId) private {
-        SharedValidation.validateTransactionExists(txId);
-        _validateTxStatus(self, txId, TxStatus.PENDING);
+        SharedValidation.validateTransactionExists(txId, self.txCounter);
         
         // Try to add transaction ID to the set - add() returns false if already exists
         if (!self.pendingTransactionsSet.add(txId)) {
@@ -865,7 +862,7 @@ library EngineBlox {
      * @param txId The transaction ID to remove from the pending set.
      */
     function removePendingTx(SecureOperationState storage self, uint256 txId) private {
-        SharedValidation.validateTransactionExists(txId);
+        SharedValidation.validateTransactionExists(txId, self.txCounter);
         
         // Remove the transaction ID from the set (O(1) operation)
         if (!self.pendingTransactionsSet.remove(txId)) {
@@ -2058,7 +2055,7 @@ library EngineBlox {
         SharedValidation.validateChainId(metaTxParams.chainId);
         SharedValidation.validateMetaTxHandlerContractBinding(metaTxParams.handlerContract);
         SharedValidation.validateHandlerSelector(metaTxParams.handlerSelector);
-        SharedValidation.validateDeadline(metaTxParams.deadline);
+        SharedValidation.validateMetaTxDeadline(metaTxParams.deadline);
         SharedValidation.validateNotZeroAddress(metaTxParams.signer);
 
         // Populate the nonce directly from storage for security
@@ -2266,9 +2263,8 @@ library EngineBlox {
         bool success,
         bytes memory result
     ) private {
-        // enforce that the requested target is whitelisted for this selector.
-        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
-        
+        // Target whitelist is enforced before `executeTransaction` on approval paths (CEI).
+
         // Update storage with new status and result
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;
@@ -2296,9 +2292,6 @@ library EngineBlox {
         SecureOperationState storage self,
         uint256 txId
     ) private {
-        // enforce that the requested target is whitelisted for this selector.
-        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
-        
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
