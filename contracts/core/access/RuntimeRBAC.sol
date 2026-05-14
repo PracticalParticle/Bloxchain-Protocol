@@ -30,10 +30,9 @@ import "./interface/IRuntimeRBAC.sol";
  * - For ADD_WALLET and REVOKE_WALLET we call _requireRoleNotProtected so batch ops cannot
  *   change who holds system roles. For REMOVE_ROLE we rely on EngineBlox.removeRole, which
  *   enforces the same policy at the library layer (cannot remove protected roles).
- * - Function-permission updates on protected roles are intentionally supported for flexibility,
- *   but EngineBlox.removeFunctionFromRole still blocks removal of protected function schemas
- *   (isProtected == true). This prevents bricking core protected operations like ownership flow
- *   selectors while still allowing policy updates for non-protected selectors.
+ * - Function-permission updates on protected roles are intentionally supported for flexibility.
+ *   EngineBlox.removeFunctionFromRole allows removing a grant whenever the schema's **`isGrantRevocable`**
+ *   is true (including from protected roles); **`GrantNotRevocable`** applies when it is false.
  * - The **only** place to modify system wallets (protected roles) is the SecureOwnable
  *   security component (e.g. transferOwnershipRequest, broadcaster/recovery changes).
  * - This layering is intentional: RBAC cannot touch protected roles; SecureOwnable is the
@@ -231,10 +230,9 @@ abstract contract RuntimeRBAC is BaseStateMachine, IRuntimeRBAC {
      * @dev Executes REMOVE_FUNCTION_FROM_ROLE: removes a function permission from a role.
      * @param data ABI-encoded (bytes32 roleHash, bytes4 functionSelector)
      * @custom:security By design we allow removing function permissions from protected roles (OWNER, BROADCASTER, RECOVERY)
-     *                 to retain flexibility to adjust which functions system roles can call; only wallet add/revoke
-     *                 are restricted on protected roles. EngineBlox.removeFunctionFromRole still blocks
-     *                 removing protected function schemas (isProtected == true), so critical protected
-     *                 selectors cannot be stripped from roles.
+     *                 for flexibility; only wallet add/revoke are restricted on protected roles. EngineBlox.removeFunctionFromRole
+     *                 enforces **`GrantNotRevocable`** when the schema's **`isGrantRevocable`** is false; when true,
+     *                 grants may be removed from protected roles as well as custom roles.
      */
     function _executeRemoveFunctionFromRole(bytes calldata data) internal {
         (bytes32 roleHash, bytes4 functionSelector) = abi.decode(data, (bytes32, bytes4));

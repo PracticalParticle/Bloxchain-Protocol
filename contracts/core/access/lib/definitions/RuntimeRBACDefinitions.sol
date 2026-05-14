@@ -64,6 +64,7 @@ library RuntimeRBACDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -86,6 +87,7 @@ library RuntimeRBACDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: executionHandlerForSelectors
         });
         

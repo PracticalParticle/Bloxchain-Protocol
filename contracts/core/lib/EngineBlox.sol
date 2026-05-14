@@ -164,6 +164,9 @@ library EngineBlox {
         ///      When false (flexible mode): no such check; forward references and unregistered selectors in handlerForSelectors are allowed at registration.
         bool enforceHandlerRelations;
         bool isProtected;
+        /// @dev When false, `removeFunctionFromRole` cannot remove this selector from any role (revoke + re-add updates blocked).
+        ///      When true, grants may be removed from any role, including protected system roles; `isProtected` still blocks `unregisterFunction` for the schema.
+        bool isGrantRevocable;
         bytes4[] handlerForSelectors;
     }
 
@@ -1105,8 +1108,8 @@ library EngineBlox {
      * @param functionPermission The function permission to add.
      * @notice Reverts **`ResourceAlreadyExists`** if the selector is already present on the role. To update
      *         bitmap or `handlerForSelectors`, **`removeFunctionFromRole`** first then re-add.
-     *         Protected schemas cannot be removed from roles (`CannotModifyProtected`), so grants of
-     *         protected selectors to a role are effectively **permanent** unless the role itself is removed.
+     *         **`removeFunctionFromRole`** succeeds only when the schema's **`isGrantRevocable`** is true (see there);
+     *         **`isProtected`** on the schema does not, by itself, block removing a grant from a role.
      */
     function addFunctionToRole(
         SecureOperationState storage self,
@@ -1139,10 +1142,10 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The role hash to remove the function permission from.
      * @param functionSelector The function selector to remove from the role.
-     * @notice **Protected schemas cannot be removed from roles** (`CannotModifyProtected`). Granting a protected
-     *         selector to a role is therefore an **irreversible expansion** of that role's capability unless the
-     *         role itself is removed. Operators should only add protected selectors to roles when the
-     *         permanent authority is intended.
+     * @notice When the selector is registered, reverts **`GrantNotRevocable`** if **`isGrantRevocable == false`**
+     *         (no role may drop this grant). When **`isGrantRevocable == true`**, the grant may be removed from
+     *         any role, including protected system roles; **`isProtected`** on the schema still blocks
+     *         **`unregisterFunction`** independently, and **`removeRole`** still blocks protected roles.
      */
     function removeFunctionFromRole(
         SecureOperationState storage self,
@@ -1152,12 +1155,10 @@ library EngineBlox {
         // Check if role exists (checks both roles mapping and supportedRolesSet)
         _validateRoleExists(self, roleHash);
         
-        // Security check: Prevent removing protected functions from roles
-        // Check if function exists and is protected
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             FunctionSchema memory functionSchema = self.functions[functionSelector];
-            if (functionSchema.isProtected) {
-                revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
+            if (!functionSchema.isGrantRevocable) {
+                revert SharedValidation.GrantNotRevocable(functionSelector);
             }
         }
         
@@ -1256,7 +1257,8 @@ library EngineBlox {
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param enforceHandlerRelations When true (strict mode), handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time. When false (flexible mode), forward references are allowed.
-     * @param isProtected Whether the function schema is protected from removal.
+     * @param isProtected Whether the function schema is protected from **unregister** (`unregisterFunction`).
+     * @param isGrantRevocable When false, `removeFunctionFromRole` cannot remove this selector from any role; when true, grants may be removed from any role, including protected system roles.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors.
      * @custom:security OPERATIONAL MODES: We do not require handlerForSelectors[i] to be in supportedFunctionsSet at registration.
      *         - Strict mode (enforceHandlerRelations == true): at use time (_validateHandlerForSelectors) we require role permissions' handlerForSelectors to match this schema's handlerForSelectors; registration order is flexible.
@@ -1270,6 +1272,7 @@ library EngineBlox {
         uint16 supportedActionsBitmap,
         bool enforceHandlerRelations,
         bool isProtected,
+        bool isGrantRevocable,
         bytes4[] memory handlerForSelectors
     ) public {
         // Validate that functionSignature matches functionSelector
@@ -1320,6 +1323,7 @@ library EngineBlox {
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.enforceHandlerRelations = enforceHandlerRelations;
         schema.isProtected = isProtected;
+        schema.isGrantRevocable = isGrantRevocable;
         schema.handlerForSelectors = handlerForSelectors;
         
         // Add to supportedFunctionsSet

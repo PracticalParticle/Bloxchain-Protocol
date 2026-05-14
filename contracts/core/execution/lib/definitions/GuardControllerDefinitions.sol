@@ -163,6 +163,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: executeWithTimeLockHandlerForSelectors
         });
         
@@ -175,6 +176,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: approveTimeLockExecutionHandlerForSelectors
         });
         
@@ -187,6 +189,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: cancelTimeLockExecutionHandlerForSelectors
         });
         
@@ -199,6 +202,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: approveTimeLockExecutionMetaHandlerForSelectors
         });
         
@@ -211,6 +215,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxCancelActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: cancelTimeLockExecutionMetaHandlerForSelectors
         });
         
@@ -223,6 +228,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: requestAndApproveExecutionHandlerForSelectors
         });
 
@@ -235,6 +241,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: guardConfigHandlerForSelectors
         });
 
@@ -251,6 +258,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(guardConfigExecutionActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: guardConfigBatchExecuteHandlerForSelectors
         });
 
@@ -269,6 +277,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: executeWithPaymentHandlerForSelectors
         });
 
@@ -295,6 +304,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: allActionsBitmap,
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: attachedPaymentRecipientHandlers
         });
 
@@ -308,6 +318,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: allActionsBitmap,
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: nativeTransferHandlers
         });
 
@@ -321,6 +332,7 @@ library GuardControllerDefinitions {
             supportedActionsBitmap: allActionsBitmap,
             enforceHandlerRelations: false,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: erc20TransferHandlers
         });
 

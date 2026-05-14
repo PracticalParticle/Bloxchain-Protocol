@@ -447,6 +447,7 @@ abstract contract GuardController is BaseStateMachine {
             supportedActionsBitmap,
             true, // enforceHandlerRelations for dynamically registered execution selectors
             false, // isProtected = false for dynamically registered functions
+            true, // isGrantRevocable: dynamically registered schemas may be revoked from roles
             executionHandlers // handlerForSelectors with self-reference for execution selectors
         );
     }

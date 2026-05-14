@@ -130,6 +130,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -141,6 +142,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -152,6 +154,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -163,6 +166,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -174,6 +178,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: recoveryHandlerForSelectors
         });
         
@@ -185,6 +190,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: timelockHandlerForSelectors
         });
         
@@ -197,6 +203,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -208,6 +215,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -219,6 +227,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -230,6 +239,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -241,6 +251,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -252,6 +263,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -265,6 +277,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipExecutionHandlerForSelectors
         });
         
@@ -276,6 +289,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterExecutionHandlerForSelectors
         });
         
@@ -287,6 +301,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: recoveryExecutionHandlerForSelectors
         });
         
@@ -298,6 +313,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: timelockExecutionHandlerForSelectors
         });
         

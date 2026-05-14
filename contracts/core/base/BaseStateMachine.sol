@@ -524,7 +524,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
     /**
      * @dev Gets function schema information
      * @param functionSelector The function selector to get information for
-     * @return The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, enforceHandlerRelations, isProtected, handlerForSelectors)
+     * @return The full FunctionSchema struct (functionSignature, functionSelector, operationType, operationName, supportedActionsBitmap, enforceHandlerRelations, isProtected, isGrantRevocable, handlerForSelectors)
      * @notice Reverts with ResourceNotFound if the schema does not exist
      */
     function getFunctionSchema(bytes4 functionSelector) external view returns (EngineBlox.FunctionSchema memory) {
@@ -701,7 +701,8 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
      * @param operationName The operation name
      * @param supportedActionsBitmap The bitmap of supported actions
      * @param enforceHandlerRelations Whether to enforce strict handler/schema alignment
-     * @param isProtected Whether the function schema is protected
+     * @param isProtected Whether the function schema is protected from unregister
+     * @param isGrantRevocable Whether role grants for this schema may be removed via `removeFunctionFromRole` (any role, including protected roles, when true)
      * @param handlerForSelectors Array of handler selectors
      * @notice This function is virtual to allow extensions to add hook functionality
      */
@@ -712,6 +713,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
         uint16 supportedActionsBitmap,
         bool enforceHandlerRelations,
         bool isProtected,
+        bool isGrantRevocable,
         bytes4[] memory handlerForSelectors
     ) internal virtual {
         EngineBlox.registerFunction(
@@ -722,6 +724,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
             supportedActionsBitmap,
             enforceHandlerRelations,
             isProtected,
+            isGrantRevocable,
             handlerForSelectors
         );
     }
@@ -909,6 +912,7 @@ abstract contract BaseStateMachine is Initializable, ERC165Upgradeable, Reentran
                 functionSchemas[i].supportedActionsBitmap,
                 functionSchemas[i].enforceHandlerRelations,
                 functionSchemas[i].isProtected,
+                functionSchemas[i].isGrantRevocable,
                 functionSchemas[i].handlerForSelectors
             );
         }
