@@ -33,6 +33,7 @@ library MaliciousDefinitions_MissingProtected {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false, // ❌ Should be true - function exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -70,6 +71,7 @@ library MaliciousDefinitions_MismatchedSignature {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -108,6 +110,7 @@ library MaliciousDefinitions_InvalidHandler {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -144,6 +147,7 @@ library MaliciousDefinitions_EmptyHandlerArray {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -217,6 +221,7 @@ library MaliciousDefinitions_MismatchedArrays {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -273,6 +278,7 @@ library MaliciousDefinitions_EmptyBitmap {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -324,6 +330,7 @@ library MaliciousDefinitions_InvalidSelfReference {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -379,6 +386,7 @@ library MaliciousDefinitions_DuplicateSchemas {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Must be true if selector exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -391,6 +399,7 @@ library MaliciousDefinitions_DuplicateSchemas {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         

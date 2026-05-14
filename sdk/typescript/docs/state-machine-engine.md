@@ -118,7 +118,7 @@ Roles are created and configured via `EngineBlox` library functions (exposed thr
 - **`createRole`** — registers a new role with `roleName`, `maxWallets`, `isProtected`.
 - **`removeRole`** — deletes the role, revokes all wallets, removes all function permissions. Protected roles cannot be removed.
 - **`assignWallet` / `revokeWallet` / `updateWallet`** — manage membership.
-- **`addFunctionToRole` / `removeFunctionFromRole`** — grant or revoke per-selector `FunctionPermission` entries.
+- **`addFunctionToRole` / `removeFunctionFromRole`** — grant or revoke per-selector `FunctionPermission` entries. For registered selectors, `removeFunctionFromRole` reverts with `GrantNotRevocable` when the schema's `isGrantRevocable` is false; when true, grants may be removed from any role, including protected system roles. Schema `isProtected` governs `unregisterFunction`, not grant removal.
 
 ### 3. Operation Types
 

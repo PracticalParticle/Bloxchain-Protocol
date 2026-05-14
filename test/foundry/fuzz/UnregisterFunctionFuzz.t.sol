@@ -44,6 +44,7 @@ contract EngineBloxUnregisterHarness {
             bitmap,
             true, // enforceHandlerRelations
             false,
+            true,
             handlers
         );
 

@@ -54,6 +54,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: mintHandlerForSelectors
         });
         
@@ -65,6 +66,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: burnHandlerForSelectors
         });
         
@@ -82,6 +84,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: mintExecutionHandlerForSelectors
         });
         
@@ -93,6 +96,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: burnExecutionHandlerForSelectors
         });
         

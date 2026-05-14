@@ -74,6 +74,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -85,6 +86,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -96,6 +98,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -108,6 +111,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -119,6 +123,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -130,6 +135,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -156,6 +162,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxExecutionHandlerForSelectors
         });
         

@@ -65,6 +65,7 @@ library PayBloxDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: nativeTransferHandlerForSelectors
         });
         
@@ -76,6 +77,7 @@ library PayBloxDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: approvePaymentDelayedHandlerForSelectors
         });
         
@@ -87,6 +89,7 @@ library PayBloxDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: cancelPaymentHandlerForSelectors
         });
         

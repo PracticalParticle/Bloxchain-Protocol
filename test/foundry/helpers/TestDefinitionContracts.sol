@@ -34,6 +34,7 @@ library TestDefinitions_Valid {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Protected because function exists in contract
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -71,6 +72,7 @@ library TestDefinitions_MissingProtected {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false, // ❌ Should be true - function exists in contract bytecode
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -108,6 +110,7 @@ library TestDefinitions_MismatchedSignature {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -146,6 +149,7 @@ library TestDefinitions_Duplicate {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -158,6 +162,7 @@ library TestDefinitions_Duplicate {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         

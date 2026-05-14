@@ -4,6 +4,7 @@ pragma solidity 0.8.35;
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
 import "../../../contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol";
+import "../../../contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol";
 import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../helpers/TestHelpers.sol";
 
@@ -12,7 +13,8 @@ import "../helpers/TestHelpers.sol";
  * @dev Comprehensive fuzz tests for protected resource boundaries
  * 
  * These tests specifically target the security boundaries that were missed
- * in the original fuzz tests, particularly the CannotModifyProtected protection.
+ * in the original fuzz tests, particularly `GrantNotRevocable` on grant removal and
+ * `CannotModifyProtected` on protected role / wallet boundaries.
  */
 contract ProtectedResourceFuzzTest is CommonBase {
     using TestHelpers for *;
@@ -142,6 +144,175 @@ contract ProtectedResourceFuzzTest is CommonBase {
             );
             assertEq(txRecord.result, expectedError, "Should fail with CannotModifyProtected");
         }
+    }
+
+    /**
+     * @dev Revoking a grant for a **revocable** protected policy schema (`isGrantRevocable: true`, e.g. NATIVE_TRANSFER)
+     *      from a non-protected custom role succeeds. Core GuardController execution selectors use `isGrantRevocable: false`
+     *      and cannot be removed via `REMOVE_FUNCTION_FROM_ROLE` from any role.
+     *      The granted bitmap must not mix meta-sign and meta-execute actions (`_validateMetaTxPermissions`).
+     */
+    function test_RemoveProtectedSchemaFromNonProtectedRole_succeeds() public {
+        string memory roleName = "CUSTOM_REMOVE_PROT_SCHEMA";
+        bytes32 roleHash = keccak256(bytes(roleName));
+
+        EngineBlox.FunctionPermission[] memory emptyPerms = new EngineBlox.FunctionPermission[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            data: abi.encode(roleName, uint256(10), emptyPerms)
+        });
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(owner, createParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 createTxId = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        vm.prank(broadcaster);
+        assertEq(
+            uint8(accountBlox.getTransaction(createTxId).status),
+            uint8(EngineBlox.TxStatus.COMPLETED),
+            "create role"
+        );
+
+        IRuntimeRBAC.RoleConfigAction[] memory addWalletActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addWalletActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(roleHash, owner)
+        });
+        bytes memory addWalletParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addWalletActions));
+        EngineBlox.MetaTransaction memory addWalletMetaTx = _createMetaTxForRoleConfig(owner, addWalletParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 addWalletTxId = accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(addWalletTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "add wallet");
+
+        EngineBlox.TxAction[] memory grantActs = new EngineBlox.TxAction[](1);
+        grantActs[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        uint16 grantBitmap = EngineBlox.createBitmapFromActions(grantActs);
+        bytes4[] memory handlers = new bytes4[](1);
+        handlers[0] = EngineBlox.NATIVE_TRANSFER_SELECTOR;
+        EngineBlox.FunctionPermission memory fp = EngineBlox.FunctionPermission({
+            functionSelector: EngineBlox.NATIVE_TRANSFER_SELECTOR,
+            grantedActionsBitmap: grantBitmap,
+            handlerForSelectors: handlers
+        });
+        IRuntimeRBAC.RoleConfigAction[] memory addFnActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addFnActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+            data: abi.encode(roleHash, fp)
+        });
+        bytes memory addFnParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addFnActions));
+        EngineBlox.MetaTransaction memory addFnMetaTx = _createMetaTxForRoleConfig(owner, addFnParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 addFnTxId = accountBlox.roleConfigBatchRequestAndApprove(addFnMetaTx);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(addFnTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "add native transfer fn");
+
+        IRuntimeRBAC.RoleConfigAction[] memory removeActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        removeActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+            data: abi.encode(roleHash, EngineBlox.NATIVE_TRANSFER_SELECTOR)
+        });
+        bytes memory removeParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(removeActions));
+        EngineBlox.MetaTransaction memory removeMetaTx = _createMetaTxForRoleConfig(owner, removeParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 removeTxId = accountBlox.roleConfigBatchRequestAndApprove(removeMetaTx);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(removeTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "remove native transfer fn");
+    }
+
+    /**
+     * @dev `REMOVE_FUNCTION_FROM_ROLE` for a schema with `isGrantRevocable: false` fails on a custom role (`GrantNotRevocable`).
+     */
+    function test_RemoveNonRevocableSchemaFromNonProtectedRole_reverts() public {
+        string memory roleName = "CUSTOM_REMOVE_NONREV";
+        bytes32 roleHash = keccak256(bytes(roleName));
+
+        EngineBlox.FunctionPermission[] memory emptyPerms = new EngineBlox.FunctionPermission[](0);
+        IRuntimeRBAC.RoleConfigAction[] memory createActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        createActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.CREATE_ROLE,
+            data: abi.encode(roleName, uint256(10), emptyPerms)
+        });
+        bytes memory createParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(createActions));
+        EngineBlox.MetaTransaction memory createMetaTx = _createMetaTxForRoleConfig(owner, createParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 createTxId = accountBlox.roleConfigBatchRequestAndApprove(createMetaTx);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(createTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "create role");
+
+        IRuntimeRBAC.RoleConfigAction[] memory addWalletActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addWalletActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_WALLET,
+            data: abi.encode(roleHash, owner)
+        });
+        bytes memory addWalletParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addWalletActions));
+        EngineBlox.MetaTransaction memory addWalletMetaTx2 = _createMetaTxForRoleConfig(owner, addWalletParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 addWalletTxId = accountBlox.roleConfigBatchRequestAndApprove(addWalletMetaTx2);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(addWalletTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "add wallet");
+
+        EngineBlox.TxAction[] memory tlActs = new EngineBlox.TxAction[](1);
+        tlActs[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
+        bytes4[] memory handlers = new bytes4[](1);
+        handlers[0] = GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR;
+        EngineBlox.FunctionPermission memory fp = EngineBlox.FunctionPermission({
+            functionSelector: GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR,
+            grantedActionsBitmap: EngineBlox.createBitmapFromActions(tlActs),
+            handlerForSelectors: handlers
+        });
+        IRuntimeRBAC.RoleConfigAction[] memory addFnActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        addFnActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.ADD_FUNCTION_TO_ROLE,
+            data: abi.encode(roleHash, fp)
+        });
+        bytes memory addFnParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(addFnActions));
+        EngineBlox.MetaTransaction memory addFnMetaTx2 = _createMetaTxForRoleConfig(owner, addFnParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 addFnTxId = accountBlox.roleConfigBatchRequestAndApprove(addFnMetaTx2);
+        vm.prank(broadcaster);
+        assertEq(uint8(accountBlox.getTransaction(addFnTxId).status), uint8(EngineBlox.TxStatus.COMPLETED), "add timelock fn");
+
+        IRuntimeRBAC.RoleConfigAction[] memory removeActions = new IRuntimeRBAC.RoleConfigAction[](1);
+        removeActions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+            data: abi.encode(roleHash, GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR)
+        });
+        bytes memory removeParams = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(removeActions));
+        EngineBlox.MetaTransaction memory removeMetaTx2 = _createMetaTxForRoleConfig(owner, removeParams, 1 hours);
+        vm.prank(broadcaster);
+        uint256 removeTxId = accountBlox.roleConfigBatchRequestAndApprove(removeMetaTx2);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(removeTxId);
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
+        bytes memory expectedError = abi.encodeWithSelector(
+            SharedValidation.GrantNotRevocable.selector,
+            GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR
+        );
+        assertEq(txRecord.result, expectedError);
+    }
+
+    /**
+     * @dev Removing a grant for a **non-revocable** schema (`isGrantRevocable: false`) fails when targeting OWNER_ROLE (`GrantNotRevocable`).
+     */
+    function test_RemoveProtectedSchemaFromProtectedRole_reverts() public {
+        IRuntimeRBAC.RoleConfigAction[] memory actions = new IRuntimeRBAC.RoleConfigAction[](1);
+        actions[0] = IRuntimeRBAC.RoleConfigAction({
+            actionType: IRuntimeRBAC.RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE,
+            data: abi.encode(OWNER_ROLE, GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR)
+        });
+        bytes memory params = RuntimeRBACDefinitions.roleConfigBatchExecutionParams(abi.encode(actions));
+        EngineBlox.MetaTransaction memory metaTx = _createMetaTxForRoleConfig(owner, params, 1 hours);
+        vm.prank(broadcaster);
+        uint256 txId = accountBlox.roleConfigBatchRequestAndApprove(metaTx);
+        vm.prank(broadcaster);
+        EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
+        assertEq(uint8(txRecord.status), uint8(EngineBlox.TxStatus.FAILED));
+        bytes memory expectedError = abi.encodeWithSelector(
+            SharedValidation.GrantNotRevocable.selector,
+            GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR
+        );
+        assertEq(txRecord.result, expectedError);
     }
 
     /**

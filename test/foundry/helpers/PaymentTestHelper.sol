@@ -81,6 +81,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 policySchemaActionsBitmap,
                 false,
                 true,
+                true,
                 prh
             );
         }
@@ -94,6 +95,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 "ERC20_TRANSFER",
                 policySchemaActionsBitmap,
                 false,
+                true,
                 true,
                 eth
             );
@@ -138,6 +140,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 policySchemaActionsBitmap,
                 false,
                 true,
+                true,
                 nativeTransferHandlers
             );
         }
@@ -176,6 +179,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 requestActionsBitmap,
                 true, // enforceHandlerRelations
                 true, // isProtected = true (required because function exists in contract bytecode)
+                true,
                 requestTxHandlers
             );
         }
@@ -210,6 +214,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 requestActionsBitmap,
                 true, // enforceHandlerRelations
                 true,
+                true,
                 requestWithPaymentHandlers
             );
         }
@@ -241,6 +246,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 approveActionsBitmap,
                 true, // enforceHandlerRelations
                 true, // isProtected = true (required because function exists in contract bytecode)
+                true,
                 approveTxHandlers
             );
         }
@@ -272,6 +278,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 cancelTxSelector,
                 "TEST_CANCEL",
                 cancelActionsBitmap,
+                true,
                 true,
                 true,
                 cancelTxHandlers

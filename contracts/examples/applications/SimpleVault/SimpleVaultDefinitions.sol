@@ -81,6 +81,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawEthHandlerForSelectors
         });
         
@@ -92,6 +93,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawTokenHandlerForSelectors
         });
         
@@ -103,6 +105,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: approveWithdrawalDelayedHandlerForSelectors
         });
         
@@ -114,6 +117,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: cancelWithdrawalHandlerForSelectors
         });
         
@@ -126,6 +130,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
         });
         
@@ -149,6 +154,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawEthExecutionHandlerForSelectors
         });
         
@@ -160,6 +166,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawTokenExecutionHandlerForSelectors
         });
         
