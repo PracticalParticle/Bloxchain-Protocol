@@ -70,8 +70,7 @@ library EngineBlox {
         PROCESSING_PAYMENT,
         CANCELLED,
         COMPLETED,
-        FAILED,
-        REJECTED
+        FAILED
     }
 
     enum TxAction {

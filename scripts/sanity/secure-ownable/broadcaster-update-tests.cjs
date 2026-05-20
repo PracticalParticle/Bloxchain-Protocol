@@ -117,8 +117,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
-            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
-            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
             this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Meta-transaction cancellation test completed');
@@ -189,8 +188,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is cancelled
-            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
-            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
             this.assertTest(tx.status === '4', 'Transaction cancelled successfully');
 
             console.log('  🎉 Time delay cancellation test completed');
@@ -272,8 +270,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Verify transaction is completed
-            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
-            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId));
             const statusVal = tx.status !== undefined ? tx.status : tx[2]; // Web3 may return struct as object or array
             const statusNum = typeof statusVal === 'object' && statusVal != null && typeof statusVal.toNumber === 'function'
                 ? statusVal.toNumber() : Number(statusVal);
@@ -352,8 +349,7 @@ class BroadcasterUpdateTests extends BaseSecureOwnableTest {
             console.log(`  📋 Transaction Hash: ${receipt.transactionHash}`);
 
             // Verify transaction is completed (use owner wallet since broadcaster has changed)
-            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED, 7=REJECTED
-            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('owner'));
+            // TxStatus enum: 0=UNDEFINED, 1=PENDING, 2=EXECUTING, 3=PROCESSING_PAYMENT, 4=CANCELLED, 5=COMPLETED, 6=FAILED            const tx = await this.callContractMethod(this.contract.methods.getTransaction(txRecord.txId), this.getRoleWalletObject('owner'));
             const statusVal = tx.status !== undefined ? tx.status : tx[2];
             const statusNum = typeof statusVal === 'object' && statusVal != null && typeof statusVal.toNumber === 'function'
                 ? statusVal.toNumber() : Number(statusVal);

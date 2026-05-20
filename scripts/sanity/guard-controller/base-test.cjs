@@ -149,8 +149,7 @@ class BaseGuardControllerTest {
             PROCESSING_PAYMENT: 3,
             CANCELLED: 4,
             COMPLETED: 5,
-            FAILED: 6,
-            REJECTED: 7
+            FAILED: 6
         };
         
         // GuardController constants

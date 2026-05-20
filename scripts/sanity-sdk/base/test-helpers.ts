@@ -165,10 +165,11 @@ export function getStatusName(status: number): string {
   const statusMap: Record<number, string> = {
     0: 'UNDEFINED',
     1: 'PENDING',
-    2: 'CANCELLED',
-    3: 'COMPLETED',
-    4: 'FAILED',
-    5: 'REJECTED',
+    2: 'EXECUTING',
+    3: 'PROCESSING_PAYMENT',
+    4: 'CANCELLED',
+    5: 'COMPLETED',
+    6: 'FAILED',
   };
   return statusMap[status] || 'UNKNOWN';
 }

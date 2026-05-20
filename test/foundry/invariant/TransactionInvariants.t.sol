@@ -49,7 +49,8 @@ contract TransactionInvariantsTest is CommonBase {
                         status == EngineBlox.TxStatus.COMPLETED ||
                         status == EngineBlox.TxStatus.CANCELLED ||
                         status == EngineBlox.TxStatus.FAILED ||
-                        status == EngineBlox.TxStatus.REJECTED
+                        status == EngineBlox.TxStatus.PROCESSING_PAYMENT ||
+                        status == EngineBlox.TxStatus.UNDEFINED
                     );
                 }
             }

@@ -96,8 +96,6 @@ UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve
                                        │                                               └──► revert (atomic rollback)
 ```
 
-`TxStatus` also defines **`REJECTED`**, but **`EngineBlox` never assigns it** (there is no “reject” transition in the diagram above). The member is **intentionally unused** in the current engine: abandonment is **`CANCELLED`**; failed execution is **`FAILED`**. **`REJECTED`** stays in the enum for **ABI / layout stability** and **reserved** for possible future protocol or extension behavior — see NatSpec on `TxStatus` in `contracts/core/lib/EngineBlox.sol`.
-
 | From | To | Trigger |
 |------|----|---------|
 | `UNDEFINED` | `PENDING` | `_txRequest` — creates a `TxRecord` with `txId = self.txCounter + 1`, stores it, increments `txCounter`, sets `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`. |
@@ -109,7 +107,7 @@ UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve
 | `EXECUTING` | `FAILED` | Main call returns `success == false`; `_completeTransaction` records the failure. |
 | `PENDING` | `CANCELLED` | `txCancellation` (direct) or `txCancellationWithMetaTx` (meta; wrapper selector in `MetaTxParams.handlerSelector`). |
 
-There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`. There is also **no** runtime use of **`TxStatus.REJECTED`** (see note under the diagram).
+There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`.
 
 ### 2. Role Management
 
