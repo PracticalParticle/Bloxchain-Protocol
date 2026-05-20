@@ -30,7 +30,7 @@ library RuntimeRBACDefinitions {
     bytes4 public constant ROLE_CONFIG_BATCH_META_SELECTOR =
         bytes4(
             keccak256(
-                "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
+                "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
             )
         );
     
@@ -57,7 +57,7 @@ library RuntimeRBACDefinitions {
         handlerForSelectors[0] = ROLE_CONFIG_BATCH_EXECUTE_SELECTOR;
         
         schemas[0] = EngineBlox.FunctionSchema({
-            functionSignature: "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: ROLE_CONFIG_BATCH_META_SELECTOR,
             operationType: ROLE_CONFIG_BATCH,
             operationName: "ROLE_CONFIG_BATCH",

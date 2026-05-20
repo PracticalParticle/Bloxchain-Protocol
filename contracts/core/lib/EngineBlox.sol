@@ -113,7 +113,9 @@ library EngineBlox {
         TxStatus status;
         TxParams params;
         bytes32 message;
-        bytes result;
+        /// @dev Commitment to execution returndata: `bytes32(0)` when empty, else `keccak256(returndata)`.
+        ///      Full returndata is emitted in `TxExecutionResult` on terminal execution (COMPLETED/FAILED).
+        bytes32 resultHash;
         PaymentDetails payment;
     }
 
@@ -252,8 +254,12 @@ library EngineBlox {
         TxStatus status,
         address indexed requester,
         address target,
-        bytes32 operationType
+        bytes32 operationType,
+        bytes32 resultHash
     );
+
+    /// @dev Emitted only on terminal execution (COMPLETED/FAILED). Full returndata; verify `keccak256(result) == resultHash`.
+    event TxExecutionResult(uint256 indexed txId, bytes result);
 
     // ============ SYSTEM STATE FUNCTIONS ============
 
@@ -631,7 +637,8 @@ library EngineBlox {
      *         insufficient balance, whitelist mismatch), the **entire** approval/execute transaction reverts—main
      *         effect included. This is **intentional all-or-nothing** semantics; splitting finalize vs payment
      *         would require a separate design with reentrancy and state-machine implications.
-     * @notice `record` is a memory copy: final `status` and `result` are written to storage by `_completeTransaction`.
+     * @notice `record` is a memory copy: final `status` and `resultHash` are written to storage by `_completeTransaction`;
+     *         full returndata is emitted in `TxExecutionResult`.
      */
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
@@ -789,7 +796,7 @@ library EngineBlox {
                 executionParams: executionParams
             }),
             message: 0,
-            result: "",
+            resultHash: bytes32(0),
             payment: payment
         });
     }
@@ -2078,6 +2085,8 @@ library EngineBlox {
      * @notice **Gas tradeoff:** There is no explicit `{gas: ...}` stipend; the subcall receives the usual EIP-150
      *         bounded share of remaining gas (not the entire tx). Primary state updates in callers run **before**
      *         `logTxEvent` where applicable. Optional hardening: configurable stipend + explicit failure event.
+     * @notice **Execution returndata:** full bytes are emitted only via `TxExecutionResult` from `_completeTransaction`;
+     *         this function emits lifecycle `TransactionEvent` with `resultHash` (zero on request/cancel).
      * @custom:security REENTRANCY PROTECTION: This function is safe from reentrancy because:
      *         1. It is called AFTER all state changes are complete (in _completeTransaction,
      *            _cancelTransaction, and txRequest)
@@ -2095,21 +2104,17 @@ library EngineBlox {
         bytes4 functionSelector
     ) public {
         TxRecord memory txRecord = self.txRecords[txId];
-        
-        // Emit only non-sensitive public data
+
         emit TransactionEvent(
             txId,
             functionSelector,
             txRecord.status,
             txRecord.params.requester,
             txRecord.params.target,
-            txRecord.params.operationType
+            txRecord.params.operationType,
+            txRecord.resultHash
         );
-        
-        // Forward event data to event forwarder
-        // REENTRANCY SAFE: External call is wrapped in try-catch and doesn't modify
-        // critical state. Even if eventForwarder is malicious, reentry attempts fail
-        // because transactions are no longer in PENDING status (they're COMPLETED/CANCELLED).
+
         if (self.eventForwarder != address(0)) {
             try IEventForwarder(self.eventForwarder).forwardTxEvent(
                 txId,
@@ -2117,12 +2122,9 @@ library EngineBlox {
                 txRecord.status,
                 txRecord.params.requester,
                 txRecord.params.target,
-                txRecord.params.operationType
-            ) {
-                // Event forwarded successfully
-            } catch {
-                // Forwarding failed, continue execution (non-critical operation)
-            }
+                txRecord.params.operationType,
+                txRecord.resultHash
+            ) {} catch {}
         }
     }
 
@@ -2208,30 +2210,26 @@ library EngineBlox {
      * @param self The SecureOperationState to modify
      * @param txId The transaction ID to complete
      * @param success Whether the transaction execution was successful
-     * @param result The result of the transaction execution
+     * @param executionResult Returndata from the main target call (emitted in `TxExecutionResult`).
      */
     function _completeTransaction(
         SecureOperationState storage self,
         uint256 txId,
         bool success,
-        bytes memory result
+        bytes memory executionResult
     ) private {
-        // Update storage with new status and result
+        bytes32 resultHash = _executionResultHash(executionResult);
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;
-            self.txRecords[txId].result = result;
         } else {
             self.txRecords[txId].status = TxStatus.FAILED;
-            self.txRecords[txId].result = result; // Store failure reason for debugging
-            // Note: FAILED status is intentional - transactions can be valid when requested
-            // but fail when executed (e.g., conditions changed, insufficient balance, etc.)
-            // Users can query status via getTransaction() or listen to TransactionEvent
         }
-        
-        // Remove from pending transactions list
+        self.txRecords[txId].resultHash = resultHash;
+
         removePendingTx(self, txId);
-        
+
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
+        emit TxExecutionResult(txId, executionResult);
     }
 
     /**
@@ -2251,7 +2249,16 @@ library EngineBlox {
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
-        /**
+    /**
+     * @dev Hashes execution returndata for storage and events
+     * @param executionResult The execution returndata to hash
+     * @return The hash of the execution returndata
+     */
+    function _executionResultHash(bytes memory executionResult) private pure returns (bytes32) {
+        return executionResult.length == 0 ? bytes32(0) : keccak256(executionResult);
+    }
+
+    /**
      * @dev Validates that the caller has any role permission
      * @param self The SecureOperationState to check
      * @notice This function consolidates the repeated permission check pattern to reduce contract size
@@ -2334,7 +2341,8 @@ library EngineBlox {
             sp.gasLimit != mp.gasLimit ||
             sp.operationType != mp.operationType ||
             keccak256(sp.executionParams) != keccak256(mp.executionParams) ||
-            stored.releaseTime != metaTxRecord.releaseTime
+            stored.releaseTime != metaTxRecord.releaseTime ||
+            metaTxRecord.resultHash != bytes32(0)
         ) {
             revert SharedValidation.MetaTxRecordMismatchStoredTx(txId);
         }
