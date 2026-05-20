@@ -114,7 +114,7 @@ struct SecureOperationState {
     TxStatus status;
     TxParams params;
     bytes32 message;
-    bytes result;
+    bytes32 resultHash;
     PaymentDetails payment;
 }
 ```

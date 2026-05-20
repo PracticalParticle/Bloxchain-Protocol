@@ -27,6 +27,13 @@ library TestHelpers {
     }
 
     /**
+     * @dev Matches `EngineBlox.executionResultHash` for test assertions.
+     */
+    function executionResultHash(bytes memory executionResult) internal pure returns (bytes32) {
+        return executionResult.length == 0 ? bytes32(0) : keccak256(executionResult);
+    }
+
+    /**
      * @dev Hashes TxRecord for EIP-712
      */
     function _hashTxRecord(EngineBlox.TxRecord memory record) private pure returns (bytes32) {
@@ -36,7 +43,7 @@ library TestHelpers {
             uint8(record.status),
             _hashTxParams(record.params),
             record.message,
-            keccak256(record.result),
+            record.resultHash,
             _hashPaymentDetails(record.payment)
         ));
     }

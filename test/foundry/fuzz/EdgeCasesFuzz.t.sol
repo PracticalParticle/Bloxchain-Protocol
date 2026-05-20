@@ -74,7 +74,7 @@ contract EdgeCasesFuzzTest is CommonBase {
             SharedValidation.CannotModifyProtected.selector,
             OWNER_ROLE
         );
-        assertEq(txRecord.result, expectedError, "Should fail with CannotModifyProtected");
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with CannotModifyProtected");
     }
 
     /**

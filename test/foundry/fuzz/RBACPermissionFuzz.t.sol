@@ -156,7 +156,7 @@ contract RBACPermissionFuzzTest is CommonBase {
             maxWallets,
             maxWallets
         );
-        assertEq(txRecord.result, expectedError, "Should fail with RoleWalletLimitReached");
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with RoleWalletLimitReached");
     }
 
     /**
@@ -240,7 +240,7 @@ contract RBACPermissionFuzzTest is CommonBase {
             SharedValidation.ItemAlreadyExists.selector,
             wallet
         );
-        assertEq(txRecord.result, expectedError, "Should fail with ItemAlreadyExists");
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with ItemAlreadyExists");
     }
 
     /**

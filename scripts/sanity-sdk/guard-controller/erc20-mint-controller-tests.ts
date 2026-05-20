@@ -1015,7 +1015,7 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
               operationType: params.operationType != null ? toHex(params.operationType) : '0x' + '0'.repeat(64),
             }
           : metaTx.txRecord?.params,
-        result: metaTx.txRecord?.result != null ? toHex(metaTx.txRecord.result) : metaTx.txRecord?.result,
+        resultHash: metaTx.txRecord?.resultHash ?? `0x${'0'.repeat(64)}`,
       },
     };
   }

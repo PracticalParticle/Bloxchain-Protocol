@@ -356,7 +356,7 @@ contract ComprehensivePaymentSecurityFuzzTest is CommonBase {
                     EngineBlox.TxRecord memory result = paymentHelper.getTransaction(txId);
                     // If it doesn't revert, verify it failed
                     assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED), "Should fail with invalid token address");
-                    assertTrue(result.result.length > 0, "Should have error message");
+                    assertTrue(result.resultHash != bytes32(0), "Should have error message");
                 } catch {
                     // Revert is also acceptable for invalid token addresses
                     // This verifies that invalid tokens are rejected

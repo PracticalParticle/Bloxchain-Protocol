@@ -39,7 +39,7 @@ export interface TxRecord {
   status: TxStatus;
   params: TxParams;
   message: Hex;
-  result: Hex;
+  resultHash: Hex;
   payment: PaymentDetails;
 }
 

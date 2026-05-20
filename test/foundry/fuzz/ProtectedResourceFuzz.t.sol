@@ -71,7 +71,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
                 SharedValidation.CannotModifyProtected.selector,
                 protectedRoles[i]
             );
-            assertEq(txRecord.result, expectedError, "Should fail with CannotModifyProtected");
+            assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with CannotModifyProtected");
         }
     }
 
@@ -106,7 +106,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             SharedValidation.CannotModifyProtected.selector,
             OWNER_ROLE
         );
-        assertEq(txRecord.result, expectedError, "Should revert with CannotModifyProtected");
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should revert with CannotModifyProtected");
     }
 
     /**
@@ -142,7 +142,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
                 SharedValidation.CannotModifyProtected.selector,
                 protectedRoles[i]
             );
-            assertEq(txRecord.result, expectedError, "Should fail with CannotModifyProtected");
+            assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with CannotModifyProtected");
         }
     }
 
@@ -289,7 +289,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             SharedValidation.GrantNotRevocable.selector,
             GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**
@@ -312,7 +312,7 @@ contract ProtectedResourceFuzzTest is CommonBase {
             SharedValidation.GrantNotRevocable.selector,
             GuardControllerDefinitions.EXECUTE_WITH_TIMELOCK_SELECTOR
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**

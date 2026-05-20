@@ -1925,7 +1925,7 @@ class BaseGuardControllerTest {
             return null;
         }
         
-        const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)');
+        const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)');
         
         for (const log of receipt.logs) {
             if (log.topics && log.topics[0] === eventSignature) {

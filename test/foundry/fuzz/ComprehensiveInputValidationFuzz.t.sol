@@ -114,7 +114,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             SharedValidation.InvalidAddress.selector,
             address(0)
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     // ============ ARRAY MANIPULATION ATTACKS ============
@@ -495,7 +495,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
                 SharedValidation.MaxWalletsZero.selector,
                 0
             );
-            assertEq(txRecord.result, expectedError);
+            assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
         }
     }
 

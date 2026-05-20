@@ -68,7 +68,7 @@ struct SecureOperationState {
 
 **Key sub-structures:**
 
-- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field stores callee returndata from `EngineBlox.executeTransaction` (high-level `call`); size is bounded in practice by callee `gasLimit` and the approver’s transaction gas budget.
+- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `resultHash`, `payment` (`PaymentDetails`). **`resultHash`** is `bytes32(0)` when execution returndata is empty, else `keccak256(returndata)`. Full returndata is emitted in **`TxExecutionResult`** on terminal execution (`COMPLETED` / `FAILED`).
 - **`Role`** — `roleName`, `roleHash`, `authorizedWallets` (enumerable set), per-selector `functionPermissions`, `maxWallets`, `walletCount`, `isProtected`.
 - **`FunctionSchema`** — `functionSignature`, `functionSelector`, `operationType`, `operationName`, `supportedActionsBitmap`, `enforceHandlerRelations`, `isProtected`, `handlerForSelectors`.
 - **`FunctionPermission`** — `functionSelector`, `grantedActionsBitmap` (9-bit `TxAction` bitmap), `handlerForSelectors`.
@@ -146,7 +146,7 @@ Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`
 
 ### 3. **Transaction approval (delayed)**
 
-`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), **`_validateTargetWhitelist` before any external call**, sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction` (status/result/pending set).
+`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), **`_validateTargetWhitelist` before any external call**, sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction` (status/resultHash/pending set; returndata in event).
 
 ### 4. **Transaction approval (meta-tx)**
 
@@ -194,11 +194,16 @@ event TransactionEvent(
     TxStatus status,
     address indexed requester,
     address target,
-    bytes32 operationType
+    bytes32 operationType,
+    bytes32 resultHash
 );
+
+event TxExecutionResult(uint256 indexed txId, bytes result);
 ```
 
-The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step); the ABI names the indexed topic **`functionHash`**, not `functionSelector`. **`requester`** is **indexed** so it appears as a log topic for filters. Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** `args` use those names—filter on **`functionHash`** and **`requester`**, not legacy `functionSelector` on this event.
+The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step). **`resultHash`** is zero on request/cancel; on **`COMPLETED`** / **`FAILED`** it is set before **`TxExecutionResult`** is emitted in the same transaction. Verify off-chain: `keccak256(TxExecutionResult.result) == resultHash` from `getTransaction(txId)`.
+
+Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** use those names. Lifecycle topic: `TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)`. Returndata topic: `TxExecutionResult(uint256,bytes)`.
 
 This is the **authoritative** audit trail for all transaction state changes. Components also emit **`ComponentEvent(bytes4, bytes)`** for config changes (guard config, RBAC config).
 

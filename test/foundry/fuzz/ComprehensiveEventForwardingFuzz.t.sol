@@ -109,6 +109,7 @@ contract MaliciousEventForwarder is IEventForwarder {
         EngineBlox.TxStatus,
         address,
         address,
+        bytes32,
         bytes32
     ) external pure override {
         // Always revert - malicious behavior
@@ -127,6 +128,7 @@ contract GasIntensiveEventForwarder is IEventForwarder {
         EngineBlox.TxStatus,
         address,
         address,
+        bytes32,
         bytes32
     ) external pure override {
         // Consume gas through computation

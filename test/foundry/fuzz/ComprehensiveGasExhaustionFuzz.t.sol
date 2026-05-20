@@ -11,6 +11,7 @@ import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
 import "../../../contracts/standards/hooks/IOnActionHook.sol";
 import "../helpers/MockContracts.sol";
+import "../helpers/TestHelpers.sol";
 
 /**
  * @title ComprehensiveGasExhaustionFuzzTest
@@ -484,9 +485,8 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
             // May succeed or fail depending on function protection
             if (txRecord.status == EngineBlox.TxStatus.FAILED) {
-                bytes4 errorSelector = bytes4(txRecord.result);
-                if (errorSelector == SharedValidation.CannotModifyProtected.selector) {
-                    // Function is protected, skip test
+                // Protected functions fail with non-empty returndata commitment
+                if (txRecord.resultHash != bytes32(0)) {
                     return;
                 }
             }
@@ -563,22 +563,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // With MAX_BATCH_SIZE = 200, batch operations can consume significant gas
         // The actual gas consumption is measured by Foundry's gas reporting, not inline
         // If transaction failed due to limit (e.g., MaxRolesExceeded), that's expected behavior
-        if (txRecord.status == EngineBlox.TxStatus.FAILED) {
-            // Failed batch - check if it's due to limit enforcement (expected)
-            bytes memory result = txRecord.result;
-            if (result.length >= 4) {
-                bytes4 errorSelector = bytes4(result);
-                if (errorSelector == SharedValidation.MaxRolesExceeded.selector ||
-                    errorSelector == SharedValidation.BatchSizeExceeded.selector ||
-                    errorSelector == SharedValidation.ResourceAlreadyExists.selector) {
-                    // Expected failure due to limit or duplicate - test passes
-                    return; // Expected failure, test passes
-                }
-            }
-            // Other failures - still acceptable as long as it fails gracefully
-            // (e.g., permission issues, validation errors)
+        if (txRecord.status == EngineBlox.TxStatus.FAILED && txRecord.resultHash != bytes32(0)) {
+            return;
         }
-        // If completed, the batch operation succeeded - test passes
     }
 
     /**
@@ -624,7 +611,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             rolesInBatch,
             EngineBlox.MAX_BATCH_SIZE
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**
@@ -695,20 +682,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // With MAX_BATCH_SIZE = 200, batch operations can consume significant gas
         // Gas consumption is measured by Foundry's gas reporting system, not inline
         // If transaction failed due to limit (e.g., MaxFunctionsExceeded), that's expected behavior
-        if (txRecord.status == EngineBlox.TxStatus.FAILED) {
-            // Failed batch - check if it's due to limit enforcement (expected)
-            bytes memory result = txRecord.result;
-            if (result.length >= 4) {
-                bytes4 errorSelector = bytes4(result);
-                if (errorSelector == SharedValidation.MaxFunctionsExceeded.selector ||
-                    errorSelector == SharedValidation.BatchSizeExceeded.selector) {
-                    // Expected failure due to limit - test passes
-                    return;
-                }
-            }
-            // Other failures - still acceptable as long as it fails gracefully
+        if (txRecord.status == EngineBlox.TxStatus.FAILED && txRecord.resultHash != bytes32(0)) {
+            return;
         }
-        // If completed, the batch operation succeeded - test passes
     }
 
     // ============ TRANSACTION HISTORY GAS EXHAUSTION TESTS ============
@@ -879,15 +855,8 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             // Count successfully created roles
             if (txRecord.status == EngineBlox.TxStatus.COMPLETED) {
                 rolesCreated++;
-            } else if (txRecord.status == EngineBlox.TxStatus.FAILED) {
-                // If failed due to limit, that's expected - break early
-                bytes memory result = txRecord.result;
-                if (result.length >= 4) {
-                    bytes4 errorSelector = bytes4(result);
-                    if (errorSelector == SharedValidation.MaxRolesExceeded.selector) {
-                        break; // Expected failure, stop creating roles
-                    }
-                }
+            } else if (txRecord.status == EngineBlox.TxStatus.FAILED && txRecord.resultHash != bytes32(0)) {
+                break;
             }
         }
         
@@ -1052,7 +1021,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
             EngineBlox.MAX_ROLES,
             EngineBlox.MAX_ROLES
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**
@@ -1123,7 +1092,7 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
                 EngineBlox.MAX_FUNCTIONS,
                 EngineBlox.MAX_FUNCTIONS
             );
-            assertEq(txRecord.result, expectedError);
+            assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
         }
     }
 
@@ -1181,21 +1150,9 @@ contract ComprehensiveGasExhaustionFuzzTest is CommonBase {
         // Composite operations combine multiple gas-intensive operations
         // Gas consumption is measured by Foundry's gas reporting system, not inline
         // If transaction failed due to limit (e.g., MaxRolesExceeded), that's expected behavior
-        if (txRecord.status == EngineBlox.TxStatus.FAILED) {
-            // Failed operation - check if it's due to limit enforcement (expected)
-            bytes memory result = txRecord.result;
-            if (result.length >= 4) {
-                bytes4 errorSelector = bytes4(result);
-                if (errorSelector == SharedValidation.MaxRolesExceeded.selector ||
-                    errorSelector == SharedValidation.BatchSizeExceeded.selector ||
-                    errorSelector == SharedValidation.ResourceAlreadyExists.selector) {
-                    // Expected failure due to limit - test passes
-                    return;
-                }
-            }
-            // Other failures - still acceptable as long as it fails gracefully
+        if (txRecord.status == EngineBlox.TxStatus.FAILED && txRecord.resultHash != bytes32(0)) {
+            return;
         }
-        // If completed, the composite operation succeeded - test passes
     }
 
     // ============ HELPER FUNCTIONS ============
