@@ -3525,24 +3525,22 @@ Config batch meta-tx paths could carry non-zero payment fields and drain funds f
 
 ---
 
-### 19.3 Bounded Returndata (DoS Prevention)
+### 19.3 Returndata Storage (Accepted Risk)
 
 #### MEDIUM: Unbounded Returndata Storage in Tx Finalization
 - **ID**: `AUDIT-005`
 - **Finding**: AgentArena #5
-- **Location**: `EngineBlox.sol:executeTransaction`, `EngineBlox.sol:_callWithBoundedReturndata`
-- **Severity**: MEDIUM
-- **Status**: ✅ **PROTECTED**
+- **Location**: `EngineBlox.sol:executeTransaction`, `EngineBlox.sol:_completeTransaction`
+- **Severity**: MEDIUM (downgraded — accepted operational risk)
+- **Status**: ⚪ **ACCEPTED RISK** (bounded cap reverted)
 
 **Description**:  
-A malicious whitelisted target returning very large returndata could blow up memory/gas during `_completeTransaction`, preventing finalization.
+A whitelisted target returning very large returndata could increase memory/SSTORE cost during finalization; approval txs may revert or be expensive for the approver.
 
-**Current Protection**:
-- ✅ `_callWithBoundedReturndata` with low-level `call` and `returndatacopy` capped at `MAX_RESULT_PREVIEW_BYTES` (32 KiB)
-- ✅ Only the bounded preview is stored in `TxRecord.result`
-
-**Related Tests**:
-- `testFuzz_Finding5_MaxResultPreviewBytesIs32KiB`
+**Rationale (no on-chain cap)**:
+- Returndata size is bounded by callee `gasLimit` and block/tx gas; failed approvals revert atomically (tx stays `PENDING`, not stuck in `EXECUTING`).
+- Targets are whitelist-trusted; approvers can cancel or simulate before approving.
+- A 32 KiB preview cap was removed as defense-in-depth with incomplete audit value.
 
 ---
 
@@ -3711,7 +3709,7 @@ No on-chain maximum for the timelock period. Extremely large values make delayed
 |---|---------|----------|-----------|--------|------|
 | 1 | Meta-tx handler spoofing | **High** | AUDIT-001 / MT-008 | ✅ Protected | `testFuzz_Finding1_HandlerSelectorMismatchRejected`, `testFuzz_Finding1_HandlerMismatch_GuardSignedRoleSubmitted`, `testFuzz_Finding1_HandlerContractMismatchRejected` |
 | 3 | Config batch payment rail | **Medium** | AUDIT-003 | ✅ Protected | `testFuzz_Finding3_RBACBatchRejectsNonZeroPayment`, `testFuzz_Finding3_GuardBatchRejectsNonZeroPayment`, `testFuzz_Finding3_RBACBatchRejectsNativeOnlyNonZeroPayment` |
-| 5 | Unbounded returndata DoS | **Medium** | AUDIT-005 | ✅ Protected | `testFuzz_Finding5_MaxResultPreviewBytesIs32KiB` |
+| 5 | Unbounded returndata DoS | **Medium** | AUDIT-005 | ⚪ Accepted risk | — |
 | 6 | Whitelist bypass via payments | **Medium** | AUDIT-006 | ✅ Protected | `testFuzz_Finding6_NonWhitelistedRecipientRejected`, `testFuzz_Finding6_NonWhitelistedERC20Rejected` |
 | 7 | Stale recovery snapshot | **Medium** | AUDIT-007 | ⚠️ Intentional | `testFuzz_Finding7_OwnershipTransferSnapshotsCurrentRecovery` |
 | 8 | Recovery update during pending ownership | **Medium** | AUDIT-008 | ⚠️ Intentional | `testFuzz_Finding8_RecoveryUpdateNotBlockedByPendingOwnership` |

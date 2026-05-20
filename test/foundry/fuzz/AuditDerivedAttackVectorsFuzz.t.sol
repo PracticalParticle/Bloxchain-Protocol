@@ -22,7 +22,6 @@ import "../helpers/PaymentTestHelper.sol";
  * Coverage:
  *  - Finding 1  (HIGH)   : Meta-tx handler spoofing → entrypoint binding
  *  - Finding 3  (MEDIUM) : Config batch payment rail → validateEmptyPayment
- *  - Finding 5  (MEDIUM) : Unbounded returndata DoS → bounded returndata constant
  *  - Finding 6  (MEDIUM) : Whitelist bypass via payments → payout whitelists
  *  - Finding 7  (MEDIUM) : Stale recovery in ownership transfer → snapshot semantics
  *  - Finding 8  (MEDIUM) : Recovery update while ownership pending → documented behavior
@@ -397,18 +396,6 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
         vm.prank(broadcaster);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidPayment.selector));
         accountBlox.roleConfigBatchRequestAndApprove(metaTx);
-    }
-
-    // =========================================================================
-    // Finding 5 — Bounded returndata constant (MEDIUM)
-    // =========================================================================
-
-    /**
-     * @dev Audit Finding 5: MAX_RESULT_PREVIEW_BYTES is 32 KiB. Verify the
-     *      on-chain constant matches the documented cap.
-     */
-    function testFuzz_Finding5_MaxResultPreviewBytesIs32KiB() public pure {
-        assertEq(EngineBlox.MAX_RESULT_PREVIEW_BYTES, 32 * 1024);
     }
 
     // =========================================================================

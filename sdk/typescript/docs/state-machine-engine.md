@@ -68,7 +68,7 @@ struct SecureOperationState {
 
 **Key sub-structures:**
 
-- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field is **not** full callee returndata: `EngineBlox.executeTransaction` runs the target via **`_callWithBoundedReturndata`**, which copies at most the first **`MAX_RESULT_PREVIEW_BYTES`** (32 KiB; see `contracts/core/lib/EngineBlox.sol`) of returndata into `TxRecord.result`. Anything beyond that is discarded on-chain. SDK reads such as **`BaseStateMachine.getTransaction()`** and **`getTransactionHistory()`** return that stored record as-is—do not assume **`result`** contains the complete ABI return payload for large responses.
+- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field stores callee returndata from `EngineBlox.executeTransaction` (high-level `call`); size is bounded in practice by callee `gasLimit` and the approver’s transaction gas budget.
 - **`Role`** — `roleName`, `roleHash`, `authorizedWallets` (enumerable set), per-selector `functionPermissions`, `maxWallets`, `walletCount`, `isProtected`.
 - **`FunctionSchema`** — `functionSignature`, `functionSelector`, `operationType`, `operationName`, `supportedActionsBitmap`, `enforceHandlerRelations`, `isProtected`, `handlerForSelectors`.
 - **`FunctionPermission`** — `functionSelector`, `grantedActionsBitmap` (9-bit `TxAction` bitmap), `handlerForSelectors`.
