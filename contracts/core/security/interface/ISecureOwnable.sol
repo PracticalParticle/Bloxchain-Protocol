@@ -50,12 +50,12 @@ interface ISecureOwnable {
     // ============ BROADCASTER MANAGEMENT ============
 
     /**
-     * @dev Requests an update to the broadcaster at a specific location (index).
-     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
-     * @param location The index in the broadcaster role's authorized wallets set
+     * @dev Requests a broadcaster role change identified by addresses.
+     * @param newBroadcaster New broadcaster (zero address to revoke `currentBroadcaster`)
+     * @param currentBroadcaster Existing broadcaster to replace or revoke; zero address to add `newBroadcaster`
      * @return txId The transaction ID (use getTransaction(txId) for full record)
      */
-    function updateBroadcasterRequest(address newBroadcaster, uint256 location) external returns (uint256 txId);
+    function updateBroadcasterRequest(address newBroadcaster, address currentBroadcaster) external returns (uint256 txId);
 
     /**
      * @dev Approves a pending broadcaster update transaction after the release time
