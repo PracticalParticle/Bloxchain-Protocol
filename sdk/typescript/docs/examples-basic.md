@@ -120,12 +120,12 @@ async function transferOwnership(txIdForApproval: bigint) {
 ### **Administrative Updates**
 
 ```typescript
-// Update broadcaster (time-delay workflow): pass new address and index in broadcaster set
-async function updateBroadcaster(newBroadcaster: Address, locationIndex: bigint) {
+// Update broadcaster (time-delay workflow): pass new address and current broadcaster to replace
+async function updateBroadcaster(newBroadcaster: Address, currentBroadcaster: Address) {
   try {
     const result = await secureOwnable.updateBroadcasterRequest(
       newBroadcaster,
-      locationIndex,
+      currentBroadcaster,
       { from: account.address }
     )
     console.log('Broadcaster update requested:', result.hash)

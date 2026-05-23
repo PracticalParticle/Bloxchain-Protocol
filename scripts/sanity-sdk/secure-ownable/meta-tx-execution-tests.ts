@@ -45,7 +45,7 @@ export class MetaTxExecutionTests extends BaseSecureOwnableTest {
     const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
     const result = await secureOwnableOwner.updateBroadcasterRequest(
       newBroadcaster,
-      0n,
+      currentBroadcaster,
       // Explicit gas so viem does not call eth_estimateGas for broadcaster request (remote RPC may hang).
       this.getTxOptions(ownerWallet.address, { gas: 500_000n })
     );

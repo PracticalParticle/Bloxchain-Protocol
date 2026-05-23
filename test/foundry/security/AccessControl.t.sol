@@ -75,6 +75,6 @@ contract AccessControlTest is CommonBase {
         // Owner-only functions should reject non-owners
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, attacker, owner));
-        accountBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, broadcaster);
     }
 }

@@ -74,10 +74,11 @@ console.log('Ownership transfer approved:', txHash)
 
 #### **Broadcaster Management**
 ```typescript
-// Request broadcaster update (location = index in broadcaster role's wallet set)
+// Request broadcaster update (replace / add / revoke by address pair)
+const [currentBroadcaster] = await secureOwnable.getBroadcasters()
 const txHash = await secureOwnable.updateBroadcasterRequest(
-  '0x...', // new broadcaster address (or zero to revoke at location)
-  locationIndex, // bigint: index in getBroadcasters()
+  '0x...', // new broadcaster (or zero to revoke currentBroadcaster)
+  currentBroadcaster, // existing to replace/revoke; zero address to add
   { from: account.address }
 )
 ```
@@ -155,10 +156,10 @@ const txHash = await secureOwnable.updateRecoveryRequestAndApprove(
 ### **Hybrid Workflow (Broadcaster Update)**
 
 ```typescript
-// Option 1: Time-delay request (newBroadcaster + location index)
+// Option 1: Time-delay request (newBroadcaster + currentBroadcaster)
 const requestTx = await secureOwnable.updateBroadcasterRequest(
   newBroadcaster,
-  locationIndex,
+  currentBroadcaster,
   { from: account.address }
 )
 

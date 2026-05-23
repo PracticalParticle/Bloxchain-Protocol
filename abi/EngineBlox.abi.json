@@ -1,862 +1,855 @@
 [
   {
-    "type": "function",
-    "name": "ATTACHED_PAYMENT_RECIPIENT_SELECTOR",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "stateMutability": "view"
+    "name": "AlreadyInitialized",
+    "type": "error"
   },
   {
-    "type": "function",
-    "name": "ERC20_TRANSFER_SELECTOR",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_BATCH_SIZE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_FUNCTIONS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_HOOKS_PER_SELECTOR",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_ROLES",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "NATIVE_TRANSFER_SELECTOR",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PROTOCOL_NAME_HASH",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "createMetaTxParams",
     "inputs": [
       {
-        "name": "handlerContract",
-        "type": "address",
-        "internalType": "address"
+        "internalType": "uint256",
+        "name": "releaseTime",
+        "type": "uint256"
       },
       {
-        "name": "handlerSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      },
-      {
-        "name": "action",
-        "type": "EngineBlox.TxAction",
-        "internalType": "enum EngineBlox.TxAction"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxGasPrice",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "signer",
-        "type": "address",
-        "internalType": "address"
+        "internalType": "uint256",
+        "name": "currentTime",
+        "type": "uint256"
       }
     ],
+    "name": "BeforeReleaseTime",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CannotModifyProtected",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "providedChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedChainId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChainIdMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "ConflictingMetaTxPermissions",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "currentTime",
+        "type": "uint256"
+      }
+    ],
+    "name": "DeadlineInPast",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recoveredSigner",
+        "type": "address"
+      }
+    ],
+    "name": "ECDSAInvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "providedSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "derivedSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "FunctionSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentGasPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxGasPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "GasPriceExceedsMax",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "schemaHandlerForSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "permissionHandlerForSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "HandlerForSelectorMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "arrayLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "IndexOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentBalance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requiredAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "provided",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "selector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "InvalidHandlerSelector",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "providedNonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedNonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidNonce",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "InvalidSValue",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "providedLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidSignatureLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidVValue",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "item",
+        "type": "address"
+      }
+    ],
+    "name": "ItemAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "item",
+        "type": "address"
+      }
+    ],
+    "name": "ItemNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxFunctions",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxFunctionsExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxHooks",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxHooksExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRoles",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxRolesExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "provided",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxWalletsZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "currentTime",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaTxExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signedContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "entryContract",
+        "type": "address"
+      }
+    ],
+    "name": "MetaTxHandlerContractMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "txId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaTxPaymentMismatchStoredTx",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "txId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaTxRecordMismatchStoredTx",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "NoPermission",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "currentAddress",
+        "type": "address"
+      }
+    ],
+    "name": "NotNewAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OperationFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "reason",
+        "type": "bytes"
+      }
+    ],
+    "name": "PaymentFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ResourceAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "resourceId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ResourceNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxWallets",
+        "type": "uint256"
+      }
+    ],
+    "name": "RoleWalletLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "SignerNotAuthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "functionSelector",
+        "type": "bytes4"
+      }
+    ],
+    "name": "TargetNotWhitelisted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "provided",
+        "type": "uint256"
+      }
+    ],
+    "name": "TimeLockPeriodZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "expectedTxId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "providedTxId",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransactionIdMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "expectedStatus",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "currentStatus",
+        "type": "uint8"
+      }
+    ],
+    "name": "TransactionStatusMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroOperationTypeNotAllowed",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "txId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes4",
+        "name": "functionHash",
+        "type": "bytes4"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum EngineBlox.TxStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "requester",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "operationType",
+        "type": "bytes32"
+      }
+    ],
+    "name": "TransactionEvent",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ATTACHED_PAYMENT_RECIPIENT_SELECTOR",
     "outputs": [
       {
+        "internalType": "bytes4",
         "name": "",
-        "type": "tuple",
-        "internalType": "struct EngineBlox.MetaTxParams",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ERC20_TRANSFER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_BATCH_SIZE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FUNCTIONS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_HOOKS_PER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_RESULT_PREVIEW_BYTES",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_ROLES",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NATIVE_TRANSFER_SELECTOR",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PROTOCOL_NAME_HASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "messageHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "recoverSigner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "handlerContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "handlerSelector",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "enum EngineBlox.TxAction",
+        "name": "action",
+        "type": "EngineBlox.TxAction"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxGasPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "createMetaTxParams",
+    "outputs": [
+      {
         "components": [
           {
+            "internalType": "uint256",
             "name": "chainId",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
+            "internalType": "uint256",
             "name": "nonce",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
+            "internalType": "address",
             "name": "handlerContract",
-            "type": "address",
-            "internalType": "address"
+            "type": "address"
           },
           {
+            "internalType": "bytes4",
             "name": "handlerSelector",
-            "type": "bytes4",
-            "internalType": "bytes4"
+            "type": "bytes4"
           },
           {
+            "internalType": "enum EngineBlox.TxAction",
             "name": "action",
-            "type": "EngineBlox.TxAction",
-            "internalType": "enum EngineBlox.TxAction"
+            "type": "EngineBlox.TxAction"
           },
           {
+            "internalType": "uint256",
             "name": "deadline",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
+            "internalType": "uint256",
             "name": "maxGasPrice",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
+            "internalType": "address",
             "name": "signer",
-            "type": "address",
-            "internalType": "address"
+            "type": "address"
           }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "recoverSigner",
-    "inputs": [
-      {
-        "name": "messageHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "signature",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
+        ],
+        "internalType": "struct EngineBlox.MetaTxParams",
         "name": "",
-        "type": "address",
-        "internalType": "address"
+        "type": "tuple"
       }
     ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "event",
-    "name": "TransactionEvent",
-    "inputs": [
-      {
-        "name": "txId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "functionHash",
-        "type": "bytes4",
-        "indexed": true,
-        "internalType": "bytes4"
-      },
-      {
-        "name": "status",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "enum EngineBlox.TxStatus"
-      },
-      {
-        "name": "requester",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "target",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "operationType",
-        "type": "bytes32",
-        "indexed": false,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "resultHash",
-        "type": "bytes32",
-        "indexed": false,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "TxExecutionResult",
-    "inputs": [
-      {
-        "name": "txId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "result",
-        "type": "bytes",
-        "indexed": false,
-        "internalType": "bytes"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "error",
-    "name": "AlreadyInitialized",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "BeforeReleaseTime",
-    "inputs": [
-      {
-        "name": "releaseTime",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "currentTime",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "CannotModifyProtected",
-    "inputs": [
-      {
-        "name": "resourceId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ChainIdMismatch",
-    "inputs": [
-      {
-        "name": "providedChainId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "expectedChainId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ConflictingMetaTxPermissions",
-    "inputs": [
-      {
-        "name": "functionSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ECDSAInvalidSignature",
-    "inputs": [
-      {
-        "name": "recoveredSigner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "FunctionSelectorMismatch",
-    "inputs": [
-      {
-        "name": "providedSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      },
-      {
-        "name": "derivedSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "GasPriceExceedsMax",
-    "inputs": [
-      {
-        "name": "currentGasPrice",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxGasPrice",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "GrantNotRevocable",
-    "inputs": [
-      {
-        "name": "functionSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "HandlerForSelectorMismatch",
-    "inputs": [
-      {
-        "name": "schemaHandlerForSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      },
-      {
-        "name": "permissionHandlerForSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "IndexOutOfBounds",
-    "inputs": [
-      {
-        "name": "index",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "arrayLength",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InsufficientBalance",
-    "inputs": [
-      {
-        "name": "currentBalance",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "requiredAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidAddress",
-    "inputs": [
-      {
-        "name": "provided",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidHandlerSelector",
-    "inputs": [
-      {
-        "name": "selector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidNonce",
-    "inputs": [
-      {
-        "name": "providedNonce",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "expectedNonce",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidSValue",
-    "inputs": [
-      {
-        "name": "s",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidSignature",
-    "inputs": [
-      {
-        "name": "signature",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidSignatureLength",
-    "inputs": [
-      {
-        "name": "providedLength",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "expectedLength",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidVValue",
-    "inputs": [
-      {
-        "name": "v",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ItemAlreadyExists",
-    "inputs": [
-      {
-        "name": "item",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ItemNotFound",
-    "inputs": [
-      {
-        "name": "item",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MaxFunctionsExceeded",
-    "inputs": [
-      {
-        "name": "currentCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxFunctions",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MaxHooksExceeded",
-    "inputs": [
-      {
-        "name": "currentCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxHooks",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MaxRolesExceeded",
-    "inputs": [
-      {
-        "name": "currentCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxRoles",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MaxWalletsZero",
-    "inputs": [
-      {
-        "name": "provided",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MetaTxExpired",
-    "inputs": [
-      {
-        "name": "deadline",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "currentTime",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MetaTxHandlerContractMismatch",
-    "inputs": [
-      {
-        "name": "signedContract",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "entryContract",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MetaTxPaymentMismatchStoredTx",
-    "inputs": [
-      {
-        "name": "txId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "MetaTxRecordMismatchStoredTx",
-    "inputs": [
-      {
-        "name": "txId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NoPermission",
-    "inputs": [
-      {
-        "name": "caller",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NotNewAddress",
-    "inputs": [
-      {
-        "name": "newAddress",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "currentAddress",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NotSupported",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "OperationFailed",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "PaymentFailed",
-    "inputs": [
-      {
-        "name": "recipient",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "reason",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ResourceAlreadyExists",
-    "inputs": [
-      {
-        "name": "resourceId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ResourceNotFound",
-    "inputs": [
-      {
-        "name": "resourceId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "RoleWalletLimitReached",
-    "inputs": [
-      {
-        "name": "currentCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxWallets",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "SafeERC20FailedOperation",
-    "inputs": [
-      {
-        "name": "token",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "SignerNotAuthorized",
-    "inputs": [
-      {
-        "name": "signer",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "TargetNotWhitelisted",
-    "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "functionSelector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "TimeLockPeriodZero",
-    "inputs": [
-      {
-        "name": "provided",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "TransactionIdMismatch",
-    "inputs": [
-      {
-        "name": "expectedTxId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "providedTxId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "TransactionStatusMismatch",
-    "inputs": [
-      {
-        "name": "expectedStatus",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "currentStatus",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ZeroOperationTypeNotAllowed",
-    "inputs": []
+    "stateMutability": "view",
+    "type": "function"
   }
 ]

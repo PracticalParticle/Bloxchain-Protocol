@@ -57,7 +57,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != recovery);
 
         vm.prank(owner);
-        uint256 txId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 txId = accountBlox.updateBroadcasterRequest(newBroadcaster, broadcaster);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(txId);
 
@@ -76,7 +76,7 @@ contract SecureOwnableFuzzTest is CommonBase {
         vm.assume(newBroadcaster != broadcaster);
 
         vm.prank(owner);
-        uint256 brTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 brTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, broadcaster);
 
         vm.prank(recovery);
         uint256 ownTxId = accountBlox.transferOwnershipRequest();

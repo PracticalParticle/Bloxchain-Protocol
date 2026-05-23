@@ -74,13 +74,14 @@ const result = await secureOwnable.transferOwnershipRequest({ from: account.addr
 ##### `transferOwnershipDelayedApproval(txId: bigint, options?: TransactionOptions): Promise<TransactionResult>`
 Approves a pending ownership transfer after the time lock. Callable by **current** owner or **current** recovery; execution still assigns owner to the address snapshotted at request time (may differ from `getRecovery()` at approval time).
 
-##### `updateBroadcasterRequest(newBroadcaster: Address, location: bigint, options?: TransactionOptions): Promise<TransactionResult>`
-Requests a broadcaster update at the given index (location in the broadcaster role set).
+##### `updateBroadcasterRequest(newBroadcaster: Address, currentBroadcaster: Address, options?: TransactionOptions): Promise<TransactionResult>`
+Requests a broadcaster update by address pair: replace (`currentBroadcaster` → `newBroadcaster`), add (`currentBroadcaster` = zero), or revoke (`newBroadcaster` = zero).
 
 ```typescript
+const [current] = await secureOwnable.getBroadcasters()
 const result = await secureOwnable.updateBroadcasterRequest(
-  '0x...',
-  locationIndex,
+  '0x...', // new broadcaster (or zero to revoke)
+  current, // existing broadcaster (or zero to add)
   { from: account.address }
 )
 ```

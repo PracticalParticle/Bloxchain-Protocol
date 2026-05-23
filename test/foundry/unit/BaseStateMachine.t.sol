@@ -75,7 +75,7 @@ contract BaseStateMachineTest is CommonBase {
 
         // Create second transaction (broadcaster request) as new owner
         vm.prank(recovery);
-        uint256 txId2 = accountBlox.updateBroadcasterRequest(user1, 0);
+        uint256 txId2 = accountBlox.updateBroadcasterRequest(user1, broadcaster);
         vm.prank(recovery);
         EngineBlox.TxRecord memory tx2 = accountBlox.getTransaction(txId2);
 
