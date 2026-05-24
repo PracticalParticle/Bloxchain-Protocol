@@ -398,9 +398,11 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
         bytes32 role = EngineBlox.BROADCASTER_ROLE;
         if (currentBroadcaster != address(0)) {
             if (!hasRole(role, currentBroadcaster)) revert SharedValidation.ItemNotFound(currentBroadcaster);
-            return;
         }
-        if (hasRole(role, newBroadcaster)) revert SharedValidation.ItemAlreadyExists(newBroadcaster);
+        if (newBroadcaster != address(0)) {
+            if (newBroadcaster == currentBroadcaster) revert SharedValidation.InvalidOperation(newBroadcaster);
+            if (hasRole(role, newBroadcaster)) revert SharedValidation.ItemAlreadyExists(newBroadcaster);
+        }
     }
 
     /**

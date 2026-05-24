@@ -223,6 +223,24 @@ contract SecureOwnableTest is CommonBase {
         accountBlox.updateBroadcasterRequest(user1, broadcaster);
     }
 
+    function test_UpdateBroadcasterRequest_Revert_NoOpReplace() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, broadcaster));
+        accountBlox.updateBroadcasterRequest(broadcaster, broadcaster);
+    }
+
+    function test_UpdateBroadcasterRequest_Revert_AlreadyActiveBroadcaster() public {
+        vm.prank(owner);
+        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, address(0));
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(owner);
+        accountBlox.updateBroadcasterDelayedApproval(addTxId);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ItemAlreadyExists.selector, broadcaster));
+        accountBlox.updateBroadcasterRequest(broadcaster, user2);
+    }
+
     function test_UpdateBroadcasterDelayedApproval_AfterTimelock() public {
         address newBroadcaster = user1;
         vm.prank(owner);
