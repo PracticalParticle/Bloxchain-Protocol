@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../../../core/lib/EngineBlox.sol";
 import "../../../core/lib/interfaces/IDefinition.sol";
@@ -33,7 +33,7 @@ library SimpleVaultDefinitions {
     bytes4 public constant CANCEL_WITHDRAWAL_SELECTOR = bytes4(keccak256("cancelWithdrawal(uint256)"));
     
     // Meta-transaction Function Selectors
-    bytes4 public constant APPROVE_WITHDRAWAL_META_SELECTOR = bytes4(keccak256("approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant APPROVE_WITHDRAWAL_META_SELECTOR = bytes4(keccak256("approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
     
     /**
      * @dev Returns predefined function schemas
@@ -81,6 +81,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawEthHandlerForSelectors
         });
         
@@ -92,6 +93,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawTokenHandlerForSelectors
         });
         
@@ -103,6 +105,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: approveWithdrawalDelayedHandlerForSelectors
         });
         
@@ -114,18 +117,20 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: cancelWithdrawalHandlerForSelectors
         });
         
         // Meta-transaction functions
         schemas[4] = EngineBlox.FunctionSchema({
-            functionSignature: "approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "approveWithdrawalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             operationType: GENERIC_META_APPROVAL,
             operationName: "GENERIC_META_APPROVAL",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
         });
         
@@ -149,6 +154,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawEthExecutionHandlerForSelectors
         });
         
@@ -160,6 +166,7 @@ library SimpleVaultDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: withdrawTokenExecutionHandlerForSelectors
         });
         

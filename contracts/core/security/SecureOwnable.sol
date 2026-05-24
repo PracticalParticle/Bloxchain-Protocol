@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 // Contracts imports
 import "../base/BaseStateMachine.sol";
@@ -174,21 +174,18 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     // Broadcaster Management
     /**
-     * @dev Requests an update to the broadcaster at a specific location (index).
+     * @dev Requests a broadcaster role change identified by addresses.
      * @notice Requires no pending broadcaster-update and no pending ownership-transfer request.
-     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
-     * @param location The index in the broadcaster role's authorized wallets set
+     * @param newBroadcaster New broadcaster (`address(0)` to revoke `currentBroadcaster`)
+     * @param currentBroadcaster Existing broadcaster to replace or revoke; `address(0)` to add `newBroadcaster`
      * @return txId The transaction ID for the pending request (use getTransaction(txId) for full record)
      */
-    function updateBroadcasterRequest(address newBroadcaster, uint256 location) public returns (uint256 txId) {
+    function updateBroadcasterRequest(address newBroadcaster, address currentBroadcaster) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         _requireNoPendingRequest(SecureOwnableDefinitions.BROADCASTER_UPDATE);
         _requireNoPendingRequest(SecureOwnableDefinitions.OWNERSHIP_TRANSFER);
 
-        // Get the current broadcaster at the specified location. zero address if no broadcaster at location.
-        address currentBroadcaster = location < _getSecureState().roles[EngineBlox.BROADCASTER_ROLE].walletCount
-            ? _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, location)
-            : address(0);
+        _validateBroadcasterUpdatePair(newBroadcaster, currentBroadcaster);
 
         EngineBlox.TxRecord memory txRecord = _requestTransaction(
             msg.sender,
@@ -197,7 +194,7 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             0, // gas limit
             SecureOwnableDefinitions.BROADCASTER_UPDATE,
             SecureOwnableDefinitions.UPDATE_BROADCASTER_SELECTOR,
-            abi.encode(newBroadcaster, location)
+            abi.encode(newBroadcaster, currentBroadcaster)
         );
 
         _hasOpenBroadcasterRequest = true;
@@ -290,12 +287,12 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
 
     /**
      * @dev External function that can only be called by the contract itself to execute broadcaster update
-     * @param newBroadcaster The new broadcaster address (zero address to revoke at location)
-     * @param location The index in the broadcaster role's authorized wallets set
+     * @param newBroadcaster New broadcaster (`address(0)` to revoke `currentBroadcaster`)
+     * @param currentBroadcaster Existing broadcaster to replace or revoke; `address(0)` to add `newBroadcaster`
      */
-    function executeBroadcasterUpdate(address newBroadcaster, uint256 location) external {
+    function executeBroadcasterUpdate(address newBroadcaster, address currentBroadcaster) external {
         _validateExecuteBySelf();
-        _updateBroadcaster(newBroadcaster, location);
+        _updateBroadcaster(newBroadcaster, currentBroadcaster);
     }
 
     /**
@@ -390,49 +387,43 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
     }
 
     /**
-     * @dev Updates the broadcaster role at a specific index (location)
-     * @param newBroadcaster The new broadcaster address (zero address to revoke)
-     * @param location The index in the broadcaster role's authorized wallets set
-     *
-     * Logic:
-     * - If a broadcaster exists at `location` and `newBroadcaster` is non-zero,
-     *   update that slot from old to new (role remains full).
-     * - If no broadcaster exists at `location` and `newBroadcaster` is non-zero,
-     *   assign `newBroadcaster` to the broadcaster role (respecting maxWallets).
-     * - If `newBroadcaster` is the zero address and a broadcaster exists at `location`,
-     *   revoke that broadcaster from the role.
+     * @dev Validates broadcaster update pair at request time.
+     * @param newBroadcaster New broadcaster (`address(0)` to revoke)
+     * @param currentBroadcaster Existing broadcaster; `address(0)` to add `newBroadcaster`
      */
-    function _updateBroadcaster(address newBroadcaster, uint256 location) internal virtual {
-        EngineBlox.Role storage role = _getSecureState().roles[EngineBlox.BROADCASTER_ROLE];
-
-        address oldBroadcaster;
-        uint256 length = role.walletCount;
-
-        if (location < length) {
-            oldBroadcaster = _getAuthorizedWalletAt(EngineBlox.BROADCASTER_ROLE, location);
-        } else {
-            oldBroadcaster = address(0);
+    function _validateBroadcasterUpdatePair(address newBroadcaster, address currentBroadcaster) internal view {
+        if (newBroadcaster == address(0) && currentBroadcaster == address(0)) {
+            revert SharedValidation.InvalidOperation(address(0));
         }
+        bytes32 role = EngineBlox.BROADCASTER_ROLE;
+        if (currentBroadcaster != address(0)) {
+            if (!hasRole(role, currentBroadcaster)) revert SharedValidation.ItemNotFound(currentBroadcaster);
+        }
+        if (newBroadcaster != address(0)) {
+            if (newBroadcaster == currentBroadcaster) revert SharedValidation.InvalidOperation(newBroadcaster);
+            if (hasRole(role, newBroadcaster)) revert SharedValidation.ItemAlreadyExists(newBroadcaster);
+        }
+    }
 
-        // Case 1: Revoke existing broadcaster at location
+    /**
+     * @dev Updates the broadcaster role by address pair (revoke, replace, or add).
+     * @param newBroadcaster New broadcaster (`address(0)` to revoke `currentBroadcaster`)
+     * @param currentBroadcaster Existing broadcaster; `address(0)` to add `newBroadcaster`
+     */
+    function _updateBroadcaster(address newBroadcaster, address currentBroadcaster) internal virtual {
+        bytes32 role = EngineBlox.BROADCASTER_ROLE;
         if (newBroadcaster == address(0)) {
-            if (oldBroadcaster != address(0)) {
-                _revokeWallet(EngineBlox.BROADCASTER_ROLE, oldBroadcaster);
-                _logAddressPairEvent(oldBroadcaster, address(0));
-            }
+            _revokeWallet(role, currentBroadcaster);
+            _logAddressPairEvent(currentBroadcaster, address(0));
             return;
         }
-
-        // Case 2: Update existing broadcaster at location
-        if (oldBroadcaster != address(0)) {
-            _updateWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster, oldBroadcaster);
-            _logAddressPairEvent(oldBroadcaster, newBroadcaster);
+        if (currentBroadcaster == address(0)) {
+            _assignWallet(role, newBroadcaster);
+            _logAddressPairEvent(address(0), newBroadcaster);
             return;
         }
-
-        // Case 3: No broadcaster at location, assign a new one (will respect maxWallets)
-        _assignWallet(EngineBlox.BROADCASTER_ROLE, newBroadcaster);
-        _logAddressPairEvent(address(0), newBroadcaster);
+        _updateWallet(role, newBroadcaster, currentBroadcaster);
+        _logAddressPairEvent(currentBroadcaster, newBroadcaster);
     }
 
     /**

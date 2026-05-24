@@ -68,7 +68,7 @@ struct SecureOperationState {
 
 **Key sub-structures:**
 
-- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `result`, `payment` (`PaymentDetails`). The **`result`** field is **not** full callee returndata: `EngineBlox.executeTransaction` runs the target via **`_callWithBoundedReturndata`**, which copies at most the first **`MAX_RESULT_PREVIEW_BYTES`** (32 KiB; see `contracts/core/lib/EngineBlox.sol`) of returndata into `TxRecord.result`. Anything beyond that is discarded on-chain. SDK reads such as **`BaseStateMachine.getTransaction()`** and **`getTransactionHistory()`** return that stored record as-is—do not assume **`result`** contains the complete ABI return payload for large responses.
+- **`TxRecord`** — `txId`, `releaseTime`, `status` (`TxStatus` enum), `params` (`TxParams`), `message`, `resultHash`, `payment` (`PaymentDetails`). **`resultHash`** is `bytes32(0)` when execution returndata is empty, else `keccak256(returndata)`. Full returndata is emitted in **`TxExecutionResult`** on terminal execution (`COMPLETED` / `FAILED`).
 - **`Role`** — `roleName`, `roleHash`, `authorizedWallets` (enumerable set), per-selector `functionPermissions`, `maxWallets`, `walletCount`, `isProtected`.
 - **`FunctionSchema`** — `functionSignature`, `functionSelector`, `operationType`, `operationName`, `supportedActionsBitmap`, `enforceHandlerRelations`, `isProtected`, `handlerForSelectors`.
 - **`FunctionPermission`** — `functionSelector`, `grantedActionsBitmap` (9-bit `TxAction` bitmap), `handlerForSelectors`.
@@ -96,8 +96,6 @@ UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve
                                        │                                               └──► revert (atomic rollback)
 ```
 
-`TxStatus` also defines **`REJECTED`**, but **`EngineBlox` never assigns it** (there is no “reject” transition in the diagram above). The member is **intentionally unused** in the current engine: abandonment is **`CANCELLED`**; failed execution is **`FAILED`**. **`REJECTED`** stays in the enum for **ABI / layout stability** and **reserved** for possible future protocol or extension behavior — see NatSpec on `TxStatus` in `contracts/core/lib/EngineBlox.sol`.
-
 | From | To | Trigger |
 |------|----|---------|
 | `UNDEFINED` | `PENDING` | `_txRequest` — creates a `TxRecord` with `txId = self.txCounter + 1`, stores it, increments `txCounter`, sets `releaseTime = block.timestamp + timeLockPeriodSec`, adds to `pendingTransactionsSet`. |
@@ -109,7 +107,7 @@ UNDEFINED ─── (request) ───► PENDING ─┬── (delayed approve
 | `EXECUTING` | `FAILED` | Main call returns `success == false`; `_completeTransaction` records the failure. |
 | `PENDING` | `CANCELLED` | `txCancellation` (direct) or `txCancellationWithMetaTx` (meta; wrapper selector in `MetaTxParams.handlerSelector`). |
 
-There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`. There is also **no** runtime use of **`TxStatus.REJECTED`** (see note under the diagram).
+There is **no** `APPROVED` or `EXECUTED` status in the enum — the engine transitions directly from `PENDING` to `EXECUTING`.
 
 ### 2. Role Management
 
@@ -118,7 +116,7 @@ Roles are created and configured via `EngineBlox` library functions (exposed thr
 - **`createRole`** — registers a new role with `roleName`, `maxWallets`, `isProtected`.
 - **`removeRole`** — deletes the role, revokes all wallets, removes all function permissions. Protected roles cannot be removed.
 - **`assignWallet` / `revokeWallet` / `updateWallet`** — manage membership.
-- **`addFunctionToRole` / `removeFunctionFromRole`** — grant or revoke per-selector `FunctionPermission` entries.
+- **`addFunctionToRole` / `removeFunctionFromRole`** — grant or revoke per-selector `FunctionPermission` entries. For registered selectors, `removeFunctionFromRole` reverts with `GrantNotRevocable` when the schema's `isGrantRevocable` is false; when true, grants may be removed from any role, including protected system roles. Schema `isProtected` governs `unregisterFunction`, not grant removal.
 
 ### 3. Operation Types
 
@@ -146,13 +144,13 @@ Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`
 
 ### 3. **Transaction approval (delayed)**
 
-`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction`.
+`txDelayedApproval(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for `executionSelector` from the stored record **and** `handlerSelector`, enforces `releaseTime` (timelock), **`_validateTargetWhitelist` before any external call**, sets `EXECUTING`, runs `executeTransaction`, finalizes via `_completeTransaction` (status/resultHash/pending set; returndata in event).
 
 ### 4. **Transaction approval (meta-tx)**
 
 `txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — public entrypoint: validates `SIGN_META_APPROVE`, checks permissions using `metaTx.txRecord.params.executionSelector` and **`metaTx.params.handlerSelector`** (wrapper selector in the typed-data payload), then returns `_txApprovalWithMetaTx(self, metaTx)`.
 
-`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
+`_txApprovalWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — private: verifies EIP-712 (including `handlerSelector` / handler contract binding where applicable), **`_validateTargetWhitelist` before any external call**, increments signer nonce, sets `EXECUTING`, executes. **`validateReleaseTime` is not used** — timelock is **not** enforced on meta approval (by design).
 
 ### 5. **Request and approve (one-step meta-tx)**
 
@@ -160,7 +158,7 @@ Public request entrypoints take a **handler selector** (`bytes4 handlerSelector`
 
 ### 6. **Cancellation**
 
-`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet`.
+`txCancellation(SecureOperationState, uint256 txId, bytes4 handlerSelector)` — validates `PENDING`, checks permissions for the stored `executionSelector` and `handlerSelector`, then cancels and removes from `pendingTransactionsSet` (**no** target whitelist re-check: a pending tx can be cancelled after the target was removed from the whitelist).
 
 `txCancellationWithMetaTx(SecureOperationState, MetaTransaction metaTx)` — validates `SIGN_META_CANCEL`, permissions using **`metaTx.params.handlerSelector`**, record match, signature, then cancels the pending tx.
 
@@ -194,11 +192,16 @@ event TransactionEvent(
     TxStatus status,
     address indexed requester,
     address target,
-    bytes32 operationType
+    bytes32 operationType,
+    bytes32 resultHash
 );
+
+event TxExecutionResult(uint256 indexed txId, bytes result);
 ```
 
-The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step); the ABI names the indexed topic **`functionHash`**, not `functionSelector`. **`requester`** is **indexed** so it appears as a log topic for filters. Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** `args` use those names—filter on **`functionHash`** and **`requester`**, not legacy `functionSelector` on this event.
+The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step). **`resultHash`** is zero on request/cancel; on **`COMPLETED`** / **`FAILED`** it is set before **`TxExecutionResult`** is emitted in the same transaction. Verify off-chain: `keccak256(TxExecutionResult.result) == resultHash` from `getTransaction(txId)`.
+
+Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** use those names. Lifecycle topic: `TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)`. Returndata topic: `TxExecutionResult(uint256,bytes)`.
 
 This is the **authoritative** audit trail for all transaction state changes. Components also emit **`ComponentEvent(bytes4, bytes)`** for config changes (guard config, RBAC config).
 

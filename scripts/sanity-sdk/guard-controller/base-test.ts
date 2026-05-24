@@ -767,17 +767,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
           : txRecord.status;
     console.log(`  📋 Role config tx record status: ${status} (5=COMPLETED, 6=FAILED)`);
     if (status === 6) {
-      const result = txRecord.result ?? '0x';
-      const resultHex =
-        typeof result === 'string'
-          ? result
-          : result && typeof result === 'object' && 'length' in result
-            ? '0x' +
-              Array.from(new Uint8Array(result as ArrayBuffer))
-                .map((b) => b.toString(16).padStart(2, '0'))
-                .join('')
-            : String(result);
-      const errorSelector = this.decodeErrorSelector(result);
+      const executionResult = this.extractExecutionResultFromReceipt(receipt, txId);
+      const resultHex = this.normalizeResultToHex(executionResult);
+      const errorSelector = this.decodeErrorSelector(executionResult);
       const errorName = errorSelector ? this.getErrorName(errorSelector) : 'Unknown';
       console.log(`  🔍 Role config revert selector: ${errorSelector ?? 'none'} (${errorName})`);
       // Treat idempotent role-config replays as soft success so that re-running tests on
@@ -902,6 +894,46 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     return false;
   }
 
+  protected normalizeResultToHex(result: unknown): string {
+    if (result == null) return '0x';
+    if (typeof result === 'string') {
+      return result.startsWith('0x') ? result : `0x${result}`;
+    }
+    if (result instanceof Uint8Array) {
+      return '0x' + Array.from(result).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+    if (Array.isArray(result)) {
+      return '0x' + result.map((b) => Number(b).toString(16).padStart(2, '0')).join('');
+    }
+    return '0x';
+  }
+
+  protected extractExecutionResultFromReceipt(receipt: any, txId: bigint): unknown {
+    if (!receipt?.logs?.length) {
+      return '0x';
+    }
+    const eventSignature = keccak256(toBytes('TxExecutionResult(uint256,bytes)')) as Hex;
+    for (const log of receipt.logs) {
+      if (log.topics?.[0] !== eventSignature || !log.topics?.[1]) {
+        continue;
+      }
+      try {
+        if (BigInt(log.topics[1]) !== txId) {
+          continue;
+        }
+        if (log.data && log.data.length > 2) {
+          const data = log.data.startsWith('0x') ? log.data.slice(2) : log.data;
+          const resultLen = parseInt(data.slice(64, 128), 16) * 2;
+          const resultBytes = data.slice(128, 128 + resultLen);
+          return resultLen > 0 ? (`0x${resultBytes}` as Hex) : '0x';
+        }
+      } catch {
+        // continue
+      }
+    }
+    return '0x';
+  }
+
   /**
    * Decode error selector from transaction result (revert data)
    */
@@ -947,7 +979,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected extractTxIdFromReceipt(receipt: any): bigint | null {
     if (!receipt?.logs?.length) return null;
     const eventSignature = keccak256(
-      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')
+      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)')
     ) as Hex;
     for (const log of receipt.logs) {
       if (log.topics?.[0] === eventSignature && log.topics.length >= 2) {
@@ -1093,14 +1125,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
           : txRecord.status;
     console.log(`  📋 Guard config tx record status: ${status} (5=COMPLETED, 6=FAILED)`);
     if (status === 6) {
-      const result = txRecord.result ?? '0x';
-      const resultHex =
-        typeof result === 'string'
-          ? result
-          : result && typeof result === 'object' && 'length' in result
-            ? '0x' + Array.from(new Uint8Array(result as ArrayBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('')
-            : String(result);
-      const errorSelector = this.decodeErrorSelector(result);
+      const executionResult = this.extractExecutionResultFromReceipt(receipt, txId);
+      const resultHex = this.normalizeResultToHex(executionResult);
+      const errorSelector = this.decodeErrorSelector(executionResult);
       const errorName = errorSelector ? this.getErrorName(errorSelector) : 'Unknown';
       console.log(`  🔍 Revert selector: ${errorSelector ?? 'none'} (${errorName})`);
       if (!errorSelector || errorName.startsWith('Unknown')) {

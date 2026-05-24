@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -169,7 +169,8 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         EngineBlox.TxStatus status,
         address requester,
         address target,
-        bytes32 operationType
+        bytes32 operationType,
+        bytes32 resultHash
     );
 
     /**
@@ -189,7 +190,8 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         EngineBlox.TxStatus status,
         address requester,
         address target,
-        bytes32 operationType
+        bytes32 operationType,
+        bytes32 resultHash
     ) external override {
         if (!_clones.contains(msg.sender)) revert SharedValidation.NoPermission(msg.sender);
         
@@ -201,7 +203,8 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
             status,
             requester,
             target,
-            operationType
+            operationType,
+            resultHash
         );
         
         // If CopyBlox itself has an eventForwarder, forward the event further
@@ -214,7 +217,8 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
                 status,
                 requester,
                 target,
-                operationType
+                operationType,
+                resultHash
             ) {
                 // Event forwarded successfully
             } catch {

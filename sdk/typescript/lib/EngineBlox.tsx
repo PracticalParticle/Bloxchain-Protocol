@@ -45,12 +45,6 @@ export class EngineBlox {
    */
   static readonly VERSION: string = "1.0.0";
 
-  /**
-   * Maximum bytes retained from callee returndata on guarded execution (`EngineBlox.executeTransaction` path).
-   * Matches `EngineBlox.MAX_RESULT_PREVIEW_BYTES` (32 KiB).
-   */
-  static readonly MAX_RESULT_PREVIEW_BYTES: bigint = 32768n;
-
   // ============ FUNCTION SELECTORS ============
   
   /**
@@ -199,6 +193,16 @@ export class EngineBlox {
     }
     
     return actions;
+  }
+
+  /**
+   * Hash of execution returndata (`bytes32(0)` when empty). Matches `EngineBlox.executionResultHash` on-chain.
+   */
+  static executionResultHash(executionResult: Hex): Hex {
+    if (!executionResult || executionResult === '0x') {
+      return `0x${'0'.repeat(64)}` as Hex;
+    }
+    return k256(executionResult) as Hex;
   }
 }
 

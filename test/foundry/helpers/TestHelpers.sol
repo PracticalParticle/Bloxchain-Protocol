@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Test} from "forge-std/Test.sol";
@@ -27,6 +27,13 @@ library TestHelpers {
     }
 
     /**
+     * @dev Matches `EngineBlox.executionResultHash` for test assertions.
+     */
+    function executionResultHash(bytes memory executionResult) internal pure returns (bytes32) {
+        return executionResult.length == 0 ? bytes32(0) : keccak256(executionResult);
+    }
+
+    /**
      * @dev Hashes TxRecord for EIP-712
      */
     function _hashTxRecord(EngineBlox.TxRecord memory record) private pure returns (bytes32) {
@@ -36,7 +43,7 @@ library TestHelpers {
             uint8(record.status),
             _hashTxParams(record.params),
             record.message,
-            keccak256(record.result),
+            record.resultHash,
             _hashPaymentDetails(record.payment)
         ));
     }

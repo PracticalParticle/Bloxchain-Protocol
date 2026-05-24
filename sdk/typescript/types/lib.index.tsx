@@ -17,8 +17,7 @@ export const TxStatus = {
   PROCESSING_PAYMENT: 3,
   CANCELLED: 4,
   COMPLETED: 5,
-  FAILED: 6,
-  REJECTED: 7
+  FAILED: 6
 } as const;
 
 export type TxStatus = typeof TxStatus[keyof typeof TxStatus];

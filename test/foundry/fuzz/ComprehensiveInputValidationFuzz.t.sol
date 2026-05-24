@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -114,7 +114,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
             SharedValidation.InvalidAddress.selector,
             address(0)
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     // ============ ARRAY MANIPULATION ATTACKS ============
@@ -495,7 +495,7 @@ contract ComprehensiveInputValidationFuzzTest is CommonBase {
                 SharedValidation.MaxWalletsZero.selector,
                 0
             );
-            assertEq(txRecord.result, expectedError);
+            assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
         }
     }
 

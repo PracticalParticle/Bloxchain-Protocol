@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/execution/GuardController.sol";
@@ -961,7 +961,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
             
             // Transaction should be marked as FAILED, not revert
             assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
-            assertTrue(result.result.length > 0, "Result should contain revert reason");
+            assertTrue(result.resultHash != bytes32(0), "Result should contain revert reason");
             vm.stopPrank();
         } catch (bytes memory reason) {
             vm.stopPrank();
@@ -998,10 +998,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 result.status == EngineBlox.TxStatus.FAILED || result.status == EngineBlox.TxStatus.COMPLETED,
                 "Must not leave inconsistent state"
             );
-            if (result.status == EngineBlox.TxStatus.FAILED) {
-                // EIP-150: low gas caused failure; catch path must not have set COMPLETED
-                assertTrue(result.result.length > 0 || true, "Failure recorded");
-            }
+            // EIP-150: OOG failures may leave empty returndata and zero resultHash; FAILED (not COMPLETED) is the invariant
             vm.stopPrank();
         } catch (bytes memory reason) {
             vm.stopPrank();
@@ -1201,7 +1198,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
         accountBlox.approveTimeLockExecution(txId);
         EngineBlox.TxRecord memory result = accountBlox.getTransaction(txId);
         assertEq(uint8(result.status), uint8(EngineBlox.TxStatus.FAILED));
-        assertTrue(result.result.length > 0, "Result should contain revert reason");
+        assertTrue(result.resultHash != bytes32(0), "Result should contain revert reason");
         vm.stopPrank();
     }
 

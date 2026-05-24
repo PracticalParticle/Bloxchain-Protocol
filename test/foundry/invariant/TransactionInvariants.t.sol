@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "forge-std/StdInvariant.sol";
@@ -49,7 +49,8 @@ contract TransactionInvariantsTest is CommonBase {
                         status == EngineBlox.TxStatus.COMPLETED ||
                         status == EngineBlox.TxStatus.CANCELLED ||
                         status == EngineBlox.TxStatus.FAILED ||
-                        status == EngineBlox.TxStatus.REJECTED
+                        status == EngineBlox.TxStatus.PROCESSING_PAYMENT ||
+                        status == EngineBlox.TxStatus.UNDEFINED
                     );
                 }
             }

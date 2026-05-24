@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -74,7 +74,7 @@ contract EdgeCasesFuzzTest is CommonBase {
             SharedValidation.CannotModifyProtected.selector,
             OWNER_ROLE
         );
-        assertEq(txRecord.result, expectedError, "Should fail with CannotModifyProtected");
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError), "Should fail with CannotModifyProtected");
     }
 
     /**

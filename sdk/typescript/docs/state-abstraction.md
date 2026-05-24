@@ -57,7 +57,7 @@ struct SecureOperationState {
     TxStatus status;        // Current state
     TxParams params;        // Operation parameters
     bytes32 message;        // EIP-712 message hash
-    bytes result;           // Execution result
+    bytes32 resultHash;     // keccak256(execution returndata); full bytes in TransactionEvent
     PaymentDetails payment; // Payment information
 }
 ```

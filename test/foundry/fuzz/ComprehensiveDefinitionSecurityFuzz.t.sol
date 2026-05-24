@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
@@ -96,6 +96,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -165,6 +166,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: emptyHandlers // Empty array
         });
         
@@ -204,6 +206,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -493,6 +496,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true, // Protected because function exists in contract
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -562,6 +566,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors1
         });
         
@@ -583,6 +588,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors2
         });
         
@@ -674,6 +680,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false, // Non-protected - should fail when enforcing
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -718,6 +725,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -756,6 +764,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors
         });
         
@@ -802,6 +811,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: false, // First non-protected - reverts with this selector
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors1
         });
         schemas[1] = EngineBlox.FunctionSchema({
@@ -812,6 +822,7 @@ contract ComprehensiveDefinitionSecurityFuzzTest is CommonBase {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(actions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: handlerForSelectors2
         });
         

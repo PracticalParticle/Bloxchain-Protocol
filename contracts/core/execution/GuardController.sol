@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../base/BaseStateMachine.sol";
 import "../lib/utils/SharedValidation.sol";
@@ -447,6 +447,7 @@ abstract contract GuardController is BaseStateMachine {
             supportedActionsBitmap,
             true, // enforceHandlerRelations for dynamically registered execution selectors
             false, // isProtected = false for dynamically registered functions
+            true, // isGrantRevocable: dynamically registered schemas may be revoked from roles
             executionHandlers // handlerForSelectors with self-reference for execution selectors
         );
     }
