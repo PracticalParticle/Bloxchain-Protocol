@@ -998,10 +998,7 @@ contract ComprehensiveStateMachineFuzzTest is CommonBase {
                 result.status == EngineBlox.TxStatus.FAILED || result.status == EngineBlox.TxStatus.COMPLETED,
                 "Must not leave inconsistent state"
             );
-            if (result.status == EngineBlox.TxStatus.FAILED) {
-                // EIP-150: low gas caused failure; catch path must not have set COMPLETED
-                assertTrue(result.resultHash != bytes32(0) || true, "Failure recorded");
-            }
+            // EIP-150: OOG failures may leave empty returndata and zero resultHash; FAILED (not COMPLETED) is the invariant
             vm.stopPrank();
         } catch (bytes memory reason) {
             vm.stopPrank();

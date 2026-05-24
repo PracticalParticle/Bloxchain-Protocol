@@ -78,10 +78,13 @@ export class ContractValidations {
 
     // Validate resultHash (must be zero for pending transactions)
     const zeroHash = '0x' + '0'.repeat(64);
-    if (txRecord.resultHash && txRecord.resultHash !== zeroHash) {
-      if (!this.isValidHex(txRecord.resultHash) || txRecord.resultHash.length !== 66) {
-        throw new Error("Invalid hex format for transaction resultHash");
-      }
+    if (!txRecord.resultHash) {
+      throw new Error("Missing transaction resultHash");
+    }
+    if (!this.isValidHex(txRecord.resultHash) || txRecord.resultHash.length !== 66) {
+      throw new Error("Invalid hex format for transaction resultHash");
+    }
+    if (txRecord.resultHash !== zeroHash) {
       throw new Error("resultHash must be zero for pending transactions");
     }
 
