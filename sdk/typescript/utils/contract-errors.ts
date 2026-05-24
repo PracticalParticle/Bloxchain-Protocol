@@ -69,11 +69,6 @@ export interface TimeLockPeriodZeroError extends ContractError {
   params: { provided: string }
 }
 
-export interface DeadlineInPastError extends ContractError {
-  name: 'DeadlineInPast'
-  params: { deadline: string; currentTime: string }
-}
-
 export interface MetaTxExpiredError extends ContractError {
   name: 'MetaTxExpired'
   params: { deadline: string; currentTime: string }
@@ -506,7 +501,6 @@ export type GuardianContractError =
   | NotNewAddressError
   | InvalidTimeLockPeriodError
   | TimeLockPeriodZeroError
-  | DeadlineInPastError
   | MetaTxExpiredError
   | BeforeReleaseTimeError
   | NewTimelockSameError
@@ -618,11 +612,6 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'TimeLockPeriodZero',
     params: ['provided'],
     userMessage: () => `TimeLockPeriodZero: Time lock period must be greater than zero`
-  },
-  '0x0e6fd6e4': {
-    name: 'DeadlineInPast',
-    params: ['deadline', 'currentTime'],
-    userMessage: () => `DeadlineInPast: Transaction deadline has passed`
   },
   '0x0ce5c69c': {
     name: 'MetaTxExpired',

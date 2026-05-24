@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "../../../lib/EngineBlox.sol";
@@ -32,7 +32,7 @@ library SecureOwnableDefinitions {
     
     // Function Selector Constants
     bytes4 public constant TRANSFER_OWNERSHIP_SELECTOR = bytes4(keccak256("executeTransferOwnership(address)"));
-    bytes4 public constant UPDATE_BROADCASTER_SELECTOR = bytes4(keccak256("executeBroadcasterUpdate(address,uint256)"));
+    bytes4 public constant UPDATE_BROADCASTER_SELECTOR = bytes4(keccak256("executeBroadcasterUpdate(address,address)"));
     bytes4 public constant UPDATE_RECOVERY_SELECTOR = bytes4(keccak256("executeRecoveryUpdate(address)"));
     bytes4 public constant UPDATE_TIMELOCK_SELECTOR = bytes4(keccak256("executeTimeLockUpdate(uint256)"));
     
@@ -40,19 +40,19 @@ library SecureOwnableDefinitions {
     bytes4 public constant TRANSFER_OWNERSHIP_REQUEST_SELECTOR = bytes4(keccak256("transferOwnershipRequest()"));
     bytes4 public constant TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR = bytes4(keccak256("transferOwnershipDelayedApproval(uint256)"));
     bytes4 public constant TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR = bytes4(keccak256("transferOwnershipCancellation(uint256)"));
-    bytes4 public constant UPDATE_BROADCASTER_REQUEST_SELECTOR = bytes4(keccak256("updateBroadcasterRequest(address,uint256)"));
+    bytes4 public constant UPDATE_BROADCASTER_REQUEST_SELECTOR = bytes4(keccak256("updateBroadcasterRequest(address,address)"));
     bytes4 public constant UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR = bytes4(keccak256("updateBroadcasterDelayedApproval(uint256)"));
     bytes4 public constant UPDATE_BROADCASTER_CANCELLATION_SELECTOR = bytes4(keccak256("updateBroadcasterCancellation(uint256)"));
     
     // Meta-transaction Function Selectors (Handler Functions - checked via msg.sig)
     // Note: Solidity function selector calculation for struct parameters uses 2 opening parentheses: ((tuple))
     // Verified: This format produces selector 0x458102e4 which matches the actual function selector
-    bytes4 public constant TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR = bytes4(keccak256("transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR = bytes4(keccak256("transferOwnershipCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant UPDATE_BROADCASTER_APPROVE_META_SELECTOR = bytes4(keccak256("updateBroadcasterApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant UPDATE_BROADCASTER_CANCEL_META_SELECTOR = bytes4(keccak256("updateBroadcasterCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant UPDATE_RECOVERY_META_SELECTOR = bytes4(keccak256("updateRecoveryRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant UPDATE_TIMELOCK_META_SELECTOR = bytes4(keccak256("updateTimeLockRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR = bytes4(keccak256("transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR = bytes4(keccak256("transferOwnershipCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant UPDATE_BROADCASTER_APPROVE_META_SELECTOR = bytes4(keccak256("updateBroadcasterApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant UPDATE_BROADCASTER_CANCEL_META_SELECTOR = bytes4(keccak256("updateBroadcasterCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant UPDATE_RECOVERY_META_SELECTOR = bytes4(keccak256("updateRecoveryRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant UPDATE_TIMELOCK_META_SELECTOR = bytes4(keccak256("updateTimeLockRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
     
     /**
      * @dev Returns predefined function schemas
@@ -123,68 +123,74 @@ library SecureOwnableDefinitions {
         
         // Meta-transaction functions
         schemas[0] = EngineBlox.FunctionSchema({
-            functionSignature: "transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "transferOwnershipApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[1] = EngineBlox.FunctionSchema({
-            functionSignature: "transferOwnershipCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "transferOwnershipCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR,
             operationType: OWNERSHIP_TRANSFER,
             operationName: "OWNERSHIP_TRANSFER",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[2] = EngineBlox.FunctionSchema({
-            functionSignature: "updateBroadcasterApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "updateBroadcasterApprovalWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[3] = EngineBlox.FunctionSchema({
-            functionSignature: "updateBroadcasterCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "updateBroadcasterCancellationWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_BROADCASTER_CANCEL_META_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
         schemas[4] = EngineBlox.FunctionSchema({
-            functionSignature: "updateRecoveryRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "updateRecoveryRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_RECOVERY_META_SELECTOR,
             operationType: RECOVERY_UPDATE,
             operationName: "RECOVERY_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: recoveryHandlerForSelectors
         });
         
         schemas[5] = EngineBlox.FunctionSchema({
-            functionSignature: "updateTimeLockRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "updateTimeLockRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: UPDATE_TIMELOCK_META_SELECTOR,
             operationType: TIMELOCK_UPDATE,
             operationName: "TIMELOCK_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: timelockHandlerForSelectors
         });
         
@@ -197,6 +203,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -208,6 +215,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
@@ -219,17 +227,19 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipHandlerForSelectors
         });
         
         schemas[9] = EngineBlox.FunctionSchema({
-            functionSignature: "updateBroadcasterRequest(address,uint256)",
+            functionSignature: "updateBroadcasterRequest(address,address)",
             functionSelector: UPDATE_BROADCASTER_REQUEST_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -241,6 +251,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -252,6 +263,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterHandlerForSelectors
         });
         
@@ -265,17 +277,19 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: transferOwnershipExecutionHandlerForSelectors
         });
         
         schemas[13] = EngineBlox.FunctionSchema({
-            functionSignature: "executeBroadcasterUpdate(address,uint256)",
+            functionSignature: "executeBroadcasterUpdate(address,address)",
             functionSelector: UPDATE_BROADCASTER_SELECTOR,
             operationType: BROADCASTER_UPDATE,
             operationName: "BROADCASTER_UPDATE",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionApproveCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: broadcasterExecutionHandlerForSelectors
         });
         
@@ -287,6 +301,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: recoveryExecutionHandlerForSelectors
         });
         
@@ -298,6 +313,7 @@ library SecureOwnableDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionMetaRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: false,
             handlerForSelectors: timelockExecutionHandlerForSelectors
         });
         

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 // Import TxRecord struct from EngineBlox
 import "../EngineBlox.sol";
@@ -21,6 +21,7 @@ interface IEventForwarder {
      * @param requester The address of the requester
      * @param target The target contract address
      * @param operationType The type of operation
+     * @param resultHash Commitment to execution returndata (`bytes32(0)` when none). Full bytes: `TxExecutionResult` log.
      */
     function forwardTxEvent(
         uint256 txId,
@@ -28,6 +29,7 @@ interface IEventForwarder {
         EngineBlox.TxStatus status,
         address requester,
         address target,
-        bytes32 operationType
+        bytes32 operationType,
+        bytes32 resultHash
     ) external;
 }

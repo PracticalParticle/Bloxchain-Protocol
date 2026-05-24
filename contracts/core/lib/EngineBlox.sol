@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -56,11 +56,6 @@ library EngineBlox {
     
     /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
     uint256 public constant MAX_FUNCTIONS = 2000;
-
-    /// @dev Maximum bytes copied from call returndata into memory (and later persisted in `TxRecord.result`).
-    ///      Full returndata from the callee may be larger; only the first `MAX_RESULT_PREVIEW_BYTES` are retained.
-    ///      Chosen as 32 KiB to maximize debug/audit surface while bounding memory expansion and storage growth.
-    uint256 public constant MAX_RESULT_PREVIEW_BYTES = 32 * 1024;
     
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -75,8 +70,7 @@ library EngineBlox {
         PROCESSING_PAYMENT,
         CANCELLED,
         COMPLETED,
-        FAILED,
-        REJECTED
+        FAILED
     }
 
     enum TxAction {
@@ -118,7 +112,9 @@ library EngineBlox {
         TxStatus status;
         TxParams params;
         bytes32 message;
-        bytes result;
+        /// @dev Commitment to execution returndata: `bytes32(0)` when empty, else `keccak256(returndata)`.
+        ///      Full returndata is emitted in `TxExecutionResult` on terminal execution (COMPLETED/FAILED).
+        bytes32 resultHash;
         PaymentDetails payment;
     }
 
@@ -164,6 +160,9 @@ library EngineBlox {
         ///      When false (flexible mode): no such check; forward references and unregistered selectors in handlerForSelectors are allowed at registration.
         bool enforceHandlerRelations;
         bool isProtected;
+        /// @dev When false, `removeFunctionFromRole` cannot remove this selector from any role (revoke + re-add updates blocked).
+        ///      When true, grants may be removed from any role, including protected system roles; `isProtected` still blocks `unregisterFunction` for the schema.
+        bool isGrantRevocable;
         bytes4[] handlerForSelectors;
     }
 
@@ -254,8 +253,12 @@ library EngineBlox {
         TxStatus status,
         address indexed requester,
         address target,
-        bytes32 operationType
+        bytes32 operationType,
+        bytes32 resultHash
     );
+
+    /// @dev Emitted only on terminal execution (COMPLETED/FAILED). Full returndata; verify `keccak256(result) == resultHash`.
+    event TxExecutionResult(uint256 indexed txId, bytes result);
 
     // ============ SYSTEM STATE FUNCTIONS ============
 
@@ -473,14 +476,15 @@ library EngineBlox {
         uint256 txId,
         bytes4 handlerSelector
     ) public returns (TxRecord memory) {
-        // Validate both execution and handler selector permissions
+        // CHECK: Validate both execution and handler selector permissions
         _validateExecutionAndHandlerPermissions(self, msg.sender, self.txRecords[txId].params.executionSelector, handlerSelector, TxAction.EXECUTE_TIME_DELAY_APPROVE);
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         SharedValidation.validateReleaseTime(self.txRecords[txId].releaseTime);
-        
+
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
         self.txRecords[txId].status = TxStatus.EXECUTING;
-        
+
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
@@ -560,17 +564,19 @@ library EngineBlox {
      *         (direct path enforces releaseTime) and meta-tx workflows (delegated, time-flexible approval).
      */
     function _txApprovalWithMetaTx(SecureOperationState storage self, MetaTransaction memory metaTx) private returns (TxRecord memory) {
+        // CHECK: Validate transaction parameters
         uint256 txId = metaTx.txRecord.txId;
         _validateTxStatus(self, txId, TxStatus.PENDING);
+        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
         _validateMetaTxMatchRecord(self, txId, metaTx.txRecord);
         _validateMetaTxPaymentMatchRecord(self, txId, metaTx.txRecord);
         if (!verifySignature(self, metaTx)) revert SharedValidation.InvalidSignature(metaTx.signature);
-        
+
         incrementSignerNonce(self, metaTx.params.signer);
-        
+
         // EFFECT: Update status to EXECUTING before external call to prevent reentrancy
         self.txRecords[txId].status = TxStatus.EXECUTING;
-        
+
         // INTERACT: External call after state update
         (bool success, bytes memory result) = executeTransaction(self, self.txRecords[txId]);
         
@@ -613,46 +619,6 @@ library EngineBlox {
     }
 
     /**
-     * @dev Performs `address.call` without copying unbounded returndata into memory.
-     * @param target Callee address
-     * @param value Native value to forward
-     * @param callGas Gas to forward to the callee
-     * @param data Full calldata for the call
-     * @return success Whether the call returned success
-     * @return result First `min(returndatasize(), MAX_RESULT_PREVIEW_BYTES)` bytes of returndata
-     */
-    function _callWithBoundedReturndata(
-        address target,
-        uint256 value,
-        uint256 callGas,
-        bytes memory data
-    ) private returns (bool success, bytes memory result) {
-        uint256 dataLength = data.length;
-        assembly ("memory-safe") {
-            success := call(
-                callGas,
-                target,
-                value,
-                add(data, 0x20),
-                dataLength,
-                0,
-                0
-            )
-        }
-        uint256 returnSize;
-        assembly ("memory-safe") {
-            returnSize := returndatasize()
-        }
-        uint256 copyLength = returnSize > MAX_RESULT_PREVIEW_BYTES ? MAX_RESULT_PREVIEW_BYTES : returnSize;
-        result = new bytes(copyLength);
-        assembly ("memory-safe") {
-            if gt(copyLength, 0) {
-                returndatacopy(add(result, 0x20), 0, copyLength)
-            }
-        }
-    }
-
-    /**
      * @dev Executes a transaction based on its execution type and attached payment.
      * @param self The SecureOperationState storage reference (for validation)
      * @param record The transaction record to execute.
@@ -666,13 +632,12 @@ library EngineBlox {
      *            causing _validateTxPending to revert in entry functions
      *         4. Status flow is one-way: PENDING → EXECUTING → (COMPLETED/FAILED)
      *         This creates an effective reentrancy guard without additional storage overhead.
-     * @notice Returndata from the target is captured up to `MAX_RESULT_PREVIEW_BYTES` only (low-level `call` with
-     *         zero output area, then bounded `returndatacopy`). This prevents unbounded memory expansion from
-     *         malicious or buggy callees while preserving a large preview for debugging and audits.
      * @notice **Atomicity:** If the main call succeeds but `executeAttachedPayment` reverts (e.g.
      *         insufficient balance, whitelist mismatch), the **entire** approval/execute transaction reverts—main
      *         effect included. This is **intentional all-or-nothing** semantics; splitting finalize vs payment
      *         would require a separate design with reentrancy and state-machine implications.
+     * @notice `record` is a memory copy: final `status` and `resultHash` are written to storage by `_completeTransaction`;
+     *         full returndata is emitted in `TxExecutionResult`.
      */
     function executeTransaction(SecureOperationState storage self, TxRecord memory record) private returns (bool, bytes memory) {
         // Validate that transaction is in EXECUTING status (set by caller before this function)
@@ -690,24 +655,15 @@ library EngineBlox {
         // Execute the main transaction
         // REENTRANCY SAFE: Status is EXECUTING, preventing reentry through entry functions
         // that require PENDING status. Any reentry attempt would fail at _validateTxStatus(..., PENDING).
-        (bool success, bytes memory result) = _callWithBoundedReturndata(
-            record.params.target,
-            record.params.value,
-            gas,
+        (bool success, bytes memory result) = record.params.target.call{value: record.params.value, gas: gas}(
             txData
         );
 
         if (success) {
-            record.status = TxStatus.COMPLETED;
-            record.result = result;
-            
             // Execute attached payment if transaction was successful
             if (record.payment.recipient != address(0)) {
                 executeAttachedPayment(self, record);
             }
-        } else {
-            record.status = TxStatus.FAILED;
-            record.result = result;
         }
 
         return (success, result);
@@ -839,7 +795,7 @@ library EngineBlox {
                 executionParams: executionParams
             }),
             message: 0,
-            result: "",
+            resultHash: bytes32(0),
             payment: payment
         });
     }
@@ -850,8 +806,7 @@ library EngineBlox {
      * @param txId The transaction ID to add to the pending set.
      */
     function addPendingTx(SecureOperationState storage self, uint256 txId) private {
-        SharedValidation.validateTransactionExists(txId);
-        _validateTxStatus(self, txId, TxStatus.PENDING);
+        SharedValidation.validateTransactionExists(txId, self.txCounter);
         
         // Try to add transaction ID to the set - add() returns false if already exists
         if (!self.pendingTransactionsSet.add(txId)) {
@@ -865,7 +820,7 @@ library EngineBlox {
      * @param txId The transaction ID to remove from the pending set.
      */
     function removePendingTx(SecureOperationState storage self, uint256 txId) private {
-        SharedValidation.validateTransactionExists(txId);
+        SharedValidation.validateTransactionExists(txId, self.txCounter);
         
         // Remove the transaction ID from the set (O(1) operation)
         if (!self.pendingTransactionsSet.remove(txId)) {
@@ -1108,8 +1063,8 @@ library EngineBlox {
      * @param functionPermission The function permission to add.
      * @notice Reverts **`ResourceAlreadyExists`** if the selector is already present on the role. To update
      *         bitmap or `handlerForSelectors`, **`removeFunctionFromRole`** first then re-add.
-     *         Protected schemas cannot be removed from roles (`CannotModifyProtected`), so grants of
-     *         protected selectors to a role are effectively **permanent** unless the role itself is removed.
+     *         **`removeFunctionFromRole`** succeeds only when the schema's **`isGrantRevocable`** is true (see there);
+     *         **`isProtected`** on the schema does not, by itself, block removing a grant from a role.
      */
     function addFunctionToRole(
         SecureOperationState storage self,
@@ -1142,10 +1097,10 @@ library EngineBlox {
      * @param self The SecureOperationState to modify.
      * @param roleHash The role hash to remove the function permission from.
      * @param functionSelector The function selector to remove from the role.
-     * @notice **Protected schemas cannot be removed from roles** (`CannotModifyProtected`). Granting a protected
-     *         selector to a role is therefore an **irreversible expansion** of that role's capability unless the
-     *         role itself is removed. Operators should only add protected selectors to roles when the
-     *         permanent authority is intended.
+     * @notice When the selector is registered, reverts **`GrantNotRevocable`** if **`isGrantRevocable == false`**
+     *         (no role may drop this grant). When **`isGrantRevocable == true`**, the grant may be removed from
+     *         any role, including protected system roles; **`isProtected`** on the schema still blocks
+     *         **`unregisterFunction`** independently, and **`removeRole`** still blocks protected roles.
      */
     function removeFunctionFromRole(
         SecureOperationState storage self,
@@ -1155,12 +1110,10 @@ library EngineBlox {
         // Check if role exists (checks both roles mapping and supportedRolesSet)
         _validateRoleExists(self, roleHash);
         
-        // Security check: Prevent removing protected functions from roles
-        // Check if function exists and is protected
         if (self.supportedFunctionsSet.contains(bytes32(functionSelector))) {
             FunctionSchema memory functionSchema = self.functions[functionSelector];
-            if (functionSchema.isProtected) {
-                revert SharedValidation.CannotModifyProtected(bytes32(functionSelector));
+            if (!functionSchema.isGrantRevocable) {
+                revert SharedValidation.GrantNotRevocable(functionSelector);
             }
         }
         
@@ -1259,7 +1212,8 @@ library EngineBlox {
      * @param operationName The name of the operation type.
      * @param supportedActionsBitmap Bitmap of permissions required to execute this function.
      * @param enforceHandlerRelations When true (strict mode), handlerForSelectors in role permissions must match this schema's handlerForSelectors at use time. When false (flexible mode), forward references are allowed.
-     * @param isProtected Whether the function schema is protected from removal.
+     * @param isProtected Whether the function schema is protected from **unregister** (`unregisterFunction`).
+     * @param isGrantRevocable When false, `removeFunctionFromRole` cannot remove this selector from any role; when true, grants may be removed from any role, including protected system roles.
      * @param handlerForSelectors Non-empty array required - execution selectors must contain self-reference, handler selectors must point to execution selectors.
      * @custom:security OPERATIONAL MODES: We do not require handlerForSelectors[i] to be in supportedFunctionsSet at registration.
      *         - Strict mode (enforceHandlerRelations == true): at use time (_validateHandlerForSelectors) we require role permissions' handlerForSelectors to match this schema's handlerForSelectors; registration order is flexible.
@@ -1273,6 +1227,7 @@ library EngineBlox {
         uint16 supportedActionsBitmap,
         bool enforceHandlerRelations,
         bool isProtected,
+        bool isGrantRevocable,
         bytes4[] memory handlerForSelectors
     ) public {
         // Validate that functionSignature matches functionSelector
@@ -1323,6 +1278,7 @@ library EngineBlox {
         schema.supportedActionsBitmap = supportedActionsBitmap;
         schema.enforceHandlerRelations = enforceHandlerRelations;
         schema.isProtected = isProtected;
+        schema.isGrantRevocable = isGrantRevocable;
         schema.handlerForSelectors = handlerForSelectors;
         
         // Add to supportedFunctionsSet
@@ -2058,7 +2014,7 @@ library EngineBlox {
         SharedValidation.validateChainId(metaTxParams.chainId);
         SharedValidation.validateMetaTxHandlerContractBinding(metaTxParams.handlerContract);
         SharedValidation.validateHandlerSelector(metaTxParams.handlerSelector);
-        SharedValidation.validateDeadline(metaTxParams.deadline);
+        SharedValidation.validateMetaTxDeadline(metaTxParams.deadline);
         SharedValidation.validateNotZeroAddress(metaTxParams.signer);
 
         // Populate the nonce directly from storage for security
@@ -2128,6 +2084,8 @@ library EngineBlox {
      * @notice **Gas tradeoff:** There is no explicit `{gas: ...}` stipend; the subcall receives the usual EIP-150
      *         bounded share of remaining gas (not the entire tx). Primary state updates in callers run **before**
      *         `logTxEvent` where applicable. Optional hardening: configurable stipend + explicit failure event.
+     * @notice **Execution returndata:** full bytes are emitted only via `TxExecutionResult` from `_completeTransaction`;
+     *         this function emits lifecycle `TransactionEvent` with `resultHash` (zero on request/cancel).
      * @custom:security REENTRANCY PROTECTION: This function is safe from reentrancy because:
      *         1. It is called AFTER all state changes are complete (in _completeTransaction,
      *            _cancelTransaction, and txRequest)
@@ -2145,21 +2103,17 @@ library EngineBlox {
         bytes4 functionSelector
     ) public {
         TxRecord memory txRecord = self.txRecords[txId];
-        
-        // Emit only non-sensitive public data
+
         emit TransactionEvent(
             txId,
             functionSelector,
             txRecord.status,
             txRecord.params.requester,
             txRecord.params.target,
-            txRecord.params.operationType
+            txRecord.params.operationType,
+            txRecord.resultHash
         );
-        
-        // Forward event data to event forwarder
-        // REENTRANCY SAFE: External call is wrapped in try-catch and doesn't modify
-        // critical state. Even if eventForwarder is malicious, reentry attempts fail
-        // because transactions are no longer in PENDING status (they're COMPLETED/CANCELLED).
+
         if (self.eventForwarder != address(0)) {
             try IEventForwarder(self.eventForwarder).forwardTxEvent(
                 txId,
@@ -2167,12 +2121,9 @@ library EngineBlox {
                 txRecord.status,
                 txRecord.params.requester,
                 txRecord.params.target,
-                txRecord.params.operationType
-            ) {
-                // Event forwarded successfully
-            } catch {
-                // Forwarding failed, continue execution (non-critical operation)
-            }
+                txRecord.params.operationType,
+                txRecord.resultHash
+            ) {} catch {}
         }
     }
 
@@ -2258,33 +2209,26 @@ library EngineBlox {
      * @param self The SecureOperationState to modify
      * @param txId The transaction ID to complete
      * @param success Whether the transaction execution was successful
-     * @param result The result of the transaction execution
+     * @param executionResult Returndata from the main target call (emitted in `TxExecutionResult`).
      */
     function _completeTransaction(
         SecureOperationState storage self,
         uint256 txId,
         bool success,
-        bytes memory result
+        bytes memory executionResult
     ) private {
-        // enforce that the requested target is whitelisted for this selector.
-        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
-        
-        // Update storage with new status and result
+        bytes32 resultHash = _executionResultHash(executionResult);
         if (success) {
             self.txRecords[txId].status = TxStatus.COMPLETED;
-            self.txRecords[txId].result = result;
         } else {
             self.txRecords[txId].status = TxStatus.FAILED;
-            self.txRecords[txId].result = result; // Store failure reason for debugging
-            // Note: FAILED status is intentional - transactions can be valid when requested
-            // but fail when executed (e.g., conditions changed, insufficient balance, etc.)
-            // Users can query status via getTransaction() or listen to TransactionEvent
         }
-        
-        // Remove from pending transactions list
+        self.txRecords[txId].resultHash = resultHash;
+
         removePendingTx(self, txId);
-        
+
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
+        emit TxExecutionResult(txId, executionResult);
     }
 
     /**
@@ -2296,9 +2240,6 @@ library EngineBlox {
         SecureOperationState storage self,
         uint256 txId
     ) private {
-        // enforce that the requested target is whitelisted for this selector.
-        _validateTargetWhitelist(self, self.txRecords[txId].params.executionSelector, self.txRecords[txId].params.target);
-        
         self.txRecords[txId].status = TxStatus.CANCELLED;
         
         // Remove from pending transactions list
@@ -2307,7 +2248,16 @@ library EngineBlox {
         logTxEvent(self, txId, self.txRecords[txId].params.executionSelector);
     }
 
-        /**
+    /**
+     * @dev Hashes execution returndata for storage and events
+     * @param executionResult The execution returndata to hash
+     * @return The hash of the execution returndata
+     */
+    function _executionResultHash(bytes memory executionResult) private pure returns (bytes32) {
+        return executionResult.length == 0 ? bytes32(0) : keccak256(executionResult);
+    }
+
+    /**
      * @dev Validates that the caller has any role permission
      * @param self The SecureOperationState to check
      * @notice This function consolidates the repeated permission check pattern to reduce contract size
@@ -2390,7 +2340,8 @@ library EngineBlox {
             sp.gasLimit != mp.gasLimit ||
             sp.operationType != mp.operationType ||
             keccak256(sp.executionParams) != keccak256(mp.executionParams) ||
-            stored.releaseTime != metaTxRecord.releaseTime
+            stored.releaseTime != metaTxRecord.releaseTime ||
+            metaTxRecord.resultHash != bytes32(0)
         ) {
             revert SharedValidation.MetaTxRecordMismatchStoredTx(txId);
         }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -77,7 +77,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             SharedValidation.CannotModifyProtected.selector,
             protectedRoleHash
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**
@@ -176,7 +176,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             SharedValidation.CannotModifyProtected.selector,
             protectedRoleHash
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     // ============ PERMISSION ESCALATION ATTACKS ============
@@ -467,7 +467,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             maxWallets,
             maxWallets
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**
@@ -617,7 +617,7 @@ contract ComprehensiveAccessControlFuzzTest is CommonBase {
             SharedValidation.ItemAlreadyExists.selector,
             wallet
         );
-        assertEq(txRecord.result, expectedError);
+        assertEq(txRecord.resultHash, TestHelpers.executionResultHash(expectedError));
     }
 
     /**

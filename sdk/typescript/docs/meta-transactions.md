@@ -547,9 +547,9 @@ if (!isAddress(requesterAddress)) {
   throw new Error('Invalid requester address');
 }
 
-// Validate deadlines
-if (deadline <= BigInt(Math.floor(Date.now() / 1000))) {
-  throw new Error('Deadline must be in the future');
+// Validate deadlines (matches on-chain `validateMetaTxDeadline`: valid while `block.timestamp <= deadline`)
+if (deadline < BigInt(Math.floor(Date.now() / 1000))) {
+  throw new Error('Deadline is in the past');
 }
 
 // Validate gas limits

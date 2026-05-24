@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../helpers/AccountPatternTest.sol";
@@ -208,7 +208,7 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_OwnerCanRequest() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        uint256 txId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 txId = accountBlox.updateBroadcasterRequest(newBroadcaster, broadcaster);
         vm.prank(owner);
         EngineBlox.TxRecord memory txRecord = accountBlox.getTransaction(txId);
 
@@ -220,13 +220,31 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_Revert_Unauthorized() public {
         vm.prank(attacker);
         vm.expectRevert();
-        accountBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, broadcaster);
+    }
+
+    function test_UpdateBroadcasterRequest_Revert_NoOpReplace() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, broadcaster));
+        accountBlox.updateBroadcasterRequest(broadcaster, broadcaster);
+    }
+
+    function test_UpdateBroadcasterRequest_Revert_AlreadyActiveBroadcaster() public {
+        vm.prank(owner);
+        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, address(0));
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(owner);
+        accountBlox.updateBroadcasterDelayedApproval(addTxId);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ItemAlreadyExists.selector, broadcaster));
+        accountBlox.updateBroadcasterRequest(broadcaster, user2);
     }
 
     function test_UpdateBroadcasterDelayedApproval_AfterTimelock() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        uint256 requestTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 requestTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, broadcaster);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(requestTxId);
         uint256 txId = requestTx.txId;
@@ -246,7 +264,7 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterCancellation_OwnerCanCancel() public {
         address newBroadcaster = user1;
         vm.prank(owner);
-        uint256 requestTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, 0);
+        uint256 requestTxId = accountBlox.updateBroadcasterRequest(newBroadcaster, broadcaster);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(requestTxId);
         uint256 txId = requestTx.txId;
@@ -262,7 +280,7 @@ contract SecureOwnableTest is CommonBase {
     function test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress() public {
         // Add a second broadcaster at location 1 first (BROADCASTER_ROLE is protected: cannot revoke the last wallet)
         vm.prank(owner);
-        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, 1);
+        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, address(0));
         vm.prank(owner);
         EngineBlox.TxRecord memory addTx = accountBlox.getTransaction(addTxId);
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -274,7 +292,7 @@ contract SecureOwnableTest is CommonBase {
 
         // Request revoke at location 1 (zero address = revoke)
         vm.prank(owner);
-        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), 1);
+        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), user2);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(requestTxId);
         uint256 txId = requestTx.txId;
@@ -302,7 +320,7 @@ contract SecureOwnableTest is CommonBase {
     function testFuzz_UpdateBroadcasterRequest_RevokeAtLocation(uint256 location) public {
         // Seed broadcaster list to at least two entries (same as test_UpdateBroadcasterRequest_RevokeAtLocation_ZeroAddress)
         vm.prank(owner);
-        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, 1);
+        uint256 addTxId = accountBlox.updateBroadcasterRequest(user2, address(0));
         vm.prank(owner);
         EngineBlox.TxRecord memory addTx = accountBlox.getTransaction(addTxId);
         advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
@@ -317,7 +335,7 @@ contract SecureOwnableTest is CommonBase {
 
         // Submit revoke-at-location request (address(0) = revoke)
         vm.prank(owner);
-        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), loc);
+        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), before[loc]);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(requestTxId);
         uint256 txId = requestTx.txId;
@@ -361,7 +379,7 @@ contract SecureOwnableTest is CommonBase {
         assertEq(b.length, 1, "exactly one broadcaster initially");
 
         vm.prank(owner);
-        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), 0);
+        uint256 requestTxId = accountBlox.updateBroadcasterRequest(address(0), broadcaster);
         vm.prank(owner);
         EngineBlox.TxRecord memory requestTx = accountBlox.getTransaction(requestTxId);
         uint256 txId = requestTx.txId;

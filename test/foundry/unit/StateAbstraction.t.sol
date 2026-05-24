@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
@@ -35,10 +35,6 @@ contract EngineBloxTest is CommonBase {
     function test_NativeTransferSelector_Constant() public {
         bytes4 expected = bytes4(keccak256("__bloxchain_native_transfer__()"));
         assertEq(EngineBlox.NATIVE_TRANSFER_SELECTOR, expected);
-    }
-
-    function test_MaxResultPreviewBytes_Constant() public {
-        assertEq(EngineBlox.MAX_RESULT_PREVIEW_BYTES, 32 * 1024);
     }
 
     // ============ STATE MANAGEMENT TESTS ============

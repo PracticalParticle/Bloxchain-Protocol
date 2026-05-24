@@ -312,10 +312,11 @@ import { TxStatus } from '@bloxchain/sdk';
 
 TxStatus.UNDEFINED
 TxStatus.PENDING
+TxStatus.EXECUTING
+TxStatus.PROCESSING_PAYMENT
 TxStatus.CANCELLED
 TxStatus.COMPLETED
 TxStatus.FAILED
-TxStatus.REJECTED
 ```
 
 ## Error Handling

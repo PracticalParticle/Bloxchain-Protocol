@@ -90,7 +90,7 @@ Central state struct; all mutations go through EngineBlox.
 
 ### 3.2 TxStatus and TxAction (EngineBlox.sol)
 
-- **TxStatus**: UNDEFINED, PENDING, EXECUTING, PROCESSING_PAYMENT, CANCELLED, COMPLETED, FAILED, REJECTED.  
+- **TxStatus**: UNDEFINED, PENDING, EXECUTING, PROCESSING_PAYMENT, CANCELLED, COMPLETED, FAILED.  
   Critical invariant: approval/execution/cancel only allowed when status is PENDING; status is set to EXECUTING (or CANCELLED) **before** any external call to prevent reentrancy-based bypass.
 - **TxAction** (9 values): Distinguish **who** can do **what**:
   - Time-delay: `EXECUTE_TIME_DELAY_REQUEST`, `EXECUTE_TIME_DELAY_APPROVE`, `EXECUTE_TIME_DELAY_CANCEL`
@@ -179,7 +179,7 @@ The protocol deliberately enforces the same security rules in multiple places. A
 ### 6.2 Custom Errors (SharedValidation.sol) — Canonical List
 
 - **Address**: InvalidAddress, NotNewAddress, validateNotZeroAddress, validateAddressUpdate, validateTargetAddress, validateHandlerContract
-- **Time / deadline**: InvalidTimeLockPeriod, TimeLockPeriodZero, DeadlineInPast, MetaTxExpired, BeforeReleaseTime, NewTimelockSame; validateReleaseTime, validateMetaTxDeadline
+- **Time / deadline**: InvalidTimeLockPeriod, TimeLockPeriodZero, MetaTxExpired, BeforeReleaseTime, NewTimelockSame; validateReleaseTime, validateMetaTxDeadline
 - **Permissions**: NoPermission, NoPermissionForFunction, RestrictedOwner, RestrictedOwnerRecovery, RestrictedRecovery, RestrictedBroadcaster, SignerNotAuthorized, OnlyCallableByContract
 - **Transaction / state**: NotSupported, InvalidOperationType, ZeroOperationTypeNotAllowed, TransactionStatusMismatch, AlreadyInitialized, NotInitialized, TransactionIdMismatch, PendingSecureRequest
 - **Signature / meta-tx**: InvalidSignatureLength, InvalidSignature, InvalidNonce, ChainIdMismatch, InvalidHandlerSelector, InvalidSValue, InvalidVValue, ECDSAInvalidSignature, GasPriceExceedsMax

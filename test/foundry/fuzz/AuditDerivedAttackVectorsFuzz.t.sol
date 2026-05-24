@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -22,12 +22,11 @@ import "../helpers/PaymentTestHelper.sol";
  * Coverage:
  *  - Finding 1  (HIGH)   : Meta-tx handler spoofing → entrypoint binding
  *  - Finding 3  (MEDIUM) : Config batch payment rail → validateEmptyPayment
- *  - Finding 5  (MEDIUM) : Unbounded returndata DoS → bounded returndata constant
  *  - Finding 6  (MEDIUM) : Whitelist bypass via payments → payout whitelists
  *  - Finding 7  (MEDIUM) : Stale recovery in ownership transfer → snapshot semantics
  *  - Finding 8  (MEDIUM) : Recovery update while ownership pending → documented behavior
  *  - Finding 11 (LOW)    : Whitelist skip for unregistered selectors → ResourceNotFound
- *  - Finding 14 (LOW)    : Pending tx after whitelist delist → re-validate on cancel/complete
+ *  - Finding 14 (LOW)    : Pending tx after whitelist delist → approve reverts; cancel allowed without re-whitelist
  *  - Finding 22 (LOW)    : getTransactionHistory empty revert → returns []
  *  - Finding 24 (LOW)    : Predictable txId DoS → sequential counter
  *  - Finding 29 (LOW)    : Gas limit zero → gasleft() convention
@@ -400,18 +399,6 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
     }
 
     // =========================================================================
-    // Finding 5 — Bounded returndata constant (MEDIUM)
-    // =========================================================================
-
-    /**
-     * @dev Audit Finding 5: MAX_RESULT_PREVIEW_BYTES is 32 KiB. Verify the
-     *      on-chain constant matches the documented cap.
-     */
-    function testFuzz_Finding5_MaxResultPreviewBytesIs32KiB() public pure {
-        assertEq(EngineBlox.MAX_RESULT_PREVIEW_BYTES, 32 * 1024);
-    }
-
-    // =========================================================================
     // Finding 6 — Payment recipient whitelist enforcement (MEDIUM)
     // =========================================================================
 
@@ -594,11 +581,9 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
     // =========================================================================
 
     /**
-     * @dev Audit Finding 14: A pending tx created while `target` was whitelisted must
-     *      still pass `_validateTargetWhitelist` on cancel/complete. Removing the
-     *      whitelist entry after request must block both cancel and delayed approve.
+     * @dev Finding 14 (cancel path): after delist, cancellation must still succeed (no call to target).
      */
-    function testFuzz_Finding14_PendingTxAfterWhitelistDelist_CancelReverts() public {
+    function testFuzz_Finding14_PendingTxAfterWhitelistDelist_CancelSucceeds() public {
         // Keep owner as msg.sender for all helper calls (expectRevert can interact poorly with one-shot prank)
         vm.startPrank(owner);
         paymentHelper.whitelistTargetForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
@@ -616,20 +601,14 @@ contract AuditDerivedAttackVectorsFuzzTest is CommonBase {
 
         paymentHelper.removeTargetFromWhitelistForTesting(address(mockTarget), EngineBlox.NATIVE_TRANSFER_SELECTOR);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                SharedValidation.TargetNotWhitelisted.selector,
-                address(mockTarget),
-                EngineBlox.NATIVE_TRANSFER_SELECTOR
-            )
-        );
         paymentHelper.cancelTransaction(txId);
+        assertEq(uint8(paymentHelper.getTransaction(txId).status), uint8(EngineBlox.TxStatus.CANCELLED));
         vm.stopPrank();
     }
 
     /**
-     * @dev Finding 14 (approve path): after delist, delayed approval must revert at
-     *      `_completeTransaction` → `_validateTargetWhitelist` even though the tx was valid at request.
+     * @dev Finding 14 (approve path): after delist, delayed approval must revert on
+     *      `_validateTargetWhitelist` before any external execution.
      */
     function testFuzz_Finding14_PendingTxAfterWhitelistDelist_ApproveReverts() public {
         vm.prank(owner);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -54,10 +54,10 @@ contract MetaTransactionSecurityFuzzTest is CommonBase {
         );
         metaTxParams.deadline = pastDeadline;
 
-        // generateUnsignedMetaTransactionForNew reverts with DeadlineInPast when deadline is in the past
+        // generateUnsignedMetaTransactionForNew reverts with MetaTxExpired when deadline is in the past
         vm.expectRevert(
             abi.encodeWithSelector(
-                SharedValidation.DeadlineInPast.selector,
+                SharedValidation.MetaTxExpired.selector,
                 pastDeadline,
                 block.timestamp
             )

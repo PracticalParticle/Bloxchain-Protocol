@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../../../contracts/core/base/BaseStateMachine.sol";
@@ -81,6 +81,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 policySchemaActionsBitmap,
                 false,
                 true,
+                true,
                 prh
             );
         }
@@ -94,6 +95,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 "ERC20_TRANSFER",
                 policySchemaActionsBitmap,
                 false,
+                true,
                 true,
                 eth
             );
@@ -138,6 +140,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 policySchemaActionsBitmap,
                 false,
                 true,
+                true,
                 nativeTransferHandlers
             );
         }
@@ -176,6 +179,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 requestActionsBitmap,
                 true, // enforceHandlerRelations
                 true, // isProtected = true (required because function exists in contract bytecode)
+                true,
                 requestTxHandlers
             );
         }
@@ -210,6 +214,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 requestActionsBitmap,
                 true, // enforceHandlerRelations
                 true,
+                true,
                 requestWithPaymentHandlers
             );
         }
@@ -241,6 +246,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 approveActionsBitmap,
                 true, // enforceHandlerRelations
                 true, // isProtected = true (required because function exists in contract bytecode)
+                true,
                 approveTxHandlers
             );
         }
@@ -255,7 +261,7 @@ contract PaymentTestHelper is BaseStateMachine {
             EngineBlox.addFunctionToRole(state, ownerRoleHash, approveTxPermission);
         }
 
-        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL (whitelist re-check on cancel)
+        // Register cancelTransaction for EXECUTE_TIME_DELAY_CANCEL
         EngineBlox.TxAction[] memory cancelActions = new EngineBlox.TxAction[](1);
         cancelActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
         uint16 cancelActionsBitmap = EngineBlox.createBitmapFromActions(cancelActions);
@@ -272,6 +278,7 @@ contract PaymentTestHelper is BaseStateMachine {
                 cancelTxSelector,
                 "TEST_CANCEL",
                 cancelActionsBitmap,
+                true,
                 true,
                 true,
                 cancelTxHandlers

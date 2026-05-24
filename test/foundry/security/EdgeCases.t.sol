@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/access/RuntimeRBAC.sol";
@@ -115,7 +115,7 @@ contract EdgeCasesTest is CommonBase {
 
         vm.prank(owner);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
-        accountBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, broadcaster);
 
         vm.prank(owner);
         uint256[] memory pending = accountBlox.getPendingTransactions();
@@ -124,7 +124,7 @@ contract EdgeCasesTest is CommonBase {
 
     function test_OwnershipRequest_AllowedWhileBroadcasterPending() public {
         vm.prank(owner);
-        accountBlox.updateBroadcasterRequest(user1, 0);
+        accountBlox.updateBroadcasterRequest(user1, broadcaster);
 
         vm.prank(recovery);
         uint256 ownTxId = accountBlox.transferOwnershipRequest();
@@ -135,7 +135,7 @@ contract EdgeCasesTest is CommonBase {
 
         vm.prank(owner);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);
-        accountBlox.updateBroadcasterRequest(user2, 0);
+        accountBlox.updateBroadcasterRequest(user2, broadcaster);
 
         vm.prank(recovery);
         vm.expectRevert(SharedValidation.PendingSecureRequest.selector);

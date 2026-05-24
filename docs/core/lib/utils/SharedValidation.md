@@ -123,21 +123,6 @@ Validates that a time lock period is greater than zero
 
 ---
 
-### validateDeadline
-
-```solidity
-function validateDeadline(uint256 deadline) internal view
-```
-
-Validates that a deadline is in the future
-
-**Parameters:**
-- `` (): The deadline timestamp to validate
-
-
-
----
-
 ### validateTimeLockUpdate
 
 ```solidity
@@ -175,7 +160,7 @@ Validates that the current time is after the release time
 function validateMetaTxDeadline(uint256 deadline) internal view
 ```
 
-Validates that a meta-transaction has not expired
+Validates that a meta-transaction deadline has not passed (inclusive boundary: `block.timestamp == deadline` is valid). Used for unsigned payload construction and on-chain verification.
 
 **Parameters:**
 - `` (): The deadline of the meta-transaction
@@ -356,13 +341,14 @@ Validates that an operation type matches the expected type
 ### validateTransactionExists
 
 ```solidity
-function validateTransactionExists(uint256 txId) internal pure
+function validateTransactionExists(uint256 txId, uint256 txCounter) internal pure
 ```
 
-Validates that a transaction exists (has non-zero ID)
+Validates that `txId` refers to a minted record: non-zero and at most `txCounter` (inclusive).
 
 **Parameters:**
 - `` (): The transaction ID to validate
+- `` (): The engine's `txCounter` after the record was allocated (valid ids are `1..txCounter`)
 
 
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../../../../core/lib/EngineBlox.sol";
 import "../../../../core/lib/interfaces/IDefinition.sol";
@@ -27,9 +27,9 @@ library GuardianSafeDefinitions {
     bytes4 public constant CANCEL_TX_SELECTOR = bytes4(keccak256("cancelTransaction(uint256)"));
     
     // Meta-transaction Function Selectors
-    bytes4 public constant APPROVE_TX_META_SELECTOR = bytes4(keccak256("approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant CANCEL_TX_META_SELECTOR = bytes4(keccak256("cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant REQUEST_AND_APPROVE_TX_META_SELECTOR = bytes4(keccak256("requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant APPROVE_TX_META_SELECTOR = bytes4(keccak256("approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant CANCEL_TX_META_SELECTOR = bytes4(keccak256("cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant REQUEST_AND_APPROVE_TX_META_SELECTOR = bytes4(keccak256("requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
     
     /**
      * @dev Returns predefined function schemas
@@ -74,6 +74,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayRequestActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -85,6 +86,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -96,40 +98,44 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(timeDelayCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
         // Meta-transaction functions
         schemas[3] = EngineBlox.FunctionSchema({
-            functionSignature: "approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
         schemas[4] = EngineBlox.FunctionSchema({
-            functionSignature: "cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: CANCEL_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxCancelActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
         schemas[5] = EngineBlox.FunctionSchema({
-            functionSignature: "requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxHandlerForSelectors
         });
         
@@ -156,6 +162,7 @@ library GuardianSafeDefinitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(executionActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: execSafeTxExecutionHandlerForSelectors
         });
         

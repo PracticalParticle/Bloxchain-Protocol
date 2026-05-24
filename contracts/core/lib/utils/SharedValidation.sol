@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 /**
  * @title SharedValidation
@@ -38,7 +38,6 @@ library SharedValidation {
     // Time and deadline errors with context
     error InvalidTimeLockPeriod(uint256 provided);
     error TimeLockPeriodZero(uint256 provided);
-    error DeadlineInPast(uint256 deadline, uint256 currentTime);
     error MetaTxExpired(uint256 deadline, uint256 currentTime);
     error BeforeReleaseTime(uint256 releaseTime, uint256 currentTime);
     error NewTimelockSame(uint256 newPeriod, uint256 currentPeriod);
@@ -82,6 +81,7 @@ library SharedValidation {
     error ResourceNotFound(bytes32 resourceId);
     error ResourceAlreadyExists(bytes32 resourceId);
     error CannotModifyProtected(bytes32 resourceId);
+    error GrantNotRevocable(bytes4 functionSelector);
     
     // Consolidated item errors (for addresses: wallets, policies, etc.)
     error ItemAlreadyExists(address item);
@@ -223,14 +223,6 @@ library SharedValidation {
     }
     
     /**
-     * @dev Validates that a deadline is in the future
-     * @param deadline The deadline timestamp to validate
-     */
-    function validateDeadline(uint256 deadline) internal view {
-        if (deadline <= block.timestamp) revert DeadlineInPast(deadline, block.timestamp);
-    }
-    
-    /**
      * @dev Validates that a new time lock period is different from the current one
      * @param newPeriod The new time lock period
      * @param currentPeriod The current time lock period
@@ -249,8 +241,9 @@ library SharedValidation {
     }
     
     /**
-     * @dev Validates that a meta-transaction has not expired
-     * @param deadline The deadline of the meta-transaction
+     * @dev Validates that a meta-transaction deadline has not passed (inclusive boundary: `block.timestamp == deadline` is valid).
+     *      Used both when building unsigned meta-tx payloads (`EngineBlox.generateMetaTransaction`) and when verifying submitted meta-txs.
+     * @param deadline The deadline timestamp from `MetaTxParams`
      */
     function validateMetaTxDeadline(uint256 deadline) internal view {
         if (block.timestamp > deadline) revert MetaTxExpired(deadline, block.timestamp);
@@ -360,11 +353,12 @@ library SharedValidation {
     }
     
     /**
-     * @dev Validates that a transaction exists (has non-zero ID)
+     * @dev Validates that `txId` refers to a minted record: non-zero and at most `txCounter` (inclusive).
      * @param txId The transaction ID to validate
+     * @param txCounter The engine's `txCounter` after the record was allocated (valid ids are `1..txCounter`)
      */
-    function validateTransactionExists(uint256 txId) internal pure {
-        if (txId == 0) revert ResourceNotFound(bytes32(uint256(txId)));
+    function validateTransactionExists(uint256 txId, uint256 txCounter) internal pure {
+        if (txId == 0 || txId > txCounter) revert ResourceNotFound(bytes32(uint256(txId)));
     }
     
     /**

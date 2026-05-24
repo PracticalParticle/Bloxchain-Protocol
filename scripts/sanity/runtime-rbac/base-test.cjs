@@ -1045,7 +1045,7 @@ class BaseRuntimeRBACTest {
                 console.log(`  📋 Transaction emitted ${receipt.logs.length} log(s)`);
                 
                 // Try to find TransactionEvent
-                const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)');
+                const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)');
                 for (let i = 0; i < receipt.logs.length; i++) {
                     const log = receipt.logs[i];
                     if (log.topics && log.topics[0] === eventSignature) {
@@ -1341,7 +1341,7 @@ class BaseRuntimeRBACTest {
             return null;
         }
         
-        const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)');
+        const eventSignature = this.web3.utils.keccak256('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)');
         for (let i = 0; i < receipt.logs.length; i++) {
             const log = receipt.logs[i];
             if (log.topics && log.topics[0] === eventSignature) {

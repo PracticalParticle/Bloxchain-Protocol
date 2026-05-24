@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
 import "../../../contracts/core/lib/EngineBlox.sol";
@@ -109,6 +109,7 @@ contract MaliciousEventForwarder is IEventForwarder {
         EngineBlox.TxStatus,
         address,
         address,
+        bytes32,
         bytes32
     ) external pure override {
         // Always revert - malicious behavior
@@ -127,6 +128,7 @@ contract GasIntensiveEventForwarder is IEventForwarder {
         EngineBlox.TxStatus,
         address,
         address,
+        bytes32,
         bytes32
     ) external pure override {
         // Consume gas through computation

@@ -606,7 +606,7 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     }
 
     const eventSignature = keccak256(
-      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32)')
+      toBytes('TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)')
     ) as Hex;
 
     for (const log of receipt.logs) {
@@ -623,6 +623,35 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       }
     }
     return null;
+  }
+
+  /**
+   * Read full execution returndata from `TxExecutionResult` in a receipt.
+   */
+  protected extractExecutionResultFromReceipt(receipt: any, txId: bigint): unknown {
+    if (!receipt?.logs?.length) {
+      return '0x';
+    }
+    const eventSignature = keccak256(toBytes('TxExecutionResult(uint256,bytes)')) as Hex;
+    for (const log of receipt.logs) {
+      if (log.topics?.[0] !== eventSignature || !log.topics?.[1]) {
+        continue;
+      }
+      try {
+        if (BigInt(log.topics[1]) !== txId) {
+          continue;
+        }
+        if (log.data && log.data.length > 2) {
+          const data = log.data.startsWith('0x') ? log.data.slice(2) : log.data;
+          const resultLen = parseInt(data.slice(64, 128), 16) * 2;
+          const resultBytes = data.slice(128, 128 + resultLen);
+          return resultLen > 0 ? (`0x${resultBytes}` as Hex) : '0x';
+        }
+      } catch {
+        // continue scanning logs
+      }
+    }
+    return '0x';
   }
 
   /**
@@ -751,18 +780,25 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
       console.log(`  📋 Transaction record status: ${status} (0=UNDEFINED, 1=PENDING, 2=EXECUTING, 5=COMPLETED, 6=FAILED)`);
 
       if (status === 6) {
-        // Transaction failed internally; normalize result (viem may return bytes as string, Uint8Array, or array)
-        const resultHex = this.normalizeResultToHex(txRecord.result);
-        const errorSelector = this.decodeErrorSelector(txRecord.result);
+        const executionResult = this.extractExecutionResultFromReceipt(receipt, txId);
+        const resultHex = this.normalizeResultToHex(executionResult);
+        const errorSelector = this.decodeErrorSelector(executionResult);
         const errorName = errorSelector ? this.getErrorName(errorSelector) : 'Unknown';
-        
+        const resultHash =
+          typeof txRecord.resultHash === 'string'
+            ? txRecord.resultHash
+            : txRecord.resultHash != null
+              ? `0x${Buffer.from(txRecord.resultHash as Uint8Array).toString('hex')}`
+              : '0x0';
+
         console.log(`  ❌ Transaction failed internally (status 6) for ${operationName}`);
+        console.log(`  🔍 Stored resultHash: ${resultHash}`);
         if (errorSelector) {
           console.log(`  🔍 Error selector: ${errorSelector} (${errorName})`);
         } else if (resultHex.length > 2) {
-          console.log(`  🔍 Raw result (first 20 chars): ${resultHex.slice(0, 20)}...`);
+          console.log(`  🔍 Raw result from event (first 20 chars): ${resultHex.slice(0, 20)}...`);
         } else {
-          console.log(`  🔍 No revert data in tx record (result empty); run against local node or inspect chain to see revert reason`);
+          console.log(`  🔍 No revert data in TransactionEvent; inspect approval tx logs`);
         }
 
         return {

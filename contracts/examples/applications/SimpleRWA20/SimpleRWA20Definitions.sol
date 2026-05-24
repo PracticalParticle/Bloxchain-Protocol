@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity 0.8.35;
 
 import "../../../core/lib/EngineBlox.sol";
 import "../../../core/lib/interfaces/IDefinition.sol";
@@ -24,8 +24,8 @@ library SimpleRWA20Definitions {
     bytes4 public constant BURN_TOKENS_SELECTOR = bytes4(keccak256("executeBurn(address,uint256)"));
     
     // Meta-transaction Function Selectors
-    bytes4 public constant MINT_TOKENS_META_SELECTOR = bytes4(keccak256("mintWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant BURN_TOKENS_META_SELECTOR = bytes4(keccak256("burnWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant MINT_TOKENS_META_SELECTOR = bytes4(keccak256("mintWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant BURN_TOKENS_META_SELECTOR = bytes4(keccak256("burnWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
     
     /**
      * @dev Returns predefined function schemas
@@ -47,24 +47,26 @@ library SimpleRWA20Definitions {
         
         // Meta-transaction functions
         schemas[0] = EngineBlox.FunctionSchema({
-            functionSignature: "mintWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "mintWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: MINT_TOKENS_META_SELECTOR,
             operationType: MINT_TOKENS,
             operationName: "MINT_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: mintHandlerForSelectors
         });
         
         schemas[1] = EngineBlox.FunctionSchema({
-            functionSignature: "burnWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "burnWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: BURN_TOKENS_META_SELECTOR,
             operationType: BURN_TOKENS,
             operationName: "BURN_TOKENS",
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: burnHandlerForSelectors
         });
         
@@ -82,6 +84,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: mintExecutionHandlerForSelectors
         });
         
@@ -93,6 +96,7 @@ library SimpleRWA20Definitions {
             supportedActionsBitmap: EngineBlox.createBitmapFromActions(metaTxRequestApproveActions),
             enforceHandlerRelations: true,
             isProtected: true,
+            isGrantRevocable: true,
             handlerForSelectors: burnExecutionHandlerForSelectors
         });
         
