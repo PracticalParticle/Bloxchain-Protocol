@@ -1,416 +1,421 @@
 [
   {
-    "inputs": [],
+    "type": "function",
     "name": "BROADCASTER_UPDATE",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "OWNERSHIP_TRANSFER",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "RECOVERY_UPDATE",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TIMELOCK_UPDATE",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_REQUEST_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "TRANSFER_OWNERSHIP_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_APPROVE_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_CANCELLATION_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_CANCEL_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_REQUEST_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_BROADCASTER_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_RECOVERY_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_RECOVERY_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_TIMELOCK_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "UPDATE_TIMELOCK_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "getFunctionSchemas",
+    "inputs": [],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.FunctionSchema[]",
         "components": [
           {
-            "internalType": "string",
             "name": "functionSignature",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "bytes4",
             "name": "functionSelector",
-            "type": "bytes4"
+            "type": "bytes4",
+            "internalType": "bytes4"
           },
           {
-            "internalType": "bytes32",
             "name": "operationType",
-            "type": "bytes32"
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
-            "internalType": "string",
             "name": "operationName",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "uint16",
             "name": "supportedActionsBitmap",
-            "type": "uint16"
+            "type": "uint16",
+            "internalType": "uint16"
           },
           {
-            "internalType": "bool",
             "name": "enforceHandlerRelations",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bool",
             "name": "isProtected",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bytes4[]",
+            "name": "isGrantRevocable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
             "name": "handlerForSelectors",
-            "type": "bytes4[]"
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
           }
-        ],
-        "internalType": "struct EngineBlox.FunctionSchema[]",
-        "name": "",
-        "type": "tuple[]"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "getRolePermissions",
+    "inputs": [],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IDefinition.RolePermission",
         "components": [
           {
-            "internalType": "bytes32[]",
             "name": "roleHashes",
-            "type": "bytes32[]"
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
           },
           {
+            "name": "functionPermissions",
+            "type": "tuple[]",
+            "internalType": "struct EngineBlox.FunctionPermission[]",
             "components": [
               {
-                "internalType": "bytes4",
                 "name": "functionSelector",
-                "type": "bytes4"
+                "type": "bytes4",
+                "internalType": "bytes4"
               },
               {
-                "internalType": "uint16",
                 "name": "grantedActionsBitmap",
-                "type": "uint16"
+                "type": "uint16",
+                "internalType": "uint16"
               },
               {
-                "internalType": "bytes4[]",
                 "name": "handlerForSelectors",
-                "type": "bytes4[]"
+                "type": "bytes4[]",
+                "internalType": "bytes4[]"
               }
-            ],
-            "internalType": "struct EngineBlox.FunctionPermission[]",
-            "name": "functionPermissions",
-            "type": "tuple[]"
+            ]
           }
-        ],
-        "internalType": "struct IDefinition.RolePermission",
-        "name": "",
-        "type": "tuple"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newRecoveryAddress",
-        "type": "address"
-      }
-    ],
-    "name": "updateRecoveryExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newTimeLockPeriodSec",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateTimeLockExecutionParams",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
+    "type": "function",
     "name": "supportsInterface",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
+        "name": "interfaceId",
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "updateRecoveryExecutionParams",
+    "inputs": [
+      {
+        "name": "newRecoveryAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "updateTimeLockExecutionParams",
+    "inputs": [
+      {
+        "name": "newTimeLockPeriodSec",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
   }
 ]

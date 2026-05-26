@@ -1,411 +1,416 @@
 [
   {
-    "inputs": [],
+    "type": "function",
     "name": "APPROVE_TIMELOCK_EXECUTION_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "APPROVE_TIMELOCK_EXECUTION_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "CANCEL_TIMELOCK_EXECUTION_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "CANCEL_TIMELOCK_EXECUTION_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "CONTROLLER_CONFIG_BATCH",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "CONTROLLER_OPERATION",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "EXECUTE_WITH_PAYMENT_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "EXECUTE_WITH_TIMELOCK_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "GUARD_CONFIG_BATCH_EXECUTE_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "GUARD_CONFIG_BATCH_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "REQUEST_AND_APPROVE_EXECUTION_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
+    "name": "encodeAddTargetToWhitelist",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeRegisterFunction",
+    "inputs": [
+      {
+        "name": "functionSignature",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "operationName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "supportedActions",
+        "type": "EngineBlox.TxAction[]",
+        "internalType": "enum EngineBlox.TxAction[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeRemoveTargetFromWhitelist",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeUnregisterFunction",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "safeRemoval",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
     "name": "getFunctionSchemas",
+    "inputs": [],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.FunctionSchema[]",
         "components": [
           {
-            "internalType": "string",
             "name": "functionSignature",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "bytes4",
             "name": "functionSelector",
-            "type": "bytes4"
+            "type": "bytes4",
+            "internalType": "bytes4"
           },
           {
-            "internalType": "bytes32",
             "name": "operationType",
-            "type": "bytes32"
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
-            "internalType": "string",
             "name": "operationName",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "uint16",
             "name": "supportedActionsBitmap",
-            "type": "uint16"
+            "type": "uint16",
+            "internalType": "uint16"
           },
           {
-            "internalType": "bool",
             "name": "enforceHandlerRelations",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bool",
             "name": "isProtected",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bytes4[]",
+            "name": "isGrantRevocable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
             "name": "handlerForSelectors",
-            "type": "bytes4[]"
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
           }
-        ],
-        "internalType": "struct EngineBlox.FunctionSchema[]",
-        "name": "",
-        "type": "tuple[]"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
+    "type": "function",
+    "name": "getGuardConfigActionSpecs",
     "inputs": [],
-    "name": "getRolePermissions",
     "outputs": [
       {
+        "name": "actionNames",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "formats",
+        "type": "string[]",
+        "internalType": "string[]"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "getRolePermissions",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IDefinition.RolePermission",
         "components": [
           {
-            "internalType": "bytes32[]",
             "name": "roleHashes",
-            "type": "bytes32[]"
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
           },
           {
+            "name": "functionPermissions",
+            "type": "tuple[]",
+            "internalType": "struct EngineBlox.FunctionPermission[]",
             "components": [
               {
-                "internalType": "bytes4",
                 "name": "functionSelector",
-                "type": "bytes4"
+                "type": "bytes4",
+                "internalType": "bytes4"
               },
               {
-                "internalType": "uint16",
                 "name": "grantedActionsBitmap",
-                "type": "uint16"
+                "type": "uint16",
+                "internalType": "uint16"
               },
               {
-                "internalType": "bytes4[]",
                 "name": "handlerForSelectors",
-                "type": "bytes4[]"
+                "type": "bytes4[]",
+                "internalType": "bytes4[]"
               }
-            ],
-            "internalType": "struct EngineBlox.FunctionPermission[]",
-            "name": "functionPermissions",
-            "type": "tuple[]"
+            ]
           }
-        ],
-        "internalType": "struct IDefinition.RolePermission",
-        "name": "",
-        "type": "tuple"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
-    "inputs": [],
-    "name": "getGuardConfigActionSpecs",
-    "outputs": [
-      {
-        "internalType": "string[]",
-        "name": "actionNames",
-        "type": "string[]"
-      },
-      {
-        "internalType": "string[]",
-        "name": "formats",
-        "type": "string[]"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
+    "type": "function",
+    "name": "guardConfigBatchExecutionParams",
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      }
-    ],
-    "name": "encodeAddTargetToWhitelist",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      }
-    ],
-    "name": "encodeRemoveTargetFromWhitelist",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "functionSignature",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "operationName",
-        "type": "string"
-      },
-      {
-        "internalType": "enum EngineBlox.TxAction[]",
-        "name": "supportedActions",
-        "type": "EngineBlox.TxAction[]"
-      }
-    ],
-    "name": "encodeRegisterFunction",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bool",
-        "name": "safeRemoval",
-        "type": "bool"
-      }
-    ],
-    "name": "encodeUnregisterFunction",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
+        "name": "actions",
+        "type": "tuple[]",
+        "internalType": "struct IGuardController.GuardConfigAction[]",
         "components": [
           {
-            "internalType": "enum IGuardController.GuardConfigActionType",
             "name": "actionType",
-            "type": "IGuardController.GuardConfigActionType"
+            "type": "IGuardController.GuardConfigActionType",
+            "internalType": "enum IGuardController.GuardConfigActionType"
           },
           {
-            "internalType": "bytes",
             "name": "data",
-            "type": "bytes"
+            "type": "bytes",
+            "internalType": "bytes"
           }
-        ],
-        "internalType": "struct IGuardController.GuardConfigAction[]",
-        "name": "actions",
-        "type": "tuple[]"
+        ]
       }
     ],
-    "name": "guardConfigBatchExecutionParams",
     "outputs": [
       {
-        "internalType": "bytes",
         "name": "",
-        "type": "bytes"
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
+    "type": "function",
+    "name": "supportsInterface",
     "inputs": [
       {
-        "internalType": "bytes4",
         "name": "interfaceId",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "name": "supportsInterface",
     "outputs": [
       {
-        "internalType": "bool",
         "name": "",
-        "type": "bool"
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   }
 ]

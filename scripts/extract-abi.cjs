@@ -1,12 +1,11 @@
-// extract-abi.js
-// This script extracts the ABI from the compiled contracts and saves it to a new file in the abi folder.
-// run with: node extract-abi.js
-
+// extract-abi.cjs
+// Extracts ABIs from Foundry artifacts (out/) into abi/ and sdk/typescript/abi/.
+// Run after: npm run compile:foundry  (or use compile:foundry:abi)
 
 const fs = require('fs');
 const path = require('path');
 
-// List of contract names to process
+// Core + templates shipped in the TS SDK. Example apps (SimpleVault, SimpleRWA20 + defs) are omitted from abi/ and sdk/typescript/abi/.
 const contractsToProcess = [
   'EngineBlox',
   'BaseStateMachine',
@@ -18,19 +17,68 @@ const contractsToProcess = [
   'GuardControllerDefinitions',
   'IDefinition',
   'AccountBlox',
-  'SimpleVault',
-  'SimpleVaultDefinitions',
-  'SimpleRWA20',
-  'SimpleRWA20Definitions',
-  'CopyBlox'
+  'CopyBlox',
 ];
 
-// Define the source and destination folders
-const sourceFolder = path.join(__dirname, '..', 'build', 'contracts');
+const outFolder = path.join(__dirname, '..', 'out');
 const rootAbiFolder = path.join(__dirname, '..', 'abi');
 const sdkAbiFolder = path.join(__dirname, '..', 'sdk', 'typescript', 'abi');
 
-// Create the destination folders if they don't exist
+function findFoundryArtifact(contractName) {
+  const preferred = path.join(outFolder, `${contractName}.sol`, `${contractName}.json`);
+  if (fs.existsSync(preferred)) {
+    return preferred;
+  }
+
+  const matches = [];
+
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'build-info') {
+          continue;
+        }
+        walk(fullPath);
+      } else if (entry.name === `${contractName}.json`) {
+        matches.push(fullPath);
+      }
+    }
+  }
+
+  walk(outFolder);
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (matches.length === 1) {
+    return matches[0];
+  }
+
+  const exactDirMatch = matches.find((artifactPath) =>
+    artifactPath.endsWith(`${contractName}.sol${path.sep}${contractName}.json`)
+  );
+  return exactDirMatch ?? matches[0];
+}
+
+function extractABI(filePath) {
+  const contractJson = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!Array.isArray(contractJson.abi)) {
+    throw new Error(`No ABI array in Foundry artifact: ${filePath}`);
+  }
+  return contractJson.abi;
+}
+
+function writeABI(destinationPath, abi) {
+  fs.writeFileSync(destinationPath, JSON.stringify(abi, null, 2));
+}
+
+if (!fs.existsSync(outFolder)) {
+  console.error('❌ Foundry output not found at out/. Run "npm run compile:foundry" first.');
+  process.exit(1);
+}
+
 if (!fs.existsSync(rootAbiFolder)) {
   fs.mkdirSync(rootAbiFolder, { recursive: true });
 }
@@ -38,38 +86,30 @@ if (!fs.existsSync(sdkAbiFolder)) {
   fs.mkdirSync(sdkAbiFolder, { recursive: true });
 }
 
-// Function to extract ABI from a contract file
-function extractABI(filePath) {
-  const contractJson = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  return contractJson.abi;
-}
+let missingCount = 0;
 
-// Function to write ABI to a destination
-function writeABI(destinationPath, abi) {
-  fs.writeFileSync(destinationPath, JSON.stringify(abi, null, 2));
-}
+for (const contractName of contractsToProcess) {
+  const sourcePath = findFoundryArtifact(contractName);
 
-// Process the specified contracts
-contractsToProcess.forEach(contractName => {
-  const fileName = `${contractName}.json`;
-  const sourcePath = path.join(sourceFolder, fileName);
-  
-  if (fs.existsSync(sourcePath)) {
-    const abi = extractABI(sourcePath);
-    const abiFileName = `${contractName}.abi.json`;
-    
-    // Write to root abi folder (for compatibility with existing scripts)
-    const rootAbiPath = path.join(rootAbiFolder, abiFileName);
-    writeABI(rootAbiPath, abi);
-    console.log(`✅ Root ABI: ${rootAbiPath}`);
-    
-    // Write to SDK abi folder (for npm package)
-    const sdkAbiPath = path.join(sdkAbiFolder, abiFileName);
-    writeABI(sdkAbiPath, abi);
-    console.log(`✅ SDK ABI: ${sdkAbiPath}`);
-  } else {
-    console.log(`⚠️  Contract file not found: ${fileName}`);
+  if (!sourcePath) {
+    console.log(`⚠️  Foundry artifact not found for: ${contractName}`);
+    missingCount += 1;
+    continue;
   }
-});
+
+  const abi = extractABI(sourcePath);
+  const abiFileName = `${contractName}.abi.json`;
+  const rootAbiPath = path.join(rootAbiFolder, abiFileName);
+  const sdkAbiPath = path.join(sdkAbiFolder, abiFileName);
+
+  writeABI(rootAbiPath, abi);
+  writeABI(sdkAbiPath, abi);
+  console.log(`✅ ${contractName} (from ${path.relative(path.join(__dirname, '..'), sourcePath)})`);
+}
+
+if (missingCount > 0) {
+  console.error(`\n❌ ${missingCount} contract artifact(s) missing. Run "npm run compile:foundry" and retry.`);
+  process.exit(1);
+}
 
 console.log('\n✨ ABI extraction complete. ABIs saved to both root and SDK locations.');

@@ -1,1291 +1,1296 @@
 [
   {
-    "inputs": [],
-    "name": "InvalidInitialization",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
-    ],
-    "name": "NoPermission",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "NotInitializing",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "rangeSize",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxRangeSize",
-        "type": "uint256"
-      }
-    ],
-    "name": "RangeSizeExceeded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "resourceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ResourceNotFound",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "ComponentEvent",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "version",
-        "type": "uint64"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getBroadcasters",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getRecovery",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "getHooks",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "hooks",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "handlerContract",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "handlerSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "enum EngineBlox.TxAction",
-        "name": "action",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxGasPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "signer",
-        "type": "address"
-      }
-    ],
+    "type": "function",
     "name": "createMetaTxParams",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "chainId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "nonce",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "handlerContract",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes4",
-            "name": "handlerSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "enum EngineBlox.TxAction",
-            "name": "action",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "deadline",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxGasPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "signer",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct EngineBlox.MetaTxParams",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "requester",
-        "type": "address"
+        "name": "handlerContract",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
+        "name": "handlerSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
       },
       {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
+        "name": "action",
+        "type": "uint8",
+        "internalType": "enum EngineBlox.TxAction"
       },
       {
-        "internalType": "uint256",
-        "name": "gasLimit",
-        "type": "uint256"
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "internalType": "bytes32",
-        "name": "operationType",
-        "type": "bytes32"
+        "name": "maxGasPrice",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "internalType": "bytes4",
-        "name": "executionSelector",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bytes",
-        "name": "executionParams",
-        "type": "bytes"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "chainId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "nonce",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "handlerContract",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes4",
-            "name": "handlerSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "enum EngineBlox.TxAction",
-            "name": "action",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "deadline",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxGasPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "signer",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct EngineBlox.MetaTxParams",
-        "name": "metaTxParams",
-        "type": "tuple"
-      }
-    ],
-    "name": "generateUnsignedMetaTransactionForNew",
-    "outputs": [
-      {
-        "components": [
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "txId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "releaseTime",
-                "type": "uint256"
-              },
-              {
-                "internalType": "enum EngineBlox.TxStatus",
-                "name": "status",
-                "type": "uint8"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "requester",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "target",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "gasLimit",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "bytes32",
-                    "name": "operationType",
-                    "type": "bytes32"
-                  },
-                  {
-                    "internalType": "bytes4",
-                    "name": "executionSelector",
-                    "type": "bytes4"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "executionParams",
-                    "type": "bytes"
-                  }
-                ],
-                "internalType": "struct EngineBlox.TxParams",
-                "name": "params",
-                "type": "tuple"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "message",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes",
-                "name": "result",
-                "type": "bytes"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "recipient",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "nativeTokenAmount",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "erc20TokenAddress",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "erc20TokenAmount",
-                    "type": "uint256"
-                  }
-                ],
-                "internalType": "struct EngineBlox.PaymentDetails",
-                "name": "payment",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct EngineBlox.TxRecord",
-            "name": "txRecord",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "chainId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nonce",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "handlerContract",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes4",
-                "name": "handlerSelector",
-                "type": "bytes4"
-              },
-              {
-                "internalType": "enum EngineBlox.TxAction",
-                "name": "action",
-                "type": "uint8"
-              },
-              {
-                "internalType": "uint256",
-                "name": "deadline",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "maxGasPrice",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "signer",
-                "type": "address"
-              }
-            ],
-            "internalType": "struct EngineBlox.MetaTxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "signature",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct EngineBlox.MetaTransaction",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "chainId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "nonce",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "handlerContract",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes4",
-            "name": "handlerSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "enum EngineBlox.TxAction",
-            "name": "action",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "deadline",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxGasPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "signer",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct EngineBlox.MetaTxParams",
-        "name": "metaTxParams",
-        "type": "tuple"
-      }
-    ],
-    "name": "generateUnsignedMetaTransactionForExisting",
-    "outputs": [
-      {
-        "components": [
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "txId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "releaseTime",
-                "type": "uint256"
-              },
-              {
-                "internalType": "enum EngineBlox.TxStatus",
-                "name": "status",
-                "type": "uint8"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "requester",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "target",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "gasLimit",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "bytes32",
-                    "name": "operationType",
-                    "type": "bytes32"
-                  },
-                  {
-                    "internalType": "bytes4",
-                    "name": "executionSelector",
-                    "type": "bytes4"
-                  },
-                  {
-                    "internalType": "bytes",
-                    "name": "executionParams",
-                    "type": "bytes"
-                  }
-                ],
-                "internalType": "struct EngineBlox.TxParams",
-                "name": "params",
-                "type": "tuple"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "message",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes",
-                "name": "result",
-                "type": "bytes"
-              },
-              {
-                "components": [
-                  {
-                    "internalType": "address",
-                    "name": "recipient",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "nativeTokenAmount",
-                    "type": "uint256"
-                  },
-                  {
-                    "internalType": "address",
-                    "name": "erc20TokenAddress",
-                    "type": "address"
-                  },
-                  {
-                    "internalType": "uint256",
-                    "name": "erc20TokenAmount",
-                    "type": "uint256"
-                  }
-                ],
-                "internalType": "struct EngineBlox.PaymentDetails",
-                "name": "payment",
-                "type": "tuple"
-              }
-            ],
-            "internalType": "struct EngineBlox.TxRecord",
-            "name": "txRecord",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "chainId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nonce",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "handlerContract",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes4",
-                "name": "handlerSelector",
-                "type": "bytes4"
-              },
-              {
-                "internalType": "enum EngineBlox.TxAction",
-                "name": "action",
-                "type": "uint8"
-              },
-              {
-                "internalType": "uint256",
-                "name": "deadline",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "maxGasPrice",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "signer",
-                "type": "address"
-              }
-            ],
-            "internalType": "struct EngineBlox.MetaTxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "signature",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct EngineBlox.MetaTransaction",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "fromTxId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "toTxId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getTransactionHistory",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "txId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "releaseTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum EngineBlox.TxStatus",
-            "name": "status",
-            "type": "uint8"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "requester",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "target",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "gasLimit",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "operationType",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes4",
-                "name": "executionSelector",
-                "type": "bytes4"
-              },
-              {
-                "internalType": "bytes",
-                "name": "executionParams",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct EngineBlox.TxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "result",
-            "type": "bytes"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nativeTokenAmount",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "erc20TokenAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "erc20TokenAmount",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct EngineBlox.PaymentDetails",
-            "name": "payment",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct EngineBlox.TxRecord[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "txId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getTransaction",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "txId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "releaseTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum EngineBlox.TxStatus",
-            "name": "status",
-            "type": "uint8"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "requester",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "target",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "gasLimit",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "operationType",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes4",
-                "name": "executionSelector",
-                "type": "bytes4"
-              },
-              {
-                "internalType": "bytes",
-                "name": "executionParams",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct EngineBlox.TxParams",
-            "name": "params",
-            "type": "tuple"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "message",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes",
-            "name": "result",
-            "type": "bytes"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "nativeTokenAmount",
-                "type": "uint256"
-              },
-              {
-                "internalType": "address",
-                "name": "erc20TokenAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "erc20TokenAmount",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct EngineBlox.PaymentDetails",
-            "name": "payment",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct EngineBlox.TxRecord",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getPendingTransactions",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getRole",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "roleName",
-        "type": "string"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "hash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxWallets",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "walletCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "isProtected",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "hasRole",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "getWalletRoles",
-    "outputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "",
-        "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getAuthorizedWallets",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "getFunctionSchema",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "functionSignature",
-            "type": "string"
-          },
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "operationType",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "string",
-            "name": "operationName",
-            "type": "string"
-          },
-          {
-            "internalType": "uint16",
-            "name": "supportedActionsBitmap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "bool",
-            "name": "enforceHandlerRelations",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "isProtected",
-            "type": "bool"
-          },
-          {
-            "internalType": "bytes4[]",
-            "name": "handlerForSelectors",
-            "type": "bytes4[]"
-          }
-        ],
-        "internalType": "struct EngineBlox.FunctionSchema",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getActiveRolePermissions",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "uint16",
-            "name": "grantedActionsBitmap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "bytes4[]",
-            "name": "handlerForSelectors",
-            "type": "bytes4[]"
-          }
-        ],
-        "internalType": "struct EngineBlox.FunctionPermission[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
         "name": "signer",
-        "type": "address"
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "name": "getSignerNonce",
     "outputs": [
       {
-        "internalType": "uint256",
         "name": "",
-        "type": "uint256"
+        "type": "tuple",
+        "internalType": "struct EngineBlox.MetaTxParams",
+        "components": [
+          {
+            "name": "chainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "handlerContract",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "handlerSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "action",
+            "type": "uint8",
+            "internalType": "enum EngineBlox.TxAction"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxGasPrice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "signer",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
-    "name": "getSupportedOperationTypes",
-    "outputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "",
-        "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getSupportedRoles",
-    "outputs": [
-      {
-        "internalType": "bytes32[]",
-        "name": "",
-        "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getSupportedFunctions",
-    "outputs": [
-      {
-        "internalType": "bytes4[]",
-        "name": "",
-        "type": "bytes4[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTimeLockPeriodSec",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "initialized",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
+    "type": "function",
+    "name": "generateUnsignedMetaTransactionForExisting",
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
+        "name": "txId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "metaTxParams",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.MetaTxParams",
+        "components": [
+          {
+            "name": "chainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "handlerContract",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "handlerSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "action",
+            "type": "uint8",
+            "internalType": "enum EngineBlox.TxAction"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxGasPrice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "signer",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
       }
     ],
-    "name": "getFunctionWhitelistTargets",
     "outputs": [
       {
-        "internalType": "address[]",
         "name": "",
-        "type": "address[]"
+        "type": "tuple",
+        "internalType": "struct EngineBlox.MetaTransaction",
+        "components": [
+          {
+            "name": "txRecord",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.TxRecord",
+            "components": [
+              {
+                "name": "txId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "releaseTime",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "status",
+                "type": "uint8",
+                "internalType": "enum EngineBlox.TxStatus"
+              },
+              {
+                "name": "params",
+                "type": "tuple",
+                "internalType": "struct EngineBlox.TxParams",
+                "components": [
+                  {
+                    "name": "requester",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "target",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "gasLimit",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "operationType",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                  },
+                  {
+                    "name": "executionSelector",
+                    "type": "bytes4",
+                    "internalType": "bytes4"
+                  },
+                  {
+                    "name": "executionParams",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "message",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "resultHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "payment",
+                "type": "tuple",
+                "internalType": "struct EngineBlox.PaymentDetails",
+                "components": [
+                  {
+                    "name": "recipient",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "nativeTokenAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "erc20TokenAddress",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "erc20TokenAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "params",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.MetaTxParams",
+            "components": [
+              {
+                "name": "chainId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "nonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "handlerContract",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "handlerSelector",
+                "type": "bytes4",
+                "internalType": "bytes4"
+              },
+              {
+                "name": "action",
+                "type": "uint8",
+                "internalType": "enum EngineBlox.TxAction"
+              },
+              {
+                "name": "deadline",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "maxGasPrice",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "signer",
+                "type": "address",
+                "internalType": "address"
+              }
+            ]
+          },
+          {
+            "name": "message",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "signature",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "generateUnsignedMetaTransactionForNew",
+    "inputs": [
+      {
+        "name": "requester",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "gasLimit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "operationType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "executionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "executionParams",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "metaTxParams",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.MetaTxParams",
+        "components": [
+          {
+            "name": "chainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "handlerContract",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "handlerSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "action",
+            "type": "uint8",
+            "internalType": "enum EngineBlox.TxAction"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxGasPrice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "signer",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.MetaTransaction",
+        "components": [
+          {
+            "name": "txRecord",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.TxRecord",
+            "components": [
+              {
+                "name": "txId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "releaseTime",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "status",
+                "type": "uint8",
+                "internalType": "enum EngineBlox.TxStatus"
+              },
+              {
+                "name": "params",
+                "type": "tuple",
+                "internalType": "struct EngineBlox.TxParams",
+                "components": [
+                  {
+                    "name": "requester",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "target",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "value",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "gasLimit",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "operationType",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                  },
+                  {
+                    "name": "executionSelector",
+                    "type": "bytes4",
+                    "internalType": "bytes4"
+                  },
+                  {
+                    "name": "executionParams",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "message",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "resultHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "payment",
+                "type": "tuple",
+                "internalType": "struct EngineBlox.PaymentDetails",
+                "components": [
+                  {
+                    "name": "recipient",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "nativeTokenAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  },
+                  {
+                    "name": "erc20TokenAddress",
+                    "type": "address",
+                    "internalType": "address"
+                  },
+                  {
+                    "name": "erc20TokenAmount",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "params",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.MetaTxParams",
+            "components": [
+              {
+                "name": "chainId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "nonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "handlerContract",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "handlerSelector",
+                "type": "bytes4",
+                "internalType": "bytes4"
+              },
+              {
+                "name": "action",
+                "type": "uint8",
+                "internalType": "enum EngineBlox.TxAction"
+              },
+              {
+                "name": "deadline",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "maxGasPrice",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "signer",
+                "type": "address",
+                "internalType": "address"
+              }
+            ]
+          },
+          {
+            "name": "message",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "signature",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getActiveRolePermissions",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.FunctionPermission[]",
+        "components": [
+          {
+            "name": "functionSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "grantedActionsBitmap",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "handlerForSelectors",
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAuthorizedWallets",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBroadcasters",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getFunctionSchema",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.FunctionSchema",
+        "components": [
+          {
+            "name": "functionSignature",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "functionSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "operationType",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "operationName",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "supportedActionsBitmap",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "enforceHandlerRelations",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "isProtected",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "isGrantRevocable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "handlerForSelectors",
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getFunctionWhitelistTargets",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHooks",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "hooks",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPendingTransactions",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRecovery",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRole",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "roleName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "hash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxWallets",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "walletCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "isProtected",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSignerNonce",
+    "inputs": [
+      {
+        "name": "signer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSupportedFunctions",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes4[]",
+        "internalType": "bytes4[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSupportedOperationTypes",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSupportedRoles",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTimeLockPeriodSec",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTransaction",
+    "inputs": [
+      {
+        "name": "txId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.TxRecord",
+        "components": [
+          {
+            "name": "txId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "releaseTime",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "status",
+            "type": "uint8",
+            "internalType": "enum EngineBlox.TxStatus"
+          },
+          {
+            "name": "params",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.TxParams",
+            "components": [
+              {
+                "name": "requester",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "target",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "value",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "gasLimit",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "operationType",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "executionSelector",
+                "type": "bytes4",
+                "internalType": "bytes4"
+              },
+              {
+                "name": "executionParams",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "message",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "resultHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "payment",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.PaymentDetails",
+            "components": [
+              {
+                "name": "recipient",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "nativeTokenAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "erc20TokenAddress",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "erc20TokenAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTransactionHistory",
+    "inputs": [
+      {
+        "name": "fromTxId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "toTxId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.TxRecord[]",
+        "components": [
+          {
+            "name": "txId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "releaseTime",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "status",
+            "type": "uint8",
+            "internalType": "enum EngineBlox.TxStatus"
+          },
+          {
+            "name": "params",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.TxParams",
+            "components": [
+              {
+                "name": "requester",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "target",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "value",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "gasLimit",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "operationType",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "executionSelector",
+                "type": "bytes4",
+                "internalType": "bytes4"
+              },
+              {
+                "name": "executionParams",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "message",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "resultHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "payment",
+            "type": "tuple",
+            "internalType": "struct EngineBlox.PaymentDetails",
+            "components": [
+              {
+                "name": "recipient",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "nativeTokenAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "erc20TokenAddress",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "erc20TokenAmount",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getWalletRoles",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hasRole",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialized",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "supportsInterface",
+    "inputs": [
+      {
+        "name": "interfaceId",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "ComponentEvent",
+    "inputs": [
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoPermission",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RangeSizeExceeded",
+    "inputs": [
+      {
+        "name": "rangeSize",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxRangeSize",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ResourceNotFound",
+    "inputs": [
+      {
+        "name": "resourceId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
   }
 ]
