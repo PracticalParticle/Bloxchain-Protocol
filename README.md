@@ -218,7 +218,7 @@ npm run compile:foundry          # compile; add :size for 24KB check
 npm run test:foundry            # tests
 npm run test:foundry:fuzz       # fuzz
 npm run test:sanity:secure-ownable   # sanity (optional)
-npm run docgen && npm run format    # docs & format
+npm run docgen    # docs
 ```
 
 ## 📚 Documentation
@@ -243,7 +243,7 @@ npm run docgen && npm run format    # docs & format
 
 ## 🤝 Contributing
 
-See [Contributing Guidelines](CONTRIBUTING.md) (setup, code standards, testing, security, PR process). Key requirements: [Code of Conduct](CODE_OF_CONDUCT.md), 100% test coverage, contracts under 24KB, `npm run format`. Deploy: `npm run deploy:hardhat` (local) or `npm run deploy:hardhat -- --network sepolia`.
+See [Contributing Guidelines](CONTRIBUTING.md) (setup, code standards, testing, security, PR process). Key requirements: [Code of Conduct](CODE_OF_CONDUCT.md), 100% test coverage, contracts under 24KB. Deploy: `npm run deploy:hardhat` (local) or `npm run deploy:hardhat -- --network sepolia`.
 
 ## 📄 License
 
