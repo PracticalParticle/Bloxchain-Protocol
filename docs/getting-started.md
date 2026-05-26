@@ -62,8 +62,8 @@ const walletClient = createWalletClient({
 Use a deployed Account implementation (for example `AccountBlox`) from `deployed-addresses.json`:
 
 ```typescript
-// Example shape – adjust to your deployed-addresses.json
-import deployed from '../../deployed-addresses.json';
+// Example shape – adjust the import path to your deployed-addresses.json (often at the repository root)
+import deployed from '../deployed-addresses.json';
 
 const network = 'sepolia' as const;
 const accountAddress = deployed[network].AccountBlox.address as `0x${string}`;

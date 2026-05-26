@@ -1,6 +1,6 @@
 # Basic Examples
 
-This guide provides practical examples using the Bloxchain TypeScript SDK. Contract API is defined by the Solidity source; see [docs/](../../docs/) for generated API.
+This guide provides practical examples using the Bloxchain TypeScript SDK. Contract API is defined by the Solidity source; see [generated contract API](./core/) for NatSpec output.
 
 ## 🚀 **Setup Examples**
 
@@ -302,7 +302,7 @@ definitions.updateConfig({ chainId: 137 })
 
 ## 📡 **Event Monitoring Examples**
 
-Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. Decode `data` based on `functionSelector`. See [contract API](../../docs/) for payload layouts.
+Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. Decode `data` based on `functionSelector`. See [generated contract API](./core/) for payload layouts.
 
 ### **SecureOwnable / RuntimeRBAC Events**
 
@@ -381,4 +381,4 @@ const txHash = await manager.transferOwnership()
 
 ---
 
-**Next:** [runtime-rbac.md](./runtime-rbac.md) · [guard-controller.md](./guard-controller.md) · [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md)
+**Next:** [runtime-rbac.md](./runtime-rbac.md) · [guard-controller.md](./guard-controller.md) · [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md)

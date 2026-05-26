@@ -70,13 +70,13 @@ Legend: **✅ Up to date** – in sync with current `contracts/core` and `sdk/ty
 
 ## 🔗 **External Resources**
 
-- [Bloxchain Protocol README](../../../README.md) – Protocol overview and repo‑level docs  
-- [Contract API (generated)](../../../docs/) – Solidity NatSpec output (`npm run docgen`)  
-- [Codebase documentation process](../../../CODEBASE_DOCUMENTATION.md)
+- [Bloxchain Protocol README](../README.md) – Protocol overview and repo‑level docs  
+- [Contract API (generated)](./core/) – Solidity NatSpec output (`npm run docgen`)  
+- [Codebase documentation process](../CODEBASE_DOCUMENTATION.md)
 
 ## 📝 **Contributing to Documentation**
 
-- **Edit docs here:** `sdk/typescript/docs`  
+- **Edit docs here:** `docs/` (repository root)  
 - **Source of truth:** `contracts/core` and `sdk/typescript` (TS wrappers, helpers, and types)  
 - **When updating contracts:**  
   - Update NatSpec in Solidity  

@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for Bloxchain TypeScript SDK classes and methods. Contract source of truth: Solidity in `contracts/`. See [CODEBASE_DOCUMENTATION.md](../../CODEBASE_DOCUMENTATION.md).
+Complete reference for Bloxchain TypeScript SDK classes and methods. Contract source of truth: Solidity in `contracts/`. See [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md).
 
 ## 📚 **Core Classes**
 

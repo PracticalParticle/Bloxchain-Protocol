@@ -170,7 +170,7 @@ await secureOwnable.updateBroadcasterApprovalWithMetaTx(metaTx, { from: broadcas
 
 ## 📡 **Event Monitoring**
 
-Contracts emit a unified **`ComponentEvent(bytes4 functionSelector, bytes data)`**. Decode `data` according to the emitting function (use `functionSelector` to identify). See generated [contract API](../../docs/) and NatSpec for payload layouts.
+Contracts emit a unified **`ComponentEvent(bytes4 functionSelector, bytes data)`**. Decode `data` according to the emitting function (use `functionSelector` to identify). See generated [contract API](./core/) and NatSpec for payload layouts.
 
 ### **Listen for ComponentEvent**
 

@@ -759,10 +759,10 @@ const owner = await secureOwnable.owner()
 ```
 
 ## API Reference
-See [API Documentation](./docs/api-reference.md) for complete reference.
+See [API Documentation](./api-reference.md) for complete reference.
 
 ## Contributing
-See [Contributing Guide](./CONTRIBUTING.md) for development guidelines.
+See [Contributing Guide](../CONTRIBUTING.md) for development guidelines.
 ```
 
 ---

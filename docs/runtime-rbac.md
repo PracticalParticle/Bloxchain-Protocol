@@ -270,7 +270,7 @@ const addFunctionToRoleAction = {
 
 ### **Listen for Role Configuration Events**
 
-Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For RBAC config, filter by `executeRoleConfigBatch` selector and decode `data` as `(RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, address wallet)`. See [contract API](../../docs/) and NatSpec.
+Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For RBAC config, filter by `executeRoleConfigBatch` selector and decode `data` as `(RoleConfigActionType, bytes32 roleHash, bytes4 functionSelector, address wallet)`. See [generated contract API](./core/) and NatSpec.
 
 ```typescript
 const unwatch = publicClient.watchContractEvent({

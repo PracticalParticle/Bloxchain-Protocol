@@ -302,7 +302,7 @@ const txHash = await guardController.requestAndApproveExecution(
 
 ### **Listen for Guard Configuration Events**
 
-Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For guard config, filter by the executeGuardConfigBatch selector and decode `data` as `(GuardConfigActionType, bytes4 functionSelector, address target)`. See [contract API](../../docs/).
+Contracts emit **`ComponentEvent(bytes4 functionSelector, bytes data)`**. For guard config, filter by the executeGuardConfigBatch selector and decode `data` as `(GuardConfigActionType, bytes4 functionSelector, address target)`. See [generated contract API](./core/).
 
 ```typescript
 const unwatch = publicClient.watchContractEvent({

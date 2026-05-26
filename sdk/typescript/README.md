@@ -38,25 +38,25 @@ Bloxchain Protocol implements a **state machine architecture** with `SecureOpera
 
 ## 📚 Documentation
 
-Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+Comprehensive documentation is available in the repository root [`docs/`](../../docs/) folder:
 
 ### **🏗️ Architecture & Design**
-- **[Protocol Architecture](./docs/bloxchain-architecture.md)** - Bloxchain protocol overview and design principles
-- **[State Machine Engine](./docs/state-machine-engine.md)** - SecureOperationState engine and state management
-- **[Architecture Patterns](./docs/architecture-patterns.md)** - Design patterns and best practices
+- **[Protocol Architecture](../../docs/bloxchain-architecture.md)** - Bloxchain protocol overview and design principles
+- **[State Machine Engine](../../docs/state-machine-engine.md)** - SecureOperationState engine and state management
+- **[Architecture Patterns](../../docs/architecture-patterns.md)** - Design patterns and best practices
 
 ### **🚀 Getting Started**
-- **[Getting Started](./docs/getting-started.md)** - Quick setup and basic usage
-- **[API Reference](./docs/api-reference.md)** - Complete API documentation
-- **[SecureOwnable Guide](./docs/secure-ownable.md)** - Ownership management
-- **[RuntimeRBAC Guide](./docs/runtime-rbac.md)** - Role-based access control
+- **[Getting Started](../../docs/getting-started.md)** - Quick setup and basic usage
+- **[API Reference](../../docs/api-reference.md)** - Complete API documentation
+- **[SecureOwnable Guide](../../docs/secure-ownable.md)** - Ownership management
+- **[RuntimeRBAC Guide](../../docs/runtime-rbac.md)** - Role-based access control
 
 ### **🔍 Development Tools**
-- **[Best Practices](./docs/best-practices.md)** - Development guidelines
-- **[Examples](./docs/examples-basic.md)** - Practical code samples
-- **[Types & Interfaces](./docs/types-interfaces.md)** - Type definitions
+- **[Best Practices](../../docs/best-practices.md)** - Development guidelines
+- **[Examples](../../docs/examples-basic.md)** - Practical code samples
+- **[Types & Interfaces](../../docs/types-interfaces.md)** - Type definitions
 
-**📖 [View All Documentation](./docs/README.md)**
+**📖 [View All Documentation](../../docs/README.md)**
 
 ## Installation
 
@@ -166,7 +166,7 @@ const metaTx = await secureOwnable.generateUnsignedMetaTransactionForNew(
 
 ## RuntimeRBAC Usage
 
-RuntimeRBAC uses batch-based configuration for all role management operations. See the [RuntimeRBAC Guide](./docs/runtime-rbac.md) for complete examples.
+RuntimeRBAC uses batch-based configuration for all role management operations. See the [RuntimeRBAC Guide](../../docs/runtime-rbac.md) for complete examples.
 
 ### Query Functions
 
@@ -193,7 +193,7 @@ const permissions = await runtimeRBAC.getActiveRolePermissions(roleHash);
 
 ### Batch Configuration
 
-All role management (create role, add wallet, add permissions, etc.) is done via batch operations. See the [RuntimeRBAC Guide](./docs/runtime-rbac.md) for detailed batch configuration examples.
+All role management (create role, add wallet, add permissions, etc.) is done via batch operations. See the [RuntimeRBAC Guide](../../docs/runtime-rbac.md) for detailed batch configuration examples.
 
 ## Definitions Usage
 
@@ -353,7 +353,7 @@ This package follows [Semantic Versioning](https://semver.org/). Current version
 
 ## Support and links
 
-- **Documentation**: [SDK docs](./docs/) in this package; [Bloxchain Protocol README](https://github.com/PracticalParticle/Bloxchain-Protocol#readme) for protocol details
+- **Documentation**: [SDK and protocol guides](../../docs/) in the repository `docs/` folder; [Bloxchain Protocol README](https://github.com/PracticalParticle/Bloxchain-Protocol#readme) for protocol details
 - **Issues and feature requests**: [GitHub Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues)
 - **Homepage**: [bloxchain.app](https://bloxchain.app/)
 - **Author**: [Particle Crypto Security](https://particlecs.com/)

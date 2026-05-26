@@ -24,5 +24,5 @@ Each markdown file corresponds to a contract or library and lists its functions,
 
 - **Project overview, deployment, usage:** [README.md](../README.md)
 - **Documentation process and audit checklist:** [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md)
-- **SDK usage and architecture:** [sdk/typescript/docs/](../sdk/typescript/docs/)
+- **SDK usage and architecture:** [Documentation README](../README.md) · [Index](../index.md)
 - **Contributing and code standards:** [CONTRIBUTING.md](../CONTRIBUTING.md)

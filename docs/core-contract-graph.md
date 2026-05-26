@@ -236,7 +236,7 @@ graph TD
 - **Adding or changing a core behavior**:
   - Start from the relevant component (`SecureOwnable`, `RuntimeRBAC`, `GuardController`).
   - Follow its calls into `BaseStateMachine` and then into `EngineBlox`.
-  - Update the corresponding TS wrapper and docs under `sdk/typescript/docs`.
+  - Update the corresponding TS wrapper and docs under `docs/` (repository root).
 
 - **Understanding a runtime flow (e.g. role config batch, guarded call)**:
   - Trace from the **public entry point** (e.g. `roleConfigBatchRequestAndApprove`, `executeWithTimeLock`) into the state machine.

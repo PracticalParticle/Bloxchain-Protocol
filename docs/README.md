@@ -1,6 +1,6 @@
 # Bloxchain TypeScript SDK Documentation
 
-Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../../../CODEBASE_DOCUMENTATION.md) for the documentation process.**
+Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md) for the documentation process.**
 
 ## 📚 **Documentation Structure**
 
@@ -67,9 +67,9 @@ console.log('Contract owner:', owner)
 
 ## 🔗 **External Resources**
 
-- [Bloxchain Protocol README](../../README.md)
-- [Contract API (generated)](../../docs/) – from Solidity NatSpec via `npm run docgen`
-- [Codebase documentation process](../../CODEBASE_DOCUMENTATION.md)
+- [Bloxchain Protocol README](../README.md)
+- [Contract API (generated)](./core/) – from Solidity NatSpec via `npm run docgen`
+- [Codebase documentation process](../CODEBASE_DOCUMENTATION.md)
 
 ## 📞 **Support**
 
@@ -78,5 +78,5 @@ console.log('Contract owner:', owner)
 
 ---
 
-**Version**: 1.0.0-alpha.16 (see [package.json](../package.json))  
+**Version**: 1.0.0-alpha.16 (see [package.json](../sdk/typescript/package.json))  
 **License**: MPL-2.0
