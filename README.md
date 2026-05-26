@@ -7,8 +7,19 @@
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
 [![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
 
-> **⚠️ EXPERIMENTAL SOFTWARE WARNING**  
-> This repository contains experimental smart contract code. While the framework is feature-complete and tested, it is not yet audited for production use. Use at your own risk and do not deploy with real assets without proper security review.
+> **Audit in Progress** — Third-party security review of the protocol smart contracts is underway.
+
+## System overview
+
+The protocol’s security posture rests on three principles:
+
+1. **Single source of mutation.** All mutable state lives in one struct (`SecureOperationState`), instantiated once per deployed contract. Only the **EngineBlox** library may mutate it, which isolates invariants to a single audit surface.
+
+2. **Mandatory two-signature authorization.** Every state-changing operation must be authorized by at least two distinct parties—either **across time** (request now, approve later, with a window to intervene) or **across roles** (signer ≠ executor for meta-transactions). This is enforced **architecturally**, not by convention.
+
+3. **Defense in depth via redundant gates.** Where one check could suffice, the protocol layers two or more checks on the same property from different angles: identity vs. role membership, permission grant vs. handler/execution wiring, storage status vs. structural invariants. A single compromised layer cannot bypass the others.
+
+Deeper treatment: [Protocol architecture](./docs/bloxchain-architecture.md) · [State machine engine](./docs/state-machine-engine.md).
 
 ## ⚡ Get started: create a wallet
 
@@ -23,60 +34,99 @@ Non-interactive (all defaults): `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deplo
 
 ## 🚀 What is Bloxchain Protocol?
 
-Enterprise-grade security through **multi-phase workflows**: time-locked operations and meta-transactions with **role separation**, so contracts control storage and operations require at least two signatures. **EngineBlox** powers time-locks, gasless execution, and dynamic RBAC via modular composition.
-
-![Bloxchain Protocol Actions](./images/sandblox-screenshot.png)
-*[SandBlox](https://sandblox.app/) – contract operations*
+Enterprise-grade security through **multi-phase workflows**: time-locked operations and meta-transactions with **role separation**, so contracts control storage and operations require at least two parties. **EngineBlox** powers time-locks, gasless execution, and dynamic RBAC via modular composition (see **System overview** above).
 
 ## 🏗️ Architecture Overview
+
+### Component layering
+
+| Layer | Role |
+|--------|------|
+| **EngineBlox** (library) | Linked into integrators via `DELEGATECALL` (storage context = `address(this)` of the caller). Mutates only the `SecureOperationState` reference passed in; owns no storage of its own. |
+| **BaseStateMachine** | The only contract that declares `_secureState`. Exposes wrappers, init helpers, hooks, and view helpers for every EngineBlox flow. |
+| **SecureOwnable** | Owner, Broadcaster, Recovery, and timelock-oriented operations. |
+| **RuntimeRBAC** | Dynamic role management and meta-transaction batch flows. |
+| **GuardController** | Arbitrary external execution paths and guard configuration (within protocol rules). |
+
+The framework is organized as **three tiers**: a stateless library at the top, a **single base contract** that owns the protocol storage, and **three composable components** that each add a slice of the public surface (plus definitions libraries for function schemas and default permission grants).
+
+**Concrete deployable contracts** inherit whichever pieces they need. A wallet-style contract typically composes all three components; a vault, ERC-20, or payment scheduler may inherit only **SecureOwnable**; a clone factory may inherit only **BaseStateMachine**. Composition is per deployment—the framework does not mandate one pattern.
 
 ### Core Components
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151', 'edgeLabelBackground': '#ffffff', 'edgeLabelTextColor': '#111827'}}}%%
 graph TB
-    A[EngineBlox Library] --> B[BaseStateMachine]
-    B --> C[SecureOwnable]
-    B --> D[RuntimeRBAC]
-    B --> E[GuardController]
-    
-    C --> I[AccountBlox]
-    D --> I
-    E --> I
-    
-    L[TypeScript SDK] --> M[SecureOwnable Client]
-    L --> N[RuntimeRBAC Client]
-    L --> O[Definitions Client]
-    
-    C --> P1[SimpleVault]
-    C --> P2[SimpleRWA20]
-    C --> P3[PayBlox]
-    C --> P4[GuardianSafe]
-    B --> P5[CopyBlox]
-    C --> P6[BasicERC20]
-    
-    style A fill:#e1f5ff
-    style B fill:#b3e5fc
-    style C fill:#81d4fa
-    style D fill:#81d4fa
-    style E fill:#81d4fa
-    style L fill:#fff9c4
-    style P1 fill:#c8e6c9
-    style P2 fill:#c8e6c9
-    style P3 fill:#c8e6c9
-    style P4 fill:#c8e6c9
-    style P5 fill:#c8e6c9
-    style P6 fill:#c8e6c9
+  EB["EngineBlox<br/>(library)"]
+  BSM["BaseStateMachine<br/>owns _secureState<br/>wrappers for every EngineBlox flow<br/>init helper, hooks, view helpers"]
+  SO["SecureOwnable<br/>Owner, Broadcaster, Recovery + timelock operations"]
+  RBAC["RuntimeRBAC<br/>dynamic role management + meta-tx batch flow"]
+  GC["GuardController<br/>arbitrary external execution + guard config"]
+
+  EB -->|DELEGATECALL<br/>storage context preserved| BSM
+  BSM --> SO
+  BSM --> RBAC
+  BSM --> GC
+
+  style EB fill:#dbeafe,color:#1e3a8a,stroke:#2563eb
+  style BSM fill:#ccfbf1,color:#115e59,stroke:#0d9488
+  style SO fill:#ffedd5,color:#7c2d12,stroke:#ea580c
+  style RBAC fill:#ffedd5,color:#7c2d12,stroke:#ea580c
+  style GC fill:#ffedd5,color:#7c2d12,stroke:#ea580c
 ```
 
 ### Modular composition
 
-- **BaseStateMachine** → **SecureOwnable**, **RuntimeRBAC**, **GuardController** (and optional **HookManager**)
-- **Template:** **AccountBlox** (see `contracts/examples/templates/`)
-- **Examples:** SimpleVault, SimpleRWA20, PayBlox, **CopyBlox** (clone factory), GuardianSafe, BasicERC20
+- **BaseStateMachine** → **SecureOwnable**, **RuntimeRBAC**, **GuardController** (optional **HookManager** in `contracts/experimental/`)
+- **Account** pattern composes all three components → **AccountBlox** template (`contracts/examples/templates/`)
+- **Examples:** SimpleVault, SimpleRWA20, PayBlox (**SecureOwnable** only); **CopyBlox** (**BaseStateMachine** only); GuardianSafe (**SecureOwnable** + Safe guard); BasicERC20 (standalone ERC20, typically minted by AccountBlox)
 
-### Security model
+### Transaction lifecycle
 
-- **Time-delay:** Request → wait → Approve (2 signatures). **Meta-tx:** Sign → Execute (role separation).
+Every operation is a **TxRecord** keyed by a monotonically increasing **txId**, with a single **TxStatus** (Solidity enum order): `UNDEFINED`, `PENDING`, `EXECUTING`, `PROCESSING_PAYMENT`, `CANCELLED`, `COMPLETED`, `FAILED`.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151', 'edgeLabelBackground': '#ffffff', 'edgeLabelTextColor': '#111827'}}}%%
+stateDiagram-v2
+  direction LR
+
+  classDef active fill:#dbeafe,color:#1e3a8a,stroke:#2563eb
+  classDef terminal fill:#dcfce7,color:#14532d,stroke:#16a34a
+  classDef cancelled fill:#fee2e2,color:#7f1d1d,stroke:#dc2626
+  classDef failed fill:#ffedd5,color:#7c2d12,stroke:#ea580c
+
+  [*] --> UNDEFINED
+  UNDEFINED --> PENDING: time-delay request
+  PENDING --> CANCELLED: cancel
+  PENDING --> EXECUTING: approve or meta-tx execute
+  EXECUTING --> COMPLETED: success
+  EXECUTING --> FAILED: revert
+  EXECUTING --> PROCESSING_PAYMENT: attached payment
+  PROCESSING_PAYMENT --> COMPLETED: payment ok
+  PROCESSING_PAYMENT --> FAILED: payment revert
+  CANCELLED --> [*]
+  COMPLETED --> [*]
+  FAILED --> [*]
+
+  class UNDEFINED,PENDING,EXECUTING,PROCESSING_PAYMENT active
+  class COMPLETED terminal
+  class CANCELLED cancelled
+  class FAILED failed
+```
+
+Two workflow patterns share the same **PENDING → EXECUTING → terminal** progression (`COMPLETED`, `FAILED`, or `CANCELLED`); they differ in how authorization is supplied and whether a wait window applies.
+
+- **Time-delay flow.** A party with **EXECUTE_TIME_DELAY_REQUEST** creates a `PENDING` record with `releaseTime = block.timestamp + timeLockPeriodSec`. After the window, a party with **EXECUTE_TIME_DELAY_APPROVE** advances the record through `EXECUTING` to a terminal state. **EXECUTE_TIME_DELAY_CANCEL** can move to `CANCELLED` during the window.
+
+- **Meta-transaction flow.** A signer with `SIGN_META_*` permission produces an **EIP-712** signature off-chain over the full `MetaTransaction` struct. An executor with `EXECUTE_META_*` permission submits it on-chain. EngineBlox runs integrity checks (signature length, chain ID, deadline, gas price, nonce, handler binding, signer permission dual check, ECDSA recovery), increments the signer nonce, and completes the lifecycle in one call.
+
+- **Fused “request-and-approve” meta-tx.** Used where the protocol omits a time-delay (e.g. recovery rotation, time-lock change, role-config batch, guard-config batch): two-signature property is preserved via signer vs executor, without a separate on-chain wait window.
+
+**External execution:** the transition to **`EXECUTING`** is the only point at which the protocol invokes arbitrary external code.
+
+### Security model (roles)
+
+- **Time-delay:** Request → wait → Approve (two steps / two parties). **Meta-tx:** Sign → Execute (signer ≠ executor).
 - **Roles:** Owner (admin, approve), Broadcaster (execute meta-tx, gas), Recovery (emergency).
 
 ## 🚀 Quick Start
@@ -92,7 +142,7 @@ npm run test:foundry
 ```
 
 **SDK / contracts:** `npm install @bloxchain/sdk @bloxchain/contracts`  
-**Networks:** Local (Hardhat), [Sepolia](https://sepolia.etherscan.io/), [SandBlox](https://sandblox.app/)
+**Networks:** Local (Hardhat), [Sepolia](https://sepolia.etherscan.io/)
 
 ## Deployment
 
@@ -163,8 +213,6 @@ npm run test:foundry:fuzz
 
 ## 🔧 Development Tools
 
-**[SandBlox](https://sandblox.app/)** – Live contract interaction, multi-sig and meta-tx workflows, Sepolia support.
-
 ```bash
 npm run compile:foundry          # compile; add :size for 24KB check
 npm run test:foundry            # tests
@@ -181,6 +229,7 @@ npm run docgen && npm run format    # docs & format
 
 ## 🛡️ Security Features
 
+- **Single mutation surface, two-party ops, redundant gates** — see [System overview](#system-overview).
 - **Time-delay:** Request → (wait) → Approve → Execute. **Meta-tx:** Sign → Execute (signer ≠ executor).
 - **EIP-712** structured data, per-signer nonces, time-lock enforcement. Function-level permissions: Request/Approve/Cancel, Sign/Execute, plus dynamic RBAC.
 
@@ -191,10 +240,6 @@ npm run docgen && npm run format    # docs & format
 ## 🔬 Technical Specifications
 
 **Stack:** Solidity 0.8.34, OpenZeppelin ^5.4.0 (upgradeable). **Libraries:** EngineBlox → BaseStateMachine → SecureOwnable, RuntimeRBAC, GuardController, HookManager. Contract size under 24KB; EIP-712; Viem-based TypeScript SDK. **Testing:** Foundry (fuzz + invariant), Hardhat, sanity scripts. All core components, template (AccountBlox), example apps, and Sepolia deployment are implemented and covered by tests.
-
-## 🔮 Roadmap
-
-Planned: **Formal verification**; **third-party security audit**.
 
 ## 🤝 Contributing
 
@@ -210,7 +255,7 @@ See [Contributing Guidelines](CONTRIBUTING.md) (setup, code standards, testing, 
 
 ## 📞 Support & Community
 
-Docs: [`docs/`](./docs/). Examples: [`contracts/examples/`](./contracts/examples/). Testing: [SandBlox](https://sandblox.app/). [Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues) · [Discussions](https://github.com/PracticalParticle/Bloxchain-Protocol/discussions).
+Docs: [`docs/`](./docs/). Examples: [`contracts/examples/`](./contracts/examples/). Tests: [`test/foundry/`](./test/foundry/) · [`scripts/sanity/`](./scripts/sanity/). [Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues) · [Discussions](https://github.com/PracticalParticle/Bloxchain-Protocol/discussions).
 
 ---
 
