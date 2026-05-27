@@ -161,22 +161,22 @@ Addresses are written to **`deployed-addresses.json`**.
 
 | Contract | Address |
 |----------|---------|
-| EngineBlox | [`0xa6a6745562719f1be091c96178e17f6db4ff692a`](https://sepolia.etherscan.io/address/0xa6a6745562719f1be091c96178e17f6db4ff692a) |
-| SecureOwnableDefinitions | [`0x0bc71d709d41e78b955f0e51eb830f577d86039e`](https://sepolia.etherscan.io/address/0x0bc71d709d41e78b955f0e51eb830f577d86039e) |
-| RuntimeRBACDefinitions | [`0x82696c91492eff69668c6ae7b0ac3865de57aeda`](https://sepolia.etherscan.io/address/0x82696c91492eff69668c6ae7b0ac3865de57aeda) |
-| GuardControllerDefinitions | [`0x9952d2a8a9a39952199e3ba4ef54bbb8df265751`](https://sepolia.etherscan.io/address/0x9952d2a8a9a39952199e3ba4ef54bbb8df265751) |
+| EngineBlox | [`0x726d78c9683a96d66196d2b8350923e8ca0d8597`](https://sepolia.etherscan.io/address/0x726d78c9683a96d66196d2b8350923e8ca0d8597) |
+| SecureOwnableDefinitions | [`0xcb8834e55c2c7b012e5643de98a1bf5fda22191c`](https://sepolia.etherscan.io/address/0xcb8834e55c2c7b012e5643de98a1bf5fda22191c) |
+| RuntimeRBACDefinitions | [`0x27c103b2b1a1e7dc345aeff766aa3656b4825653`](https://sepolia.etherscan.io/address/0x27c103b2b1a1e7dc345aeff766aa3656b4825653) |
+| GuardControllerDefinitions | [`0x6ce6f314fa35d34782f2743db4d0c1f824639938`](https://sepolia.etherscan.io/address/0x6ce6f314fa35d34782f2743db4d0c1f824639938) |
 
 #### Account
 
 | Contract | Address |
 |----------|---------|
-| AccountBlox | [`0x7cdf10f9caab16127269bc13665f3ffa736936f5`](https://sepolia.etherscan.io/address/0x7cdf10f9caab16127269bc13665f3ffa736936f5) |
+| AccountBlox | [`0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0`](https://sepolia.etherscan.io/address/0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0) |
 
 #### Examples
 
 | Contract | Address |
 |----------|---------|
-| CopyBlox | [`0x7b14cb93ff0ff8a8a5d0833d3fa1c45698a4d1a7`](https://sepolia.etherscan.io/address/0x7b14cb93ff0ff8a8a5d0833d3fa1c45698a4d1a7) |
+| CopyBlox | [`0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7`](https://sepolia.etherscan.io/address/0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7) |
 
 ## 📖 Usage Examples
 
