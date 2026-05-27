@@ -68,7 +68,7 @@ console.log('Contract owner:', owner)
 ## 🔗 **External Resources**
 
 - [Bloxchain Protocol README](../README.md)
-- [Contract API (generated)](./core/) – from Solidity NatSpec via `npm run docgen`
+- [Contract API (generated)](docs/_auto_generated_docs_/core/) – from Solidity NatSpec via `npm run docgen`
 - [Codebase documentation process](../CODEBASE_DOCUMENTATION.md)
 
 ## 📞 **Support**

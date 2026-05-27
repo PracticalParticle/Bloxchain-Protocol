@@ -30,6 +30,11 @@ export interface FunctionSchema {
   /** When true, handlerForSelectors in permissions must match schema.handlerForSelectors (except self-reference). */
   enforceHandlerRelations: boolean;
   isProtected: boolean;
+  /**
+   * Controls whether role grants for this selector can be revoked via `removeFunctionFromRole`.
+   * When false, the selector grant cannot be removed from any role.
+   */
+  isGrantRevocable: boolean;
   handlerForSelectors: Hex[]; // Empty array for execution selector permissions (defines what action is performed), non-empty array for handler selector permissions (indicates which execution selectors this handler is connected to)
 }
 

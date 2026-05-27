@@ -93,7 +93,7 @@ class BaseSimpleRWA20Test {
             this.contractAddress = await this.getContractAddressFromArtifacts('SimpleRWA20');
             
             if (!this.contractAddress) {
-                throw new Error('Could not find SimpleRWA20 address in Truffle artifacts');
+                throw new Error('Could not find SimpleRWA20 address in Foundry or Truffle artifacts');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -182,18 +182,54 @@ class BaseSimpleRWA20Test {
         }
     }
 
+    extractAddressFromArtifact(artifact, networkId) {
+        if (artifact.address) {
+            return artifact.address;
+        }
+        if (artifact.networks) {
+            const networkKey = networkId != null ? networkId.toString() : null;
+            if (networkKey && artifact.networks[networkKey]?.address) {
+                return artifact.networks[networkKey].address;
+            }
+            const networkIds = Object.keys(artifact.networks)
+                .map((id) => parseInt(id, 10))
+                .sort((a, b) => b - a);
+            for (const id of networkIds) {
+                const address = artifact.networks[id.toString()]?.address;
+                if (address) {
+                    return address;
+                }
+            }
+        }
+        return null;
+    }
+
     async getContractAddressFromArtifacts(contractName) {
         try {
-            const artifactsPath = path.join(__dirname, '../../../build/contracts', `${contractName}.json`);
-            const artifacts = JSON.parse(fs.readFileSync(artifactsPath, 'utf8'));
-            
-            // Get network ID from web3
             const networkId = await this.web3.eth.net.getId();
-            
-            if (artifacts.networks && artifacts.networks[networkId]) {
-                return artifacts.networks[networkId].address;
+
+            const forgePath = path.join(__dirname, '../../../out', `${contractName}.sol`, `${contractName}.json`);
+            if (fs.existsSync(forgePath)) {
+                const forgeArtifact = JSON.parse(fs.readFileSync(forgePath, 'utf8'));
+                const forgeAddress = this.extractAddressFromArtifact(forgeArtifact, networkId);
+                if (forgeAddress) {
+                    console.log(`📋 Found ${contractName} at ${forgeAddress} from Foundry artifact`);
+                    return forgeAddress;
+                }
+                console.log(`⚠️  Foundry artifact has no deployment address for ${contractName}, trying Truffle artifacts...`);
             }
-            
+
+            const artifactsPath = path.join(__dirname, '../../../build/contracts', `${contractName}.json`);
+            if (!fs.existsSync(artifactsPath)) {
+                return null;
+            }
+            const artifacts = JSON.parse(fs.readFileSync(artifactsPath, 'utf8'));
+            const truffleAddress = this.extractAddressFromArtifact(artifacts, networkId);
+            if (truffleAddress) {
+                console.log(`📋 Found ${contractName} at ${truffleAddress} from Truffle artifact`);
+                return truffleAddress;
+            }
+
             return null;
         } catch (error) {
             console.error(`❌ Failed to get contract address for ${contractName}:`, error.message);

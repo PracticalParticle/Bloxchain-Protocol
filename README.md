@@ -7,7 +7,7 @@
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
 [![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
 
-> **Audit in Progress** — Third-party security review of the protocol smart contracts is underway.
+> **Security audit status:** A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet.
 
 ## System overview
 
