@@ -11,7 +11,7 @@ We actively maintain security updates for the following versions:
 | 1.0.x   | :white_check_mark: | Testing phase (third-party audit in progress) |
 | < 1.0   | :x:                | End of life |
 
-**Note**: A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet. This security policy will become fully effective after that audit is complete, which will mark the official launch of version 1.0.0.
+**Note**: A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet. This security policy will become fully effective after third-party audit completion, which will mark the official launch of version 1.0.0.
 
 ## Reporting a Vulnerability
 
@@ -90,19 +90,15 @@ A third-party security audit of the protocol smart contracts is in progress; no 
 ### Current Status
 - **Development Phase**: Testing and validation ongoing
 - **Third-Party Security Audit**: In progress (report not yet published)
-- **Formal Verification**: Planned (post third-party audit)
-- **Official Launch**: After third-party audit and formal verification are complete
+- **Official Launch**: After third-party audit completion
 
 ### Completed Reviews
 - **Internal Security Review**: Completed (v1.0.0)
 - **Code Review**: Ongoing with each release
 
-### Planned
-- **Formal Verification**: After third-party audit completion
-
 ## Bug Bounty Program
 
-We are developing a bug bounty program for security researchers. Details will be announced after the official launch.
+We are developing a bug bounty program for security researchers. Details will be announced after third-party audit completion and the official launch of version 1.0.0.
 
 ### Scope
 - Smart contract vulnerabilities
