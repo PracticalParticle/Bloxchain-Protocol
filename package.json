@@ -3,7 +3,6 @@
   "version": "1.0.0-alpha.20",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
-  "main": "truffle-config.cjs",
   "repository": {
     "type": "git",
     "url": "https://github.com/PracticalParticle/Bloxchain-Protocol.git"
@@ -16,17 +15,15 @@
   "scripts": {
     "prepare": "husky",
     "test:hardhat": "hardhat test",
-    "compile:truffle": "truffle compile --config truffle-config.cjs",
-    "compile:truffle:size": "npm run compile:truffle && npx truffle run contract-size --config truffle-config.cjs",
     "compile:hardhat": "hardhat compile",
     "compile:foundry": "forge build",
+    "compile:foundry:abi": "npm run compile:foundry && npm run extract-abi",
     "compile:foundry:size": "forge build --sizes",
     "test:foundry": "forge test",
     "test:foundry:verbose": "forge test -vvv",
     "test:foundry:coverage": "forge coverage",
     "test:foundry:fuzz": "forge test --fuzz-runs 10000",
     "test:foundry:invariant": "forge test --invariant-runs 1000",
-    "deploy:truffle": "npx truffle migrate --network development --reset --config truffle-config.cjs && node scripts/extract-abi.cjs",
     "deploy:hardhat": "hardhat run scripts/deploy.js",
     "deploy:hardhat:foundation": "hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia",
     "deploy:hardhat:copyblox": "hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia",
@@ -40,7 +37,7 @@
     "test:sanity-sdk:core": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --core",
     "test:sanity-sdk:examples": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --examples",
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
-    "test:e2e": "npm run deploy:truffle && npm run test:sanity:core && npm run test:sanity-sdk:core",
+    "test:e2e": "npm run compile:foundry:abi && npm run test:sanity:core && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
     "release:sync-versions": "node scripts/sync-versions.cjs",
     "build:sdk": "cd sdk/typescript && npm run build",
@@ -48,10 +45,9 @@
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
     "release:prepare": "node scripts/release-prepare.cjs",
     "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.20",
-    "publish:sdk": "npm run release:sync-versions && npm run extract-abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.20",
+    "publish:sdk": "npm run release:sync-versions && npm run compile:foundry:abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.20",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
-    "format": "prettier --config .prettierrc --write \"contracts/**/*.sol\"",
     "commitlint": "commitlint --edit",
     "release:check": "release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol"
   },
@@ -62,25 +58,19 @@
   ],
   "author": "Particle Crypto Security",
   "license": "MPL-2.0",
-  "overrides": {
-    "minimatch": ">=10.2.1"
-  },
   "dependencies": {
     "@openzeppelin/contracts": "5.6.1",
     "@openzeppelin/contracts-upgradeable": "5.6.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "20.5.0",
-    "@commitlint/config-conventional": "20.5.0",
-    "@nomicfoundation/hardhat-ethers": "4.0.7",
-    "@types/node": "25.6.0",
-    "dotenv": "17.4.1",
-    "hardhat": "3.4.0",
+    "@commitlint/cli": "21.0.1",
+    "@commitlint/config-conventional": "21.0.1",
+    "@types/node": "25.9.1",
+    "dotenv": "17.4.2",
+    "hardhat": "3.5.1",
     "husky": "9.1.7",
-    "prettier": "3.8.2",
-    "prettier-plugin-solidity": "2.3.1",
-    "release-please": "17.5.2",
-    "typescript": "6.0.2",
-    "viem": "2.47.12"
+    "release-please": "17.6.0",
+    "typescript": "6.0.3",
+    "viem": "2.50.4"
   }
 }

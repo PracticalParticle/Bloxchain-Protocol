@@ -69,7 +69,20 @@ class BaseSimpleVaultTest {
 
     loadABI(contractName) {
         const abiPath = path.join(__dirname, '../../../abi', `${contractName}.abi.json`);
-        return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+        if (fs.existsSync(abiPath)) {
+            return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+        }
+        const forgePath = path.join(__dirname, '../../../out', `${contractName}.sol`, `${contractName}.json`);
+        if (!fs.existsSync(forgePath)) {
+            throw new Error(
+                `ABI not found for ${contractName}. Run "npm run compile:foundry" or restore abi/${contractName}.abi.json.`
+            );
+        }
+        const artifact = JSON.parse(fs.readFileSync(forgePath, 'utf8'));
+        if (!Array.isArray(artifact.abi)) {
+            throw new Error(`Invalid Foundry artifact (no abi): ${forgePath}`);
+        }
+        return artifact.abi;
     }
 
     async initializeAutoMode() {

@@ -1,6 +1,6 @@
 ## AGENTS.md – Bloxchain Protocol
 
-This file is a **briefing document for AI agents** working on this repo. It complements `README.md` and the docs under `sdk/typescript/docs`.
+This file is a **briefing document for AI agents** working on this repo. It complements `README.md` and the guides in the repository root `docs/` folder.
 
 Focus areas:
 - Core Solidity contracts under `contracts/core`
@@ -36,12 +36,14 @@ Key paths you should care about:
   - `lib/utils/SharedValidation.sol` – common validation helpers and custom errors.
   - `*/lib/definitions/*.sol` – definition libraries with function schemas, operation types, and default permissions.
 
+- `docs/` (repository root)
+  - SDK usage guides, architecture writeups, and `npm run docgen` output (`docs/core/`, `docs/examples/`, etc.).
+
 - `sdk/typescript/`
   - `contracts/core/*.tsx` – class wrappers for core contracts (`SecureOwnable`, `RuntimeRBAC`, `GuardController`, `BaseStateMachine`).
   - `lib/EngineBlox.tsx` – TS mirror of `EngineBlox` pure helpers and constants.
   - `utils/metaTx/metaTransaction.tsx` – EIP‑712 + meta‑tx helpers that must match the Solidity domain / struct hashes.
   - `utils/*` – error handling, validation, interface IDs, ERC‑20 helpers.
-  - `docs/` – SDK and architecture docs (up‑to‑date; treat as user‑facing source of truth).
 
 ---
 
@@ -77,7 +79,7 @@ For **any change to core behavior**:
    - Update the corresponding wrapper under `sdk/typescript/contracts/core`.
    - Ensure types in `sdk/typescript/types` and interfaces in `sdk/typescript/interfaces` stay consistent.
 3. **Docs third**
-   - Update or add markdown under `sdk/typescript/docs`, especially:
+   - Update or add markdown under `docs/`, especially:
      - `api-reference.md`
      - Component guides: `secure-ownable.md`, `runtime-rbac.md`, `guard-controller.md`
      - Architecture docs: `bloxchain-architecture.md`, `state-machine-engine.md`, `core-contract-graph.md`, `account-pattern.md`, `getting-started.md`
@@ -134,9 +136,9 @@ If an operation requires touching live deployments or production infra, stop and
     - `contracts/core/access/RuntimeRBAC.sol`
     - `contracts/core/execution/GuardController.sol`
   - Cross‑reference:
-    - `sdk/typescript/docs/core-contract-graph.md`
-    - `sdk/typescript/docs/bloxchain-architecture.md`
-    - `sdk/typescript/docs/state-machine-engine.md`
+    - `docs/core-contract-graph.md` (SDK / architecture guide at repo root)
+    - `docs/bloxchain-architecture.md`
+    - `docs/state-machine-engine.md`
   - Focus on invariants: role separation, timelock enforcement, meta‑tx replay protection, whitelist enforcement, upgrade safety.
 
 - **AI builder agents**
@@ -146,8 +148,8 @@ If an operation requires touching live deployments or production infra, stop and
     - `lib/EngineBlox.tsx` and `utils/metaTx/metaTransaction.tsx`
   - Follow examples from:
     - `scripts/sanity-sdk/*`
-    - `sdk/typescript/docs/examples-basic.md`
-    - `sdk/typescript/docs/getting-started.md`
+    - `docs/examples-basic.md`
+    - `docs/getting-started.md`
 
 - **AI operational agents**
   - When wiring flows (role config, guard config, meta‑tx ops), follow the same ordering and constraints as the definition libraries:
@@ -163,9 +165,9 @@ When you need more context:
 
 - Read:
   - `README.md`
-  - `sdk/typescript/docs/index.md`
-  - `sdk/typescript/docs/getting-started.md`
-  - `sdk/typescript/docs/account-pattern.md`
+  - `docs/index.md`
+  - `docs/getting-started.md`
+  - `docs/account-pattern.md`
 - Look at:
   - Existing tests under `scripts/sanity-sdk`
   - NatSpec in the relevant Solidity files

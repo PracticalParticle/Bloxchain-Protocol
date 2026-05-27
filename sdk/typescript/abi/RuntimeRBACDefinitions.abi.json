@@ -1,381 +1,386 @@
 [
   {
-    "inputs": [],
+    "type": "function",
     "name": "ROLE_CONFIG_BATCH",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes32",
         "name": "",
-        "type": "bytes32"
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "ROLE_CONFIG_BATCH_EXECUTE_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "ROLE_CONFIG_BATCH_META_SELECTOR",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "bytes4",
         "name": "",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
-    "name": "getFunctionSchemas",
-    "outputs": [
+    "type": "function",
+    "name": "encodeAddFunctionToRole",
+    "inputs": [
       {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "functionPermission",
+        "type": "tuple",
+        "internalType": "struct EngineBlox.FunctionPermission",
         "components": [
           {
-            "internalType": "string",
-            "name": "functionSignature",
-            "type": "string"
-          },
-          {
-            "internalType": "bytes4",
             "name": "functionSelector",
-            "type": "bytes4"
+            "type": "bytes4",
+            "internalType": "bytes4"
           },
           {
-            "internalType": "bytes32",
-            "name": "operationType",
-            "type": "bytes32"
+            "name": "grantedActionsBitmap",
+            "type": "uint16",
+            "internalType": "uint16"
           },
           {
-            "internalType": "string",
-            "name": "operationName",
-            "type": "string"
-          },
-          {
-            "internalType": "uint16",
-            "name": "supportedActionsBitmap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "bool",
-            "name": "enforceHandlerRelations",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "isProtected",
-            "type": "bool"
-          },
-          {
-            "internalType": "bytes4[]",
             "name": "handlerForSelectors",
-            "type": "bytes4[]"
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
           }
-        ],
-        "internalType": "struct EngineBlox.FunctionSchema[]",
-        "name": "",
-        "type": "tuple[]"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getRolePermissions",
     "outputs": [
       {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeAddWallet",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeCreateRole",
+    "inputs": [
+      {
+        "name": "roleName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "maxWallets",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeRemoveFunctionFromRole",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeRemoveRole",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "encodeRevokeWallet",
+    "inputs": [
+      {
+        "name": "roleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "getFunctionSchemas",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.FunctionSchema[]",
         "components": [
           {
-            "internalType": "bytes32[]",
-            "name": "roleHashes",
-            "type": "bytes32[]"
+            "name": "functionSignature",
+            "type": "string",
+            "internalType": "string"
           },
           {
+            "name": "functionSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          },
+          {
+            "name": "operationType",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "operationName",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "supportedActionsBitmap",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "enforceHandlerRelations",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "isProtected",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "isGrantRevocable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "handlerForSelectors",
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "getRoleConfigActionSpecs",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "actionNames",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "formats",
+        "type": "string[]",
+        "internalType": "string[]"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "getRolePermissions",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IDefinition.RolePermission",
+        "components": [
+          {
+            "name": "roleHashes",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
+          },
+          {
+            "name": "functionPermissions",
+            "type": "tuple[]",
+            "internalType": "struct EngineBlox.FunctionPermission[]",
             "components": [
               {
-                "internalType": "bytes4",
                 "name": "functionSelector",
-                "type": "bytes4"
+                "type": "bytes4",
+                "internalType": "bytes4"
               },
               {
-                "internalType": "uint16",
                 "name": "grantedActionsBitmap",
-                "type": "uint16"
+                "type": "uint16",
+                "internalType": "uint16"
               },
               {
-                "internalType": "bytes4[]",
                 "name": "handlerForSelectors",
-                "type": "bytes4[]"
+                "type": "bytes4[]",
+                "internalType": "bytes4[]"
               }
-            ],
-            "internalType": "struct EngineBlox.FunctionPermission[]",
-            "name": "functionPermissions",
-            "type": "tuple[]"
+            ]
           }
-        ],
-        "internalType": "struct IDefinition.RolePermission",
-        "name": "",
-        "type": "tuple"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
-    "inputs": [],
-    "name": "getRoleConfigActionSpecs",
-    "outputs": [
-      {
-        "internalType": "string[]",
-        "name": "actionNames",
-        "type": "string[]"
-      },
-      {
-        "internalType": "string[]",
-        "name": "formats",
-        "type": "string[]"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
+    "type": "function",
+    "name": "roleConfigBatchExecutionParams",
     "inputs": [
       {
-        "internalType": "string",
-        "name": "roleName",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxWallets",
-        "type": "uint256"
-      }
-    ],
-    "name": "encodeCreateRole",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "encodeRemoveRole",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "encodeAddWallet",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      }
-    ],
-    "name": "encodeRevokeWallet",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "functionSelector",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "uint16",
-            "name": "grantedActionsBitmap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "bytes4[]",
-            "name": "handlerForSelectors",
-            "type": "bytes4[]"
-          }
-        ],
-        "internalType": "struct EngineBlox.FunctionPermission",
-        "name": "functionPermission",
-        "type": "tuple"
-      }
-    ],
-    "name": "encodeAddFunctionToRole",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "roleHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "functionSelector",
-        "type": "bytes4"
-      }
-    ],
-    "name": "encodeRemoveFunctionFromRole",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "enum IRuntimeRBAC.RoleConfigActionType",
-            "name": "actionType",
-            "type": "IRuntimeRBAC.RoleConfigActionType"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
         "name": "actions",
-        "type": "tuple[]"
+        "type": "tuple[]",
+        "internalType": "struct IRuntimeRBAC.RoleConfigAction[]",
+        "components": [
+          {
+            "name": "actionType",
+            "type": "IRuntimeRBAC.RoleConfigActionType",
+            "internalType": "enum IRuntimeRBAC.RoleConfigActionType"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
       }
     ],
-    "name": "roleConfigBatchExecutionParams",
     "outputs": [
       {
-        "internalType": "bytes",
         "name": "",
-        "type": "bytes"
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
+    "type": "function",
+    "name": "roleConfigBatchExecutionParams",
     "inputs": [
       {
-        "internalType": "bytes",
         "name": "preEncoded",
-        "type": "bytes"
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
-    "name": "roleConfigBatchExecutionParams",
     "outputs": [
       {
-        "internalType": "bytes",
         "name": "",
-        "type": "bytes"
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
+    "type": "function",
+    "name": "supportsInterface",
     "inputs": [
       {
-        "internalType": "bytes4",
         "name": "interfaceId",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "name": "supportsInterface",
     "outputs": [
       {
-        "internalType": "bool",
         "name": "",
-        "type": "bool"
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   }
 ]

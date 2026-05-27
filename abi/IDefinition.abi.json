@@ -1,118 +1,123 @@
 [
   {
-    "inputs": [],
+    "type": "function",
     "name": "getFunctionSchemas",
+    "inputs": [],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct EngineBlox.FunctionSchema[]",
         "components": [
           {
-            "internalType": "string",
             "name": "functionSignature",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "bytes4",
             "name": "functionSelector",
-            "type": "bytes4"
+            "type": "bytes4",
+            "internalType": "bytes4"
           },
           {
-            "internalType": "bytes32",
             "name": "operationType",
-            "type": "bytes32"
+            "type": "bytes32",
+            "internalType": "bytes32"
           },
           {
-            "internalType": "string",
             "name": "operationName",
-            "type": "string"
+            "type": "string",
+            "internalType": "string"
           },
           {
-            "internalType": "uint16",
             "name": "supportedActionsBitmap",
-            "type": "uint16"
+            "type": "uint16",
+            "internalType": "uint16"
           },
           {
-            "internalType": "bool",
             "name": "enforceHandlerRelations",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bool",
             "name": "isProtected",
-            "type": "bool"
+            "type": "bool",
+            "internalType": "bool"
           },
           {
-            "internalType": "bytes4[]",
+            "name": "isGrantRevocable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
             "name": "handlerForSelectors",
-            "type": "bytes4[]"
+            "type": "bytes4[]",
+            "internalType": "bytes4[]"
           }
-        ],
-        "internalType": "struct EngineBlox.FunctionSchema[]",
-        "name": "",
-        "type": "tuple[]"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "getRolePermissions",
+    "inputs": [],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IDefinition.RolePermission",
         "components": [
           {
-            "internalType": "bytes32[]",
             "name": "roleHashes",
-            "type": "bytes32[]"
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
           },
           {
+            "name": "functionPermissions",
+            "type": "tuple[]",
+            "internalType": "struct EngineBlox.FunctionPermission[]",
             "components": [
               {
-                "internalType": "bytes4",
                 "name": "functionSelector",
-                "type": "bytes4"
+                "type": "bytes4",
+                "internalType": "bytes4"
               },
               {
-                "internalType": "uint16",
                 "name": "grantedActionsBitmap",
-                "type": "uint16"
+                "type": "uint16",
+                "internalType": "uint16"
               },
               {
-                "internalType": "bytes4[]",
                 "name": "handlerForSelectors",
-                "type": "bytes4[]"
+                "type": "bytes4[]",
+                "internalType": "bytes4[]"
               }
-            ],
-            "internalType": "struct EngineBlox.FunctionPermission[]",
-            "name": "functionPermissions",
-            "type": "tuple[]"
+            ]
           }
-        ],
-        "internalType": "struct IDefinition.RolePermission",
-        "name": "",
-        "type": "tuple"
+        ]
       }
     ],
-    "stateMutability": "pure",
-    "type": "function"
+    "stateMutability": "pure"
   },
   {
+    "type": "function",
+    "name": "supportsInterface",
     "inputs": [
       {
-        "internalType": "bytes4",
         "name": "interfaceId",
-        "type": "bytes4"
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
     ],
-    "name": "supportsInterface",
     "outputs": [
       {
-        "internalType": "bool",
         "name": "",
-        "type": "bool"
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   }
 ]
