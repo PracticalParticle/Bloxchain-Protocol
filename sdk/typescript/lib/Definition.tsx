@@ -83,6 +83,7 @@ export class Definitions implements IDefinition {
         supportedActionsBitmap: fromContractValue(item.supportedActionsBitmap), // uint16
         enforceHandlerRelations: item.enforceHandlerRelations as boolean,
         isProtected: item.isProtected as boolean,
+        isGrantRevocable: item.isGrantRevocable as boolean,
         handlerForSelectors: item.handlerForSelectors.map((selector: any) => selector as Hex) as Hex[]
       }));
     } catch (error) {

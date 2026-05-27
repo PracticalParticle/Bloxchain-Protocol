@@ -244,7 +244,7 @@ flowchart TD
 
 ### Security Guarantees and Formal Properties
 
-State Abstraction provides **mathematically provable security properties** through formal verification techniques. The framework's security guarantees include:
+State Abstraction provides **architecturally enforced security properties** through its deterministic state machine and mandatory multi-signature workflows. The framework's security guarantees include:
 
 ### Traditional Blockchain Security (Vulnerable)
 
@@ -362,8 +362,6 @@ The **multi-signature wallet market** demonstrates strong growth driven by incre
 
 **Current Market Players**: The blockchain security market is dominated by established players including **IBM, Amazon Web Services, Oracle, and Thales**, primarily offering infrastructure-level security solutions rather than application-layer security frameworks.
 
-**Formal Verification Market**: The **formal verification segment** is emerging as a critical component of blockchain security, but most current solutions require specialized expertise and significant manual effort. **Automated formal verification tools** are still in development phases.
-
 **Smart Contract Audit Market**: **Smart contract audit costs range from $15,000 to $70,000** for comprehensive audits, with **over $65 million paid in bug bounties in 2023**. The high cost and time requirements for traditional audits create opportunities for architecturally secure solutions.
 
 **Account Abstraction Competition**: **ERC-4337 and EIP-7702** represent significant developments in account abstraction, but focus primarily on user experience rather than security architecture. State Abstraction's security-first approach differentiates it from user experience-focused solutions.
@@ -420,7 +418,7 @@ struct SecureOperationState {
 }
 ```
 
-**Transition Functions**: State transitions are implemented as **pure functions** that take the current state and a validated input, returning a new state. This functional approach provides **mathematical guarantees** about system behavior and enables **formal verification** of security properties.
+**Transition Functions**: State transitions are implemented as **pure functions** that take the current state and a validated input, returning a new state. This functional approach provides **deterministic guarantees** about system behavior and supports rigorous testing and analysis of security properties.
 
 ### Four-Tier Component Hierarchy
 
@@ -579,23 +577,6 @@ function hasActionPermission(
 }
 ```
 
-### Formal Verification Integration
-
-State Abstraction incorporates **formal verification principles** throughout its architecture to provide mathematical security guarantees:
-
-**Property Specification**: Critical security properties are specified using **temporal logic** and **invariant conditions**:
-```
-Property: SinglePointFailurePrevention
-∀ transaction t, ∃ signatures s₁, s₂ where s₁ ≠ s₂ ∧ verify(s₁, t) ∧ verify(s₂, t)
-
-Property: RoleSeparation  
-∀ role r₁, r₂, function f: (canAuthorize(r₁, f) ∧ canExecute(r₂, f)) → r₁ ≠ r₂
-```
-
-**Automated Verification Tools**: Integration with **automated formal verification tools** enables continuous validation of security properties during development and deployment.
-
-**Proof Generation**: The system generates **cryptographic proofs** of compliance with security policies, enabling **auditable security verification** without revealing sensitive implementation details.
-
 ***
 
 ## Real-World Applications and Use Cases
@@ -750,7 +731,7 @@ Property: RoleSeparation
 | **State Management** | Distributed Across Components | Centralized State Machine |
 | **Multi-Signature** | Optional Implementation | Architecturally Mandatory |
 | **Upgrade Mechanism** | Contract Proxy Patterns | Dynamic Role Configuration |
-| **Audit Requirements** | Component Composition Analysis | Formal Verification |
+| **Audit Requirements** | Component Composition Analysis | Third-Party Security Audits |
 | **Enterprise Features** | Basic Building Blocks | Integrated Compliance and Workflows |
 
 **Integrated Security Advantage**: By providing **integrated security architecture** rather than modular components, State Abstraction eliminates composition vulnerabilities through **mandatory security workflows** and **centralized state management**.
@@ -773,20 +754,19 @@ Property: RoleSeparation
 
 **Integration Opportunities**: State Abstraction can enhance existing multi-signature solutions by providing **contract-level security** combined with **wallet-level security**.
 
-### Formal Verification and Security Analysis
+### Smart Contract Audit and Security Analysis
 
-**Current Formal Verification Landscape**: **Formal verification of smart contracts** is emerging as a critical security practice, but most current solutions require **specialized expertise** and **significant manual effort**.
+**Current Audit Landscape**: **Third-party smart contract audits** are a critical security practice, but most engagements require **specialized expertise**, **significant manual effort**, and **weeks to months** for completion.
 
-**State Abstraction's Verification Advantages**:
-- **Built-in verification support** through **mathematical property specification**
-- **Automated verification** of **security invariants** and **temporal properties**
-- **Continuous verification** during **development and deployment**
-- **Proof generation** for **compliance and audit** requirements
+**State Abstraction's Audit Advantages**:
+- **Centralized state machine** with a **single mutation surface** reduces audit scope
+- **Standardized security patterns** through **proven architectural components**
+- **Defense-in-depth gates** that enforce invariants architecturally rather than by convention
+- **Complete transaction audit trails** for **compliance and operational review**
 
 **Smart Contract Audit Cost Comparison**: **Traditional smart contract audits cost $15,000-$70,000** and require **weeks to months** for completion. **State Abstraction's architectural security** reduces audit complexity by:
 - **Eliminating single-point failure analysis** through **mandatory multi-signature**
 - **Standardizing security patterns** through **proven architectural components**
-- **Providing formal verification support** for **mathematical security proofs**
 - **Reducing custom security analysis** through **standardized security workflows**
 
 **Bug Bounty Market Impact**: **Over $65 million was paid in bug bounties in 2023** for blockchain vulnerabilities. **State Abstraction's preventive approach** reduces bounty requirements by **architecturally eliminating** entire classes of vulnerabilities rather than requiring **post-deployment discovery**.
@@ -797,9 +777,9 @@ Property: RoleSeparation
 
 ### Phase 1: Foundation and Core Infrastructure
 
-**Core Library Development and Formal Verification**:
+**Core Library Development**:
 
-The foundation phase establishes the **mathematical and cryptographic infrastructure** underlying State Abstraction. **Core library development** focuses on implementing the **EngineBlox library** with **formally verified security properties**.
+The foundation phase establishes the **cryptographic and state-machine infrastructure** underlying State Abstraction. **Core library development** focuses on implementing the **EngineBlox library** with **architecturally enforced security properties**.
 
 **EngineBlox Library Implementation**: ✅ **Currently Implemented** - Core library in `contracts/core/lib/EngineBlox.sol` with actual implementation. Transaction requests validate both handler and execution selector permissions; `txRequest` uses `handlerSelector` (msg.sig at call site) and `executionSelector`/`executionParams` for the operation to execute:
 ```solidity
@@ -824,18 +804,11 @@ library EngineBlox {
 }
 ```
 
-**Formal Verification Integration**: Implementation of **automated formal verification tools** that provide **mathematical proofs** of security properties:
-- **Single-point failure prevention** verification
-- **Role separation enforcement** proofs  
-- **Temporal security property** validation
-- **Cryptographic integrity** verification
-
-**Security Audit and Certification**: **Comprehensive third-party security audits** by **leading security firms**. Target outcome: **Zero critical vulnerabilities** with **formal verification certification**.
+**Security Audit and Certification**: **Comprehensive third-party security audits** by **leading security firms**. Target outcome: **Zero critical vulnerabilities** with **independent audit certification**.
 
 **Key Deliverables**:
-- ✅ **Production-ready EngineBlox library** with **formal verification certification**
+- ✅ **Production-ready EngineBlox library** with **third-party audit certification**
 - ✅ **Complete security audit reports** from **three independent auditing firms**
-- ✅ **Mathematical proofs** of **core security properties** using **automated verification tools**
 - ✅ **TypeScript SDK** with **type-safe interfaces** and **comprehensive examples**
 
 ### Phase 2: Enterprise Development and Market Validation
@@ -966,7 +939,7 @@ contract AIEnhancedStateMachine is EnterpriseStateMachine {
 
 **Market Leadership Establishment**:
 - **Industry Standard Development**: Lead **industry standardization efforts** for **blockchain security frameworks**
-- **Academic Partnerships**: **Research collaborations** with **leading universities** for **formal verification advancement**
+- **Academic Partnerships**: **Research collaborations** with **leading universities** for **blockchain security advancement**
 - **Open Source Community**: **Comprehensive open source ecosystem** with **developer tools** and **educational resources**
 - **Certification Programs**: **Professional certification programs** for **State Abstraction developers** and **security architects**
 
@@ -1130,7 +1103,7 @@ Typical enterprise implementations show positive ROI within the first year of de
 
 State Abstraction implementations must consider various risk factors inherent in blockchain technology and enterprise deployments. The framework's **mandatory multi-signature architecture** provides **fundamental security improvements**, but comprehensive risk management remains essential.
 
-**Technical Considerations**: **Smart contract implementations** require **thorough testing** and **formal verification** to ensure **security properties** are maintained across **all deployment scenarios**.
+**Technical Considerations**: **Smart contract implementations** require **thorough testing** and **independent security audits** to ensure **security properties** are maintained across **all deployment scenarios**.
 
 **Operational Considerations**: **Enterprise implementations** must address **key management**, **access control**, and **monitoring requirements** to maintain **operational security** in **production environments**.
 
@@ -1160,7 +1133,7 @@ State Abstraction represents a **foundational security architecture** that will 
 
 State Abstraction's **open source foundation** enables **community-driven innovation** where developers, researchers, and enterprises can contribute to **advancing blockchain security**. The framework's **modular architecture** supports **extensibility** and **custom implementations** for **specific use cases**.
 
-**Research Partnerships**: Collaboration with **academic institutions** and **research organizations** to advance **formal verification techniques** and **cryptographic security**.
+**Research Partnerships**: Collaboration with **academic institutions** and **research organizations** to advance **blockchain security architecture** and **cryptographic security**.
 
 **Industry Standards**: Leadership in developing **industry standards** for **blockchain security architecture** through **open collaboration** and **community consensus**.
 
@@ -1183,8 +1156,6 @@ The current blockchain security landscape, characterized by **$2.2 billion in an
 ✅ **Proactive Security Model**: Unlike reactive security frameworks that respond to discovered vulnerabilities, State Abstraction **prevents entire classes of attacks** through **architectural design**.
 
 ✅ **Enterprise-Grade Workflows**: **Time-locked operations**, **role separation**, and **integrated compliance** provide the **sophisticated workflows** required for **enterprise blockchain adoption**.
-
-✅ **Formal Verification Integration**: **Mathematical security proofs** provide **unprecedented assurance** of security properties through **automated verification** rather than manual analysis.
 
 ### Market Transformation Potential
 
@@ -1212,7 +1183,7 @@ State Abstraction establishes **technology leadership** through **fundamental in
 
 **Atomic Transaction Breakdown**: The concept of **decomposing atomic blockchain transactions** into **multi-phase workflows** with **mandatory role separation** represents a **fundamental architectural innovation** not present in existing frameworks.
 
-**Centralized State Machine**: **Deterministic state machine architecture** with **formal verification integration** provides **mathematical security guarantees** while maintaining operational flexibility.
+**Centralized State Machine**: **Deterministic state machine architecture** with **defense-in-depth gates** provides **architecturally enforced security guarantees** while maintaining operational flexibility.
 
 **Dynamic Role-Based Access Control**: **Runtime-configurable role management** (RuntimeRBAC.sol, EngineBlox) without **contract upgrades** provides **enterprise-grade flexibility** while maintaining **security invariants**.
 
@@ -1234,7 +1205,7 @@ State Abstraction delivers **quantifiable economic value** through **measurable 
 
 State Abstraction represents more than a **technology solution** – it's a **movement toward architecturally secure blockchain applications** that can support **mainstream adoption** and **enterprise-scale deployments**.
 
-**For Developers**: State Abstraction provides **proven security patterns** and **formal verification support** that eliminate **custom security development** while providing **mathematical assurance** of security properties. **Join the open source State Abstraction community** to **contribute**, **collaborate**, and **build the next generation of secure blockchain applications**.
+**For Developers**: State Abstraction provides **proven security patterns** that eliminate **custom security development** while providing **architecturally enforced assurance** of security properties. **Join the open source State Abstraction community** to **contribute**, **collaborate**, and **build the next generation of secure blockchain applications**.
 
 **For Enterprises**: State Abstraction addresses the **primary barriers to enterprise blockchain adoption** through **architecturally guaranteed security**, **integrated compliance**, and **enterprise-grade workflows**. **Evaluate the open source State Abstraction framework** for your **blockchain initiatives** and **leverage professional services** for **enterprise implementations**.
 

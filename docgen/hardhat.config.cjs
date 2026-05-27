@@ -23,13 +23,11 @@ module.exports = {
     artifacts: path.resolve(__dirname, "../artifacts")
   },
   docgen: {
-    path: path.resolve(__dirname, "../docs"),
-    clear: true,
-    runOnCompile: false, // Don't run automatically - use npm run docgen instead
+    // Relative to paths.root (repo root); use npm run docgen — not runOnCompile
+    outputDir: "docs/_auto_generated_docs_",
     templates: path.resolve(__dirname, "./templates"),
     pages: 'files',
     exclude: ['test/**', 'node_modules/**'],
-    outputStructure: 'single',
     theme: 'markdown',
     collapseNewlines: true,
     pageExtension: '.md'

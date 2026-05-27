@@ -8,10 +8,10 @@ We actively maintain security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 1.0.x   | :white_check_mark: | Testing phase (pre-audit) |
+| 1.0.x   | :white_check_mark: | Testing phase (third-party audit in progress) |
 | < 1.0   | :x:                | End of life |
 
-**Note**: This security policy will become effective after completion of formal verification and external audit in Q1 2026, which will mark the official launch of version 1.0.0.
+**Note**: A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet. This security policy will become fully effective after third-party audit completion, which will mark the official launch of version 1.0.0.
 
 ## Reporting a Vulnerability
 
@@ -85,23 +85,20 @@ Our State Abstraction framework implements multiple layers of security:
 
 ## Security Audit Status
 
+A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet.
+
 ### Current Status
 - **Development Phase**: Testing and validation ongoing
-- **Formal Verification**: Planned for Q1 2026
-- **External Security Audit**: Planned for Q1 2026
-- **Official Launch**: Q1 2026 (post-audit)
+- **Third-Party Security Audit**: In progress (report not yet published)
+- **Official Launch**: After third-party audit completion
 
-### Completed Audits
+### Completed Reviews
 - **Internal Security Review**: Completed (v1.0.0)
 - **Code Review**: Ongoing with each release
 
-### Planned Audits
-- **Third-Party Security Audit**: Q1 2026
-- **Formal Verification**: Q1 2026
-
 ## Bug Bounty Program
 
-We are developing a bug bounty program for security researchers. Details will be announced after the official launch.
+We are developing a bug bounty program for security researchers. Details will be announced after third-party audit completion and the official launch of version 1.0.0.
 
 ### Scope
 - Smart contract vulnerabilities
@@ -148,4 +145,4 @@ We appreciate the security research community's efforts to help keep Bloxchain P
 
 *This security policy is subject to updates. Please check back regularly for the latest information.*
 
-**Last Updated**: October 2025
+**Last Updated**: May 2026

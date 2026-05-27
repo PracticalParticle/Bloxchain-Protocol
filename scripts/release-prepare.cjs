@@ -118,7 +118,7 @@ function syncVersions() {
 
 function extractAbi() {
   logStep('📋', 'Step 2: Extracting ABIs...');
-  exec('npm run extract-abi');
+  exec('npm run compile:foundry:abi');
   const rootAbiDir = path.join(rootDir, 'abi');
   if (!fs.existsSync(rootAbiDir)) {
     fail('abi/ directory not found after extract-abi');

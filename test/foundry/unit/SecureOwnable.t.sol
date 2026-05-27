@@ -225,7 +225,7 @@ contract SecureOwnableTest is CommonBase {
 
     function test_UpdateBroadcasterRequest_Revert_NoOpReplace() public {
         vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, broadcaster));
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.ItemAlreadyExists.selector, broadcaster));
         accountBlox.updateBroadcasterRequest(broadcaster, broadcaster);
     }
 

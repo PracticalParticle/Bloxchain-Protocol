@@ -26,7 +26,7 @@ try {
 // Step 1: Extract ABIs from root
 console.log('📋 Step 1: Extracting ABIs...');
 try {
-  execSync('npm run extract-abi', { cwd: rootDir, stdio: 'inherit' });
+  execSync('npm run compile:foundry:abi', { cwd: rootDir, stdio: 'inherit' });
   console.log('✅ ABIs extracted\n');
 } catch (error) {
   console.error('❌ Failed to extract ABIs:', error.message);
