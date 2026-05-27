@@ -257,7 +257,9 @@ library EngineBlox {
         bytes32 resultHash
     );
 
-    /// @dev Emitted only on terminal execution (COMPLETED/FAILED). Full returndata; verify `keccak256(result) == resultHash`.
+    /// @dev Emitted only on terminal execution (COMPLETED/FAILED). Full execution returndata (`result` may be empty).
+    ///      Verify against `TxRecord.resultHash` from the same tx: `result.length == 0` implies `resultHash == bytes32(0)`;
+    ///      otherwise `keccak256(result) == resultHash` (see `_executionResultHash`).
     event TxExecutionResult(uint256 indexed txId, bytes result);
 
     // ============ SYSTEM STATE FUNCTIONS ============
@@ -2249,9 +2251,9 @@ library EngineBlox {
     }
 
     /**
-     * @dev Hashes execution returndata for storage and events
+     * @dev Commitment to execution returndata for storage and `TransactionEvent.resultHash`.
      * @param executionResult The execution returndata to hash
-     * @return The hash of the execution returndata
+     * @return `bytes32(0)` when empty, else `keccak256(executionResult)`
      */
     function _executionResultHash(bytes memory executionResult) private pure returns (bytes32) {
         return executionResult.length == 0 ? bytes32(0) : keccak256(executionResult);

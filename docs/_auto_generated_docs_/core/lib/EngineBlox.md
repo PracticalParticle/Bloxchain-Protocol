@@ -1360,7 +1360,7 @@ event TransactionEvent(uint256 txId, bytes4 functionHash, enum EngineBlox.TxStat
 event TxExecutionResult(uint256 txId, bytes result)
 ```
 
-Emitted only on terminal execution (COMPLETED/FAILED). Full returndata; verify `keccak256(result) == resultHash`.
+Emitted only on terminal execution (COMPLETED/FAILED). Full execution returndata (`result` may be empty). Verify against `TxRecord.resultHash` from the same tx: `result.length == 0` implies `resultHash == bytes32(0)`; otherwise `keccak256(result) == resultHash` (see `_executionResultHash`).
 
 
 ---

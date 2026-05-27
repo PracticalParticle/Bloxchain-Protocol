@@ -400,7 +400,6 @@ abstract contract SecureOwnable is BaseStateMachine, ISecureOwnable {
             if (!hasRole(role, currentBroadcaster)) revert SharedValidation.ItemNotFound(currentBroadcaster);
         }
         if (newBroadcaster != address(0)) {
-            if (newBroadcaster == currentBroadcaster) revert SharedValidation.InvalidOperation(newBroadcaster);
             if (hasRole(role, newBroadcaster)) revert SharedValidation.ItemAlreadyExists(newBroadcaster);
         }
     }

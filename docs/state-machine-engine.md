@@ -199,7 +199,7 @@ event TransactionEvent(
 event TxExecutionResult(uint256 indexed txId, bytes result);
 ```
 
-The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step). **`resultHash`** is zero on request/cancel; on **`COMPLETED`** / **`FAILED`** it is set before **`TxExecutionResult`** is emitted in the same transaction. Verify off-chain: `keccak256(TxExecutionResult.result) == resultHash` from `getTransaction(txId)`.
+The value in **`functionHash`** is the same **`bytes4`** passed into **`logTxEvent`** (the execution selector for that lifecycle step). **`resultHash`** is zero on request/cancel; on **`COMPLETED`** / **`FAILED`** it is set before **`TxExecutionResult`** is emitted in the same transaction. Verify off-chain against `getTransaction(txId).resultHash`: if `TxExecutionResult.result` is empty, `resultHash` must be `bytes32(0)`; otherwise `keccak256(TxExecutionResult.result) == resultHash`.
 
 Generated ABIs (for example **`sdk/typescript/abi/EngineBlox.abi.json`**) and viem **`watchContractEvent` / `getLogs`** use those names. Lifecycle topic: `TransactionEvent(uint256,bytes4,uint8,address,address,bytes32,bytes32)`. Returndata topic: `TxExecutionResult(uint256,bytes)`.
 
