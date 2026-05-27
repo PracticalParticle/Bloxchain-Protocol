@@ -67,10 +67,10 @@
     "@commitlint/config-conventional": "21.0.1",
     "@types/node": "25.9.1",
     "dotenv": "17.4.2",
-    "hardhat": "3.5.1",
+    "hardhat": "3.6.0",
     "husky": "9.1.7",
-    "release-please": "17.6.0",
+    "release-please": "17.6.1",
     "typescript": "6.0.3",
-    "viem": "2.50.4"
+    "viem": "2.51.2"
   }
 }
