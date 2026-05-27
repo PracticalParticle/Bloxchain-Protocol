@@ -186,21 +186,8 @@ function runTests() {
   logStep('📋', 'Step 4: Running tests...');
   exec('npm run test:foundry');
   logSuccess('Foundry tests passed');
-  // Sanity tests require deploy/chain; optional for prepare
-  log('Running sanity-sdk:core (may require deployed contracts)...', 'yellow');
-  const sanitySdkOk = exec('npm run test:sanity-sdk:core', { throwOnError: false });
-  if (!sanitySdkOk) {
-    logWarning('test:sanity-sdk:core failed or skipped; continuing. Run manually if needed.');
-  } else {
-    logSuccess('Sanity SDK tests passed');
-  }
-  log('Running sanity:core (may require deployed contracts)...', 'yellow');
-  const sanityOk = exec('npm run test:sanity:core', { throwOnError: false });
-  if (!sanityOk) {
-    logWarning('test:sanity:core failed or skipped; continuing. Run manually if needed.');
-  } else {
-    logSuccess('Sanity core tests passed');
-  }
+  // Remote sanity suites (test:sanity:core, test:sanity-sdk:core) are disabled here:
+  // they target deprecated Truffle remote deploy flows. Re-enable when a new remote env exists.
 }
 
 function verifyContractsPackage() {
@@ -273,8 +260,8 @@ function printSummary() {
   log('  npm run publish:contracts', 'yellow');
   log('  npm run publish:sdk', 'yellow');
   log('\nOr manually:', 'cyan');
-  log('  cd package && npm publish --tag alpha.11', 'yellow');
-  log('  cd sdk/typescript && npm publish --tag alpha.11', 'yellow');
+  log('  cd package && npm publish --tag alpha.21', 'yellow');
+  log('  cd sdk/typescript && npm publish --tag alpha.21', 'yellow');
   log('');
 }
 
