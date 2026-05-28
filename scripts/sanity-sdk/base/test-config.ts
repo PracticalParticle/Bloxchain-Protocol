@@ -7,11 +7,13 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load .env from project root (override: true so .env wins over inherited env e.g. RPC_URL from parent)
+// Load env from project root. Allow override via SANITY_ENV_FILE so remote profiles
+// (e.g. .env.sanity.remote_evm) can be used without mutating .env.
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '../../../.env'), override: true, quiet: true });
+const envFile = process.env.SANITY_ENV_FILE?.trim() || '.env';
+dotenv.config({ path: path.join(__dirname, '../../../', envFile), override: true, quiet: true });
 
 export interface TestConfig {
   testMode: 'auto' | 'manual';

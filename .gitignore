@@ -18,7 +18,7 @@ reports/
 .vscode/
 
 ### Environment Variables ###
-*.env
+*.env*
 *.env.deployment*
 
 ### Test Reports ###

@@ -6,7 +6,7 @@
 import { Address, Hex } from 'viem';
 import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
-import { getContractAddressFromArtifacts, getDefinitionAddress } from '../base/test-helpers.ts';
+import { getContractAddressFromArtifacts, getDefinitionAddress, getDeployedAddress } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams, TxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
@@ -82,7 +82,7 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
 
     // Calculate function selectors
     this.ROLE_CONFIG_BATCH_META_SELECTOR = keccak256(
-      toBytes('roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+      toBytes('roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
     ).slice(0, 10) as Hex; // First 4 bytes
 
     this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR = keccak256(
@@ -104,10 +104,15 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
    */
   protected getContractAddressFromEnv(): Address | null {
     const address = getTestConfig().contractAddresses.accountBlox;
-    if (!address) {
-      throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
+    if (address) {
+      return address as Address;
     }
-    return address as Address;
+    const fromDeployed = getDeployedAddress('AccountBlox');
+    if (fromDeployed) {
+      console.log(`📋 Using AccountBlox from deployed-addresses.json: ${fromDeployed}`);
+      return fromDeployed;
+    }
+    throw new Error('ACCOUNTBLOX_ADDRESS not set and deployed-addresses.json has no AccountBlox for current network');
   }
 
   /**
@@ -146,12 +151,14 @@ export abstract class BaseRuntimeRBACTest extends BaseSDKTest {
     }
 
     try {
-      // For now, use standard Ganache setup assumption
-      // In a real deployment, these would be discovered from the contract
-      // wallet1 is typically owner, wallet2 is broadcaster, wallet3 is recovery
-      this.roles.owner = this.wallets.wallet1.address;
-      this.roles.broadcaster = this.wallets.wallet2.address;
-      this.roles.recovery = this.wallets.wallet3.address;
+      // Discover runtime roles from contract to avoid stale wallet assumptions.
+      this.roles.owner = await this.runtimeRBAC.owner();
+      const broadcasters = await this.runtimeRBAC.getBroadcasters();
+      if (!broadcasters || broadcasters.length === 0) {
+        throw new Error('No broadcasters configured on contract');
+      }
+      this.roles.broadcaster = broadcasters[0];
+      this.roles.recovery = await this.runtimeRBAC.getRecovery();
 
       this.roleWallets.owner = this.wallets.wallet1;
       this.roleWallets.broadcaster = this.wallets.wallet2;

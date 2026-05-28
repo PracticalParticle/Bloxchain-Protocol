@@ -64,10 +64,13 @@ export async function getDefinitionAddress(contractName: string): Promise<Addres
   const deployedPath = path.join(__dirname, '../../../deployed-addresses.json');
   if (fs.existsSync(deployedPath)) {
     const deployed = JSON.parse(fs.readFileSync(deployedPath, 'utf8'));
-    const dev = deployed.development;
-    if (dev && dev[contractName]?.address) {
-      console.log(`📋 Using ${contractName} from deployed-addresses.json (development): ${dev[contractName].address}`);
-      return dev[contractName].address as Address;
+    const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+    const network = deployed[networkName];
+    if (network && network[contractName]?.address) {
+      console.log(
+        `📋 Using ${contractName} from deployed-addresses.json (${networkName}): ${network[contractName].address}`
+      );
+      return network[contractName].address as Address;
     }
   }
 
@@ -78,6 +81,29 @@ export async function getDefinitionAddress(contractName: string): Promise<Addres
     `Definition contract address not found for ${contractName}. ` +
     `Run deploy (truffle migrate or hardhat deploy-foundation-libraries) and ensure deployed-addresses.json or build/contracts has the address.`
   );
+}
+
+/**
+ * Get a deployed contract address from deployed-addresses.json for current network.
+ */
+export function getDeployedAddress(contractName: string): Address | null {
+  const deployedPath = path.join(__dirname, '../../../deployed-addresses.json');
+  if (!fs.existsSync(deployedPath)) {
+    return null;
+  }
+
+  try {
+    const deployed = JSON.parse(fs.readFileSync(deployedPath, 'utf8'));
+    const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+    const address = deployed?.[networkName]?.[contractName]?.address;
+    if (typeof address === 'string' && address.startsWith('0x')) {
+      return address as Address;
+    }
+  } catch {
+    // ignore parse/read errors and fall through to null
+  }
+
+  return null;
 }
 
 /**

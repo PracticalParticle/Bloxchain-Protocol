@@ -65,7 +65,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
     }
 
     try {
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       if (pendingTxs.length === 0) {
         console.log('✅ No pending transactions to clean up');
         return;
@@ -114,7 +114,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       }
 
       // Verify cleanup
-      const remainingPending = await this.secureOwnable.getPendingTransactions();
+      const remainingPending = await this.getPendingTransactionsWithAccess();
       console.log(`📋 Remaining pending transactions: ${remainingPending.length}`);
     } catch (error: any) {
       console.log(`❌ Cleanup failed: ${error.message}`);
@@ -176,7 +176,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Get transaction ID from pending transactions
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
 
       const txId = pendingTxs[pendingTxs.length - 1];
@@ -270,7 +270,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Get transaction ID from pending transactions
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
       
       // Get the latest transaction ID (should be the one we just created)
@@ -311,7 +311,7 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
     try {
       // Check for existing pending ownership transfer transactions (like sanity test does)
       console.log('  🔍 Checking for existing pending ownership transfer transactions...');
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       
       let txId: bigint | null = null;
       
@@ -357,17 +357,28 @@ export class OwnershipTransferTests extends BaseSecureOwnableTest {
         throw new Error(`Transaction ${txId} is not pending (status: ${txCheck.status}). Expected status 1 (PENDING).`);
       }
 
+      const ownerWallet = this.getRoleWallet('owner');
       // Wait for timelock to expire
       await this.waitForTimelockWithTxId(txId);
+      await this.mineNextBlock(ownerWallet);
 
       // Owner approves the transaction
-      const ownerWallet = this.getRoleWallet('owner');
       const ownerWalletName = Object.keys(this.wallets).find(
         (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
       ) || 'wallet1';
       const secureOwnableOwner = this.createSecureOwnableWithWallet(ownerWalletName);
 
-      const result = await secureOwnableOwner.transferOwnershipDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+      let result;
+      try {
+        result = await secureOwnableOwner.transferOwnershipDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+      } catch (error: any) {
+        if (String(error?.message || '').includes('BeforeReleaseTime')) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          result = await secureOwnableOwner.transferOwnershipDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+        } else {
+          throw error;
+        }
+      }
 
       this.assertTest(!!result.hash, 'Approval transaction created');
       await result.wait();

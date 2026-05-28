@@ -8,7 +8,7 @@ import { GuardController } from '../../../sdk/typescript/contracts/core/GuardCon
 import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import AccountBloxABIJson from '../../../sdk/typescript/abi/AccountBlox.abi.json';
 import { BaseSDKTest, TestWallet } from '../base/BaseSDKTest.ts';
-import { getContractAddressFromArtifacts, getDefinitionAddress } from '../base/test-helpers.ts';
+import { getContractAddressFromArtifacts, getDefinitionAddress, getDeployedAddress } from '../base/test-helpers.ts';
 import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
@@ -68,7 +68,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     new TextEncoder().encode('CONTROLLER_CONFIG_BATCH')
   ) as Hex;
   protected readonly GUARD_CONFIG_BATCH_META_SELECTOR: Hex = keccak256(
-    new TextEncoder().encode('guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+    new TextEncoder().encode('guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
   protected readonly GUARD_CONFIG_BATCH_EXECUTE_SELECTOR: Hex = keccak256(
     new TextEncoder().encode('executeGuardConfigBatch((uint8,bytes)[])')
@@ -77,7 +77,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
   // Role config batch (for mint flow: create MINT_REQUESTOR, MINT_APPROVER, add function to roles)
   protected readonly ROLE_CONFIG_BATCH_META_SELECTOR: Hex = keccak256(
-    toBytes('roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+    toBytes('roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
   protected readonly ROLE_CONFIG_BATCH_EXECUTE_SELECTOR: Hex = keccak256(
     toBytes('executeRoleConfigBatch((uint8,bytes)[])')
@@ -85,7 +85,7 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   protected readonly ROLE_CONFIG_BATCH_OPERATION_TYPE: Hex = keccak256(toBytes('ROLE_CONFIG_BATCH')) as Hex;
   /** requestAndApproveExecution selector (handler for mint meta-approve). */
   protected readonly REQUEST_AND_APPROVE_EXECUTION_SELECTOR: Hex = keccak256(
-    toBytes('requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+    toBytes('requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
 
   /** executeWithTimeLock selector (controller; MINT_REQUESTOR needs EXECUTE_TIME_DELAY_REQUEST for mint). */
@@ -94,11 +94,11 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
   ).slice(0, 10) as Hex;
   /** approveTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_APPROVE for mint). */
   protected readonly APPROVE_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
-    toBytes('approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+    toBytes('approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
   /** cancelTimeLockExecutionWithMetaTx selector (controller; MINT_APPROVER needs SIGN_META_CANCEL for mint). */
   protected readonly CANCEL_TIMELOCK_EXECUTION_META_SELECTOR: Hex = keccak256(
-    toBytes('cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
+    toBytes('cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))')
   ).slice(0, 10) as Hex;
 
   constructor(testName: string) {
@@ -117,10 +117,15 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
    */
   protected getContractAddressFromEnv(): Address | null {
     const address = getTestConfig().contractAddresses.accountBlox;
-    if (!address) {
-      throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
+    if (address) {
+      return address as Address;
     }
-    return address as Address;
+    const fromDeployed = getDeployedAddress('AccountBlox');
+    if (fromDeployed) {
+      console.log(`📋 Using AccountBlox from deployed-addresses.json: ${fromDeployed}`);
+      return fromDeployed;
+    }
+    throw new Error('ACCOUNTBLOX_ADDRESS not set and deployed-addresses.json has no AccountBlox for current network');
   }
 
   /**
