@@ -273,8 +273,8 @@ function printSummary() {
   log('  npm run publish:contracts', 'yellow');
   log('  npm run publish:sdk', 'yellow');
   log('\nOr manually:', 'cyan');
-  log('  cd package && npm publish --tag alpha.21', 'yellow');
-  log('  cd sdk/typescript && npm publish --tag alpha.21', 'yellow');
+  log('  cd package && npm publish --tag alpha.22', 'yellow');
+  log('  cd sdk/typescript && npm publish --tag alpha.22', 'yellow');
   log('');
 }
 
