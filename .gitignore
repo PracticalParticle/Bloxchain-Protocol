@@ -18,8 +18,9 @@ reports/
 .vscode/
 
 ### Environment Variables ###
-*.env*
-*.env.deployment*
+*.env
+*.env.*
+*.env.deployment.*
 
 ### Test Reports ###
 scripts/sanity/reports/
