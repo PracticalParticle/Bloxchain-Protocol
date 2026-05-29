@@ -1,6 +1,6 @@
 {
   "name": "Bloxchain",
-  "version": "1.0.0-alpha.21",
+  "version": "1.0.0-alpha.22",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "repository": {
@@ -46,8 +46,8 @@
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
     "generate:contracts-lock": "cd package && npm install --package-lock-only",
     "release:prepare": "node scripts/release-prepare.cjs",
-    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.21",
-    "publish:sdk": "npm run release:sync-versions && npm run compile:foundry:abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.21",
+    "publish:contracts": "npm run release:prepare && cd package && npm publish --tag alpha.22",
+    "publish:sdk": "npm run release:sync-versions && npm run compile:foundry:abi && npm run build:sdk && cd sdk/typescript && npm publish --tag alpha.22",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
     "commitlint": "commitlint --edit",

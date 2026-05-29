@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fresh remote_evm test deployment: foundation libraries + AccountBlox + CopyBlox.
+ * Fresh remote_evm test deployment: foundation libraries + AccountBlox + CopyBlox + BasicERC20.
  *
  * Prerequisites:
  *   - Remote EVM running (e.g. Nethermind Docker on http://127.0.0.1:8545)
@@ -34,6 +34,22 @@ function run(step, scriptPath) {
   });
 }
 
+function runNode(step, scriptPath, extraEnv = {}) {
+  console.log(`\n▶ ${step}`);
+  execSync(`node ${scriptPath}`, {
+    cwd: rootDir,
+    stdio: 'inherit',
+    shell: true,
+    env: {
+      ...process.env,
+      DEPLOY_ENV_FILE: deployEnvFile,
+      DEPLOY_NETWORK: network,
+      DEPLOY_NETWORK_NAME: network,
+      ...extraEnv,
+    },
+  });
+}
+
 function main() {
   if (!fs.existsSync(deployEnvPath)) {
     console.error(
@@ -50,8 +66,11 @@ function main() {
     'scripts/deployment/deploy-foundation-libraries.js'
   );
   run('CopyBlox example', 'scripts/deployment/deploy-example-copyblox.js');
+  runNode('BasicERC20 token', 'scripts/deployment/create-erc20-token.js', {
+    CREATE_ERC20_USE_DEFAULTS: '1',
+  });
 
-  console.log('\n✅ remote_evm test deployment complete (foundation + CopyBlox).');
+  console.log('\n✅ remote_evm test deployment complete (foundation + CopyBlox + BasicERC20).');
   console.log('   Addresses: deployed-addresses.json');
   console.log('   Optional: npm run generate:sanity-env -- --out .env');
 }
