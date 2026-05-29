@@ -114,13 +114,13 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER META-TRANSACTION CANCELLATION', [
             {
                 role: 'owner',
-                functionSelector: '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
+                functionSelector: this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR, // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 expectedActions: [5], // SIGN_META_CANCEL
                 description: 'Owner can sign ownership transfer cancellation meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
+                functionSelector: this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR, // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 expectedActions: [8], // EXECUTE_META_CANCEL
                 description: 'Broadcaster can execute ownership transfer cancellation meta-transaction'
             }
@@ -155,7 +155,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for cancellation
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xffe364b8', // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
+                this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR, // TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR
                 this.getTxAction('SIGN_META_CANCEL'),
                 3600, // 1 hour deadline
                 0, // no max gas price
@@ -359,13 +359,13 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
         await this.validateWorkflowPermissions('OWNERSHIP TRANSFER META-TRANSACTION APPROVAL', [
             {
                 role: 'owner',
-                functionSelector: '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
+                functionSelector: this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR, // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
                 expectedActions: [4], // SIGN_META_APPROVE
                 description: 'Owner can sign ownership transfer approval meta-transaction'
             },
             {
                 role: 'broadcaster',
-                functionSelector: '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
+                functionSelector: this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR, // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
                 expectedActions: [7], // EXECUTE_META_APPROVE
                 description: 'Broadcaster can execute ownership transfer approval meta-transaction'
             }
@@ -402,7 +402,7 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             // Create meta-transaction parameters for approval
         const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
             this.contractAddress,
-            '0xcaca0f7e', // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
+            this.FUNCTION_SELECTORS.TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR, // TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR
             this.getTxAction('SIGN_META_APPROVE'),
             3600, // 1 hour deadline
             0, // no max gas price
@@ -495,12 +495,12 @@ class OwnershipTransferTests extends BaseSecureOwnableTest {
             const executionParams = this.web3.eth.abi.encodeParameter('address', newRecovery);
 
             // Get the execution selector for executeRecoveryUpdate(address)
-            const executionSelector = '0x9ce5606e'; // UPDATE_RECOVERY_SELECTOR
+            const executionSelector = this.FUNCTION_SELECTORS.UPDATE_RECOVERY_SELECTOR;
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xfa3fb3e7', // UPDATE_RECOVERY_META_SELECTOR
+                this.FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR,
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price

@@ -59,7 +59,7 @@ class BaseRuntimeRBACTest {
         
         // Constants for RuntimeRBAC
         this.ROLE_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
-            'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10); // First 4 bytes
         
         this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR = this.web3.utils.keccak256(
@@ -127,15 +127,35 @@ class BaseRuntimeRBACTest {
         return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
     }
 
+    getAccountBloxFromDeployedAddresses(networkName) {
+        try {
+            const addressesPath = path.join(__dirname, '../../../deployed-addresses.json');
+            if (!fs.existsSync(addressesPath)) return null;
+            const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
+            const entry = addresses[networkName]?.AccountBlox;
+            const addr = entry?.address || entry;
+            if (addr) {
+                console.log(`📋 Found AccountBlox at ${addr} from deployed-addresses.json (network: ${networkName})`);
+                return addr;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async initializeAutoMode() {
         console.log('🤖 AUTO MODE: Fetching contract addresses and Ganache accounts...');
         
         try {
-            // Get contract addresses from Truffle artifacts (AccountBlox is the single account contract)
-            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+            this.contractAddress = this.getAccountBloxFromDeployedAddresses(networkName);
+            if (!this.contractAddress) {
+                this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
+            }
             
             if (!this.contractAddress) {
-                throw new Error('Could not find AccountBlox address in Truffle artifacts');
+                throw new Error(`Could not find AccountBlox (deployed-addresses.json["${networkName}"] or Truffle artifacts)`);
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -155,11 +175,11 @@ class BaseRuntimeRBACTest {
         console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
         
         try {
-            // Get contract address from environment (single account contract)
-            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS || this.getAccountBloxFromDeployedAddresses(networkName);
             
             if (!this.contractAddress) {
-                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set and AccountBlox not found in deployed-addresses.json');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -235,14 +255,16 @@ class BaseRuntimeRBACTest {
             
             const addresses = JSON.parse(fs.readFileSync(addressesFile, 'utf8'));
             
-            // Try to find the contract in any network (prefer 'development' if available)
+            // Prefer configured network, then development, then any network with the contract
             const networks = Object.keys(addresses);
+            const preferredNetwork = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
             let networkToUse = null;
-            
-            if (addresses.development && addresses.development[contractName]) {
+
+            if (addresses[preferredNetwork]?.[contractName]) {
+                networkToUse = preferredNetwork;
+            } else if (addresses.development && addresses.development[contractName]) {
                 networkToUse = 'development';
             } else {
-                // Try any network
                 for (const network of networks) {
                     if (addresses[network] && addresses[network][contractName]) {
                         networkToUse = network;

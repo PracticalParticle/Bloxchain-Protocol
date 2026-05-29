@@ -99,12 +99,12 @@ class RecoveryUpdateTests extends BaseSecureOwnableTest {
 
             // Get the execution selector for executeRecoveryUpdate(address)
             // This is keccak256("executeRecoveryUpdate(address)") first 4 bytes
-            const executionSelector = '0x9ce5606e'; // UPDATE_RECOVERY_SELECTOR
+            const executionSelector = this.FUNCTION_SELECTORS.UPDATE_RECOVERY_SELECTOR;
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0xfa3fb3e7', // UPDATE_RECOVERY_META_SELECTOR
+                this.FUNCTION_SELECTORS.UPDATE_RECOVERY_META_SELECTOR,
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price

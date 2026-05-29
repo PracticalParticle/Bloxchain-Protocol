@@ -63,6 +63,12 @@ function linkBytecode(bytecode, linkReferences, libraryAddresses) {
   return "0x" + code;
 }
 
+function normalizeAddress(value, fallback) {
+  if (!value || typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return /^0x[0-9a-fA-F]{40}$/.test(trimmed) ? trimmed : fallback;
+}
+
 async function main() {
   const conn = await network.connect();
   const { networkName } = conn;
@@ -176,17 +182,27 @@ async function main() {
   console.log(`   💾 Deployed addresses saved (pre-init)`);
 
   // Initialize the implementation so it cannot be taken by others (one-shot initializer)
+  // For remote/dev networks, allow explicit role separation via env overrides.
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-  console.log(`🔧 Initializing AccountBlox (deployer as owner/broadcaster/recovery)...`);
+  const initialOwner = normalizeAddress(process.env.BLOX_OWNER_ADDRESS, deployerAccount.address);
+  const broadcaster = normalizeAddress(process.env.BLOX_BROADCASTER_ADDRESS, deployerAccount.address);
+  const recovery = normalizeAddress(process.env.BLOX_RECOVERY_ADDRESS, deployerAccount.address);
+  const timeLockRaw = process.env.BLOX_TIMELOCK_SECONDS;
+  const timeLockPeriodSec =
+    timeLockRaw && String(timeLockRaw).trim() !== ""
+      ? BigInt(String(timeLockRaw).trim())
+      : 1n;
+
+  console.log(`🔧 Initializing AccountBlox (owner/broadcaster/recovery from env or deployer defaults)...`);
   const initHash = await walletClient.writeContract({
     address: accountBloxAddress,
     abi: accountBloxArtifact.abi,
     functionName: "initialize",
     args: [
-      deployerAccount.address, // initialOwner
-      deployerAccount.address, // broadcaster
-      deployerAccount.address, // recovery
-      1n, // timeLockPeriodSec
+      initialOwner,
+      broadcaster,
+      recovery,
+      timeLockPeriodSec,
       ZERO_ADDRESS, // eventForwarder (none)
     ],
     account: deployerAccount,

@@ -36,7 +36,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
   private async clearPendingSecureRequests(): Promise<void> {
     if (!this.secureOwnable) return;
     try {
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       if (pendingTxs.length === 0) return;
       for (const txId of pendingTxs) {
         try {
@@ -102,7 +102,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
       const txId = pendingTxs[pendingTxs.length - 1];
       console.log(`  📋 Transaction ID: ${txId}`);
@@ -173,7 +173,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
       const txId = pendingTxs[pendingTxs.length - 1];
 
@@ -226,7 +226,7 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
       await result.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const pendingTxs = await this.secureOwnable.getPendingTransactions();
+      const pendingTxs = await this.getPendingTransactionsWithAccess();
       this.assertTest(pendingTxs.length > 0, 'Pending transaction found');
       const txId = pendingTxs[pendingTxs.length - 1];
 
@@ -322,9 +322,20 @@ export class BroadcasterUpdateTests extends BaseSecureOwnableTest {
 
       // Wait for timelock
       await this.waitForTimelockWithTxId(txId);
+      await this.mineNextBlock(ownerWallet);
 
       // Owner approves after timelock
-      const approveResult = await secureOwnableOwner.updateBroadcasterDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+      let approveResult;
+      try {
+        approveResult = await secureOwnableOwner.updateBroadcasterDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+      } catch (error: any) {
+        if (String(error?.message || '').includes('BeforeReleaseTime')) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          approveResult = await secureOwnableOwner.updateBroadcasterDelayedApproval(txId, this.getTxOptions(ownerWallet.address));
+        } else {
+          throw error;
+        }
+      }
 
       await approveResult.wait();
       await new Promise(resolve => setTimeout(resolve, 1000));

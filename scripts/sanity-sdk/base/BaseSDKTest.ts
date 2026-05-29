@@ -344,6 +344,24 @@ export abstract class BaseSDKTest {
   }
 
   /**
+   * Force mining of the next block by self-transfer.
+   */
+  protected async mineNextBlock(wallet: TestWallet): Promise<void> {
+    const walletClient = createWalletClient({
+      account: wallet.account,
+      chain: this.chain,
+      transport: http(this.config.rpcUrl),
+    });
+    const hash = await walletClient.sendTransaction({
+      account: wallet.account,
+      to: wallet.address,
+      value: 0n,
+      gas: 21_000n,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+  }
+
+  /**
    * Wait for timelock to expire
    */
   protected async waitForTimelock(txId: bigint): Promise<boolean> {

@@ -2,7 +2,7 @@
 // release-prepare.cjs
 // Single-command pre-publication: sync versions, extract ABIs, prepare package, test, verify.
 // Usage: npm run release:prepare (from repo root)
-// Env: SKIP_TESTS=1 | PREPARE_CONTRACTS_ONLY=1 | DEBUG=1
+// Env: SKIP_TESTS=1 (skips optional sanity-sdk tests only) | RUN_SANITY_SDK_TESTS=1 | PREPARE_CONTRACTS_ONLY=1 | DEBUG=1
 
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +12,8 @@ const rootDir = path.resolve(__dirname, '..');
 const contractsPackageDir = path.join(rootDir, 'package');
 const sdkPackageDir = path.join(rootDir, 'sdk', 'typescript');
 
-const SKIP_TESTS = process.env.SKIP_TESTS === '1';
+const SKIP_OPTIONAL_TESTS = process.env.SKIP_TESTS === '1';
+const RUN_SANITY_SDK_TESTS = process.env.RUN_SANITY_SDK_TESTS === '1';
 const PREPARE_CONTRACTS_ONLY = process.env.PREPARE_CONTRACTS_ONLY === '1';
 const DEBUG = process.env.DEBUG === '1';
 
@@ -179,15 +180,27 @@ function prepareContractsPackage() {
 }
 
 function runTests() {
-  if (SKIP_TESTS) {
-    logWarning('Skipping tests (SKIP_TESTS=1)');
-    return;
-  }
   logStep('📋', 'Step 4: Running tests...');
+
+  // Mandatory: Foundry unit/invariant tests (never skipped by SKIP_TESTS).
   exec('npm run test:foundry');
   logSuccess('Foundry tests passed');
-  // Remote sanity suites (test:sanity:core, test:sanity-sdk:core) are disabled here:
-  // they target deprecated Truffle remote deploy flows. Re-enable when a new remote env exists.
+
+  // Optional: remote_evm sanity-sdk core suite (requires Nethermind / RPC at RPC_URL).
+  if (SKIP_OPTIONAL_TESTS) {
+    logWarning('Skipping optional sanity-sdk tests (SKIP_TESTS=1)');
+    return;
+  }
+  if (!RUN_SANITY_SDK_TESTS) {
+    logWarning(
+      'Skipping optional sanity-sdk tests (set RUN_SANITY_SDK_TESTS=1 to run test:sanity-sdk:core on remote_evm)'
+    );
+    return;
+  }
+
+  logStep('📋', 'Step 4b: Running optional sanity-sdk core tests (remote_evm)...');
+  exec('npm run test:sanity-sdk:core');
+  logSuccess('Sanity SDK core tests passed');
 }
 
 function verifyContractsPackage() {
