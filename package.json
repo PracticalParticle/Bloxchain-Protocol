@@ -39,6 +39,7 @@
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
     "test:e2e": "npm run compile:foundry:abi && npm run test:sanity:core && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
+    "generate:sanity-env": "npx tsx scripts/generate-remote-evm-env.ts",
     "release:sync-versions": "node scripts/sync-versions.cjs",
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
@@ -58,6 +59,10 @@
   ],
   "author": "Particle Crypto Security",
   "license": "MPL-2.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=10.0.0"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "5.6.1",
     "@openzeppelin/contracts-upgradeable": "5.6.1"

@@ -54,15 +54,15 @@
     "access": "public"
   },
   "dependencies": {
-    "viem": "^2.47.10"
+    "viem": "2.47.10"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2",
-    "typescript": "^6.0.2"
+    "@types/node": "25.5.2",
+    "typescript": "6.0.2"
   },
   "peerDependencies": {
-    "@bloxchain/contracts": "^1.0.0-alpha.21",
-    "viem": "^2.0.0"
+    "@bloxchain/contracts": "1.0.0-alpha.21",
+    "viem": "2.0.0"
   },
   "peerDependenciesMeta": {
     "@bloxchain/contracts": {

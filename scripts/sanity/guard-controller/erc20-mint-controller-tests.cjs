@@ -36,7 +36,7 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
         }
         const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
         // Use development only for remote dev; keeps AccountBlox and BasicERC20 in sync (same deployed-addresses.json key)
-        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
+        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
         const info = addresses[network]?.BasicERC20;
         if (!info?.address) {
             throw new Error(`BasicERC20 not in deployed-addresses.json for network "${network}"`);
@@ -57,7 +57,7 @@ class ERC20MintControllerTests extends BaseGuardControllerTest {
 
         // Ensure AccountBlox and BasicERC20 are in sync (BasicERC20.minter must be this AccountBlox)
         const tokenAddress = this.getBasicErc20Address();
-        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
+        const network = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
         const addressesPath = path.join(__dirname, '../../../deployed-addresses.json');
         if (fs.existsSync(addressesPath)) {
             const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));

@@ -100,12 +100,12 @@ class TimelockPeriodTests extends BaseSecureOwnableTest {
 
             // Get the execution selector for executeTimeLockUpdate(uint256)
             // This is keccak256("executeTimeLockUpdate(uint256)") first 4 bytes
-            const executionSelector = '0x949ab909'; // UPDATE_TIMELOCK_SELECTOR
+            const executionSelector = this.FUNCTION_SELECTORS.UPDATE_TIMELOCK_SELECTOR;
 
             // Create meta-transaction parameters
             const metaTxParams = await this.callContractMethod(this.contract.methods.createMetaTxParams(
                 this.contractAddress,
-                '0x458102e4', // UPDATE_TIMELOCK_META_SELECTOR
+                this.FUNCTION_SELECTORS.UPDATE_TIMELOCK_META_SELECTOR,
                 this.getTxAction('SIGN_META_REQUEST_AND_APPROVE'),
                 3600, // 1 hour deadline
                 0, // no max gas price
