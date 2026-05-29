@@ -30,7 +30,8 @@ try {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-loadDeploymentEnv({ path: path.join(__dirname, ".env.deployment") });
+const deployEnvFile = process.env.DEPLOY_ENV_FILE?.trim() || ".env.deployment";
+loadDeploymentEnv({ path: path.join(__dirname, deployEnvFile) });
 
 const DEPLOY_RPC = process.env.DEPLOY_RPC_URL;
 const DEPLOY_PK = process.env.DEPLOY_PRIVATE_KEY;
@@ -43,10 +44,11 @@ if (Number.isNaN(chainId) || chainId <= 0) {
 }
 const deployNetworkName = process.env.DEPLOY_NETWORK_NAME?.trim();
 
-// Compiler settings aligned with foundry.toml: solc 0.8.35, optimizer 200, via_ir, evm osaka
+// Compiler settings aligned with foundry.toml by default: solc 0.8.35, optimizer 200, via_ir, evm osaka.
+// Can be overridden per env-file using DEPLOY_EVM_VERSION (e.g. shanghai for local private chains).
 const SOLIDITY_VERSION = "0.8.35";
 const OPTIMIZER_RUNS = 200;
-const EVM_VERSION = "osaka";
+const EVM_VERSION = process.env.DEPLOY_EVM_VERSION?.trim() || "osaka";
 
 export default defineConfig({
   plugins: [hardhatToolboxViem, hardhatEthers].filter(Boolean) as HardhatUserConfig["plugins"],

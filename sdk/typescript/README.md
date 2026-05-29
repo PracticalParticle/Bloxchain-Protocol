@@ -2,18 +2,17 @@
 
 [![npm version](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.x-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
 
 A comprehensive TypeScript SDK for interacting with the Bloxchain Protocol smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
 
-> **⚠️ EXPERIMENTAL SOFTWARE WARNING**  
-> This package contains experimental smart contract code and SDK support. While the framework is feature-complete and tested, it is not yet audited for production use. Use at your own risk and do not deploy with real assets without proper security review.
+The SDK mirrors the audited core protocol and is intended for production integrations. Pin an exact package version and review release notes before upgrading.
 
 ## Requirements
 
 - **Node.js**: >= 18.0.0
-- **TypeScript**: 5.x (recommended)
+- **TypeScript**: 6.x (recommended)
 - **Peer dependency**: `viem` ^2.0.0 (required for all SDK usage)
 - **Optional peer**: `@bloxchain/contracts` ^1.0.0-alpha (for Solidity/ABI alignment when building apps that use both)
 
@@ -344,12 +343,12 @@ try {
 
 ## Versioning and stability
 
-This package follows [Semantic Versioning](https://semver.org/). Current versions are **alpha** (`1.0.0-alpha.x`). Pre-1.0 releases may introduce breaking changes; we recommend pinning the exact version until the protocol is audited and stable.
+This package follows [Semantic Versioning](https://semver.org/). Published versions use the **alpha** channel (`1.0.0-alpha.x`) while we finalize the 1.0.0 release line. Pin the exact version in production and review release notes before upgrading.
 
 ## Security
 
 - **Vulnerability reporting**: Do not open public GitHub issues for security vulnerabilities. See the [Security Policy](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/SECURITY.md) for reporting instructions (e.g. security@particlecs.com).
-- **Audit status**: The underlying protocol is not yet audited. Do not use with mainnet assets without an independent security review.
+- **Audit status**: The underlying core protocol smart contracts have completed an independent security audit. Follow your own deployment, upgrade, and operational review processes before production use.
 
 ## Support and links
 

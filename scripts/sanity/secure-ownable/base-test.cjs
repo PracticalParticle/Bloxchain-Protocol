@@ -56,6 +56,27 @@ class BaseSecureOwnableTest {
         };
         
         this.roleWallets = {};
+
+        const metaTxSig = (fn) =>
+            `${fn}(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))`;
+        const metaSelector = (fn) => this.web3.utils.keccak256(metaTxSig(fn)).slice(0, 10);
+        this.FUNCTION_SELECTORS = {
+            UPDATE_TIMELOCK_SELECTOR: this.web3.utils.keccak256('executeTimeLockUpdate(uint256)').slice(0, 10),
+            UPDATE_RECOVERY_SELECTOR: this.web3.utils.keccak256('executeRecoveryUpdate(address)').slice(0, 10),
+            TRANSFER_OWNERSHIP_SELECTOR: this.web3.utils.keccak256('executeTransferOwnership(address)').slice(0, 10),
+            TRANSFER_OWNERSHIP_REQUEST_SELECTOR: this.web3.utils.keccak256('transferOwnershipRequest()').slice(0, 10),
+            TRANSFER_OWNERSHIP_CANCELLATION_SELECTOR: this.web3.utils.keccak256('transferOwnershipCancellation(uint256)').slice(0, 10),
+            TRANSFER_OWNERSHIP_DELAYED_APPROVAL_SELECTOR: this.web3.utils.keccak256('transferOwnershipDelayedApproval(uint256)').slice(0, 10),
+            UPDATE_BROADCASTER_REQUEST_SELECTOR: this.web3.utils.keccak256('updateBroadcasterRequest(address,address)').slice(0, 10),
+            UPDATE_BROADCASTER_CANCELLATION_SELECTOR: this.web3.utils.keccak256('updateBroadcasterCancellation(uint256)').slice(0, 10),
+            UPDATE_BROADCASTER_DELAYED_APPROVAL_SELECTOR: this.web3.utils.keccak256('updateBroadcasterDelayedApproval(uint256)').slice(0, 10),
+            UPDATE_TIMELOCK_META_SELECTOR: metaSelector('updateTimeLockRequestAndApprove'),
+            UPDATE_RECOVERY_META_SELECTOR: metaSelector('updateRecoveryRequestAndApprove'),
+            UPDATE_BROADCASTER_CANCEL_META_SELECTOR: metaSelector('updateBroadcasterCancellationWithMetaTx'),
+            UPDATE_BROADCASTER_APPROVE_META_SELECTOR: metaSelector('updateBroadcasterApprovalWithMetaTx'),
+            TRANSFER_OWNERSHIP_CANCEL_META_SELECTOR: metaSelector('transferOwnershipCancellationWithMetaTx'),
+            TRANSFER_OWNERSHIP_APPROVE_META_SELECTOR: metaSelector('transferOwnershipApprovalWithMetaTx'),
+        };
         
         // Test results
         this.testResults = {
@@ -72,15 +93,35 @@ class BaseSecureOwnableTest {
         return JSON.parse(fs.readFileSync(abiPath, 'utf8'));
     }
 
+    getAccountBloxFromDeployedAddresses(networkName) {
+        try {
+            const addressesPath = path.join(__dirname, '../../../deployed-addresses.json');
+            if (!fs.existsSync(addressesPath)) return null;
+            const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
+            const entry = addresses[networkName]?.AccountBlox;
+            const addr = entry?.address || entry;
+            if (addr) {
+                console.log(`📋 Found AccountBlox at ${addr} from deployed-addresses.json (network: ${networkName})`);
+                return addr;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async initializeAutoMode() {
         console.log('🤖 AUTO MODE: Fetching contract addresses and Ganache accounts...');
         
         try {
-            // Get contract addresses from Truffle artifacts (AccountBlox is the single account contract)
-            this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+            this.contractAddress = this.getAccountBloxFromDeployedAddresses(networkName);
+            if (!this.contractAddress) {
+                this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
+            }
             
             if (!this.contractAddress) {
-                throw new Error('Could not find AccountBlox address in Truffle artifacts');
+                throw new Error(`Could not find AccountBlox (deployed-addresses.json["${networkName}"] or Truffle artifacts)`);
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -100,11 +141,11 @@ class BaseSecureOwnableTest {
         console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
         
         try {
-            // Get contract address from environment (single account contract)
-            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS || this.getAccountBloxFromDeployedAddresses(networkName);
             
             if (!this.contractAddress) {
-                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set and AccountBlox not found in deployed-addresses.json');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -117,6 +158,11 @@ class BaseSecureOwnableTest {
                 wallet4: this.web3.eth.accounts.privateKeyToAccount(process.env.TEST_WALLET_4_PRIVATE_KEY),
                 wallet5: this.web3.eth.accounts.privateKeyToAccount(process.env.TEST_WALLET_5_PRIVATE_KEY)
             };
+            
+            // Add wallets to web3 (required for method.send on remote RPCs without unlocked accounts)
+            Object.values(this.wallets).forEach(wallet => {
+                this.web3.eth.accounts.wallet.add(wallet);
+            });
             
             console.log('✅ Manual mode initialization completed');
             
@@ -299,6 +345,34 @@ class BaseSecureOwnableTest {
         if (!hex || !hex.startsWith('0x')) hex = '0x' + hex;
         const body = hex.slice(2).replace(/[^0-9a-fA-F]/g, '');
         return '0x' + (body.length >= 64 ? body.slice(-64) : body.padStart(64, '0')).toLowerCase();
+    }
+
+    _normalizeTxRecordForAbi(txRecord) {
+        if (!txRecord || typeof txRecord !== 'object') return txRecord;
+        const zeroHash = '0x' + '0'.repeat(64);
+        const normalized = { ...txRecord };
+        if (normalized.resultHash == null && normalized.result != null) {
+            normalized.resultHash =
+                typeof normalized.result === 'string' && normalized.result.length >= 66
+                    ? normalized.result
+                    : zeroHash;
+        }
+        if (typeof normalized.resultHash === 'string' && normalized.resultHash.length < 66) {
+            normalized.resultHash = zeroHash;
+        }
+        if (normalized.resultHash == null) {
+            normalized.resultHash = zeroHash;
+        }
+        delete normalized.result;
+        return normalized;
+    }
+
+    _normalizeFullMetaTx(metaTx) {
+        if (!metaTx) return metaTx;
+        return {
+            ...metaTx,
+            txRecord: this._normalizeTxRecordForAbi(metaTx.txRecord),
+        };
     }
 
     async sendTransaction(method, wallet, receiptTimeoutMs = 120000) {
@@ -641,6 +715,18 @@ class BaseSecureOwnableTest {
         }
     }
 
+    async mineNextBlock() {
+        const tx = {
+            from: this.wallets.wallet1.address,
+            to: this.wallets.wallet1.address,
+            value: 0,
+            gas: 21000,
+            gasPrice: await this.web3.eth.getGasPrice()
+        };
+        const signedTx = await this.wallets.wallet1.signTransaction(tx);
+        await this.web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    }
+
     async advanceBlockchainTime(seconds) {
         console.log(`⏰ ADVANCING BLOCKCHAIN TIME BY ${seconds} SECONDS`);
         console.log('-'.repeat(40));
@@ -771,19 +857,33 @@ class BaseSecureOwnableTest {
                         if (finalBlockTime >= releaseTime) {
                             console.log(`  ✅ Timelock has now expired!`);
                             return true;
-                        } else {
-                            console.log(`  ⚠️  Timelock still not expired, but continuing...`);
-                            return true;
                         }
-                    } else {
-                        console.log(`  ⚠️  Additional blockchain advancement failed, but continuing...`);
-                        return true;
                     }
                 }
-            } else {
-                console.log(`  ⚠️  Could not advance blockchain time, but continuing...`);
-                return true;
             }
+
+            // Fallback for RPCs without evm_increaseTime (e.g. Nethermind): wall-clock wait + mine.
+            const waitMs = Math.max(0, (releaseTime - Math.floor(Date.now() / 1000) + 1) * 1000);
+            if (waitMs > 0) {
+                console.log(`  ⏳ Waiting ${Math.ceil(waitMs / 1000)}s real time for releaseTime...`);
+                await new Promise((resolve) => setTimeout(resolve, waitMs));
+            }
+            for (let i = 0; i < 3; i++) {
+                try {
+                    await this.mineNextBlock();
+                } catch {
+                    // ignore; next write tx may mine naturally
+                }
+                const blockTime = await this.web3.eth.getBlock('latest').then((block) => block.timestamp);
+                if (blockTime >= releaseTime) {
+                    console.log(`  ✅ Timelock reached by wall-clock progression`);
+                    return true;
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            console.log(`  ⚠️  Timelock not reached yet after fallback wait; proceeding with extra delay`);
+            return true;
             
         } catch (error) {
             console.log(`  ❌ Error waiting for timelock: ${error.message}`);

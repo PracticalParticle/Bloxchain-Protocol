@@ -1,6 +1,31 @@
 # Sanity Tests
 
-Master test runner for sanity tests of the Bloxchain protocol.
+Master test runner for direct (Web3/CJS) sanity tests of the Bloxchain protocol.
+
+## Prerequisites
+
+These packages are **not** listed in the root `package.json` (they are dev-only tooling, not part of the published `@bloxchain/contracts` / `@bloxchain/sdk` packages). Install them locally before running sanity or Hardhat deploy flows:
+
+```bash
+# Required to run scripts/sanity (direct Web3 tests)
+npm install --save-dev web3@1.10.4
+
+# Required for Hardhat deploy to remote_evm / viem networks
+# (scripts/deployment/*, DEPLOY_ENV_FILE=.env.deployment.local)
+npm install --save-dev @nomicfoundation/hardhat-toolbox-viem@5.0.6
+```
+
+Also ensure ABIs are current:
+
+```bash
+npm run compile:foundry:abi
+```
+
+For `remote_evm` (Nethermind), configure `.env` (see root `env.example`) or regenerate after deploy:
+
+```bash
+npm run generate:sanity-env -- --out .env
+```
 
 ## Quick Start
 
@@ -45,7 +70,18 @@ node scripts/sanity/run-all-tests.cjs --simple-rwa20
 
 ## Contract Configuration
 
-All sanity tests use a **single account contract** (AccountBlox). In manual mode set `ACCOUNTBLOX_ADDRESS` in `.env`. In auto mode, the address is read from **Truffle build artifacts** at `build/contracts/` (e.g. `build/contracts/AccountBlox.json`), which is separate from Hardhat deployment artifacts at `artifacts/contracts/`. Ensure Truffle has been run (`npm run compile:truffle` / migrations) so `build/contracts/` is populated, or use manual mode with addresses from Hardhat deployment.
+All sanity tests use a **single account contract** (AccountBlox).
+
+**Manual mode** (`TEST_MODE=manual`, recommended for `remote_evm`):
+
+- Set `NETWORK_NAME=remote_evm`, `RPC_URL`, and wallet keys in `.env` (see `env.example`).
+- `ACCOUNTBLOX_ADDRESS` is optional when `deployed-addresses.json` has `remote_evm.AccountBlox` (same key as `NETWORK_NAME`).
+
+**Auto mode** (`TEST_MODE=auto`):
+
+- Prefer `deployed-addresses.json` for the configured network, then fall back to Truffle artifacts at `build/contracts/AccountBlox.json`.
+
+SDK-based sanity tests live under `scripts/sanity-sdk/` (`npm run test:sanity-sdk:core`).
 
 ## Individual Test Suites
 

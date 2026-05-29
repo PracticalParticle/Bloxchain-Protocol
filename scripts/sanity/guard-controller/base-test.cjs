@@ -102,7 +102,7 @@ class BaseGuardControllerTest {
         
         // Constants for RuntimeRBAC (AccountBlox includes RuntimeRBAC)
         this.ROLE_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
-            'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10); // First 4 bytes
         
         this.ROLE_CONFIG_BATCH_EXECUTE_SELECTOR = this.web3.utils.keccak256(
@@ -158,7 +158,7 @@ class BaseGuardControllerTest {
         this.NATIVE_TRANSFER_OPERATION_TYPE = this.web3.utils.keccak256('NATIVE_TRANSFER');
         this.NATIVE_TRANSFER_SELECTOR = '0xd8cb519d'; // bytes4(keccak256("__bloxchain_native_transfer__()")) - matches EngineBlox.NATIVE_TRANSFER_SELECTOR
         this.REQUEST_AND_APPROVE_EXECUTION_SELECTOR = this.web3.utils.keccak256(
-            'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'requestAndApproveExecution(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
         // GuardController: executeWithTimeLock (for MINT_REQUESTOR time-lock request)
@@ -167,17 +167,17 @@ class BaseGuardControllerTest {
         ).slice(0, 10);
         // GuardController: approveTimeLockExecutionWithMetaTx (for MINT_APPROVER meta approve)
         this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR = this.web3.utils.keccak256(
-            'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'approveTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         // GuardController: cancelTimeLockExecutionWithMetaTx (for MINT_APPROVER meta cancel)
         this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR = this.web3.utils.keccak256(
-            'cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'cancelTimeLockExecutionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         
         // GuardController batch config constants
         this.CONTROLLER_CONFIG_BATCH_OPERATION_TYPE = this.web3.utils.keccak256('CONTROLLER_CONFIG_BATCH');
         this.GUARD_CONFIG_BATCH_META_SELECTOR = this.web3.utils.keccak256(
-            'guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
+            'guardConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))'
         ).slice(0, 10);
         this.GUARD_CONFIG_BATCH_EXECUTE_SELECTOR = this.web3.utils.keccak256(
             'executeGuardConfigBatch((uint8,bytes)[])'
@@ -230,7 +230,7 @@ class BaseGuardControllerTest {
         
         try {
             // Prefer deployed-addresses.json so AccountBlox and BasicERC20 stay in sync (same minter); use development for remote dev
-            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'development';
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
             this.contractAddress = this.getAccountBloxFromDeployedAddresses(networkName);
             if (!this.contractAddress) {
                 this.contractAddress = await this.getContractAddressFromArtifacts('AccountBlox');
@@ -256,11 +256,11 @@ class BaseGuardControllerTest {
         console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
         
         try {
-            // Get contract address from environment
-            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS;
+            const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
+            this.contractAddress = process.env.ACCOUNTBLOX_ADDRESS || this.getAccountBloxFromDeployedAddresses(networkName);
             
             if (!this.contractAddress) {
-                throw new Error('ACCOUNTBLOX_ADDRESS not set in environment variables');
+                throw new Error('ACCOUNTBLOX_ADDRESS not set and AccountBlox not found in deployed-addresses.json');
             }
             
             console.log(`📋 Contract Address: ${this.contractAddress}`);
@@ -575,7 +575,7 @@ class BaseGuardControllerTest {
         const from = wallet.address;
         // Provide an explicit gas limit so web3/provider does not call
         // eth_estimateGas (which can hang) or interpret gas as 0.
-        const gas = 1_500_000;
+        const gas = 3_000_000;
         let timeoutId;
         try {
             const sendPromise = method.send({ from, value, gas });
@@ -802,6 +802,34 @@ class BaseGuardControllerTest {
         return decoded.__length__ === 1 ? decoded[0] : decoded;
     }
 
+    _normalizeTxRecordForAbi(txRecord) {
+        if (!txRecord || typeof txRecord !== 'object') return txRecord;
+        const zeroHash = '0x' + '0'.repeat(64);
+        const normalized = { ...txRecord };
+        if (normalized.resultHash == null && normalized.result != null) {
+            normalized.resultHash =
+                typeof normalized.result === 'string' && normalized.result.length >= 66
+                    ? normalized.result
+                    : zeroHash;
+        }
+        if (typeof normalized.resultHash === 'string' && normalized.resultHash.length < 66) {
+            normalized.resultHash = zeroHash;
+        }
+        if (normalized.resultHash == null) {
+            normalized.resultHash = zeroHash;
+        }
+        delete normalized.result;
+        return normalized;
+    }
+
+    _normalizeFullMetaTx(metaTx) {
+        if (!metaTx) return metaTx;
+        return {
+            ...metaTx,
+            txRecord: this._normalizeTxRecordForAbi(metaTx.txRecord),
+        };
+    }
+
     /**
      * Minimal output schema for generateUnsignedMetaTransactionForNew return: one tuple
      * (txRecord, params, message, signature, data). All enum-like fields forced to uint8
@@ -826,7 +854,7 @@ class BaseGuardControllerTest {
                         { name: 'executionParams', type: 'bytes' }
                     ]},
                     { name: 'message', type: 'bytes32' },
-                    { name: 'result', type: 'bytes' },
+                    { name: 'resultHash', type: 'bytes32' },
                     { name: 'payment', type: 'tuple', components: [
                         { name: 'recipient', type: 'address' },
                         { name: 'nativeTokenAmount', type: 'uint256' },
@@ -903,7 +931,7 @@ class BaseGuardControllerTest {
             }
         }
         return {
-            txRecord,
+            txRecord: this._normalizeTxRecordForAbi(txRecord),
             params,
             message: messageHex,
             signature: sig !== undefined ? sig : '0x',
@@ -956,7 +984,7 @@ class BaseGuardControllerTest {
             }
         }
         return {
-            txRecord,
+            txRecord: this._normalizeTxRecordForAbi(txRecord),
             params,
             message: messageHex,
             signature: sig !== undefined ? sig : '0x',
@@ -1217,7 +1245,7 @@ class BaseGuardControllerTest {
                 this.contract
             );
             
-            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
+            const fullMetaTx = this._normalizeFullMetaTx({ ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature });
             // Use sendTransaction so we get revert decoding (instead of a bare status=false receipt)
             // and to avoid any reliance on eth_estimateGas.
             const receipt = await this.sendTransaction(
@@ -1403,7 +1431,7 @@ class BaseGuardControllerTest {
                 this.contract
             );
             
-            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
+            const fullMetaTx = this._normalizeFullMetaTx({ ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature });
             const receipt = await this.sendTransaction(
                 this.contract.methods.requestAndApproveExecution(fullMetaTx),
                 broadcasterWallet
@@ -1507,7 +1535,7 @@ class BaseGuardControllerTest {
             );
             console.log(`  ✅ Meta-transaction signed`);
             
-            const fullMetaTx = { ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature };
+            const fullMetaTx = this._normalizeFullMetaTx({ ...unsignedMetaTx, message: signedMetaTx.message, signature: signedMetaTx.signature });
             console.log(`  📤 Executing meta-transaction via broadcaster...`);
             const receipt = await this.sendTransaction(
                 this.contract.methods.guardConfigBatchRequestAndApprove(fullMetaTx),

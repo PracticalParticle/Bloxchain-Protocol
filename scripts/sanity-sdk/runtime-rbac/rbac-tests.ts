@@ -567,10 +567,11 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       }
     );
 
-    // Use REGISTRY_ADMIN wallet to sign
-    const registryAdminWalletName = Object.keys(this.wallets).find(
-      (k) => this.wallets[k].address.toLowerCase() === this.registryAdminWallet!.toLowerCase()
-    ) || 'wallet3';
+    // Use owner wallet to sign role-config changes for deterministic permissioning.
+    const ownerWallet = this.getRoleWallet('owner');
+    const ownerWalletName = Object.keys(this.wallets).find(
+      (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+    ) || 'wallet1';
 
     const broadcasterWalletName = Object.keys(this.wallets).find(
       (k) => this.wallets[k].address.toLowerCase() === this.roles.broadcaster.toLowerCase()
@@ -579,7 +580,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     try {
       const result = await this.executeRoleConfigBatch(
         [addFunctionAction],
-        registryAdminWalletName,
+        ownerWalletName,
         broadcasterWalletName
       );
 
@@ -652,10 +653,11 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       }
     );
 
-    // Use REGISTRY_ADMIN wallet to sign
-    const registryAdminWalletName = Object.keys(this.wallets).find(
-      (k) => this.wallets[k].address.toLowerCase() === this.registryAdminWallet!.toLowerCase()
-    ) || 'wallet3';
+    // Use owner wallet to sign role-config changes for deterministic permissioning.
+    const ownerWallet = this.getRoleWallet('owner');
+    const ownerWalletName = Object.keys(this.wallets).find(
+      (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+    ) || 'wallet1';
 
     const broadcasterWalletName = Object.keys(this.wallets).find(
       (k) => this.wallets[k].address.toLowerCase() === this.roles.broadcaster.toLowerCase()
@@ -664,7 +666,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     try {
       const result = await this.executeRoleConfigBatch(
         [removeFunctionAction],
-        registryAdminWalletName,
+        ownerWalletName,
         broadcasterWalletName
       );
 

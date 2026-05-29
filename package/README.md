@@ -6,8 +6,7 @@
 
 Bloxchain Protocol smart contracts – state abstraction and core components for building on the Bloxchain Protocol.
 
-> **⚠️ EXPERIMENTAL SOFTWARE WARNING**  
-> This package contains experimental smart contract code. While the framework is feature-complete and tested, it is not yet audited for production use. Use at your own risk and do not deploy with real assets without proper security review.
+The core protocol has completed an independent security audit and is being prepared for production deployment. Review release notes and pin an exact version for production integrations.
 
 ## Requirements
 
@@ -56,19 +55,19 @@ Templates (e.g. AccountBlox, CopyBlox) and example applications (SimpleVault, Si
 
 This package declares:
 
-- `@openzeppelin/contracts`: ^5.4.0
-- `@openzeppelin/contracts-upgradeable`: ^5.4.0
+- `@openzeppelin/contracts`: 5.6.1
+- `@openzeppelin/contracts-upgradeable`: 5.6.1
 
 Install them in your project if your tooling does not resolve transitive dependencies.
 
 ## Versioning and stability
 
-This package follows [Semantic Versioning](https://semver.org/). Current versions are **alpha** (`1.0.0-alpha.x`). Pre-1.0 releases may introduce breaking changes; we recommend pinning the exact version until the protocol is audited and stable.
+This package follows [Semantic Versioning](https://semver.org/). Published versions use the **alpha** channel (`1.0.0-alpha.x`) while we finalize the 1.0.0 release line. Pin the exact version in production and review release notes before upgrading.
 
 ## Security
 
 - **Vulnerability reporting**: Do not open public GitHub issues for security vulnerabilities. See the [Security Policy](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/SECURITY.md) for reporting instructions (e.g. security@particlecs.com).
-- **Audit status**: Not yet audited. Do not use with mainnet assets without an independent security review.
+- **Audit status**: Core protocol smart contracts have completed an independent security audit. Follow your own deployment, upgrade, and operational review processes before production use.
 
 ## Support and links
 

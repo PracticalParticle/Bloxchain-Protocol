@@ -69,6 +69,27 @@ function parseUnits(value, decimals = 18) {
   return wholePart + fracPart;
 }
 
+function saveDeployedErc20Address(network, tokenAddress, metadata = {}) {
+  const now = new Date().toISOString();
+  let existing = {};
+  if (fs.existsSync(ADDRESSES_FILE)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(ADDRESSES_FILE, "utf8"));
+    } catch {
+      existing = {};
+    }
+  }
+
+  if (!existing[network]) existing[network] = {};
+  existing[network].BasicERC20 = {
+    address: tokenAddress,
+    deployedAt: now,
+    ...metadata,
+  };
+
+  fs.writeFileSync(ADDRESSES_FILE, JSON.stringify(existing, null, 2));
+}
+
 async function main() {
   const useDefaults =
     process.env.CREATE_ERC20_USE_DEFAULTS === "1" || process.env.CREATE_ERC20_USE_DEFAULTS === "true";
@@ -247,6 +268,14 @@ async function main() {
   if (chainId === 11155111) {
     console.log(`   Explorer: https://sepolia.etherscan.io/address/${tokenAddress}`);
   }
+
+  saveDeployedErc20Address(network, tokenAddress, {
+    name: tokenName,
+    symbol: tokenSymbol,
+    minter: minterAddress,
+    owner: ownerAddress,
+  });
+  console.log(`   Saved to: ${ADDRESSES_FILE}`);
 }
 
 main().catch((err) => {
