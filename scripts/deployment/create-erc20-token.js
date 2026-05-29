@@ -25,7 +25,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, "..", "..");
-const ENV_DEPLOYMENT = path.join(ROOT_DIR, ".env.deployment");
+const deployEnvFile = process.env.DEPLOY_ENV_FILE?.trim() || ".env.deployment";
+const ENV_DEPLOYMENT = path.join(ROOT_DIR, deployEnvFile);
 const ADDRESSES_FILE = path.join(ROOT_DIR, "deployed-addresses.json");
 const BASIC_ERC20_ARTIFACT_PATH = path.join(
   ROOT_DIR,
@@ -99,12 +100,12 @@ async function main() {
   console.log("\n🪙 Deploy a new BasicERC20 token\n");
 
   if (!process.env.DEPLOY_PRIVATE_KEY || !process.env.DEPLOY_RPC_URL) {
-    console.error("Missing DEPLOY_PRIVATE_KEY or DEPLOY_RPC_URL in .env.deployment.");
+    console.error(`Missing DEPLOY_PRIVATE_KEY or DEPLOY_RPC_URL in ${deployEnvFile}.`);
     if (rl) rl.close();
     process.exit(1);
   }
 
-  const defaultNetwork = process.env.DEPLOY_NETWORK_NAME || "sepolia";
+  const defaultNetwork = process.env.DEPLOY_NETWORK || process.env.DEPLOY_NETWORK_NAME || "sepolia";
   let accountBloxFromFile = "";
   if (fs.existsSync(ADDRESSES_FILE)) {
     try {
