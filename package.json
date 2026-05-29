@@ -27,6 +27,7 @@
     "deploy:hardhat": "hardhat run scripts/deploy.js",
     "deploy:hardhat:foundation": "hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia",
     "deploy:hardhat:copyblox": "hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia",
+    "deploy:remote-evm:test": "node scripts/deployment/deploy-remote-evm-test.cjs",
     "create-wallet": "node scripts/deployment/create-wallet-copyblox.js",
     "create-erc20": "node scripts/deployment/create-erc20-token.js",
     "test:sanity": "node scripts/sanity/run-all-tests.cjs",
