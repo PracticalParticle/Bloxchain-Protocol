@@ -1,14 +1,11 @@
 import { keccak256 as k256, toHex } from 'viem';
 
-/**
- * Helper function to compute keccak256 of a string
- */
 const keccak256 = (str: string): string => {
   return toHex(k256(new TextEncoder().encode(str)));
 };
 
 /**
- * Enums and constants for EngineBlox
+ * Enums and constants for EngineBlox (match contracts/core/lib/EngineBlox.sol).
  */
 export const TxStatus = {
   UNDEFINED: 0,
@@ -17,12 +14,10 @@ export const TxStatus = {
   PROCESSING_PAYMENT: 3,
   CANCELLED: 4,
   COMPLETED: 5,
-  FAILED: 6
+  FAILED: 6,
 } as const;
 
-export type TxStatus = typeof TxStatus[keyof typeof TxStatus];
-
-// ExecutionType enum removed - use executionSelector (0x00000000 for simple ETH transfers) and executionParams directly
+export type TxStatus = (typeof TxStatus)[keyof typeof TxStatus];
 
 export const TxAction = {
   EXECUTE_TIME_DELAY_REQUEST: 0,
@@ -33,54 +28,48 @@ export const TxAction = {
   SIGN_META_CANCEL: 5,
   EXECUTE_META_REQUEST_AND_APPROVE: 6,
   EXECUTE_META_APPROVE: 7,
-  EXECUTE_META_CANCEL: 8
+  EXECUTE_META_CANCEL: 8,
 } as const;
 
-export type TxAction = typeof TxAction[keyof typeof TxAction];
+export type TxAction = (typeof TxAction)[keyof typeof TxAction];
 
 /**
- * Constants for function selectors
- */
-export const FUNCTION_SELECTORS = {
-  TX_REQUEST: keccak256("txRequest(address,address,uint256,uint256,bytes32,uint8,bytes)").slice(0, 10),
-  TX_DELAYED_APPROVAL: keccak256("txDelayedApproval(uint256)").slice(0, 10),
-  TX_CANCELLATION: keccak256("txCancellation(uint256)").slice(0, 10),
-  META_TX_APPROVAL: keccak256("txApprovalWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)").slice(0, 10),
-  META_TX_CANCELLATION: keccak256("txCancellationWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)").slice(0, 10),
-  META_TX_REQUEST_AND_APPROVE: keccak256("requestAndApprove((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,address,bytes4,uint256,uint256,uint256,address),bytes,bytes)").slice(0, 10)
-} as const;
-
-export type FunctionSelector = typeof FUNCTION_SELECTORS[keyof typeof FUNCTION_SELECTORS];
-
-/**
- * Constants for roles
+ * Core role hashes (match EngineBlox OWNER_ROLE / BROADCASTER_ROLE / RECOVERY_ROLE).
  */
 export const ROLES = {
-  OWNER_ROLE: keccak256("OWNER_ROLE"),
-  BROADCASTER_ROLE: keccak256("BROADCASTER_ROLE"),
-  RECOVERY_ROLE: keccak256("RECOVERY_ROLE")
+  OWNER_ROLE: keccak256('OWNER_ROLE'),
+  BROADCASTER_ROLE: keccak256('BROADCASTER_ROLE'),
+  RECOVERY_ROLE: keccak256('RECOVERY_ROLE'),
 } as const;
 
-export type Role = typeof ROLES[keyof typeof ROLES];
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 /**
- * Constants for EIP-712 type hashes
+ * @deprecated Pre–EngineBlox tx surface; not used by current contracts. Use component `*_FUNCTION_SELECTORS` from types/core.*.index instead.
  */
-export const TYPE_HASHES = {
-  DOMAIN_SEPARATOR: keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-  META_TRANSACTION: keccak256("MetaTransaction(TxRecord txRecord,MetaTxParams params,bytes data)TxRecord(uint256 txId,uint256 releaseTime,uint8 status,TxParams params,bytes32 message,bytes result,PaymentDetails payment)TxParams(address requester,address target,uint256 value,uint256 gasLimit,bytes32 operationType,bytes4 executionSelector,bytes executionParams)MetaTxParams(uint256 chainId,uint256 nonce,address handlerContract,bytes4 handlerSelector,uint8 action,uint256 deadline,uint256 maxGasPrice,address signer)PaymentDetails(address recipient,uint256 nativeTokenAmount,address erc20TokenAddress,uint256 erc20TokenAmount)")
+export const LEGACY_ENGINE_BLOX_FUNCTION_SELECTORS = {
+  TX_REQUEST: keccak256('txRequest(address,address,uint256,uint256,bytes32,uint8,bytes)').slice(0, 10),
+  TX_DELAYED_APPROVAL: keccak256('txDelayedApproval(uint256)').slice(0, 10),
+  TX_CANCELLATION: keccak256('txCancellation(uint256)').slice(0, 10),
 } as const;
 
-export type TypeHash = typeof TYPE_HASHES[keyof typeof TYPE_HASHES];
+/**
+ * @deprecated Use EIP-712 types in `utils/metaTx/metaTransaction.tsx` (`META_TX_TYPES`) — matches selective MetaTxRecord signing in EngineBlox.sol.
+ */
+export const LEGACY_TYPE_HASHES = {
+  DOMAIN_SEPARATOR: keccak256(
+    'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+  ),
+} as const;
 
 /**
- * Event names
+ * Event names (EngineBlox transaction lifecycle).
  */
 export const EVENTS = {
-  REQUESTED_TX: "RequestedTx",
-  TX_APPROVED: "TxApproved",
-  TX_CANCELLED: "TxCancelled",
-  TX_EXECUTED: "TxExecuted"
+  REQUESTED_TX: 'RequestedTx',
+  TX_APPROVED: 'TxApproved',
+  TX_CANCELLED: 'TxCancelled',
+  TX_EXECUTED: 'TxExecuted',
 } as const;
 
-export type Event = typeof EVENTS[keyof typeof EVENTS];
+export type Event = (typeof EVENTS)[keyof typeof EVENTS];

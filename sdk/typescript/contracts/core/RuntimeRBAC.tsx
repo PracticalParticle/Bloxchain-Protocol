@@ -1,10 +1,10 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import RuntimeRBACABIJson from '../../abi/RuntimeRBAC.abi.json';
-import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
-import { IRuntimeRBAC } from '../../interfaces/core.access.index';
-import { MetaTransaction } from '../../interfaces/lib.index';
-import { BaseStateMachine } from './BaseStateMachine';
-import { INTERFACE_IDS } from '../../utils/interface-ids';
+import RuntimeRBACABIJson from '../../abi/RuntimeRBAC.abi.json' with { type: 'json' };
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
+import { IRuntimeRBAC } from '../../interfaces/core.access.index.js';
+import { MetaTransaction } from '../../interfaces/lib.index.js';
+import { BaseStateMachine } from './BaseStateMachine.js';
+import { ComponentDetection } from '../../utils/interface-ids.js';
 
 /**
  * @title RuntimeRBAC
@@ -43,7 +43,7 @@ export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
    * @return Promise<boolean> indicating if IRuntimeRBAC is supported
    */
   async supportsRuntimeRBACInterface(): Promise<boolean> {
-    return this.supportsInterface(INTERFACE_IDS.IRuntimeRBAC);
+    return ComponentDetection.isRuntimeRBAC(this);
   }
 
 }

@@ -5,12 +5,12 @@ import {
   Chain,
   Abi 
 } from 'viem';
-import ERC20ABI from './ERC20Token.abi.json';
+import ERC20ABI from './ERC20Token.abi.json' with { type: 'json' };
 
 // Parse and type the ABI
 const ERC20TokenABI = ERC20ABI as Abi;
 
-import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
 
 /**
  * @title ERC20TokenContract

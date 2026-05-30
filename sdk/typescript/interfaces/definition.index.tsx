@@ -1,9 +1,9 @@
 import { Address, Hex } from 'viem';
-// import { TransactionOptions } from './base.index';
+// import { TransactionOptions } from './base.index.js';
 import { 
   FunctionSchema, 
   RolePermission
-} from '../types/definition.index';
+} from '../types/definition.index.js';
 
 /**
  * TypeScript interface for IDefinition

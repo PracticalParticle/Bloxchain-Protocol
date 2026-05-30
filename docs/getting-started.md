@@ -207,6 +207,33 @@ For a full set of recommendations, see [Best Practices](./best-practices.md).
 
 ---
 
+## 🧪 **Local development (`remote_evm`)**
+
+For protocol and SDK sanity tests against a local Nethermind (or any JSON-RPC at `127.0.0.1:8545`):
+
+1. Copy `env.example` to `.env` and set `NETWORK_NAME=remote_evm`, `TEST_MODE=manual`, and `RPC_URL=http://127.0.0.1:8545` (see `env.example` comments).
+2. Deploy the test stack and refresh addresses:
+   ```bash
+   npm run deploy:remote-evm:test
+   npm run generate:sanity-env -- --out .env
+   ```
+   To write env for another repo (e.g. Bloxchain-ExtendedSDK):
+   ```bash
+   npm run generate:sanity-env -- --out ../Bloxchain-ExtendedSDK/.env
+   ```
+3. Validate before npm publish:
+   ```bash
+   npm run release:prepare
+   ```
+   Optional live SDK suite (requires RPC + `.env` / `deployed-addresses.json`):
+   ```bash
+   set RUN_SANITY_SDK_TESTS=1
+   npm run release:prepare
+   ```
+   Or run `npm run test:sanity-sdk:core` directly after deploy.
+
+---
+
 ## 📚 **Next Steps**
 
 1. Learn more about the [Account Pattern](./account-pattern.md) and how it composes the core components.

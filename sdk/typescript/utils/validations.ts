@@ -1,6 +1,6 @@
 import { Address, PublicClient, Hex, decodeAbiParameters } from 'viem';
-import { MetaTransaction, TxRecord, PaymentDetails, TxParams } from '../interfaces/lib.index';
-import { TxStatus } from '../types/lib.index';
+import { MetaTransaction, TxRecord, PaymentDetails, TxParams } from '../interfaces/lib.index.js';
+import { TxStatus } from '../types/lib.index.js';
 
 export class ContractValidations {
   constructor(

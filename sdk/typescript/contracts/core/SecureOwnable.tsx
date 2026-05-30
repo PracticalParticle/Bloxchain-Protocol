@@ -1,10 +1,10 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import SecureOwnableABIJson from '../../abi/SecureOwnable.abi.json';
-import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
-import { ISecureOwnable } from '../../interfaces/core.security.index';
-import { MetaTransaction } from '../../interfaces/lib.index';
-import { BaseStateMachine } from './BaseStateMachine';
-import { INTERFACE_IDS } from '../../utils/interface-ids';
+import SecureOwnableABIJson from '../../abi/SecureOwnable.abi.json' with { type: 'json' };
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
+import { ISecureOwnable } from '../../interfaces/core.security.index.js';
+import { MetaTransaction } from '../../interfaces/lib.index.js';
+import { BaseStateMachine } from './BaseStateMachine.js';
+import { INTERFACE_IDS } from '../../utils/interface-ids.js';
 
 /**
  * @title SecureOwnable
@@ -67,9 +67,33 @@ export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
     return this.executeWriteContract('updateRecoveryRequestAndApprove', [metaTx], options);
   }
 
+  /** Broadcaster-only: execute approved recovery update (see SecureOwnableDefinitions). */
+  async executeRecoveryUpdate(newRecovery: Address, options: TransactionOptions): Promise<TransactionResult> {
+    return this.executeWriteContract('executeRecoveryUpdate', [newRecovery], options);
+  }
+
   // TimeLock Management
   async updateTimeLockRequestAndApprove(metaTx: MetaTransaction, options: TransactionOptions): Promise<TransactionResult> {
     return this.executeWriteContract('updateTimeLockRequestAndApprove', [metaTx], options);
+  }
+
+  /** Broadcaster-only: execute approved timelock period update. */
+  async executeTimeLockUpdate(newPeriodSec: bigint, options: TransactionOptions): Promise<TransactionResult> {
+    return this.executeWriteContract('executeTimeLockUpdate', [newPeriodSec], options);
+  }
+
+  /** Broadcaster-only: execute approved ownership transfer. */
+  async executeTransferOwnership(newOwner: Address, options: TransactionOptions): Promise<TransactionResult> {
+    return this.executeWriteContract('executeTransferOwnership', [newOwner], options);
+  }
+
+  /** Broadcaster-only: execute approved broadcaster rotation. */
+  async executeBroadcasterUpdate(
+    newBroadcaster: Address,
+    currentBroadcaster: Address,
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
+    return this.executeWriteContract('executeBroadcasterUpdate', [newBroadcaster, currentBroadcaster], options);
   }
 
   // ============ INTERFACE SUPPORT ============

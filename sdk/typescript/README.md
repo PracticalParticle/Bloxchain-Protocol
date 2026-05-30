@@ -13,7 +13,7 @@ The SDK mirrors the audited core protocol and is intended for production integra
 
 - **Node.js**: >= 18.0.0
 - **TypeScript**: 6.x (recommended)
-- **Peer dependency**: `viem` ^2.0.0 (required for all SDK usage)
+- **Peer dependency**: `viem` ^2.49.4 (required; align with SDK dependency, currently `2.50.x`)
 - **Optional peer**: `@bloxchain/contracts` ^1.0.0-alpha (for Solidity/ABI alignment when building apps that use both)
 
 ## 🏗️ **Unique Architecture**
@@ -72,6 +72,26 @@ To install from the repository (e.g. for development):
 ```bash
 npm install https://github.com/PracticalParticle/Bloxchain-Protocol.git#main --save
 ```
+
+### Node.js ESM (`"type": "module"`)
+
+The published package is **native ESM**, built with TypeScript **`module` / `moduleResolution`: `NodeNext`**. All relative imports in `sdk/typescript` source use explicit **`.js`** extensions (and `with { type: 'json' }` for ABIs) so `tsc` output loads under Node without a bundler or post-build patches.
+
+When adding or moving SDK files, follow the same import style (e.g. `from './SecureOwnable.js'`, not `from './SecureOwnable'`).
+
+From the protocol repo, run `npm run release:prepare` before publish (includes SDK build, Node ESM import of `dist/`, and selector alignment vs Solidity). Then `npm run publish:contracts` or `npm run publish:sdk`.
+
+### Public exports (stable integrator surface)
+
+| Export | Purpose |
+|--------|---------|
+| `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
+| `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
+| `INTERFACE_IDS` / `ComponentDetection` | ERC-165 checks aligned with current `I*` interfaces |
+| `EngineBlox`, `Definitions` | Pure helpers and definition-library reads |
+| `roleConfigBatchExecutionParams`, `guardConfigBatchExecutionParams`, encoders | Batch calldata builders |
+| `extractErrorInfo`, `enhanceViemError` | Revert decoding and Viem error enrichment |
+| `@bloxchain/sdk/abi` | `engineBloxAbi`, `engineBloxErrorAbi` |
 
 ## Quick Start
 

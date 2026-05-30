@@ -1,8 +1,8 @@
 import { Address, Hex } from 'viem';
-// import { TransactionResult, TransactionOptions } from './base.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
-import { TxAction } from '../types/lib.index';
-import { FunctionSchema } from '../types/definition.index';
+// import { TransactionResult, TransactionOptions } from './base.index.js';
+import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index.js';
+import { TxAction } from '../types/lib.index.js';
+import { FunctionSchema } from '../types/definition.index.js';
 
 /**
  * Interface for BaseStateMachine contract events

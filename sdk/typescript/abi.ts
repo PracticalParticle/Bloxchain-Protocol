@@ -3,7 +3,7 @@
  * Import from '@bloxchain/sdk/abi'.
  */
 
-import engineBloxAbiJson from './abi/EngineBlox.abi.json';
+import engineBloxAbiJson from './abi/EngineBlox.abi.json' with { type: 'json' };
 
 /** EngineBlox contract ABI (full). */
 export const engineBloxAbi = engineBloxAbiJson as readonly unknown[];

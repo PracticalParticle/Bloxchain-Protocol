@@ -1,4 +1,5 @@
 import { keccak256, Hex } from 'viem';
+import { metaTxHandlerSignature } from './meta-tx-signatures.js';
 
 /**
  * RoleConfigActionType enum matching Solidity RuntimeRBAC.RoleConfigActionType
@@ -43,9 +44,7 @@ export const RUNTIME_RBAC_FUNCTION_SELECTORS = {
     new TextEncoder().encode("executeRoleConfigBatch((uint8,bytes)[])")
   ).slice(0, 10) as Hex,
   ROLE_CONFIG_BATCH_META_SELECTOR: keccak256(
-    new TextEncoder().encode(
-      "roleConfigBatchRequestAndApprove(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,uint8,bytes),bytes32,bytes,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"
-    )
+    new TextEncoder().encode(metaTxHandlerSignature('roleConfigBatchRequestAndApprove'))
   ).slice(0, 10) as Hex
 } as const;
 
@@ -56,4 +55,4 @@ export const RUNTIME_RBAC_FUNCTION_SELECTORS = {
 export const DYNAMIC_RBAC_FUNCTION_SELECTORS = RUNTIME_RBAC_FUNCTION_SELECTORS;
 
 // Re-export SecureOwnable constants from core.security.index for convenience
-export { OPERATION_TYPES, FUNCTION_SELECTORS } from './core.security.index';
+export { OPERATION_TYPES, FUNCTION_SELECTORS } from './core.security.index.js';

@@ -6,7 +6,7 @@
  */
 
 import { type Address, type Hex, type PublicClient } from 'viem';
-import SecureOwnableDefinitionsAbi from '../../abi/SecureOwnableDefinitions.abi.json';
+import SecureOwnableDefinitionsAbi from '../../abi/SecureOwnableDefinitions.abi.json' with { type: 'json' };
 
 const ABI = SecureOwnableDefinitionsAbi as readonly unknown[];
 
