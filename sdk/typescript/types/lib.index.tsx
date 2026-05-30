@@ -45,24 +45,6 @@ export const ROLES = {
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 /**
- * @deprecated Pre–EngineBlox tx surface; not used by current contracts. Use component `*_FUNCTION_SELECTORS` from types/core.*.index instead.
- */
-export const LEGACY_ENGINE_BLOX_FUNCTION_SELECTORS = {
-  TX_REQUEST: keccak256('txRequest(address,address,uint256,uint256,bytes32,uint8,bytes)').slice(0, 10),
-  TX_DELAYED_APPROVAL: keccak256('txDelayedApproval(uint256)').slice(0, 10),
-  TX_CANCELLATION: keccak256('txCancellation(uint256)').slice(0, 10),
-} as const;
-
-/**
- * @deprecated Use EIP-712 types in `utils/metaTx/metaTransaction.tsx` (`META_TX_TYPES`) — matches selective MetaTxRecord signing in EngineBlox.sol.
- */
-export const LEGACY_TYPE_HASHES = {
-  DOMAIN_SEPARATOR: keccak256(
-    'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
-  ),
-} as const;
-
-/**
  * Event names (EngineBlox transaction lifecycle).
  */
 export const EVENTS = {

@@ -3,6 +3,7 @@
 //   npm run release:prepare   — sync, ABI, package layout, Foundry, SDK gate (no npm publish)
 //   npm run publish:contracts — publish @bloxchain/contracts (run release:prepare first)
 //   npm run publish:sdk       — publish @bloxchain/sdk (run release:prepare first)
+// Publish re-runs prepublish steps, verifies artifacts, then npm publish --ignore-scripts.
 // Flags: --publish-contracts | --publish-sdk
 // Env: SKIP_TESTS=1 | RUN_SANITY_SDK_TESTS=1 | PREPARE_CONTRACTS_ONLY=1 | DEBUG=1
 
@@ -358,11 +359,24 @@ function installPublishDeps(target = 'both') {
   );
 }
 
-function publishPackage(dir, packageName) {
-  logStep('📋', `Publishing ${packageName} (tag ${NPM_PUBLISH_TAG})...`);
-  execInPackage(dir, 'npm audit --audit-level=moderate');
-  execInPackage(dir, `npm publish --tag ${NPM_PUBLISH_TAG}`);
-  logSuccess(`Published ${packageName}@${NPM_PUBLISH_TAG}`);
+function publishContractsPackage() {
+  logStep('📋', 'Final prepare @bloxchain/contracts (pre-publish)...');
+  execInPackage(contractsPackageDir, 'node scripts/prepublish-contracts.cjs');
+  verifyContractsPackage();
+  logStep('📋', `Publishing @bloxchain/contracts (tag ${NPM_PUBLISH_TAG})...`);
+  execInPackage(contractsPackageDir, 'npm audit --audit-level=moderate');
+  execInPackage(contractsPackageDir, `npm publish --ignore-scripts --tag ${NPM_PUBLISH_TAG}`);
+  logSuccess(`Published @bloxchain/contracts@${NPM_PUBLISH_TAG}`);
+}
+
+async function publishSdkPackage() {
+  logStep('📋', 'Final prepare @bloxchain/sdk (pre-publish)...');
+  exec('npm run build:sdk');
+  await verifySdkPublishGate();
+  logStep('📋', `Publishing @bloxchain/sdk (tag ${NPM_PUBLISH_TAG})...`);
+  execInPackage(sdkPackageDir, 'npm audit --audit-level=moderate');
+  execInPackage(sdkPackageDir, `npm publish --ignore-scripts --tag ${NPM_PUBLISH_TAG}`);
+  logSuccess(`Published @bloxchain/sdk@${NPM_PUBLISH_TAG}`);
 }
 
 function printPrepareSummary() {
@@ -396,7 +410,7 @@ async function runPublishContracts() {
   assertReleasePrepared({ contracts: true });
   syncVersions();
   installPublishDeps('contracts');
-  publishPackage(contractsPackageDir, '@bloxchain/contracts');
+  publishContractsPackage();
 }
 
 async function runPublishSdk() {
@@ -406,7 +420,7 @@ async function runPublishSdk() {
   assertReleasePrepared({ sdk: true });
   syncVersions();
   installPublishDeps('sdk');
-  publishPackage(sdkPackageDir, '@bloxchain/sdk');
+  await publishSdkPackage();
 }
 
 async function runCli() {

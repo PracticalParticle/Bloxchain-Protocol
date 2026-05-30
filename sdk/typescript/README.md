@@ -77,6 +77,8 @@ npm install https://github.com/PracticalParticle/Bloxchain-Protocol.git#main --s
 
 The published package is **native ESM**, built with TypeScript **`module` / `moduleResolution`: `NodeNext`**. All relative imports in `sdk/typescript` source use explicit **`.js`** extensions (and `with { type: 'json' }` for ABIs) so `tsc` output loads under Node without a bundler or post-build patches.
 
+**Requires Node.js >= 18.20.5** (JSON import attributes). Node 18.0–18.19 will fail at runtime when loading `dist/`.
+
 When adding or moving SDK files, follow the same import style (e.g. `from './SecureOwnable.js'`, not `from './SecureOwnable'`).
 
 From the protocol repo, run `npm run release:prepare` before publish (includes SDK build, Node ESM import of `dist/`, and selector alignment vs Solidity). Then `npm run publish:contracts` or `npm run publish:sdk`.
@@ -87,6 +89,7 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 |--------|---------|
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
+| `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
 | `INTERFACE_IDS` / `ComponentDetection` | ERC-165 checks aligned with current `I*` interfaces |
 | `EngineBlox`, `Definitions` | Pure helpers and definition-library reads |
 | `roleConfigBatchExecutionParams`, `guardConfigBatchExecutionParams`, encoders | Batch calldata builders |

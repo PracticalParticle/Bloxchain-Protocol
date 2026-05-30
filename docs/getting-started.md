@@ -227,8 +227,16 @@ For protocol and SDK sanity tests against a local Nethermind (or any JSON-RPC at
    ```
    Optional live SDK suite (requires RPC + `.env` / `deployed-addresses.json`):
    ```bash
-   set RUN_SANITY_SDK_TESTS=1
-   npm run release:prepare
+   # bash / zsh / Git Bash
+   RUN_SANITY_SDK_TESTS=1 npm run release:prepare
+   ```
+   ```powershell
+   # PowerShell
+   $env:RUN_SANITY_SDK_TESTS="1"; npm run release:prepare
+   ```
+   ```cmd
+   REM Windows cmd
+   set RUN_SANITY_SDK_TESTS=1 && npm run release:prepare
    ```
    Or run `npm run test:sanity-sdk:core` directly after deploy.
 

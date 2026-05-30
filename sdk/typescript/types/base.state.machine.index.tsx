@@ -2,21 +2,6 @@ import { keccak256 } from 'viem';
 import { ENGINE_BLOX_META_TX_PARAMS } from './meta-tx-signatures.js';
 
 /**
- * @deprecated Not defined in EngineBlox.sol operation-type registry. Prefer component `*_OPERATION_TYPES` (e.g. CONTROLLER_OPERATION).
- */
-export const BASE_STATE_MACHINE_OPERATION_TYPES = {
-  TX_REQUEST: keccak256(new TextEncoder().encode('TX_REQUEST')),
-  TX_DELAYED_APPROVAL: keccak256(new TextEncoder().encode('TX_DELAYED_APPROVAL')),
-  TX_CANCELLATION: keccak256(new TextEncoder().encode('TX_CANCELLATION')),
-  META_TX_APPROVAL: keccak256(new TextEncoder().encode('META_TX_APPROVAL')),
-  META_TX_CANCELLATION: keccak256(new TextEncoder().encode('META_TX_CANCELLATION')),
-  META_TX_REQUEST_AND_APPROVE: keccak256(new TextEncoder().encode('META_TX_REQUEST_AND_APPROVE')),
-} as const;
-
-export type BaseStateMachineOperationType =
-  (typeof BASE_STATE_MACHINE_OPERATION_TYPES)[keyof typeof BASE_STATE_MACHINE_OPERATION_TYPES];
-
-/**
  * Function selectors for IBaseStateMachine (contracts/core/base/interface/IBaseStateMachine.sol).
  */
 export const BASE_STATE_MACHINE_FUNCTION_SELECTORS = {

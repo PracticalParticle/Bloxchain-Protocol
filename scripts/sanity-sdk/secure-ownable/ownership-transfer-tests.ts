@@ -6,7 +6,7 @@
 import { Address, Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { OPERATION_TYPES, FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.security.index.tsx';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 
 export class OwnershipTransferTests extends BaseSecureOwnableTest {

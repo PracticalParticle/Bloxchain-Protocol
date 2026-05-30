@@ -30,12 +30,6 @@ export const RUNTIME_RBAC_OPERATION_TYPES = {
 } as const;
 
 /**
- * Legacy export for backwards compatibility
- * @deprecated Use RUNTIME_RBAC_OPERATION_TYPES instead
- */
-export const DYNAMIC_RBAC_OPERATION_TYPES = RUNTIME_RBAC_OPERATION_TYPES;
-
-/**
  * Constants for RuntimeRBAC function selectors
  * These match the selectors from RuntimeRBACDefinitions.sol
  */
@@ -47,12 +41,3 @@ export const RUNTIME_RBAC_FUNCTION_SELECTORS = {
     new TextEncoder().encode(metaTxHandlerSignature('roleConfigBatchRequestAndApprove'))
   ).slice(0, 10) as Hex
 } as const;
-
-/**
- * Legacy export for backwards compatibility
- * @deprecated Use RUNTIME_RBAC_FUNCTION_SELECTORS instead
- */
-export const DYNAMIC_RBAC_FUNCTION_SELECTORS = RUNTIME_RBAC_FUNCTION_SELECTORS;
-
-// Re-export SecureOwnable constants from core.security.index for convenience
-export { OPERATION_TYPES, FUNCTION_SELECTORS } from './core.security.index.js';
