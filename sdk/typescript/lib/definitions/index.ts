@@ -7,7 +7,7 @@
 export {
   updateRecoveryExecutionParams,
   updateTimeLockExecutionParams
-} from './SecureOwnableDefinitions';
+} from './SecureOwnableDefinitions.js';
 
 export {
   roleConfigBatchExecutionParams,
@@ -18,8 +18,8 @@ export {
   encodeRevokeWallet,
   encodeAddFunctionToRole,
   encodeRemoveFunctionFromRole
-} from './RuntimeRBACDefinitions';
-export type { FunctionPermissionForEncoding } from './RuntimeRBACDefinitions';
+} from './RuntimeRBACDefinitions.js';
+export type { FunctionPermissionForEncoding } from './RuntimeRBACDefinitions.js';
 
 export {
   guardConfigBatchExecutionParams,
@@ -28,4 +28,4 @@ export {
   encodeRemoveTargetFromWhitelist,
   encodeRegisterFunction,
   encodeUnregisterFunction
-} from './GuardControllerDefinitions';
+} from './GuardControllerDefinitions.js';

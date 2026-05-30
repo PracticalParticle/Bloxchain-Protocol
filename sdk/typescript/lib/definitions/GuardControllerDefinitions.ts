@@ -7,9 +7,9 @@
  */
 
 import { type Abi, type Address, type Hex, type PublicClient, bytesToHex, encodeAbiParameters, parseAbiParameters } from 'viem';
-import GuardControllerDefinitionsAbi from '../../abi/GuardControllerDefinitions.abi.json';
-import type { GuardConfigAction } from '../../types/core.execution.index';
-import type { TxAction } from '../../types/lib.index';
+import GuardControllerDefinitionsAbi from '../../abi/GuardControllerDefinitions.abi.json' with { type: 'json' };
+import type { GuardConfigAction } from '../../types/core.execution.index.js';
+import type { TxAction } from '../../types/lib.index.js';
 
 const ABI = GuardControllerDefinitionsAbi as Abi;
 

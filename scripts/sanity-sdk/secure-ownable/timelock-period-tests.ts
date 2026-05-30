@@ -6,7 +6,7 @@
 import { Hex } from 'viem';
 import { BaseSecureOwnableTest } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { FUNCTION_SELECTORS, OPERATION_TYPES } from '../../../sdk/typescript/types/core.security.index.tsx';
 import { updateTimeLockExecutionParams } from '../../../sdk/typescript/lib/definitions/SecureOwnableDefinitions';
 
 export class TimelockPeriodTests extends BaseSecureOwnableTest {

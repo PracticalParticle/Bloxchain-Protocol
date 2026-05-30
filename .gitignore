@@ -65,4 +65,3 @@ package/components/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/
-sdk/typescript/package-lock.json

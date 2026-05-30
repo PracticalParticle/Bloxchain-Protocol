@@ -1,6 +1,6 @@
 # Bloxchain Setup Guide
 
-This guide will help you set up the Bloxchain Workflow Analyzer for your own development environment.
+> **Note:** This file is legacy-oriented. For current protocol + SDK setup, prefer **[docs/getting-started.md](./docs/getting-started.md)**, **`env.example`**, and **`npm run release:prepare`** before publishing `@bloxchain/contracts` / `@bloxchain/sdk`.
 
 ## Quick Start
 

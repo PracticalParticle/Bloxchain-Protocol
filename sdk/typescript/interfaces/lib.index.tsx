@@ -1,6 +1,6 @@
 import { Address, Hex } from 'viem';
-import { TxStatus, TxAction } from '../types/lib.index';
-// import { ReadableOperationType } from '../types/definition.index';
+import { TxStatus, TxAction } from '../types/lib.index.js';
+// import { ReadableOperationType } from '../types/definition.index.js';
 
 /**
  * Payment and transaction related interfaces

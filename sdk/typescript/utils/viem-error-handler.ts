@@ -10,7 +10,7 @@
  */
 
 import { decodeAbiParameters, decodeErrorResult } from 'viem';
-import { extractErrorInfo, getUserFriendlyErrorMessage, GuardianContractError } from './contract-errors';
+import { extractErrorInfo, getUserFriendlyErrorMessage, GuardianContractError } from './contract-errors.js';
 
 /**
  * Enhanced Viem error with decoded contract error information
