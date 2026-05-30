@@ -131,7 +131,7 @@ Two workflow patterns share the same **PENDING → EXECUTING → terminal** prog
 
 ## 🚀 Quick Start
 
-**Prerequisites:** Node.js v18+
+**Prerequisites:** Node.js **>=18.20.5** (required for published `@bloxchain/sdk` ESM JSON import attributes; enforced via `engines` + `.npmrc` `engine-strict=true`)
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
@@ -213,13 +213,18 @@ npm run test:foundry:fuzz
 
 ## 🔧 Development Tools
 
+Requires Node.js **>=18.20.5** (maintenance/security floor for SDK ESM; see `engines` in `package.json`).
+
 ```bash
 npm run compile:foundry          # compile; add :size for 24KB check
 npm run test:foundry            # tests
 npm run test:foundry:fuzz       # fuzz
-npm run test:sanity:secure-ownable   # sanity (optional)
-npm run docgen    # docs
+npm run test:e2e                # compile:foundry:abi + test:sanity-sdk:core (TypeScript SDK runner)
+npm run test:sanity-sdk:core    # live core suites (SecureOwnable, RuntimeRBAC, GuardController)
+npm run docgen                  # docs
 ```
+
+**E2E vs legacy sanity:** `test:e2e` runs `compile:foundry:abi` then `test:sanity-sdk:core` — the TypeScript SDK-based runner for core integration suites on `remote_evm`. Prefer this over `test:sanity:core` (legacy Web3 `scripts/sanity/` runner; not in the default publish gate and may require extra deps). Use `RUN_SANITY_SDK_TESTS=1 npm run release:prepare` for the full pre-publish gate including live SDK tests.
 
 ## 📚 Documentation
 
