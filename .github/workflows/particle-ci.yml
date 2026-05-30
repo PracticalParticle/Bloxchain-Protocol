@@ -17,13 +17,13 @@ jobs:
     steps:   
       # Step 1: Check out code from the repository
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js
+      # Step 2: Setup Node.js (must satisfy engines.node >=18.20.5 with engine-strict)
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16.x'
+          node-version: '20'
           cache: 'npm'
 
       # Step 3: Install dependencies

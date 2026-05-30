@@ -1,12 +1,17 @@
 #!/usr/bin/env node
-// release-prepare.cjs
-// Single-command pre-publication: sync versions, extract ABIs, prepare package, test, verify.
-// Usage: npm run release:prepare (from repo root)
-// Env: SKIP_TESTS=1 (skips optional sanity-sdk tests only) | RUN_SANITY_SDK_TESTS=1 | PREPARE_CONTRACTS_ONLY=1 | DEBUG=1
+// release-prepare.cjs — validate before release, or publish after prepare.
+//   npm run release:prepare   — sync, ABI, package layout, Foundry, SDK gate (no npm publish)
+//   npm run publish:contracts — publish @bloxchain/contracts (run release:prepare first)
+//   npm run publish:sdk       — publish @bloxchain/sdk (run release:prepare first)
+// Publish re-runs prepublish steps, verifies artifacts, then npm publish --ignore-scripts.
+// Flags: --publish-contracts | --publish-sdk
+// Env: SKIP_TESTS=1 | RUN_SANITY_SDK_TESTS=1 | PREPARE_CONTRACTS_ONLY=1 | DEBUG=1
 
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { execSync } = require('child_process');
+const { keccak256 } = require('viem');
 
 const rootDir = path.resolve(__dirname, '..');
 const contractsPackageDir = path.join(rootDir, 'package');
@@ -16,6 +21,7 @@ const SKIP_OPTIONAL_TESTS = process.env.SKIP_TESTS === '1';
 const RUN_SANITY_SDK_TESTS = process.env.RUN_SANITY_SDK_TESTS === '1';
 const PREPARE_CONTRACTS_ONLY = process.env.PREPARE_CONTRACTS_ONLY === '1';
 const DEBUG = process.env.DEBUG === '1';
+const NPM_PUBLISH_TAG = 'alpha.23';
 
 const colors = {
   reset: '\x1b[0m',
@@ -234,7 +240,64 @@ function verifyContractsPackage() {
   logSuccess('npm pack --dry-run OK');
 }
 
-function prepareSdk() {
+function distImportUrl(...segments) {
+  return pathToFileURL(path.join(sdkPackageDir, 'dist', ...segments)).href;
+}
+
+function assertEq(label, a, b) {
+  if (String(a).toLowerCase() !== String(b).toLowerCase()) {
+    fail(`${label}: expected ${b}, got ${a}`);
+  }
+}
+
+function selectorFromSignature(sig) {
+  return keccak256(new TextEncoder().encode(sig)).slice(0, 10);
+}
+
+/** Publish gate: Node ESM can load dist; key selectors match Solidity meta-tx signatures. */
+async function verifySdkPublishGate() {
+  const distPath = path.join(sdkPackageDir, 'dist');
+  const main = await import(distImportUrl('index.js'));
+  const abi = await import(distImportUrl('abi.js'));
+  if (!main.SecureOwnable || !main.extractErrorInfo) {
+    fail('SDK main exports missing (SecureOwnable, extractErrorInfo)');
+  }
+  if (!abi.engineBloxAbi) {
+    fail('SDK abi exports missing (engineBloxAbi)');
+  }
+
+  const metaSigs = await import(distImportUrl('types', 'meta-tx-signatures.js'));
+  const META = metaSigs.ENGINE_BLOX_META_TRANSACTION_PARAM;
+  const access = await import(distImportUrl('types', 'core.access.index.js'));
+  const security = await import(distImportUrl('types', 'core.security.index.js'));
+  const execution = await import(distImportUrl('types', 'core.execution.index.js'));
+  const iface = await import(distImportUrl('utils', 'interface-ids.js'));
+
+  assertEq(
+    'ROLE_CONFIG_BATCH_META_SELECTOR',
+    access.RUNTIME_RBAC_FUNCTION_SELECTORS.ROLE_CONFIG_BATCH_META_SELECTOR,
+    selectorFromSignature(`roleConfigBatchRequestAndApprove(${META})`)
+  );
+  assertEq(
+    'UPDATE_BROADCASTER_APPROVE_META_SELECTOR',
+    security.FUNCTION_SELECTORS.UPDATE_BROADCASTER_APPROVE_META_SELECTOR,
+    selectorFromSignature(`updateBroadcasterApprovalWithMetaTx(${META})`)
+  );
+  assertEq(
+    'APPROVE_TIMELOCK_EXECUTION_META_SELECTOR',
+    execution.GUARD_CONTROLLER_FUNCTION_SELECTORS.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
+    selectorFromSignature(`approveTimeLockExecutionWithMetaTx(${META})`)
+  );
+  assertEq(
+    'IRuntimeRBAC interfaceId',
+    iface.INTERFACE_IDS.IRuntimeRBAC,
+    selectorFromSignature(`roleConfigBatchRequestAndApprove(${META})`)
+  );
+
+  logSuccess('SDK publish gate (ESM import + selector alignment)');
+}
+
+async function prepareSdk() {
   if (PREPARE_CONTRACTS_ONLY) {
     logWarning('Skipping SDK prepare (PREPARE_CONTRACTS_ONLY=1)');
     return;
@@ -249,6 +312,7 @@ function prepareSdk() {
   if (!fs.existsSync(path.join(distPath, 'index.d.ts'))) {
     fail('SDK dist/index.d.ts not found after build');
   }
+  await verifySdkPublishGate();
   let packOutput;
   try {
     packOutput = execSync('npm pack --dry-run 2>&1', {
@@ -264,7 +328,58 @@ function prepareSdk() {
   logSuccess('SDK prepared and verified');
 }
 
-function printSummary() {
+function assertReleasePrepared({ contracts = false, sdk = false }) {
+  if (contracts) {
+    const coreDir = path.join(contractsPackageDir, 'core');
+    if (!fs.existsSync(coreDir) || fs.readdirSync(coreDir).length === 0) {
+      fail('Contracts package not ready. Run: npm run release:prepare');
+    }
+  }
+  if (sdk) {
+    const distIndex = path.join(sdkPackageDir, 'dist', 'index.js');
+    if (!fs.existsSync(distIndex)) {
+      fail('SDK dist/ missing. Run: npm run release:prepare');
+    }
+  }
+}
+
+function installPublishDeps(target = 'both') {
+  if (target === 'contracts' || target === 'both') {
+    logStep('📋', 'Installing @bloxchain/contracts dependencies...');
+    execInPackage(contractsPackageDir, 'npm install');
+  }
+  if (target === 'sdk' || target === 'both') {
+    logStep('📋', 'Installing @bloxchain/sdk dependencies...');
+    execInPackage(sdkPackageDir, 'npm install');
+  }
+  logSuccess(
+    target === 'both'
+      ? 'Publishable package dependencies installed'
+      : `Dependencies installed (${target})`
+  );
+}
+
+function publishContractsPackage() {
+  logStep('📋', 'Final prepare @bloxchain/contracts (pre-publish)...');
+  execInPackage(contractsPackageDir, 'node scripts/prepublish-contracts.cjs');
+  verifyContractsPackage();
+  logStep('📋', `Publishing @bloxchain/contracts (tag ${NPM_PUBLISH_TAG})...`);
+  execInPackage(contractsPackageDir, 'npm audit --audit-level=moderate');
+  execInPackage(contractsPackageDir, `npm publish --ignore-scripts --tag ${NPM_PUBLISH_TAG}`);
+  logSuccess(`Published @bloxchain/contracts@${NPM_PUBLISH_TAG}`);
+}
+
+async function publishSdkPackage() {
+  logStep('📋', 'Final prepare @bloxchain/sdk (pre-publish)...');
+  exec('npm run build:sdk');
+  await verifySdkPublishGate();
+  logStep('📋', `Publishing @bloxchain/sdk (tag ${NPM_PUBLISH_TAG})...`);
+  execInPackage(sdkPackageDir, 'npm audit --audit-level=moderate');
+  execInPackage(sdkPackageDir, `npm publish --ignore-scripts --tag ${NPM_PUBLISH_TAG}`);
+  logSuccess(`Published @bloxchain/sdk@${NPM_PUBLISH_TAG}`);
+}
+
+function printPrepareSummary() {
   log('\n' + '='.repeat(60), 'bright');
   log('✅ Release prepare complete', 'green');
   log('='.repeat(60) + '\n', 'bright');
@@ -272,36 +387,67 @@ function printSummary() {
   log('  npm login', 'yellow');
   log('  npm run publish:contracts', 'yellow');
   log('  npm run publish:sdk', 'yellow');
-  log('\nOr manually:', 'cyan');
-  log('  cd package && npm publish --tag alpha.22', 'yellow');
-  log('  cd sdk/typescript && npm publish --tag alpha.22', 'yellow');
   log('');
 }
 
-function main() {
+async function runReleasePrepare() {
   log('\n' + '='.repeat(60), 'bright');
   log('📦 Release Prepare', 'bright');
   log('='.repeat(60), 'bright');
-  try {
-    syncVersions();
-    extractAbi();
-    prepareContractsPackage();
-    runTests();
-    verifyContractsPackage();
-    prepareSdk();
-    printSummary();
-    process.exit(0);
-  } catch (error) {
-    log('\n' + '='.repeat(60), 'bright');
-    logError('Release prepare failed');
-    log('='.repeat(60) + '\n', 'bright');
-    logError(error.message);
-    process.exit(1);
+  syncVersions();
+  extractAbi();
+  prepareContractsPackage();
+  runTests();
+  verifyContractsPackage();
+  await prepareSdk();
+  printPrepareSummary();
+}
+
+async function runPublishContracts() {
+  log('\n' + '='.repeat(60), 'bright');
+  log('📦 Publish @bloxchain/contracts', 'bright');
+  log('='.repeat(60), 'bright');
+  assertReleasePrepared({ contracts: true });
+  syncVersions();
+  installPublishDeps('contracts');
+  publishContractsPackage();
+}
+
+async function runPublishSdk() {
+  log('\n' + '='.repeat(60), 'bright');
+  log('📦 Publish @bloxchain/sdk', 'bright');
+  log('='.repeat(60), 'bright');
+  assertReleasePrepared({ sdk: true });
+  syncVersions();
+  installPublishDeps('sdk');
+  await publishSdkPackage();
+}
+
+async function runCli() {
+  const argv = process.argv.slice(2);
+  if (argv.includes('--publish-contracts')) {
+    await runPublishContracts();
+  } else if (argv.includes('--publish-sdk')) {
+    await runPublishSdk();
+  } else {
+    await runReleasePrepare();
   }
 }
 
 if (require.main === module) {
-  main();
+  runCli().catch((error) => {
+    log('\n' + '='.repeat(60), 'bright');
+    logError('Release pipeline failed');
+    log('='.repeat(60) + '\n', 'bright');
+    logError(error.message || String(error));
+    process.exit(1);
+  });
 }
 
-module.exports = { main };
+module.exports = {
+  runReleasePrepare,
+  runPublishContracts,
+  runPublishSdk,
+  verifySdkPublishGate,
+  installPublishDeps,
+};

@@ -1,7 +1,7 @@
 import { Address, Hex } from 'viem';
-import { TransactionResult, TransactionOptions } from './base.index';
-import { MetaTransaction } from './lib.index';
-import { IBaseStateMachine } from './base.state.machine.index';
+import { TransactionResult, TransactionOptions } from './base.index.js';
+import { MetaTransaction } from './lib.index.js';
+import { IBaseStateMachine } from './base.state.machine.index.js';
 
 /**
  * Interface for GuardController contract methods

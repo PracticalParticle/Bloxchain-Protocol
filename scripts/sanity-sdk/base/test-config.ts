@@ -26,12 +26,6 @@ export interface TestConfig {
   contractAddresses: {
     /** Single account contract used for all sanity tests (SecureOwnable, RuntimeRBAC, GuardController) */
     accountBlox?: string;
-    /** @deprecated Use accountBlox (same as ACCOUNTBLOX_ADDRESS) */
-    secureBlox?: string;
-    /** @deprecated Use accountBlox (same as ACCOUNTBLOX_ADDRESS) */
-    runtimeRBAC?: string;
-    /** @deprecated Use accountBlox (same as ACCOUNTBLOX_ADDRESS) */
-    guardController?: string;
   };
   privateKeys: {
     wallet1?: string;
@@ -99,9 +93,6 @@ export function getTestConfig(): TestConfig {
     rpcTimeoutMs: Number.isNaN(rpcTimeoutMs) ? 30_000 : rpcTimeoutMs,
     contractAddresses: {
       accountBlox: process.env.ACCOUNTBLOX_ADDRESS,
-      secureBlox: process.env.ACCOUNTBLOX_ADDRESS,
-      runtimeRBAC: process.env.ACCOUNTBLOX_ADDRESS,
-      guardController: process.env.ACCOUNTBLOX_ADDRESS,
     },
     privateKeys: {
       wallet1: process.env.TEST_WALLET_1_PRIVATE_KEY,

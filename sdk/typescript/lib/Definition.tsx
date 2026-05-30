@@ -2,17 +2,17 @@ import { PublicClient, WalletClient, Address, Chain, Hex } from 'viem';
 import { 
   IDefinition, 
   DefinitionsConfig
-} from '../interfaces/definition.index';
+} from '../interfaces/definition.index.js';
 import { 
   FunctionSchema, 
   RolePermission,
   FunctionPermission
-} from '../types/definition.index';
-import { TxAction } from '../types/lib.index';
-import { fromContractValue } from '../utils/bitmap';
+} from '../types/definition.index.js';
+import { TxAction } from '../types/lib.index.js';
+import { fromContractValue } from '../utils/bitmap.js';
 
 // Import the ABI
-import IDefinitionABI from '../abi/IDefinition.abi.json';
+import IDefinitionABI from '../abi/IDefinition.abi.json' with { type: 'json' };
 
 /**
  * Definitions class for interacting with any definition library

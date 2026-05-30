@@ -11,7 +11,7 @@ import { getTestConfig } from '../base/test-config.ts';
 import { MetaTransactionSigner } from '../../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { MetaTransaction, MetaTxParams } from '../../../sdk/typescript/interfaces/lib.index.tsx';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.access.index.tsx';
+import { FUNCTION_SELECTORS } from '../../../sdk/typescript/types/core.security.index.tsx';
 import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.ts';
 
 /** Extract raw revert data from a viem/contract error for decoding. */

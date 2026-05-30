@@ -1,6 +1,6 @@
 import { keccak256 as k256, toHex, Address, Hex, PublicClient, recoverAddress, bytesToHex } from 'viem';
-import { TxAction } from '../types/lib.index';
-import { Uint16Bitmap, createUint16Bitmap } from '../utils/bitmap';
+import { TxAction } from '../types/lib.index.js';
+import { Uint16Bitmap, createUint16Bitmap } from '../utils/bitmap.js';
 
 /**
  * Helper function to compute keccak256 of a string

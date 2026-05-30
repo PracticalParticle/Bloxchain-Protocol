@@ -1,6 +1,6 @@
 {
   "name": "@bloxchain/contracts",
-  "version": "1.0.0-alpha.22",
+  "version": "1.0.0-alpha.23",
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "files": [
     "core",
@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "prepublishOnly": "node scripts/prepublish-contracts.cjs",
-    "postpublish": "node scripts/postpublish-contracts.cjs"
+    "postpublish": "node scripts/postpublish-contracts.cjs",
+    "prepare:deps": "npm install"
   },
   "keywords": [
     "bloxchain",
@@ -44,6 +45,6 @@
     "@openzeppelin/contracts-upgradeable": "5.6.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.20.5"
   }
 }

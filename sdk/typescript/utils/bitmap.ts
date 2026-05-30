@@ -1,4 +1,4 @@
-import { TxAction } from '../types/lib.index';
+import { TxAction } from '../types/lib.index.js';
 
 /**
  * Branded type for uint16 bitmap values (0-65535)

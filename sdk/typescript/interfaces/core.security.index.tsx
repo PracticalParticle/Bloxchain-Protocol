@@ -1,7 +1,7 @@
 import { Address, Hex } from 'viem';
-import { TransactionResult, TransactionOptions } from './base.index';
-import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index';
-import { TxAction } from '../types/lib.index';
+import { TransactionResult, TransactionOptions } from './base.index.js';
+import { TxRecord, MetaTransaction, MetaTxParams } from './lib.index.js';
+import { TxAction } from '../types/lib.index.js';
 
 /**
  * Interface for SecureOwnable contract events

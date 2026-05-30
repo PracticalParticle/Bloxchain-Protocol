@@ -1,10 +1,10 @@
 import { Address, PublicClient, WalletClient, Chain, Hex } from 'viem';
-import GuardControllerABIJson from '../../abi/GuardController.abi.json';
-import { TransactionOptions, TransactionResult } from '../../interfaces/base.index';
-import { IGuardController } from '../../interfaces/core.execution.index';
-import { MetaTransaction } from '../../interfaces/lib.index';
-import { BaseStateMachine } from './BaseStateMachine';
-import { INTERFACE_IDS } from '../../utils/interface-ids';
+import GuardControllerABIJson from '../../abi/GuardController.abi.json' with { type: 'json' };
+import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
+import { IGuardController } from '../../interfaces/core.execution.index.js';
+import { MetaTransaction } from '../../interfaces/lib.index.js';
+import { BaseStateMachine } from './BaseStateMachine.js';
+import { INTERFACE_IDS } from '../../utils/interface-ids.js';
 
 /**
  * @title GuardController

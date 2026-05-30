@@ -1,8 +1,8 @@
 import { Address, Hex } from 'viem';
-import { TransactionResult, TransactionOptions } from './base.index';
-import { MetaTransaction } from './lib.index';
-import { TxAction } from '../types/lib.index';
-import type { RoleConfigAction } from '../types/core.access.index';
+import { TransactionResult, TransactionOptions } from './base.index.js';
+import { MetaTransaction } from './lib.index.js';
+import { TxAction } from '../types/lib.index.js';
+import type { RoleConfigAction } from '../types/core.access.index.js';
 
 /**
  * Interface for RuntimeRBAC contract methods

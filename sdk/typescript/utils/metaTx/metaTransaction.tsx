@@ -11,10 +11,16 @@ import {
   MetaTxParams, 
   TxParams,
   PaymentDetails
-} from '../../interfaces/lib.index';
-import { TxAction } from '../../types/lib.index';
-import BaseStateMachineABI from '../../abi/BaseStateMachine.abi.json';
-import { EngineBlox } from '../../lib/EngineBlox';
+} from '../../interfaces/lib.index.js';
+import { TxAction } from '../../types/lib.index.js';
+import BaseStateMachineABI from '../../abi/BaseStateMachine.abi.json' with { type: 'json' };
+import { EngineBlox } from '../../lib/EngineBlox.js';
+
+/**
+ * EIP-712 signing uses a selective MetaTxRecord (txId, params, payment only) per EngineBlox.sol.
+ * That is separate from ABI handler signatures in `types/meta-tx-signatures.ts` (full MetaTransaction
+ * tuple for `bytes4` selectors such as `roleConfigBatchRequestAndApprove(...)`).
+ */
 
 /** EIP-712 domain and types matching EngineBlox (selective MetaTxRecord: txId, params, payment only) */
 export const META_TX_DOMAIN = {

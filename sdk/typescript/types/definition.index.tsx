@@ -1,6 +1,6 @@
 import { Hex } from 'viem';
-import { Uint16Bitmap } from '../utils/bitmap';
-// import { TxAction } from './lib.index';
+import { Uint16Bitmap } from '../utils/bitmap.js';
+// import { TxAction } from './lib.index.js';
 
 /**
  * TypeScript types for IDefinition interface

@@ -6,8 +6,8 @@
  */
 
 import { type Abi, type Address, type Hex, type PublicClient, bytesToHex, encodeAbiParameters, parseAbiParameters } from 'viem';
-import RuntimeRBACDefinitionsAbi from '../../abi/RuntimeRBACDefinitions.abi.json';
-import type { RoleConfigAction } from '../../types/core.access.index';
+import RuntimeRBACDefinitionsAbi from '../../abi/RuntimeRBACDefinitions.abi.json' with { type: 'json' };
+import type { RoleConfigAction } from '../../types/core.access.index.js';
 
 const ABI = RuntimeRBACDefinitionsAbi as Abi;
 
