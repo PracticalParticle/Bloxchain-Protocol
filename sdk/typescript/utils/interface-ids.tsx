@@ -72,11 +72,6 @@ export const INTERFACE_IDS = {
   ]),
 } as const;
 
-/** Selector for `roleConfigBatchRequestAndApprove` — same bytes4 as `type(IRuntimeRBAC).interfaceId` on batch-only interface. */
-export const RUNTIME_RBAC_INTERFACE_FALLBACK_SELECTOR = keccak256(
-  toBytes(metaTxHandlerSignature('roleConfigBatchRequestAndApprove'))
-).slice(0, 10) as Hex;
-
 export async function supportsInterface(
   contract: { supportsInterface: (interfaceId: Hex) => Promise<boolean> },
   interfaceId: Hex
@@ -104,9 +99,7 @@ export const ComponentDetection = {
   async isRuntimeRBAC(contract: {
     supportsInterface: (interfaceId: Hex) => Promise<boolean>;
   }): Promise<boolean> {
-    const byInterface = await supportsInterface(contract, INTERFACE_IDS.IRuntimeRBAC);
-    if (byInterface) return true;
-    return contract.supportsInterface(RUNTIME_RBAC_INTERFACE_FALLBACK_SELECTOR);
+    return supportsInterface(contract, INTERFACE_IDS.IRuntimeRBAC);
   },
 
   async isGuardController(contract: {

@@ -21,7 +21,7 @@ const SKIP_OPTIONAL_TESTS = process.env.SKIP_TESTS === '1';
 const RUN_SANITY_SDK_TESTS = process.env.RUN_SANITY_SDK_TESTS === '1';
 const PREPARE_CONTRACTS_ONLY = process.env.PREPARE_CONTRACTS_ONLY === '1';
 const DEBUG = process.env.DEBUG === '1';
-const NPM_PUBLISH_TAG = 'alpha.23';
+const NPM_PUBLISH_TAG = 'alpha.24';
 
 const colors = {
   reset: '\x1b[0m',
@@ -262,6 +262,9 @@ async function verifySdkPublishGate() {
   if (!main.SecureOwnable || !main.extractErrorInfo) {
     fail('SDK main exports missing (SecureOwnable, extractErrorInfo)');
   }
+  if (!main.INTERFACE_IDS || !main.ComponentDetection || typeof main.supportsInterface !== 'function') {
+    fail('SDK main exports missing (INTERFACE_IDS, ComponentDetection, supportsInterface)');
+  }
   if (!abi.engineBloxAbi) {
     fail('SDK abi exports missing (engineBloxAbi)');
   }
@@ -293,6 +296,10 @@ async function verifySdkPublishGate() {
     iface.INTERFACE_IDS.IRuntimeRBAC,
     selectorFromSignature(`roleConfigBatchRequestAndApprove(${META})`)
   );
+
+  if ('RUNTIME_RBAC_INTERFACE_FALLBACK_SELECTOR' in iface) {
+    fail('RUNTIME_RBAC_INTERFACE_FALLBACK_SELECTOR must be removed from interface-ids.js');
+  }
 
   logSuccess('SDK publish gate (ESM import + selector alignment)');
 }
