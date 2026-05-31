@@ -74,6 +74,30 @@ const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, accountAddress, 
 const guardController = new GuardController(publicClient, walletClient, accountAddress, sepolia);
 ```
 
+### Definition library addresses (public testnets)
+
+Integrators need deployed **definition libraries** for execution-param helpers (`updateRecoveryExecutionParams`, batch encoders, schema refresh). Keys in `deployed-addresses.json` map to env vars:
+
+| `deployed-addresses.json` key | Env variable |
+|-------------------------------|--------------|
+| `SecureOwnableDefinitions` | `SECURE_OWNABLE_DEFINITIONS_ADDRESS` |
+| `RuntimeRBACDefinitions` | `RUNTIME_RBAC_DEFINITIONS_ADDRESS` |
+| `GuardControllerDefinitions` | `GUARD_CONTROLLER_DEFINITIONS_ADDRESS` |
+| `GuardControllerDefinitions` | `DEFINITION_CONTRACT_ADDRESS` (alias for single schema-refresh address) |
+
+Example for Sepolia:
+
+```typescript
+import deployed from '../deployed-addresses.json';
+
+const network = 'sepolia' as const;
+const sod = deployed[network].SecureOwnableDefinitions.address;
+const rbd = deployed[network].RuntimeRBACDefinitions.address;
+const gcd = deployed[network].GuardControllerDefinitions.address;
+```
+
+Pass these addresses to SDK helpers such as `updateRecoveryExecutionParams(client, sod, newRecovery)`.
+
 ---
 
 ## 📖 **Common Tasks with an Account**
@@ -207,38 +231,17 @@ For a full set of recommendations, see [Best Practices](./best-practices.md).
 
 ---
 
-## 🧪 **Local development (`remote_evm`)**
+## 🧪 **Protocol development (internal test chain)**
 
-For protocol and SDK sanity tests against a local Nethermind (or any JSON-RPC at `127.0.0.1:8545`):
+The repo includes **internal** scripts for running sanity tests against a local JSON-RPC node (often called `remote_evm` in `deployed-addresses.json`). This is **not** part of the published protocol surface integrators should rely on.
 
-1. Copy `env.example` to `.env` and set `NETWORK_NAME=remote_evm`, `TEST_MODE=manual`, and `RPC_URL=http://127.0.0.1:8545` (see `env.example` comments).
-2. Deploy the test stack and refresh addresses:
-   ```bash
-   npm run deploy:remote-evm:test
-   npm run generate:sanity-env -- --out .env
-   ```
-   To write env for another repo (e.g. Bloxchain-ExtendedSDK):
-   ```bash
-   npm run generate:sanity-env -- --out ../Bloxchain-ExtendedSDK/.env
-   ```
-3. Validate before npm publish:
-   ```bash
-   npm run release:prepare
-   ```
-   Optional live SDK suite (requires RPC + `.env` / `deployed-addresses.json`):
-   ```bash
-   # bash / zsh / Git Bash
-   RUN_SANITY_SDK_TESTS=1 npm run release:prepare
-   ```
-   ```powershell
-   # PowerShell
-   $env:RUN_SANITY_SDK_TESTS="1"; npm run release:prepare
-   ```
-   ```cmd
-   REM Windows cmd
-   set RUN_SANITY_SDK_TESTS=1 && npm run release:prepare
-   ```
-   Or run `npm run test:sanity-sdk:core` directly after deploy.
+For protocol maintainers only:
+
+1. Copy `env.example` to `.env` (or run `npm run generate:sanity-env -- --out .env` after an internal deploy).
+2. Deploy the internal test stack: `npm run deploy:remote-evm:test`
+3. Run Foundry: `npm run test:foundry`; optional SDK sanity: `npm run test:sanity-sdk:core`
+
+Integrators should use **public testnets** (e.g. sepolia) and addresses from `deployed-addresses.json` with the SDK — not hard-coded role or wallet profiles from sanity tooling.
 
 ---
 

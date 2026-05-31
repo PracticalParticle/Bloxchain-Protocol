@@ -68,6 +68,11 @@ export * from './utils/erc20/erc20Token.js';
 export { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransaction.js';
 export * from './utils/contract-errors.js';
 export * from './utils/viem-error-handler.js';
+export {
+  INTERFACE_IDS,
+  ComponentDetection,
+  supportsInterface,
+} from './utils/interface-ids.js';
 
 // Re-export commonly used types from viem
 export type { Address, Hex, PublicClient, WalletClient, Chain } from 'viem';
