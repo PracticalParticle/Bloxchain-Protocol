@@ -18,23 +18,10 @@ const root = path.resolve(__dirname, '..');
 
 const deployedPath = path.join(root, 'deployed-addresses.json');
 
-/**
- * Deterministic Ganache-style development keys (internal sanity only).
- *
- * SECURITY WARNING: publicly known keys — local/dev testing only.
- */
-const DETERMINISTIC_TEST_PRIVATE_KEYS = [
-  '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
-  '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1',
-  '0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c',
-  '0x646f1ce2fdad0e6deeeb5c7e8e5543bdde65e86029e2fd9fc169899c440a7913',
-  '0xadd53f9a7e588d003326d1cbf9e4a43c061aadd9bc938c843a79e7b4fd2ad743',
-  '0x395df67f0c2d2d9fe1ad08d1bc8b6627011959b79c53d7dd6a3536a33ab8a4fd',
-  '0xe485d098507f54e7733a205420dfddbe58db035fa577fc294ebd14db90767a52',
-  '0xa453611d9419d0e56f499079478fd72c37b251a94bfde4d19872c44cf65386e3',
-  '0x829e924fdf021ba3dbbc4225edfece9aca04b929d6e75613329ca6f1d31c0bb4',
-  '0xb0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3773',
-] as const;
+/** Internal sanity profile only — matches Nethermind remote_evm (chain 1337). */
+const REMOTE_EVM_NETWORK = 'remote_evm';
+const REMOTE_EVM_CHAIN_ID = '1337';
+const REMOTE_EVM_RPC_URL = 'http://127.0.0.1:8545';
 
 type DeployedNetwork = Record<string, { address?: string } | undefined>;
 
@@ -54,6 +41,44 @@ function requireAddress(
   return address;
 }
 
+/**
+ * deployed-addresses.json holds contract addresses per networkName only (no chainId/rpcUrl).
+ * Emit connection settings only for the internal remote_evm profile.
+ */
+function resolveNetworkConnection(networkName: string): { chainId: string; rpcUrl: string } {
+  if (networkName !== REMOTE_EVM_NETWORK) {
+    fail(
+      `Cannot emit CHAIN_ID/RPC_URL for NETWORK_NAME="${networkName}": ` +
+        `deployed-addresses.json has no chainId or rpcUrl on network profiles. ` +
+        `This script supports internal "${REMOTE_EVM_NETWORK}" only ` +
+        `(CHAIN_ID=${REMOTE_EVM_CHAIN_ID}, RPC_URL=${REMOTE_EVM_RPC_URL}). ` +
+        `Unset NETWORK_NAME/GUARDIAN_NETWORK or set them to "${REMOTE_EVM_NETWORK}".`
+    );
+  }
+  return {
+    chainId: process.env.CHAIN_ID?.trim() || REMOTE_EVM_CHAIN_ID,
+    rpcUrl: process.env.RPC_URL?.trim() || REMOTE_EVM_RPC_URL,
+  };
+}
+
+/**
+ * Deterministic Ganache-style development keys (internal sanity only).
+ *
+ * SECURITY WARNING: publicly known keys — local/dev testing only.
+ */
+const DETERMINISTIC_TEST_PRIVATE_KEYS = [
+  '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
+  '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1',
+  '0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c',
+  '0x646f1ce2fdad0e6deeeb5c7e8e5543bdde65e86029e2fd9fc169899c440a7913',
+  '0xadd53f9a7e588d003326d1cbf9e4a43c061aadd9bc938c843a79e7b4fd2ad743',
+  '0x395df67f0c2d2d9fe1ad08d1bc8b6627011959b79c53d7dd6a3536a33ab8a4fd',
+  '0xe485d098507f54e7733a205420dfddbe58db035fa577fc294ebd14db90767a52',
+  '0xa453611d9419d0e56f499079478fd72c37b251a94bfde4d19872c44cf65386e3',
+  '0x829e924fdf021ba3dbbc4225edfece9aca04b929d6e75613329ca6f1d31c0bb4',
+  '0xb0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3773',
+] as const;
+
 function main(): void {
   if (!fs.existsSync(deployedPath)) fail(`Missing ${deployedPath}`);
 
@@ -61,6 +86,8 @@ function main(): void {
   const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
   const network = deployed?.[networkName] as DeployedNetwork | undefined;
   if (!network) fail(`${networkName} not found in deployed-addresses.json`);
+
+  const { chainId, rpcUrl } = resolveNetworkConnection(networkName);
 
   const accountBlox = requireAddress(network, 'AccountBlox', networkName);
   const secureOwnableDefinitions = requireAddress(network, 'SecureOwnableDefinitions', networkName);
@@ -76,8 +103,8 @@ function main(): void {
     'TEST_MODE=manual',
     `GUARDIAN_NETWORK=${networkName}`,
     `NETWORK_NAME=${networkName}`,
-    'CHAIN_ID=1337',
-    'RPC_URL=http://127.0.0.1:8545',
+    `CHAIN_ID=${chainId}`,
+    `RPC_URL=${rpcUrl}`,
     '',
     `ACCOUNTBLOX_ADDRESS=${accountBlox}`,
     '',
