@@ -90,9 +90,10 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
 | `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
-| `INTERFACE_IDS` / `ComponentDetection` | ERC-165 checks aligned with current `I*` interfaces |
+| `INTERFACE_IDS` / `ComponentDetection` / `supportsInterface` | ERC-165 checks aligned with current `I*` interfaces (strict — no fallback selector) |
 | `EngineBlox`, `Definitions` | Pure helpers and definition-library reads |
 | `roleConfigBatchExecutionParams`, `guardConfigBatchExecutionParams`, encoders | Batch calldata builders |
+| `updateRecoveryExecutionParams`, `updateTimeLockExecutionParams` | SecureOwnable execution params via deployed `SecureOwnableDefinitions` |
 | `extractErrorInfo`, `enhanceViemError` | Revert decoding and Viem error enrichment |
 | `@bloxchain/sdk/abi` | `engineBloxAbi`, `engineBloxErrorAbi` |
 
@@ -339,6 +340,17 @@ TxStatus.PROCESSING_PAYMENT
 TxStatus.CANCELLED
 TxStatus.COMPLETED
 TxStatus.FAILED
+```
+
+### TxRecord (state machine transactions)
+
+The canonical TypeScript shape matches on-chain `EngineBlox.TxRecord`. The completion hash field is **`resultHash`** (bytes32; zero while pending):
+
+```typescript
+import type { TxRecord } from '@bloxchain/sdk';
+
+const tx: TxRecord = await secureOwnable.getTransaction(txId);
+console.log(tx.resultHash);
 ```
 
 ## Error Handling
