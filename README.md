@@ -248,11 +248,11 @@ npm run docgen                  # docs
 
 ## 🤝 Contributing
 
-See [Contributing Guidelines](CONTRIBUTING.md) (setup, code standards, testing, security, PR process). Key requirements: [Code of Conduct](CODE_OF_CONDUCT.md), 100% test coverage, contracts under 24KB. Deploy: `npm run deploy:hardhat` (local) or `npm run deploy:hardhat -- --network sepolia`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). We accept **selective** contributions (docs, SDK aligned with core, tooling, examples)—not public PRs to **`contracts/core/`** (audited; maintained by Particle CS only). Non-security core feedback: open a GitHub issue. Security: [SECURITY.md](SECURITY.md) only. All commits require [DCO](DCO) sign-off (`git commit -s`). [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## 📄 License
 
-**MPL-2.0** – see [LICENSE](LICENSE). Covers core contracts (`contracts/core/`), SDK (`sdk/typescript/`), docs, tests, tooling. **Excluded:** `contracts/examples/` and `applications/` have their own licenses (see per-directory LICENSE files). Contributions under MPL-2.0; see [CONTRIBUTING.md](CONTRIBUTING.md).
+**MPL-2.0** – see [LICENSE](LICENSE). Covers core contracts (`contracts/core/`), SDK (`sdk/typescript/`), docs, tests, tooling. **Excluded:** `contracts/examples/` (per-file SPDX licenses; in-repo samples are MIT). Inbound contributions: MPL-2.0 + [DCO](DCO); see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🙏 Acknowledgments
 

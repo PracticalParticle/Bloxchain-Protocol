@@ -5,6 +5,10 @@ Thank you for your interest in contributing to Bloxchain Protocol! This document
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [Contribution Policy](#contribution-policy)
+- [Core Contracts (`contracts/core/`)](#core-contracts-contractscore)
+- [Intellectual Property and Licensing](#intellectual-property-and-licensing)
+- [Developer Certificate of Origin (DCO)](#developer-certificate-of-origin-dco)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
 - [Contributing Process](#contributing-process)
@@ -14,11 +18,129 @@ Thank you for your interest in contributing to Bloxchain Protocol! This document
 - [Security Considerations](#security-considerations)
 - [Pull Request Process](#pull-request-process)
 - [Issue Reporting](#issue-reporting)
+- [Examples and applications](#examples-and-applications)
 - [Community](#community)
+- [Commit Message Guidelines](#commit-message-guidelines)
+- [Development Workflow](#development-workflow)
+- [Contact](#contact)
 
 ## Code of Conduct
 
 This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code. Please report unacceptable behavior to conduct@particlecs.com.
+
+## Contribution Policy
+
+Bloxchain Protocol welcomes **focused, selective** contributions. We do not operate a large open-contribution program; maintainers may close or decline pull requests without detailed review when they are out of scope.
+
+### What we typically accept (pull requests)
+
+- **Documentation** under `docs/` (hand-written guides; do not edit NatSpec-generated output in `docs/_auto_generated_docs_/` by hand)
+- **Tooling, CI, and scripts** outside `contracts/core/`
+- **TypeScript SDK** changes (`sdk/typescript/`) that align with existing core behavior — **not** changes that require modifying audited core contracts
+- **Tests** for non-core areas, or test fixes that do not change `contracts/core/` semantics
+- **Examples** under `contracts/examples/` (subject to per-example license terms)
+
+### What we do not accept via public pull request
+
+- **Any change to `contracts/core/`** — see [Core Contracts](#core-contracts-contractscore) below
+- **Security fixes** submitted as public PRs or public issues — use [SECURITY.md](SECURITY.md) only
+- Drive-by refactors, dependency bumps, or broad “cleanup” PRs without a prior agreed issue
+- Contributions that include secrets, deployment keys, or production addresses hard-coded in source
+
+### Before you open a pull request
+
+1. **Search existing issues** and open a **GitHub issue** first for non-trivial work (especially behavior changes), unless the change is a clear typo or doc fix.
+2. For **core protocol behavior** (including perceived bugs in `contracts/core/`), open an issue for discussion — do not open a PR against core.
+3. Ensure every commit includes a **DCO sign-off** — see [Developer Certificate of Origin](#developer-certificate-of-origin-dco).
+4. Use the [pull request template](.github/pull_request_template.md) and complete all checkboxes.
+
+Maintainers merge contributions at their discretion. Opening a PR does not create an obligation to review or merge.
+
+## Core Contracts (`contracts/core/`)
+
+The core protocol library under `contracts/core/` is the **audited source of truth** for Bloxchain behavior. It has undergone **external security review**; changes affect deployed security assumptions and require controlled release management.
+
+### Who may change core
+
+- **Only the Particle Crypto Security team** merges changes to `contracts/core/` (and closely coupled core tests under `test/foundry/` that define core semantics).
+- **External contributors must not** open pull requests that modify files under `contracts/core/`.
+
+### Security issues in core
+
+- **Do not** open public GitHub issues or pull requests for vulnerabilities.
+- Follow **[SECURITY.md](SECURITY.md)** and report to **security@particlecs.com** only.
+- Security remediations are handled internally by Particle CS according to the security policy (coordinated disclosure, audit alignment, and release process).
+
+### Non-security feedback and requests (core)
+
+For **non-security** topics related to core (design questions, feature ideas, documentation gaps, suspected non-security bugs):
+
+1. Open a **GitHub issue** with a clear description, reproduction steps (if applicable), and impact.
+2. Do **not** submit a PR against `contracts/core/`; the team will triage and implement fixes or enhancements internally if accepted.
+3. You may build on core in your **own fork** (examples, integrations) under MPL-2.0; upstream core changes remain maintainer-only.
+
+### SDK and docs relative to core
+
+Changes to `sdk/typescript/` that **require** altering `contracts/core/` behavior will not be merged via external PR. Propose the behavior via a GitHub issue; if accepted, Particle CS will implement core and SDK changes together.
+
+## Intellectual Property and Licensing
+
+### Project license
+
+Bloxchain Protocol is licensed under the **[Mozilla Public License 2.0 (MPL-2.0)](LICENSE)**. Core contracts (`contracts/core/`), the TypeScript SDK (`sdk/typescript/`), documentation, tests, and tooling are Covered Software unless explicitly excluded in `LICENSE` (for example `contracts/examples/`).
+
+### Your contributions
+
+By submitting a pull request or otherwise contributing material intended for inclusion in this repository, you agree that:
+
+1. **License** — Your contribution is licensed under **MPL-2.0**, and you grant the rights necessary for maintainers to merge, distribute, and sublicense your contribution under that license (consistent with MPL-2.0 Section 2).
+2. **Original work** — The contribution is your original work, or you have sufficient rights to submit it under these terms (including employer or client authorization where applicable).
+3. **No incompatible third-party code** — You have not included code whose license is incompatible with MPL-2.0 (for example GPL- or AGPL-licensed code) without explicit, written maintainer approval and proper license notices.
+4. **No copyright assignment** — Particle Crypto Security does **not** take copyright assignment through GitHub contribution. You retain copyright in your contribution except as licensed under MPL-2.0.
+5. **Developer Certificate of Origin** — You certify the statements in the [DCO](DCO) via `Signed-off-by` on each commit (see below).
+
+We do **not** use a separate Contributor License Agreement (CLA). The combination of MPL-2.0, this section, and DCO sign-off defines inbound contribution terms.
+
+### Maintainer discretion
+
+Maintainers may reject any contribution that raises licensing, provenance, or security concerns, or that falls outside the [contribution policy](#contribution-policy), without obligation to provide a detailed rationale.
+
+## Developer Certificate of Origin (DCO)
+
+This project uses the **[Developer Certificate of Origin (DCO) version 1.1](https://developercertificate.org/)**. The full text is in [DCO](DCO).
+
+Every commit in a pull request **must** include a sign-off line:
+
+```text
+Signed-off-by: Jane Contributor <jane@example.com>
+```
+
+Use your **real name** and an email address you are comfortable associating with the contribution (often the same email as your GitHub account).
+
+### How to sign commits
+
+```bash
+# Sign a single commit
+git commit -s -m "docs: clarify guard controller setup"
+
+# Amend the last commit if you forgot -s
+git commit --amend -s --no-edit
+```
+
+For multi-commit PRs, **each commit** must contain `Signed-off-by`.
+
+### Automated check (required)
+
+Pull requests run the **[DCO / Signed-off-by](.github/workflows/dco-signoff.yml)** GitHub Actions workflow. The PR cannot be merged while this check fails.
+
+Repository admins should mark **DCO / Signed-off-by** as a **required status check** on protected branches (`dev`, `main`) under **Settings → Branches → Branch protection rules**.
+
+```bash
+# Re-sign all commits on your branch after rebasing onto latest base
+git rebase --signoff origin/dev
+```
+
+By signing off, you certify the DCO terms (original work or right to submit, permission to contribute under the project license, and good-faith belief in the above).
 
 ## Getting Started
 
@@ -80,55 +202,48 @@ Bloxchain-Protocol/
 - **EngineBlox Library**: Core state machine engine
 - **BaseStateMachine**: Foundation contract for all implementations
 - **SecureOwnable**: Multi-role security implementation
-- **DynamicRBAC**: Role-based access control system
+- **RuntimeRBAC**: Role-based access control system
 - **TypeScript SDK**: Client library for contract interaction
 
 ## Contributing Process
 
-### 1. Fork and Clone
+Read [Contribution Policy](#contribution-policy) and [Core Contracts](#core-contracts-contractscore) first. The steps below apply only to **in-scope** contributions (not `contracts/core/`).
+
+### 1. Discuss (recommended)
+
+Open a **GitHub issue** for non-trivial changes. For core-related **non-security** feedback, use an issue only — no core PR.
+
+### 2. Fork and clone
 
 ```bash
-# Fork the repository on GitHub
-# Clone your fork
 git clone https://github.com/YOUR_USERNAME/Bloxchain-Protocol.git
 cd Bloxchain-Protocol
-
-# Add upstream remote
 git remote add upstream https://github.com/PracticalParticle/Bloxchain-Protocol.git
 ```
 
-### 2. Create a Branch
+### 3. Branch, change, and sign commits
 
 ```bash
-# Create a feature branch
-git checkout -b feature/your-feature-name
-
-# Or for bug fixes
-git checkout -b fix/issue-description
+git checkout -b docs/your-topic
+# Make changes; every commit must use -s for DCO
+git commit -s -m "docs: describe your change"
 ```
 
-### 3. Make Changes
+Follow [Code Standards](#code-standards), [Testing Requirements](#testing-requirements), and [DCO](#developer-certificate-of-origin-dco).
 
-Follow our [Code Standards](#code-standards) and [Testing Requirements](#testing-requirements).
-
-### 4. Test Your Changes
+### 4. Test your changes
 
 ```bash
-# Run all tests
-npm run test:truffle
-npm run test:hardhat
-
-# Run specific test suites
-npm run test:sanity:secure-ownable
-npm run test:sanity:simple-vault
-
-# Check contract sizes
-npm run compile:truffle:size
+npm run compile:foundry
+npm run test:foundry
+npm run test:sanity-sdk:core   # when touching SDK integration paths
 ```
 
-### 5. Submit a Pull Request
+See `package.json` and [AGENTS.md](AGENTS.md) for the canonical command list.
 
-See [Pull Request Process](#pull-request-process) for detailed guidelines.
+### 5. Submit a pull request
+
+Use the [pull request template](.github/pull_request_template.md). See [Pull Request Process](#pull-request-process).
 
 ## Code Standards
 
@@ -315,50 +430,23 @@ Report security issues to: security@particlecs.com
 
 ## Pull Request Process
 
-### Before Submitting
+### Before submitting
 
-1. **Ensure all tests pass**
-2. **Update documentation** as needed
-3. **Follow code standards**
-4. **Check contract sizes**
-5. **Use conventional commit messages** (changelog is auto-generated)
+1. Confirm your change is **in scope** per [Contribution Policy](#contribution-policy) (no `contracts/core/` changes from external contributors).
+2. **DCO**: Every commit has `Signed-off-by` (`git commit -s`); the **DCO / Signed-off-by** CI check must pass.
+3. **Tests** pass for the areas you changed.
+4. **Documentation** updated where applicable (not hand-editing generated NatSpec output).
+5. **Conventional commits** for changelog automation (see [Commit Message Guidelines](#commit-message-guidelines)).
+6. Complete the [pull request template](.github/pull_request_template.md) checkboxes.
 
-### Pull Request Template
+### Review process
 
-```markdown
-## Description
-Brief description of changes
+1. Automated checks must pass (where enabled for the branch).
+2. Maintainer review; we may request changes or close out-of-scope PRs without merge.
+3. Smart contract changes **outside** `contracts/core/` may still require additional scrutiny.
+4. PRs touching `contracts/core/` from non-maintainers will be **closed** unless explicitly authorized in writing by Particle CS.
 
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] All tests pass
-- [ ] Contract size check passed
-
-## Security
-- [ ] Security review completed
-- [ ] No sensitive data exposed
-- [ ] Follows security best practices
-
-## Documentation
-- [ ] README updated
-- [ ] Code comments added
-- [ ] NatSpec documentation updated
-```
-
-### Review Process
-
-1. **Automated checks** must pass
-2. **Code review** by maintainers
-3. **Security review** for smart contract changes
-4. **Testing verification**
-5. **Documentation review**
+Use GitHub’s PR template at [`.github/pull_request_template.md`](.github/pull_request_template.md) — do not paste a duplicate template in the PR body.
 
 ## Issue Reporting
 
@@ -378,152 +466,104 @@ Use the feature request template and include:
 - **Alternatives considered**
 - **Additional context**
 
-### Issue Labels
-- `bug`: Something isn't working
+### Issue labels
+
+- `bug`: Something isn't working (non-security; for core security concerns use [SECURITY.md](SECURITY.md))
 - `enhancement`: New feature or request
 - `documentation`: Improvements to documentation
-- `good first issue`: Good for newcomers
-- `help wanted`: Extra attention needed
-- `security`: Security-related issues
 
-## Applications
+Do **not** use public issues for **undisclosed security vulnerabilities** — email **security@particlecs.com** per [SECURITY.md](SECURITY.md).
 
-### Contributing Applications
+For **core protocol** non-security topics, prefer a detailed issue over a pull request to `contracts/core/`.
 
-The `applications/` directory contains community and proprietary applications built on the Bloxchain Protocol framework. These applications are **NOT** part of the core framework and are **NOT** covered by the main repository's Mozilla Public License 2.0.
+## Examples and applications
 
-#### Fork-First Development Process
+### What lives in this repository
 
-We recommend a **fork-first development approach** for applications to ensure quality and long-term maintainability:
-
-##### Phase 1: Fork Development
-1. **Fork the repository** to your own GitHub account
-2. **Develop your application** in your fork
-3. **Maintain long-term** in your fork
-4. **Iterate and improve** based on real-world usage
-
-##### Phase 2: Maturity & Validation
-1. **Real-world usage** - Deploy and use in production
-2. **Community feedback** - Gather user feedback and bug reports
-3. **Security audits** - Complete professional audits
-4. **Documentation** - Comprehensive docs and examples
-5. **Testing** - Extensive test coverage and validation
-
-##### Phase 3: Official Integration
-1. **Only when truly ready** - Production-ready applications only
-2. **Submit PR** to official repository
-3. **Include audit reports** and documentation
-4. **Demonstrate real-world usage** and success
-
-#### Benefits of Fork-First Development
-
-- **Long-term maintenance** by application teams
-- **Independent development** cycles and timelines
-- **Quality control** - only mature, battle-tested applications
-- **Team autonomy** and ownership of their applications
-- **Professional workflow** suitable for enterprises
-- **Reduced risk** of premature inclusion in official repo
-
-#### Application Structure
+Example and sample code is under **`contracts/examples/`**, not a top-level `applications/` directory. Per [LICENSE](LICENSE), **`contracts/examples/` is excluded from MPL-2.0**; each file declares its own license (today’s in-repo examples use **`SPDX-License-Identifier: MIT`**).
 
 ```
-applications/
-├── community/          # Open source applications
-│   ├── defi-vault/     # MIT License
-│   ├── supply-chain/   # Apache 2.0 License
-│   └── governance-dao/ # GPL v3 License
-└── proprietary/        # Commercial/Enterprise applications
-    ├── corporate-treasury/  # Proprietary License
-    ├── enterprise-vault/    # Enterprise License
-    └── custom-solution/    # Custom License
+contracts/examples/
+├── applications/          # Sample apps (PayBlox, SimpleVault, SimpleRWA20, CopyBlox, …)
+├── templates/             # AccountBlox — full Account-pattern reference implementation
+├── integrations/          # Third-party integrations (e.g. GuardianSafe under Safe/)
+└── extra/                 # Small helpers (e.g. BasicERC20)
 ```
 
-#### License Requirements
+**Core protocol** (`contracts/core/`) remains MPL-2.0 and is maintained only by Particle CS — see [Core Contracts](#core-contracts-contractscore). Examples **import** core; they do not change it.
 
-Each application must include:
+Guides: [docs/examples-basic.md](docs/examples-basic.md), [docs/getting-started.md](docs/getting-started.md), [docs/account-pattern.md](docs/account-pattern.md).
 
-1. **LICENSE file** - Clear license terms
-2. **README.md** - Application documentation
-3. **Audit report** - Security audit (if applicable)
-4. **Documentation** - Usage instructions and examples
-5. **Tests** - Comprehensive test suite
-6. **Disclaimers** - Clear statements about unofficial support
+### Where to build your solution
 
-#### Audit Requirements
+| Goal | Recommended approach |
+|------|----------------------|
+| **Client / proprietary product** | **Separate repository** — depend on Bloxchain (submodule, Foundry `lib/`, or published package). License client-specific contracts under your commercial terms; comply with MPL for `contracts/core/` you distribute. |
+| **Open example for upstream** | Fork this repo or work on a branch; add under `contracts/examples/applications/<YourApp>/` and open a PR when mature. |
+| **Experiment locally** | Copy patterns from `contracts/examples/templates/AccountBlox.sol` and existing applications. |
 
-All applications must meet our [audit requirements](../applications/audit-requirements.md) to be included in this directory.
+### Fork-first development (recommended)
 
-#### Submission Process
+For products you maintain long-term (especially outside this repo):
 
-To add an application to the official repository:
+1. **Phase 1 — Build in your fork or private repo** on top of a **pinned** Bloxchain release; do not modify `contracts/core/` unless you accept MPL obligations for those files.
+2. **Phase 2 — Validate** — production or testnet usage, tests, documentation, and security review appropriate to your risk.
+3. **Phase 3 — Upstream example (optional)** — when production-ready, propose addition under `contracts/examples/` via PR (maintainer discretion).
 
-1. **Fork the repository** and develop your application
-2. **Complete Phase 1 & 2** (Fork Development & Maturity & Validation)
-3. **Choose appropriate subfolder** (`community/` or `proprietary/`)
-4. **Create application directory** with descriptive name
-5. **Include LICENSE file** with clear terms
-6. **Provide comprehensive documentation**
-7. **Include audit report** (if applicable)
-8. **Follow audit requirements**
-9. **Submit pull request** for review
+### Adding an example to this repository
 
-#### Development Setup
+1. Open a **GitHub issue** describing the example and maintenance plan.
+2. Add a directory under `contracts/examples/applications/<Name>/` (or `integrations/` / `templates/` if that fits better).
+3. Include:
+   - **`SPDX-License-Identifier`** on every Solidity file (match shipped examples: MIT unless maintainers agree otherwise).
+   - **NatSpec** and a short **README** in the app folder (or section in `docs/examples-basic.md`).
+   - **Tests** — Foundry tests under `test/foundry/` and/or a sanity runner under `scripts/sanity/` (see existing `simple-vault`, `copy-blox`, `simple-rwa20`).
+4. **DCO sign-off** on all commits (`git commit -s`).
+5. Submit a PR — examples are in scope for community contribution; **core is not**.
 
-For working with applications in your fork:
+Security-sensitive findings in examples still follow [SECURITY.md](SECURITY.md) for core vulnerabilities; example-only bugs can use public issues.
+
+### Development setup
+
+**In-repo example** (after forking and cloning):
 
 ```bash
-# Fork the repository first
 git clone https://github.com/YOUR_USERNAME/Bloxchain-Protocol.git
 cd Bloxchain-Protocol
+npm install
 
-# Create your application
-mkdir applications/community/your-app
-# or
-mkdir applications/proprietary/your-app
+# New application next to PayBlox, SimpleVault, etc.
+mkdir -p contracts/examples/applications/YourApp
+# Add YourApp.sol, *Definitions.sol if needed — import from contracts/core/
 
-# Develop your application
-# ... your development work ...
+npm run compile:foundry
+npm run test:foundry
+npm run test:sanity:examples      # JS sanity suites for select examples
+npm run test:sanity-sdk:examples  # SDK sanity against examples (when applicable)
 
-# Compile with Truffle
-npm run compile:truffle
-
-# Run tests
-npm run test:truffle
-
-# Commit and push to your fork
-git add .
-git commit -m "feat: add your-application v1.0"
-git push origin main
+git add contracts/examples/applications/YourApp
+git commit -s -m "feat(examples): add YourApp sample application"
+git push origin your-branch
 ```
 
-#### License Types
+Use **`contracts/examples/templates/AccountBlox.sol`** when you need the full **Account** pattern (SecureOwnable + RuntimeRBAC + GuardController). Use **`CopyBlox`** as a reference for factory + `initialize` in one transaction ([getting-started.md](docs/getting-started.md)).
 
-##### Community Applications (`community/`)
-- **MIT License** - Maximum flexibility, commercial use allowed
-- **Apache 2.0 License** - Patent protection, commercial friendly
-- **Mozilla Public License 2.0 (MPL 2.0)** - Weak copyleft, allows proprietary integration
-- **GPL v3 License** - Copyleft, requires open source derivatives
-- **LGPL v3 License** - Lesser copyleft, allows proprietary linking
-- **BSD 3-Clause License** - Permissive, minimal restrictions
-- **BSD 2-Clause License** - Simplified BSD, very permissive
-- **Eclipse Public License 2.0 (EPL 2.0)** - Weak copyleft, commercial friendly
-- **Common Development and Distribution License (CDDL)** - Weak copyleft, Sun Microsystems
+**Private / client repo** — same compile/test commands if you vendor this repository; keep Bloxchain core as a **read-only dependency** and put custom logic in your own paths.
 
-##### Proprietary Applications (`proprietary/`)
-- **Proprietary License** - Closed source, commercial use only
-- **Enterprise License** - Custom terms for enterprise use
-- **Dual License** - Open source + commercial options
-- **Custom License** - Tailored terms for specific needs
+### License notes
 
-#### Disclaimer
+- **Core** (`contracts/core/`, SDK, main tooling): **MPL-2.0**.
+- **Examples** (`contracts/examples/`): **excluded** from root MPL; follow the **SPDX license** on each file (in-repo samples are **MIT**).
+- **Proprietary client work** does not belong in this public tree unless explicitly agreed with maintainers; use a separate repo and your own license.
 
-**IMPORTANT**: Applications are:
-- ❌ **NOT officially supported** by Bloxchain Protocol
-- ❌ **NOT part of the core framework**
-- ❌ **NOT covered by Bloxchain Protocol's security audits**
-- ❌ **NOT subject to MPL-2.0 license terms**
-- ✅ **Used at your own risk**
-- ✅ **Licensed separately** from the core framework
+### Disclaimer
+
+**Examples and applications in `contracts/examples/`:**
+
+- Are **not** the audited core protocol and are **not** covered by the same security assurances as `contracts/core/`.
+- Are **not** officially supported unless called out in release notes or a support agreement.
+- Are provided **as-is** under their stated SPDX license (typically MIT for current samples).
+- **Core** remains MPL-2.0; combining examples with core in deployments is your responsibility (notices, source for MPL files you distribute, etc.).
 
 ## Community
 
@@ -684,7 +724,7 @@ Other commit types (docs, style, refactor, etc.) don't trigger version bumps but
 
 ## License
 
-By contributing to Bloxchain Protocol, you agree that your contributions will be licensed under the Mozilla Public License 2.0 (MPL-2.0).
+Inbound contribution terms are defined in [Intellectual Property and Licensing](#intellectual-property-and-licensing) and [DCO](#developer-certificate-of-origin-dco). The project license is [MPL-2.0](LICENSE).
 
 ## Contact
 
@@ -697,4 +737,4 @@ By contributing to Bloxchain Protocol, you agree that your contributions will be
 
 *Thank you for contributing to Bloxchain Protocol! Your contributions help make blockchain security more accessible and robust.*
 
-**Last Updated**: October 2025
+**Last Updated**: June 2026
