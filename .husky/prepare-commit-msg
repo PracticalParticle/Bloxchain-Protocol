@@ -1,0 +1,17 @@
+#!/bin/sh
+# Append DCO Signed-off-by when missing (same as git commit -s).
+COMMIT_MSG_FILE=$1
+
+NAME=$(git config --get user.name)
+EMAIL=$(git config --get user.email)
+
+if [ -z "$NAME" ] || [ -z "$EMAIL" ]; then
+  echo "husky (prepare-commit-msg): git user.name and user.email must be set for DCO sign-off." >&2
+  echo "  git config user.name \"Your Name\"" >&2
+  echo "  git config user.email \"you@example.com\"" >&2
+  exit 1
+fi
+
+if ! grep -qE '^Signed-off-by: ' "$COMMIT_MSG_FILE"; then
+  printf '\nSigned-off-by: %s <%s>\n' "$NAME" "$EMAIL" >> "$COMMIT_MSG_FILE"
+fi
