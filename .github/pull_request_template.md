@@ -6,7 +6,7 @@
 
 - [ ] This PR does **not** modify any file under `contracts/core/`
 - [ ] If this PR touches smart contracts, it is limited to `contracts/examples/` or other non-core paths
-- [ ] This is **not** a security vulnerability report (those go to [SECURITY.md](../SECURITY.md) → security@particlecs.com)
+- [ ] This is **not** a security vulnerability report (those go to [SECURITY.md](/SECURITY.md) → security@particlecs.com)
 
 ## Type of change
 
@@ -20,7 +20,7 @@
 ## Developer Certificate of Origin (DCO)
 
 - [ ] Every commit in this PR includes `Signed-off-by: Your Name <your.email@example.com>` (`git commit -s`) — required for the **DCO / Signed-off-by** CI check to pass
-- [ ] I have read [DCO](../DCO) and [CONTRIBUTING.md](../CONTRIBUTING.md) (IP, contribution policy, and core restrictions)
+- [ ] I have read [DCO](/DCO) and [CONTRIBUTING.md](/CONTRIBUTING.md) (IP, contribution policy, and core restrictions)
 
 ## Intellectual property
 

@@ -485,7 +485,7 @@ For **core protocol** non-security topics, prefer a detailed issue over a pull r
 
 Example and sample code is under **`contracts/examples/`**, not a top-level `applications/` directory. Per [LICENSE](LICENSE), **`contracts/examples/` is excluded from MPL-2.0**; each file declares its own license (today’s in-repo examples use **`SPDX-License-Identifier: MIT`**).
 
-```
+```text
 contracts/examples/
 ├── applications/          # Sample apps (PayBlox, SimpleVault, SimpleRWA20, CopyBlox, …)
 ├── templates/             # AccountBlox — full Account-pattern reference implementation
