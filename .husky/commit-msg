@@ -1,2 +1,10 @@
 #!/bin/sh
-npx --no -- commitlint --edit ${1}
+npx --no -- commitlint --edit "$1"
+
+# DCO: require Signed-off-by (prepare-commit-msg usually adds it; catches --no-verify gaps on msg file)
+if ! grep -qE '^Signed-off-by: ' "$1"; then
+  echo "husky (commit-msg): missing DCO Signed-off-by line." >&2
+  echo "  Use: git commit -s" >&2
+  echo "  Or set git user.name / user.email and commit again (see .husky/prepare-commit-msg)." >&2
+  exit 1
+fi

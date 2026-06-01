@@ -119,12 +119,15 @@ Use your **real name** and an email address you are comfortable associating with
 
 ### How to sign commits
 
+After `npm install`, **Husky** runs [`.husky/prepare-commit-msg`](.husky/prepare-commit-msg) and adds `Signed-off-by` automatically from `git user.name` / `git user.email` (same as `git commit -s`). [`.husky/commit-msg`](.husky/commit-msg) rejects commits that still lack a sign-off line.
+
 ```bash
-# Sign a single commit
+# Sign a single commit (optional if hooks are installed — sign-off is added for you)
 git commit -s -m "docs: clarify guard controller setup"
 
-# Amend the last commit if you forgot -s
+# Amend the last commit if you forgot sign-off before pushing
 git commit --amend -s --no-edit
+git push --force-with-lease
 ```
 
 For multi-commit PRs, **each commit** must contain `Signed-off-by`.
