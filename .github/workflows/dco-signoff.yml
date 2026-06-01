@@ -1,0 +1,62 @@
+# Validates Developer Certificate of Origin (Signed-off-by) on every commit in a PR.
+# Mark this check as required under branch protection: "DCO / Signed-off-by"
+name: DCO Sign-off
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: DCO / Signed-off-by
+    runs-on: ubuntu-latest
+    # Dependabot commits are not signed with -s unless configured separately.
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch pull request base
+        run: git fetch --no-tags origin ${{ github.event.pull_request.base.sha }}
+
+      - name: Verify Signed-off-by on all commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          commits=$(git rev-list --no-merges "${BASE_SHA}".."${HEAD_SHA}")
+          if [ -z "${commits}" ]; then
+            echo "No non-merge commits to verify."
+            exit 0
+          fi
+
+          failed=0
+          for commit in ${commits}; do
+            subject=$(git log -1 --format=%s "${commit}")
+            if ! git log -1 --format=%B "${commit}" | grep -qE '^Signed-off-by: '; then
+              echo "::error title=Missing DCO sign-off::${commit} — ${subject}"
+              failed=1
+            fi
+          done
+
+          if [ "${failed}" -ne 0 ]; then
+            echo ""
+            echo "Every commit in this pull request must include a DCO sign-off line, for example:"
+            echo "  Signed-off-by: Your Name <you@example.com>"
+            echo ""
+            echo "Fix the latest commit:  git commit --amend -s --no-edit"
+            echo "Fix all commits:        git rebase --signoff origin/${{ github.base_ref }}"
+            echo "See CONTRIBUTING.md and DCO in the repository root."
+            exit 1
+          fi
+
+          count=$(echo "${commits}" | wc -w | tr -d ' ')
+          echo "DCO sign-off verified on ${count} commit(s)."
