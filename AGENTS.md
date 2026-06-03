@@ -167,6 +167,7 @@ When you need more context:
   - `README.md`
   - `docs/index.md`
   - `docs/getting-started.md`
+  - `docs/VERSIONING.md` (npm vs on-chain protocol version)
   - `docs/account-pattern.md`
 - Look at:
   - Existing tests under `scripts/sanity-sdk`

@@ -1,6 +1,6 @@
 # Bloxchain Setup Guide
 
-> **Note:** This file is legacy-oriented. For current protocol + SDK setup, prefer **[docs/getting-started.md](./docs/getting-started.md)**, **`env.example`**, and **`npm run release:prepare`** before publishing `@bloxchain/contracts` / `@bloxchain/sdk`.
+> **Note:** This file is legacy-oriented. For current protocol + SDK setup, prefer **[docs/getting-started.md](./docs/getting-started.md)**, **[docs/VERSIONING.md](./docs/VERSIONING.md)** (npm vs on-chain version), **`env.example`**, and **`npm run release:prepare`** before publishing `@bloxchain/contracts` / `@bloxchain/sdk` on `main`.
 
 ## Quick Start
 
