@@ -79,5 +79,5 @@ console.log('Contract owner:', owner)
 
 ---
 
-**Version**: 1.0.0 stable line (see [sdk/typescript/package.json](../sdk/typescript/package.json) and [VERSIONING.md](./VERSIONING.md))  
+**Version**: 1.x stable line (see [sdk/typescript/package.json](../sdk/typescript/package.json) and [VERSIONING.md](./VERSIONING.md))  
 **License**: MPL-2.0

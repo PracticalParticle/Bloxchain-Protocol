@@ -617,12 +617,13 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) f
 
 ### Scope (recommended for publishable changes)
 
-Use a **scope** on every commit that affects a release-managed npm package so history and Release Please attribution stay clear. Allowed scopes (enforced by commitlint): `contracts`, `sdk`, `docs`, `ci`, `scripts`, `deps`, `release`.
+Use a **scope** on every commit that affects a release-managed npm package so history and Release Please attribution stay clear. Allowed scopes (enforced by commitlint): `contracts`, `sdk`, `examples`, `docs`, `ci`, `scripts`, `deps`, `release`.
 
 | Scope | Use when you change… | Release Please package |
 |-------|-------------------|-------------------------|
 | **`contracts`** | `contracts/`, `package/`, Foundry tests for core Solidity, ABI extract affecting the contracts npm artifact | `@bloxchain/contracts` → [package/CHANGELOG.md](./package/CHANGELOG.md) |
 | **`sdk`** | `sdk/typescript/` (sources, build, SDK tests) | `@bloxchain/sdk` → [sdk/typescript/CHANGELOG.md](./sdk/typescript/CHANGELOG.md) |
+| **`examples`** | `contracts/examples/` (sample apps, templates, example tests) | — (not an npm package; no Release Please bump alone) |
 | **`docs`** | `docs/`, root or package README (no semver bump alone) | — |
 | **`ci`** | `.github/workflows/`, CI config | — |
 | **`scripts`** | `scripts/` (release, deploy, sanity runners) | — |

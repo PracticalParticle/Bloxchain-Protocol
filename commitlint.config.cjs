@@ -32,7 +32,7 @@ module.exports = {
     'scope-enum': [
       2,
       'always',
-      ['contracts', 'sdk', 'docs', 'ci', 'scripts', 'deps', 'release'],
+      ['contracts', 'sdk', 'examples', 'docs', 'ci', 'scripts', 'deps', 'release'],
     ],
   },
 };

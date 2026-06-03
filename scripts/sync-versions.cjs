@@ -15,8 +15,7 @@ const engineBloxPath = path.join(rootDir, 'contracts', 'core', 'lib', 'EngineBlo
 const sdkEngineBloxPath = path.join(rootDir, 'sdk', 'typescript', 'lib', 'EngineBlox.tsx');
 
 const args = process.argv.slice(2);
-const syncProtocol = args.includes('--sync-protocol');
-const verifyOnly = args.includes('--verify') || args.length === 0 || (!syncProtocol && !args.includes('--help'));
+const ALLOWED_FLAGS = new Set(['--verify', '--sync-protocol', '--help', '-h']);
 
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`Usage:
@@ -27,6 +26,22 @@ npm versions are managed by release-please per package; root package.json is not
 `);
   process.exit(0);
 }
+
+const unknownFlags = args.filter((a) => a.startsWith('-') && !ALLOWED_FLAGS.has(a));
+if (unknownFlags.length > 0) {
+  console.error(`❌ Unknown option(s): ${unknownFlags.join(', ')}`);
+  console.error('   Use --help for usage.');
+  process.exit(1);
+}
+
+const positional = args.filter((a) => !a.startsWith('-'));
+if (positional.length > 0) {
+  console.error(`❌ Unexpected argument(s): ${positional.join(', ')}`);
+  console.error('   Use --help for usage.');
+  process.exit(1);
+}
+
+const syncProtocol = args.includes('--sync-protocol');
 
 const VERSION_SOL_REGEX = /string\s+public\s+constant\s+VERSION\s*=\s*"([^"]*)"/;
 const VERSION_TSX_REGEX = /static readonly VERSION: string = "([^"]*)"/;
@@ -97,9 +112,6 @@ function syncProtocolVersion() {
 if (syncProtocol) {
   syncProtocolVersion();
   verifyProtocolVersion();
-} else if (verifyOnly) {
-  verifyProtocolVersion();
 } else {
-  console.error('❌ Unknown options. Use --help for usage.');
-  process.exit(1);
+  verifyProtocolVersion();
 }
