@@ -9,7 +9,7 @@ This directory contains **generated** API documentation for the Bloxchain Protoc
 1. Update NatSpec in the relevant `.sol` files.
 2. From the repository root run: `npm run docgen`
 
-See [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md) for the full codebase documentation and updating process.
+See [TECHNICAL_OVERVIEW.md](../TECHNICAL_OVERVIEW.md) and [contracts/core/AUDIT.md](../contracts/core/AUDIT.md) for reviewer context; [audits/README.md](../audits/README.md) for published third-party reports.
 
 ## Structure
 
@@ -23,6 +23,6 @@ Each markdown file corresponds to a contract or library and lists its functions,
 ## Other Documentation
 
 - **Project overview, deployment, usage:** [README.md](../README.md)
-- **Documentation process and audit checklist:** [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md)
+- **Technical overview & core audit:** [TECHNICAL_OVERVIEW.md](../TECHNICAL_OVERVIEW.md) · [contracts/core/AUDIT.md](../contracts/core/AUDIT.md) · [audits/](../audits/README.md)
 - **SDK usage and architecture:** [Documentation README](../README.md) · [Index](../index.md)
 - **Contributing and code standards:** [CONTRIBUTING.md](../CONTRIBUTING.md)

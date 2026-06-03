@@ -58,7 +58,7 @@ Maintainers merge contributions at their discretion. Opening a PR does not creat
 
 ## Core Contracts (`contracts/core/`)
 
-The core protocol library under `contracts/core/` is the **audited source of truth** for Bloxchain behavior. It has undergone **external security review**; changes affect deployed security assumptions and require controlled release management.
+The core protocol library under `contracts/core/` is the **audited source of truth** for Bloxchain behavior. It has been independently audited by **Nethermind** (report [NM_0828](audits/nethermind/)); see **[contracts/core/AUDIT.md](contracts/core/AUDIT.md)** for scope, the published report, and change policy. Changes affect deployed security assumptions and require controlled release management.
 
 ### Who may change core
 
@@ -391,7 +391,7 @@ npm run test:coverage
 
 ## Documentation
 
-**Source of truth:** Solidity contracts are the source of truth for protocol API and behavior. The `docs/` directory is generated from contract NatSpec; do not edit those generated files by hand. For the full documentation map, updating process, and audit checklist, see **[CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md)**.
+**Source of truth:** Solidity contracts are the source of truth for protocol API and behavior. The `docs/` directory is generated from contract NatSpec; do not edit those generated files by hand. For reviewer context and audit scope, see **[TECHNICAL_OVERVIEW.md](TECHNICAL_OVERVIEW.md)** and **[contracts/core/AUDIT.md](contracts/core/AUDIT.md)**; published third-party reports live under **[audits/](audits/README.md)**.
 
 ### Contract Documentation
 - **NatSpec comments** for all public functions

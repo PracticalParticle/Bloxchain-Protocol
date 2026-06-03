@@ -7,7 +7,7 @@
 
 A comprehensive TypeScript SDK for interacting with the Bloxchain Protocol smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
 
-The SDK mirrors the audited core protocol and is intended for production integrations. Pin an exact package version and review release notes before upgrading.
+The SDK mirrors the Nethermind-audited core protocol (`contracts/core/`). Pre-mainnet today; mainnet coming soon. Pin an exact package version and review release notes before upgrading.
 
 ## Requirements
 
@@ -383,7 +383,7 @@ This package follows [Semantic Versioning](https://semver.org/). Stable releases
 ## Security
 
 - **Vulnerability reporting**: Do not open public GitHub issues for security vulnerabilities. See the [Security Policy](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/SECURITY.md) for reporting instructions (e.g. security@particlecs.com).
-- **Audit status**: The underlying core protocol smart contracts have completed an independent security audit. Follow your own deployment, upgrade, and operational review processes before production use.
+- **Audit status**: The SDK mirrors the audited **core** protocol (`contracts/core/`), not a separate Solidity audit. Nethermind report: [audits/nethermind](https://github.com/PracticalParticle/Bloxchain-Protocol/tree/main/audits/nethermind) ([PDF](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)). Pre-mainnet; mainnet coming soon. Pin package versions and follow your own operational review before production use.
 
 ## Support and links
 

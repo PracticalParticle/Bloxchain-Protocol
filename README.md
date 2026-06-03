@@ -7,7 +7,7 @@
 [![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
 [![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
 
-> **Security audit status:** A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet.
+> **Core audit:** [`contracts/core/`](./contracts/core/) independently audited by [Nethermind](./audits/nethermind/). Report: [`Nethermind-Bloxchain-Core-NM_0828.pdf`](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [details](./contracts/core/AUDIT.md). **Network:** pre-mainnet today; mainnet deployment coming soon. Security: [SECURITY.md](./SECURITY.md).
 
 ## System overview
 
@@ -228,7 +228,7 @@ npm run docgen                  # docs
 
 ## 📚 Documentation
 
-- **[Codebase documentation process & audit checklist](CODEBASE_DOCUMENTATION.md)** – Source of truth, how to update docs, audit-ready checklist
+- **[Core audit & change policy](contracts/core/AUDIT.md)** · **[Nethermind report](audits/nethermind/)** · **[Technical overview](TECHNICAL_OVERVIEW.md)** – Source of truth, reviewer context, published audit
 - **[Versioning & releases](docs/VERSIONING.md)** – npm packages, on-chain `EngineBlox.VERSION`, Release Please
 - [Protocol Architecture](./docs/bloxchain-architecture.md) · [State Machine](./docs/state-machine-engine.md) · [Getting Started](./docs/getting-started.md) · [API Reference](./docs/api-reference.md) · [SecureOwnable](./docs/secure-ownable.md) · [RuntimeRBAC](./docs/runtime-rbac.md) · [Best Practices](./docs/best-practices.md) · [Examples](./docs/examples-basic.md)
 - **Contract API (generated):** [docs/](docs/) – generated from Solidity NatSpec via `npm run docgen`
