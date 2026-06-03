@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// release-prepare.cjs — validate before release, or publish after prepare.
-//   npm run release:prepare   — sync, ABI, package layout, Foundry, SDK gate (no npm publish)
+// release-prepare.cjs — npm publish pipeline (three npm scripts):
+//   npm run release:prepare   — protocol VERSION verify, ABI, package layout, tests, SDK gate (no publish)
 //   npm run publish:contracts — publish @bloxchain/contracts (run release:prepare first)
 //   npm run publish:sdk       — publish @bloxchain/sdk (run release:prepare first)
 // Publish re-runs prepublish steps, verifies artifacts, then npm publish --ignore-scripts.
@@ -21,7 +21,7 @@ const SKIP_OPTIONAL_TESTS = process.env.SKIP_TESTS === '1';
 const RUN_SANITY_SDK_TESTS = process.env.RUN_SANITY_SDK_TESTS === '1';
 const PREPARE_CONTRACTS_ONLY = process.env.PREPARE_CONTRACTS_ONLY === '1';
 const DEBUG = process.env.DEBUG === '1';
-const NPM_PUBLISH_TAG = 'alpha.24';
+const NPM_PUBLISH_TAG = process.env.NPM_PUBLISH_TAG || 'latest';
 
 const colors = {
   reset: '\x1b[0m',
@@ -112,15 +112,10 @@ function execInPackage(dir, command, options = {}) {
   }
 }
 
-function syncVersions() {
-  logStep('📋', 'Step 1: Syncing versions...');
-  exec('npm run release:sync-versions');
-  const rootPkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-  const contractsPkg = JSON.parse(fs.readFileSync(path.join(contractsPackageDir, 'package.json'), 'utf8'));
-  if (rootPkg.version !== contractsPkg.version) {
-    fail(`Version mismatch: root ${rootPkg.version} vs package ${contractsPkg.version}`);
-  }
-  logSuccess('Versions synced and verified');
+function verifyProtocolVersion() {
+  logStep('📋', 'Step 1: Verifying protocol version mirror...');
+  exec('node scripts/sync-versions.cjs --verify');
+  logSuccess('EngineBlox.VERSION matches between Solidity and SDK');
 }
 
 function extractAbi() {
@@ -401,7 +396,7 @@ async function runReleasePrepare() {
   log('\n' + '='.repeat(60), 'bright');
   log('📦 Release Prepare', 'bright');
   log('='.repeat(60), 'bright');
-  syncVersions();
+  verifyProtocolVersion();
   extractAbi();
   prepareContractsPackage();
   runTests();
@@ -415,7 +410,7 @@ async function runPublishContracts() {
   log('📦 Publish @bloxchain/contracts', 'bright');
   log('='.repeat(60), 'bright');
   assertReleasePrepared({ contracts: true });
-  syncVersions();
+  verifyProtocolVersion();
   installPublishDeps('contracts');
   publishContractsPackage();
 }
@@ -425,7 +420,7 @@ async function runPublishSdk() {
   log('📦 Publish @bloxchain/sdk', 'bright');
   log('='.repeat(60), 'bright');
   assertReleasePrepared({ sdk: true });
-  syncVersions();
+  verifyProtocolVersion();
   installPublishDeps('sdk');
   await publishSdkPackage();
 }

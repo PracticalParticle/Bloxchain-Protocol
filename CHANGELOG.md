@@ -1,78 +1,20 @@
-# Changelog
+# Repository changelog (monorepo)
 
-All notable changes to this project will be documented in this file.
+This file is **not** an npm product changelog. Release history for published packages:
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- [@bloxchain/contracts](./package/CHANGELOG.md)
+- [@bloxchain/sdk](./sdk/typescript/CHANGELOG.md)
 
-## [Unreleased]
+See [docs/VERSIONING.md](./docs/VERSIONING.md) for the full versioning model.
 
-### Added
-- Initial changelog automation with Release Please
-- Automated release workflow via GitHub Actions
+## Experimental alpha line (not documented here)
 
-### Changed
-- Version synchronization across monorepo packages
+Prior npm publishes used `1.0.0-alpha.N` with dist-tag `alpha.24` for development and testing only. That line is **not** listed in the per-package changelogs.
 
-## [1.0.0] - 2025-01-26
+## Stable line
 
-### Added
-- Initial release of Bloxchain Protocol
-- Core state machine engine (EngineBlox)
-- Base state machine contract (BaseStateMachine)
-- Secure ownership implementation (SecureOwnable)
-- Dynamic RBAC system (RuntimeRBAC)
-- Guard controller for execution protection
-- TypeScript SDK for contract interaction
-- Comprehensive test suite with fuzzing and invariant testing
-- Documentation and examples
+The first documented stable releases are **`1.0.0`** on dist-tag **`latest`** for both packages. On-chain `EngineBlox.VERSION` remains **`"1.0.0"`** for the v1 protocol line until a deliberate protocol version change.
 
-### Security
-- Multi-phase security operations with time-locks
-- Reentrancy protection patterns
-- Input validation with custom errors
-- Comprehensive security testing
+## Protocol version (`EngineBlox.VERSION`)
 
----
-
-## Release Types
-
-- **Major** (x.0.0): Breaking changes that require migration
-- **Minor** (x.y.0): New features, backward compatible
-- **Patch** (x.y.z): Bug fixes, backward compatible
-
-## Commit Message Format
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation via [Release Please](https://github.com/googleapis/release-please).
-
-**Version Bumps** (Release Please default behavior for `node` release type):
-- `feat:` New features **[Minor]** - Triggers version bump
-- `feat!:` Breaking changes **[Major]** - Triggers version bump
-- `fix:` Bug fixes **[Patch]** - Triggers version bump
-- `BREAKING CHANGE:` in commit footer **[Major]** - Triggers version bump
-
-**No Version Bump** (appear in changelog but don't trigger releases):
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting, etc.)
-- `refactor:` Code refactoring
-- `perf:` Performance improvements
-- `test:` Test additions or changes
-- `chore:` Maintenance tasks
-- `ci:` CI/CD changes
-- `build:` Build system changes
-- `revert:` Revert previous commit
-
-**Breaking Changes:**
-
-Breaking changes can be indicated in two ways:
-1. Use `!` after the type: `feat!: change API signature`
-2. Include `BREAKING CHANGE:` in the commit footer:
-   ```text
-   feat(contracts): update interface
-   
-   BREAKING CHANGE: The transferOwnership function now requires an additional parameter
-   ```
-
-**Note:** This follows Release Please's default configuration for the `node` release type, which implements the [Conventional Commits](https://www.conventionalcommits.org/) specification. Releases are only created when there are commits that trigger version bumps (`feat`, `fix`, or breaking changes). Other commit types are included in the changelog but don't trigger new releases on their own.
-
-Example: `feat(contracts): add PayBlox contract implementation`
+On-chain / EIP-712 protocol version bumps are **manual** and rare. Document them here when they occur (in addition to updating `contracts/core/lib/EngineBlox.sol` and `sdk/typescript/lib/EngineBlox.tsx`).

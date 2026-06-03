@@ -13,13 +13,13 @@ const destAbiDir = path.join(contractsDir, 'abi');
 
 console.log('📦 Preparing @bloxchain/contracts for publishing...\n');
 
-// Step 0: Sync versions from root
-console.log('📋 Step 0: Syncing versions from root...');
+// Step 0: Verify protocol VERSION mirror (npm versions are per-package / release-please)
+console.log('📋 Step 0: Verifying protocol version mirror...');
 try {
-  execSync('npm run release:sync-versions', { cwd: rootDir, stdio: 'inherit' });
-  console.log('✅ Versions synced\n');
+  execSync('node scripts/sync-versions.cjs --verify', { cwd: rootDir, stdio: 'inherit' });
+  console.log('✅ Protocol VERSION verified\n');
 } catch (error) {
-  console.error('❌ Failed to sync versions:', error.message);
+  console.error('❌ Protocol version verification failed:', error.message);
   process.exit(1);
 }
 

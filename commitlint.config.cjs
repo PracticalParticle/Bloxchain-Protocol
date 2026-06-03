@@ -28,5 +28,11 @@ module.exports = {
     'body-max-line-length': [2, 'always', 1000],
     'body-leading-blank': [2, 'always'],
     'footer-leading-blank': [2, 'always'],
+    // Scopes for Release Please / per-package changelogs
+    'scope-enum': [
+      2,
+      'always',
+      ['contracts', 'sdk', 'docs', 'ci', 'scripts', 'deps', 'release'],
+    ],
   },
 };

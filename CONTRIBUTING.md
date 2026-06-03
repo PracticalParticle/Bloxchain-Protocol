@@ -615,14 +615,29 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) f
 - **`build`**: Build system or external dependencies changes
 - **`revert`**: Revert a previous commit
 
-### Scope (Optional)
+### Scope (recommended for publishable changes)
 
-The scope should be the name of the package or area affected:
-- `contracts`: Smart contract changes
-- `sdk`: TypeScript SDK changes
-- `docs`: Documentation changes
-- `ci`: CI/CD changes
-- `scripts`: Script changes
+Use a **scope** on every commit that affects a release-managed npm package so history and Release Please attribution stay clear. Allowed scopes (enforced by commitlint): `contracts`, `sdk`, `docs`, `ci`, `scripts`, `deps`, `release`.
+
+| Scope | Use when you change… | Release Please package |
+|-------|-------------------|-------------------------|
+| **`contracts`** | `contracts/`, `package/`, Foundry tests for core Solidity, ABI extract affecting the contracts npm artifact | `@bloxchain/contracts` → [package/CHANGELOG.md](./package/CHANGELOG.md) |
+| **`sdk`** | `sdk/typescript/` (sources, build, SDK tests) | `@bloxchain/sdk` → [sdk/typescript/CHANGELOG.md](./sdk/typescript/CHANGELOG.md) |
+| **`docs`** | `docs/`, root or package README (no semver bump alone) | — |
+| **`ci`** | `.github/workflows/`, CI config | — |
+| **`scripts`** | `scripts/` (release, deploy, sanity runners) | — |
+| **`deps`** | Dependency version bumps at root or in packages | Usually no release unless combined with `feat`/`fix` on a package path |
+| **`release`** | Version manifests, release-please config, changelog policy | — |
+
+Release Please also uses **changed file paths**. If a single commit touches both `package/` and `sdk/typescript/`, both packages may receive changelog entries when their release PRs are cut. Prefer **focused commits** per package when possible.
+
+**Avoid** unscoped `feat:` / `fix:` on publishable paths — use `feat(contracts):` or `feat(sdk):` instead.
+
+### Release attribution (Release Please)
+
+- **Independent semver:** `@bloxchain/contracts` and `@bloxchain/sdk` version separately within major `1` ([docs/VERSIONING.md](./docs/VERSIONING.md)).
+- **On-chain protocol** `EngineBlox.VERSION` is **not** bumped by npm patch releases; it is updated only for deliberate protocol releases.
+- **Changelogs:** npm consumers should read package changelogs, not the repo root [CHANGELOG.md](./CHANGELOG.md).
 
 ### Examples
 
@@ -663,7 +678,7 @@ BREAKING CHANGE: The transferOwnership function now requires an additional param
 
 ### Benefits
 
-- **Automatic changelog generation**: Your commits automatically populate the CHANGELOG.md
+- **Automatic changelog generation**: Release Please updates [package/CHANGELOG.md](./package/CHANGELOG.md) and [sdk/typescript/CHANGELOG.md](./sdk/typescript/CHANGELOG.md) per publishable package (use scopes like `feat(contracts):` or `feat(sdk):`)
 - **Semantic versioning**: Version bumps are determined by commit types
 - **Better git history**: Clear, searchable commit history
 - **Automated releases**: Release PRs are created automatically
@@ -683,7 +698,7 @@ npm run test:truffle
 
 # Commit changes
 git add .
-git commit -m "feat: add new feature"
+git commit -m "feat(sdk): add new feature"
 
 # Push and create PR
 git push origin feature/new-feature
@@ -691,18 +706,20 @@ git push origin feature/new-feature
 
 ### Release Process
 
-Releases are **automated** using Release Please. The process works as follows:
+Releases use **Release Please** on `main`, then **human npm publish** after the release line is on `main`.
 
-1. **Merge PRs to main**: All PRs merged to `main` are analyzed for conventional commits
-2. **Automatic release PR**: Release Please creates a release PR with:
-   - Updated version numbers (semantic versioning based on commit types)
-   - Generated changelog entries
-   - All package versions synchronized
-3. **Review and merge**: Review the release PR, ensure changelog is accurate
-4. **Automatic tag and release**: When the release PR is merged:
-   - A git tag is created
-   - GitHub release is created
-   - Package versions are synced across monorepo
+1. **Merge feature/fix PRs to `main`** using scoped conventional commits (`feat(contracts):`, `fix(sdk):`, etc.).
+2. **Release Please** opens one or two release PRs (`@bloxchain/contracts`, `@bloxchain/sdk`) with updated versions and per-package changelogs.
+3. **Review and merge** the release PR(s) on `main`. Tags/GitHub releases are created per package.
+4. **Publish to npm** (maintainers, after `main` contains the release versions) — three commands only:
+
+   ```bash
+   npm run release:prepare      # gate: protocol VERSION, build, tests
+   npm run publish:contracts    # @bloxchain/contracts @ latest
+   npm run publish:sdk          # @bloxchain/sdk @ latest
+   ```
+
+   The first stable **`1.0.0`** npm publish happens **after** the versioning baseline PR is on `main`, not from long-lived feature branches. See [docs/VERSIONING.md](./docs/VERSIONING.md#publishing-stable-100-to-npm).
 
 #### Manual Release (if needed)
 
@@ -713,8 +730,9 @@ If you need to create a release manually:
 git checkout main
 git pull
 
-# Run release-please locally (requires token)
-npx release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol --token=YOUR_TOKEN
+# Preview Release Please release PR locally (requires token)
+npm run release:please-pr
+# or: npx release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol --token=YOUR_TOKEN
 ```
 
 #### Version Bumping Rules

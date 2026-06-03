@@ -1,6 +1,7 @@
 {
   "name": "Bloxchain",
-  "version": "1.0.0-alpha.24",
+  "version": "0.0.0",
+  "private": true,
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "type": "module",
   "repository": {
@@ -41,16 +42,15 @@
     "test:e2e": "npm run compile:foundry:abi && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
     "generate:sanity-env": "npx tsx scripts/generate-remote-evm-env.ts",
-    "release:sync-versions": "node scripts/sync-versions.cjs",
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
     "release:prepare": "node scripts/release-prepare.cjs",
     "publish:contracts": "node scripts/release-prepare.cjs --publish-contracts",
     "publish:sdk": "node scripts/release-prepare.cjs --publish-sdk",
+    "release:please-pr": "release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol",
     "docgen": "npm run compile:hardhat && cd docgen && npm run docgen",
     "docgen:install": "cd docgen && npm install",
-    "commitlint": "commitlint --edit",
-    "release:check": "release-please release-pr --repo-url=github.com/PracticalParticle/Bloxchain-Protocol"
+    "commitlint": "commitlint --edit"
   },
   "keywords": [
     "solidity",
