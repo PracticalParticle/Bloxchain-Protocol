@@ -131,7 +131,7 @@ Two workflow patterns share the same **PENDING → EXECUTING → terminal** prog
 
 ## 🚀 Quick Start
 
-**Prerequisites:** Node.js **>=18.20.5** (required for published `@bloxchain/sdk` ESM JSON import attributes; enforced via `engines` + `.npmrc` `engine-strict=true`)
+**Prerequisites:** Node.js **>=22.12.0** for this monorepo (dev tooling, CI, `npm ci`; enforced via root `engines` + `.npmrc` `engine-strict=true`). Published **`@bloxchain/sdk`** consumers still need **>=18.20.5** at runtime (see `sdk/typescript/package.json`).
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
@@ -213,7 +213,7 @@ npm run test:foundry:fuzz
 
 ## 🔧 Development Tools
 
-Requires Node.js **>=18.20.5** (maintenance/security floor for SDK ESM; see `engines` in `package.json`).
+Requires Node.js **>=22.12.0** for repo development (see root `package.json` `engines`). SDK runtime floor for npm consumers remains **>=18.20.5** in `sdk/typescript/package.json`.
 
 ```bash
 npm run compile:foundry          # compile; add :size for 24KB check

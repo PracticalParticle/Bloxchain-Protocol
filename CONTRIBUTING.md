@@ -151,7 +151,7 @@ By signing off, you certify the DCO terms (original work or right to submit, per
 
 Before contributing, ensure you have:
 
-- **Node.js** (v16 or higher)
+- **Node.js** **>=22.12.0** for monorepo development (root `engines`; matches `@commitlint/cli` 21.x). SDK **consumers** need **>=18.20.5** at runtime per `sdk/typescript/package.json`.
 - **npm** (v8 or higher)
 - **Truffle** (v5.15 or higher)
 - **Git** (latest version)

@@ -19,11 +19,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js (must satisfy engines.node >=18.20.5 with engine-strict)
+      # Step 2: Setup Node.js (must satisfy root engines.node with engine-strict)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       # Step 3: Install dependencies
