@@ -6,6 +6,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 
 ### **🚀 Getting Started**
 - [**Main Documentation**](./README.md) – Overview and navigation
+- [**Versioning & releases**](./VERSIONING.md) – npm packages, protocol version, Release Please
 - [**Getting Started**](./getting-started.md) – Quick setup and basic usage
 - [**API Reference**](./api-reference.md) – Core SDK classes and method reference
 
@@ -34,6 +35,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 ## 🎯 **Quick Navigation (By Use Case)**
 
 **I want to…**
+- **Understand npm vs on-chain version** → [Versioning & releases](./VERSIONING.md)
 - **Get started quickly** → [Getting Started](./getting-started.md)
 - **Deploy or clone an Account / initializer contract safely** → [Deployment and initialization](./getting-started.md#deployment-and-initialization)
 - **Understand the on-chain architecture** → [Bloxchain Architecture](./bloxchain-architecture.md)

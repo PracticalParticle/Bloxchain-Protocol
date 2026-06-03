@@ -14,7 +14,7 @@ The SDK mirrors the audited core protocol and is intended for production integra
 - **Node.js**: >= 18.0.0
 - **TypeScript**: 6.x (recommended)
 - **Peer dependency**: `viem` ^2.49.4 (required; align with SDK dependency, currently `2.50.x`)
-- **Optional peer**: `@bloxchain/contracts` ^1.0.0-alpha (for Solidity/ABI alignment when building apps that use both)
+- **Optional peer**: `@bloxchain/contracts` ^1.0.0 (for Solidity/ABI alignment when building apps that use both)
 
 ## 🏗️ **Unique Architecture**
 
@@ -378,7 +378,7 @@ try {
 
 ## Versioning and stability
 
-This package follows [Semantic Versioning](https://semver.org/). Published versions use the **alpha** channel (`1.0.0-alpha.x`) while we finalize the 1.0.0 release line. Pin the exact version in production and review release notes before upgrading.
+This package follows [Semantic Versioning](https://semver.org/). Stable releases publish to npm **`latest`**; see [CHANGELOG.md](./CHANGELOG.md). Pin the exact version in production and review release notes before upgrading.
 
 ## Security
 

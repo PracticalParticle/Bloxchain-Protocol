@@ -229,6 +229,7 @@ npm run docgen                  # docs
 ## 📚 Documentation
 
 - **[Codebase documentation process & audit checklist](CODEBASE_DOCUMENTATION.md)** – Source of truth, how to update docs, audit-ready checklist
+- **[Versioning & releases](docs/VERSIONING.md)** – npm packages, on-chain `EngineBlox.VERSION`, Release Please
 - [Protocol Architecture](./docs/bloxchain-architecture.md) · [State Machine](./docs/state-machine-engine.md) · [Getting Started](./docs/getting-started.md) · [API Reference](./docs/api-reference.md) · [SecureOwnable](./docs/secure-ownable.md) · [RuntimeRBAC](./docs/runtime-rbac.md) · [Best Practices](./docs/best-practices.md) · [Examples](./docs/examples-basic.md)
 - **Contract API (generated):** [docs/](docs/) – generated from Solidity NatSpec via `npm run docgen`
 

@@ -62,7 +62,7 @@ Install them in your project if your tooling does not resolve transitive depende
 
 ## Versioning and stability
 
-This package follows [Semantic Versioning](https://semver.org/). Published versions use the **alpha** channel (`1.0.0-alpha.x`) while we finalize the 1.0.0 release line. Pin the exact version in production and review release notes before upgrading.
+This package follows [Semantic Versioning](https://semver.org/). Stable releases publish to npm **`latest`**; see [CHANGELOG.md](./CHANGELOG.md). Pin the exact version in production and review release notes before upgrading.
 
 ## Security
 

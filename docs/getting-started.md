@@ -11,6 +11,8 @@ For a deeper explanation of the pattern itself, see the [Account Pattern doc](./
 - npm or yarn
 - Basic knowledge of Ethereum and smart contracts
 
+Pin **`@bloxchain/sdk`** and optionally **`@bloxchain/contracts`** to exact versions in production. See [Versioning & releases](./VERSIONING.md) for how npm semver relates to on-chain `EngineBlox.VERSION`.
+
 ## 🚀 **Installation**
 
 ```bash

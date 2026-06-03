@@ -5,6 +5,7 @@ Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usa
 ## 📚 **Documentation Structure**
 
 ### **Core SDK**
+- [**Versioning & releases**](./VERSIONING.md) – npm `@bloxchain/contracts` / `@bloxchain/sdk`, on-chain protocol version, publishing
 - [**Getting Started**](./getting-started.md) – Quick setup, basic usage, and [deployment / initializer checklist](./getting-started.md#deployment-and-initialization) (upgradeable Account contracts)
 - [**API Reference**](./api-reference.md) – Core SDK classes and types
 - [**SecureOwnable**](./secure-ownable.md) – SecureOwnable contract integration
@@ -78,5 +79,5 @@ console.log('Contract owner:', owner)
 
 ---
 
-**Version**: 1.0.0-alpha.16 (see [package.json](../sdk/typescript/package.json))  
+**Version**: 1.x stable line (see [sdk/typescript/package.json](../sdk/typescript/package.json) and [VERSIONING.md](./VERSIONING.md))  
 **License**: MPL-2.0
