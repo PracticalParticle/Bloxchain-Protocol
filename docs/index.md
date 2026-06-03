@@ -74,7 +74,7 @@ Legend: **✅ Up to date** – in sync with current `contracts/core` and `sdk/ty
 
 - [Bloxchain Protocol README](../README.md) – Protocol overview and repo‑level docs  
 - [Contract API (generated)](./core/) – Solidity NatSpec output (`npm run docgen`)  
-- [Codebase documentation process](../CODEBASE_DOCUMENTATION.md)
+- [Technical overview](../TECHNICAL_OVERVIEW.md) · [Core audit](../contracts/core/AUDIT.md) · [Audits](../audits/README.md)
 
 ## 📝 **Contributing to Documentation**
 

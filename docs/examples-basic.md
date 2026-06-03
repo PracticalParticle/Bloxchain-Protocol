@@ -381,4 +381,4 @@ const txHash = await manager.transferOwnership()
 
 ---
 
-**Next:** [runtime-rbac.md](./runtime-rbac.md) · [guard-controller.md](./guard-controller.md) · [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md)
+**Next:** [runtime-rbac.md](./runtime-rbac.md) · [guard-controller.md](./guard-controller.md) · [TECHNICAL_OVERVIEW.md](../TECHNICAL_OVERVIEW.md) · [contracts/core/AUDIT.md](../contracts/core/AUDIT.md)
