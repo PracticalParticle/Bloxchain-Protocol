@@ -60,7 +60,7 @@
   "author": "Particle Crypto Security",
   "license": "MPL-2.0",
   "engines": {
-    "node": ">=18.20.5",
+    "node": ">=22.12.0",
     "npm": ">=10.0.0"
   },
   "dependencies": {

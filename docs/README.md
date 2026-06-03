@@ -1,6 +1,6 @@
 # Bloxchain TypeScript SDK Documentation
 
-Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core` and [CODEBASE_DOCUMENTATION.md](../CODEBASE_DOCUMENTATION.md) for the documentation process.**
+Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usage, from basic setup to advanced workflows. **Contract behavior and API are defined by the Solidity source; see `contracts/core`, [AUDIT.md](../contracts/core/AUDIT.md), and [TECHNICAL_OVERVIEW.md](../TECHNICAL_OVERVIEW.md).**
 
 ## 📚 **Documentation Structure**
 
@@ -70,12 +70,13 @@ console.log('Contract owner:', owner)
 
 - [Bloxchain Protocol README](../README.md)
 - [Contract API (generated)](docs/_auto_generated_docs_/core/) – from Solidity NatSpec via `npm run docgen`
-- [Codebase documentation process](../CODEBASE_DOCUMENTATION.md)
+- [Technical overview](../TECHNICAL_OVERVIEW.md) · [Core audit](../contracts/core/AUDIT.md) · [Audits index](../audits/README.md)
 
 ## 📞 **Support**
 
 - **Issues:** [GitHub Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues)
-- **Security:** [Report security issues](mailto:security@particlecrypto.com)
+- **Security:** [SECURITY.md](../SECURITY.md) · [Core audit](../contracts/core/AUDIT.md) · [Nethermind report](../audits/nethermind/)
+- **Vulnerabilities:** [security@particlecs.com](mailto:security@particlecs.com) (do not use public issues)
 
 ---
 

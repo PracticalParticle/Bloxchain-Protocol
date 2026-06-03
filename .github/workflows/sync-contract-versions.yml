@@ -26,11 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+          node-version: '22'
 
       - name: Verify EngineBlox.VERSION mirror
         run: node scripts/sync-versions.cjs --verify

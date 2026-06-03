@@ -34,6 +34,10 @@ This document provides:
 
 **For AI auditors**: Use this as the primary context document. Cross-reference each invariant and restriction with the Codex (section and vector ID) to confirm test coverage and protection status.
 
+### Published third-party audit (core)
+
+`contracts/core/` was independently audited by **Nethermind** (report NM_0828). Index: [audits/nethermind/README.md](audits/nethermind/README.md) · PDF: [Nethermind-Bloxchain-Core-NM_0828.pdf](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · Policy: [contracts/core/AUDIT.md](contracts/core/AUDIT.md). Record the audited git commit from the report on the engagement README; changes after that commit are outside the report until re-audit.
+
 ### Quick Reference: File → Primary Responsibility
 
 | File | Responsibility |
@@ -265,6 +269,8 @@ The file **test/foundry/docs/ATTACK_VECTORS_CODEX.md** is the authoritative list
 
 Use **ATTACK_VECTORS_CODEX.md** for the full list of vector IDs, locations, and related tests.
 
+For the formal third-party report, see **[audits/nethermind/](audits/nethermind/README.md)** (complements this document; does not replace it).
+
 ---
 
-*This technical overview is the single source of context for the Bloxchain core protocol. For threat coverage and test references, always cross-check with the Attack Vectors Codex.*
+*This technical overview is the single source of context for the Bloxchain core protocol. For threat coverage and test references, cross-check with the Attack Vectors Codex; for Nethermind engagement scope and report, see [audits/](audits/README.md).*

@@ -2,16 +2,18 @@
 
 ## Supported Versions
 
-**⚠️ IMPORTANT: Bloxchain Protocol is currently in testing phase and not yet live on mainnet.**
+**⚠️ IMPORTANT: Bloxchain Protocol is not yet live on Ethereum mainnet.** Testnet validation continues; **mainnet deployment is planned soon.**
 
 We actively maintain security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 1.0.x   | :white_check_mark: | Testing phase (third-party audit in progress) |
+| 1.0.x   | :white_check_mark: | Pre-mainnet; core audited by Nethermind (see below) |
 | < 1.0   | :x:                | End of life |
 
-**Note**: A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet. This security policy will become fully effective after third-party audit completion, which will mark the official launch of version 1.0.0.
+**Core smart contracts (`contracts/core/`):** Independently audited by **Nethermind** ([audit index](audits/README.md), [report PDF](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf), [core policy](contracts/core/AUDIT.md)). The audit applies to the commit recorded in [audits/nethermind/README.md](audits/nethermind/README.md) (see the report PDF for the exact SHA). Later changes to core are outside that report until a re-audit or addendum.
+
+Examples, community contracts, and application code under `contracts/examples/` and `contracts/community/` are **not** covered by that engagement.
 
 ## Reporting a Vulnerability
 
@@ -72,36 +74,49 @@ Our State Abstraction framework implements multiple layers of security:
 ### Security Best Practices
 
 #### For Developers
-- Always use the latest version of our contracts
+- Always use the latest supported version of our contracts
 - Implement proper access controls using our RBAC system
 - Follow our secure development guidelines
 - Test thoroughly using our provided test suites
+- Pin releases and verify them against the [audited core commit](audits/nethermind/README.md) before production use
 
 #### For Auditors
-- Review our security architecture documentation
-- Focus on the EngineBlox library core functions
+- Start with [contracts/core/AUDIT.md](contracts/core/AUDIT.md) and the [Nethermind report](audits/nethermind/)
+- Review [TECHNICAL_OVERVIEW.md](TECHNICAL_OVERVIEW.md) and the EngineBlox library
 - Verify multi-signature workflow implementations
 - Check meta-transaction signature validation
 
 ## Security Audit Status
 
-A third-party security audit of the protocol smart contracts is in progress; no independent audit report has been published yet.
+### Third-party audit (core)
 
-### Current Status
-- **Development Phase**: Testing and validation ongoing
-- **Third-Party Security Audit**: In progress (report not yet published)
-- **Official Launch**: After third-party audit completion
+| Item | Status |
+|------|--------|
+| **Auditor** | Nethermind |
+| **Scope** | `contracts/core/` |
+| **Report** | [audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) (NM_0828) |
+| **Engagement details** | [audits/nethermind/README.md](audits/nethermind/README.md) |
 
-### Completed Reviews
-- **Internal Security Review**: Completed (v1.0.0)
-- **Code Review**: Ongoing with each release
+### Deployment and launch
+
+| Item | Status |
+|------|--------|
+| **Mainnet** | Not live yet; deployment planned soon |
+| **Development** | Testing and validation on testnets (e.g. Sepolia) |
+| **Bug bounty** | Program details to be announced around mainnet launch |
+
+### Completed reviews
+
+- **Nethermind (core):** Completed — see [audits/nethermind/](audits/nethermind/)
+- **Internal security review:** Ongoing with releases
+- **Code review:** Ongoing with each release
 
 ## Bug Bounty Program
 
-We are developing a bug bounty program for security researchers. Details will be announced after third-party audit completion and the official launch of version 1.0.0.
+We are developing a bug bounty program for security researchers. Details will be announced in coordination with **mainnet deployment**.
 
 ### Scope
-- Smart contract vulnerabilities
+- Smart contract vulnerabilities in **audited core** (`contracts/core/`) at the published commit
 - Protocol design flaws
 - Implementation bugs
 - Cryptographic weaknesses
@@ -111,6 +126,7 @@ We are developing a bug bounty program for security researchers. Details will be
 - Physical security issues
 - Issues in third-party dependencies
 - Issues in experimental features
+- Example and community contracts unless explicitly listed in a future program scope
 
 ## Security Updates
 
@@ -145,4 +161,4 @@ We appreciate the security research community's efforts to help keep Bloxchain P
 
 *This security policy is subject to updates. Please check back regularly for the latest information.*
 
-**Last Updated**: May 2026
+**Last Updated**: June 2026
