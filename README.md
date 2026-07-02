@@ -1,8 +1,15 @@
 # Bloxchain Protocol
 
-**A composable framework for secure Ethereum applications.**
+**Open-source security framework for Ethereum applications.**
 
-Open-source (MPL-2.0) **state abstraction** via EngineBlox — a shared state machine plus optional core components. Compose vaults, tokens, payment flows, factories, and governed accounts with two-party authorization, RBAC, timelocks, and guarded execution enforced on-chain.
+Teams run sensitive on-chain actions through **roles, waiting periods, and auditable rules** — enforced on the blockchain, not only in a dashboard. MPL-2.0 · independently audited core · official deployments on **Sepolia** today.
+
+<details>
+<summary><strong>For integrators</strong> — technical category line</summary>
+
+Composable on-chain framework: optional core components for vaults, tokens, payments, factories, and governed accounts — with two-party authorization, RBAC, timelocks, and guarded execution. See [architecture](#architecture-at-a-glance) and [what you can build](#what-you-can-build).
+
+</details>
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol)
@@ -17,51 +24,63 @@ Open-source (MPL-2.0) **state abstraction** via EngineBlox — a shared state ma
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/hero-composition-framework.svg">
-  <img src="./docs/assets/hero-composition-framework.svg" alt="Bloxchain composition diagram: EngineBlox, BaseStateMachine, optional SecureOwnable, RuntimeRBAC, and GuardController, Account pattern, and example applications" width="920">
+  <img src="./docs/assets/hero-composition-framework.svg" alt="Bloxchain composition diagram: core state engine, optional components, Account pattern, and example applications" width="920">
 </picture>
 
 > [!IMPORTANT]
 > **Audited core:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) ([policy](./contracts/core/AUDIT.md)). Example apps under `contracts/examples/` are **out of scope**.  
-> **Official deployments:** **Sepolia** today; **Ethereum mainnet official deployments coming soon**.  
-> **Security:** [SECURITY.md](./SECURITY.md) · Hosted [bloxchain.app](https://bloxchain.app) is alpha/testnet-first ([docs](https://docs.bloxchain.app)).
+> **Official deployments:** **Sepolia** today; **Ethereum mainnet official deployments coming soon**. Audit does not imply mainnet is live.  
+> **Security:** [SECURITY.md](./SECURITY.md) · Optional hosted Console: [bloxchain.app](https://bloxchain.app) (alpha, testnet-first) — [docs](https://docs.bloxchain.app).
+
+## Who uses this
+
+| I am… | I need… | Start here |
+|-------|---------|------------|
+| **Building smart contracts** (Solidity) | Audited components to compose into my app | [What you can build](#what-you-can-build) · [`@bloxchain/contracts`](https://www.npmjs.com/package/@bloxchain/contracts) |
+| **Integrating from my product** (TypeScript) | Typed clients for deployed contracts | [Integrate with the SDK](#integrate-with-the-sdk) · [Getting started](./docs/getting-started.md) |
+| **Deploying a governed account** (testnet) | A working account on Sepolia | [Deploy on Sepolia](#deploy-on-sepolia) |
+| **Reviewing security** | Audit scope and architecture | [Nethermind report](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md) · [Architecture](#architecture-at-a-glance) |
+| **Evaluating for my organization** | Plain-language fit and product context | [docs.bloxchain.app](https://docs.bloxchain.app) · [Particle CS](https://particlecs.com/) |
+
+Hosted Console, Extended SDK, and UI widgets use the **same on-chain rules** — optional paths, not required to use the open protocol.
 
 ## Quick start
 
-**npm consumers:** Node.js **>=18.20.5** (see `sdk/typescript/package.json`).
+Pick one path. Node.js **>=18.20.5** for npm packages (`sdk/typescript/package.json`).
 
-```bash
-npm install @bloxchain/sdk @bloxchain/contracts
-```
+### Deploy on Sepolia
 
-**Deploy a governed account on Sepolia** (AccountBlox — SecureOwnable + RuntimeRBAC + GuardController):
+Deploy a **governed account** (full on-chain stack: ownership, roles, and execution rules):
 
 ```bash
 npm run create-wallet
 ```
 
-See [Account pattern](./docs/account-pattern.md) · [Sepolia addresses](#sepolia--deployed-addresses) (collapsed below).
+Uses **AccountBlox** after foundation is deployed. See [Account pattern](./docs/account-pattern.md) · [Sepolia addresses](#sepolia--deployed-addresses).
 
-<details>
-<summary><strong>SDK integration example</strong></summary>
+### Integrate with the SDK
+
+```bash
+npm install @bloxchain/sdk
+```
 
 ```typescript
 import { SecureOwnable } from '@bloxchain/sdk';
 
 const secureOwnable = new SecureOwnable(publicClient, walletClient, contractAddress, chain);
-const owner = await secureOwnable.owner();
-
 await secureOwnable.transferOwnershipRequest({ from: ownerAddress });
 await secureOwnable.transferOwnershipDelayedApproval(txId, { from: ownerAddress });
 ```
 
-Meta-transactions (EIP-712; optional relay): [SDK docs](./docs/meta-transactions.md) · [examples](./docs/examples-basic.md).
+Sign in browser; optional relay per environment — [meta-transactions](./docs/meta-transactions.md) · [examples](./docs/examples-basic.md).
 
-</details>
+### Build smart contracts
 
-<details>
-<summary><strong>Build from source</strong></summary>
+Install contracts package and compile from this monorepo (Node.js **>=22.12.0**):
 
-Node.js **>=22.12.0** for this monorepo:
+```bash
+npm install @bloxchain/contracts
+```
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
@@ -71,34 +90,26 @@ npm run compile:foundry
 npm run test:foundry
 ```
 
-</details>
+Extend patterns under [`contracts/examples/`](./contracts/examples/). Pin exact versions in production — [VERSIONING](./docs/VERSIONING.md).
 
 ## What you can build
 
-The **[Account pattern](./docs/account-pattern.md)** combines SecureOwnable, RuntimeRBAC, and GuardController. Most applications compose a **subset** of the core.
+For **Solidity developers** — compose only what you need. The **[Account pattern](./docs/account-pattern.md)** wires all three core components; most apps use a **subset**.
 
-| I want to build… | Compose | Example in repo |
-|------------------|---------|-----------------|
-| Governed smart account / treasury | **Account** (all three components) | [`AccountBlox`](./contracts/examples/templates/AccountBlox.sol) · `npm run create-wallet` |
-| Asset vault (ETH / ERC-20) | **SecureOwnable** | [`SimpleVault`](./contracts/examples/applications/SimpleVault/) |
-| Scheduled payments | **SecureOwnable** + payment APIs | [`PayBlox`](./contracts/examples/applications/PayBlox/) |
-| RWA / governed token | **SecureOwnable** + ERC-20 | [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) |
-| Clone factory for many instances | **BaseStateMachine** | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) |
-| Safe + extra policy | **SecureOwnable** + guard integration | [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) |
+| I want to build… | In plain terms | Protocol pieces | Example |
+|------------------|----------------|-----------------|---------|
+| Governed smart account / treasury | Full account stack with roles and execution rules | Account (SecureOwnable + RuntimeRBAC + GuardController) | [`AccountBlox`](./contracts/examples/templates/AccountBlox.sol) · `create-wallet` |
+| Asset vault (ETH / ERC-20) | Vault with ownership controls | SecureOwnable | [`SimpleVault`](./contracts/examples/applications/SimpleVault/) |
+| Scheduled payments | Payments with approval workflow | SecureOwnable | [`PayBlox`](./contracts/examples/applications/PayBlox/) |
+| RWA / governed token | Token with on-chain governance | SecureOwnable + ERC-20 | [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) |
+| Clone factory | Many instances from one template | BaseStateMachine | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) |
+| Safe + extra policy | Safe with added on-chain rules | SecureOwnable + guard | [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) |
 
-More: [`contracts/examples/`](./contracts/examples/) · [Getting started](./docs/getting-started.md) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
-
-## Framework guarantees
-
-The audited core (`contracts/core/`) is a **library architecture**, not a single monolithic app:
-
-1. **Single mutation surface** — `SecureOperationState` mutated only by **EngineBlox** (linked via `DELEGATECALL`).
-2. **Mandatory two-party authorization** — time-delay (request → approve) or meta-transaction (sign → execute; signer ≠ executor), enforced in architecture.
-3. **Defense in depth** — redundant gates on handler vs execution selectors, permissions, and tx status before external calls.
-
-[Protocol architecture](./docs/bloxchain-architecture.md) · [State machine engine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md)
+More: [`contracts/examples/`](./contracts/examples/) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
 
 ## Architecture at a glance
+
+On-chain rules flow through a shared state engine into optional components; the **Account pattern** combines all three.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151'}}}%%
@@ -118,7 +129,18 @@ graph TB
   GC --> ACC
 ```
 
-Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md).
+Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md)
+
+<details>
+<summary><strong>Architecture guarantees (protocol engineers)</strong></summary>
+
+The audited core (`contracts/core/`) is a **library architecture**, not a single monolithic app:
+
+1. **Single mutation surface** — `SecureOperationState` mutated only by **EngineBlox** (linked via `DELEGATECALL`).
+2. **Mandatory two-party authorization** — time-delay (request → approve) or meta-transaction (sign → execute; signer ≠ executor), enforced in architecture.
+3. **Defense in depth** — redundant gates on handler vs execution selectors, permissions, and tx status before external calls.
+
+</details>
 
 ## Documentation
 
@@ -126,33 +148,41 @@ Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machin
 |-------|------|
 | Public docs (Platform + SDK + Protocol) | [docs.bloxchain.app](https://docs.bloxchain.app) |
 | Account pattern | [docs/account-pattern.md](./docs/account-pattern.md) |
-| Getting started | [docs/getting-started.md](./docs/getting-started.md) |
+| Getting started (SDK) | [docs/getting-started.md](./docs/getting-started.md) |
 | API reference | [docs/api-reference.md](./docs/api-reference.md) |
 | Core audit policy | [contracts/core/AUDIT.md](./contracts/core/AUDIT.md) |
 
 <details>
-<summary><strong>FAQ</strong></summary>
+<summary><strong>FAQ — for organizations</strong></summary>
+
+**What is Bloxchain in one sentence?**  
+An open-source framework so teams run blockchain operations through auditable on-chain rules — roles, waiting periods, and controlled external calls — instead of ad-hoc signing.
+
+**Can we use this on mainnet today?**  
+Official Protocol deployments are on **Sepolia** today. **Ethereum mainnet official deployments are coming soon.** Completing an audit does not mean mainnet is live.
+
+**What is bloxchain.app?**  
+An optional hosted Console to operate governed accounts in the browser (alpha, testnet-first). Same on-chain rules as self-hosted integrations — [docs.bloxchain.app](https://docs.bloxchain.app).
+
+**What was audited?**  
+The Protocol **core framework** (not every example app). [Nethermind NM_0828](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md).
+
+</details>
+
+<details>
+<summary><strong>FAQ — for developers</strong></summary>
 
 **Is this only for smart accounts?**  
-No. See the table above — the Account pattern wires all three components together; vaults, tokens, factories, and Safe integrations compose subsets. Examples: [`contracts/examples/`](./contracts/examples/).
+No. See [what you can build](#what-you-can-build) — vaults, tokens, factories, and Safe integrations compose subsets of the core.
 
 **How is this different from ERC-4337 / smart wallets?**  
-Operation-level state abstraction (time-locks, RBAC, guarded execution on-chain) — not wallet UX or bundler infrastructure. [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
+Operation-level governed workflows on-chain — not wallet UX or bundler infrastructure. [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
 
 **How is this different from OpenZeppelin AccessControl + Timelock?**  
-Unified transaction lifecycle (request → approve, meta-tx sign → execute), guarded external execution, function schemas, and a single audited **EngineBlox** state machine — not separate modules wired by convention.
-
-**What did Nethermind audit?**  
-Full [`contracts/core/`](./contracts/core/): EngineBlox, BaseStateMachine, SecureOwnable, RuntimeRBAC, GuardController, Account pattern, and definition libraries. [NM_0828 report](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md).
-
-**Can I use this on mainnet today?**  
-Official Protocol deployments on **Sepolia** today. **Ethereum mainnet official deployments coming soon** — audit does not imply mainnet live. [bloxchain.app](https://bloxchain.app) is alpha/testnet-first; hosted mainnet GA is on the Platform roadmap separately.
+Unified transaction lifecycle (request → approve, sign → execute), guarded external execution, function schemas, and a single audited **EngineBlox** state machine.
 
 **Can I contribute to `contracts/core/`?**  
 No public PRs — audited core is maintained by Particle CS. See [CONTRIBUTING.md](./CONTRIBUTING.md) for docs, SDK, tooling, and examples.
-
-**Relationship to bloxchain.app?**  
-Same on-chain rules. The hosted Console is a separate product surface — [docs.bloxchain.app](https://docs.bloxchain.app).
 
 </details>
 
