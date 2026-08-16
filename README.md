@@ -19,7 +19,7 @@ Composable on-chain framework: optional core components for vaults, tokens, paym
 [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
-**Install:** `npm install @bloxchain/sdk` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
+**Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
 <img src="./docs/assets/bloxchain-logo.svg" alt="Bloxchain" width="48" align="left">
 
@@ -62,12 +62,13 @@ Uses **AccountBlox** after foundation is deployed. See [Account pattern](./docs/
 ### Integrate with the SDK
 
 ```bash
-npm install @bloxchain/sdk
+npm install @bloxchain/sdk viem
 ```
 
 ```typescript
 import { SecureOwnable } from '@bloxchain/sdk';
 
+// Placeholders — create publicClient / walletClient / chain and addresses per docs/getting-started.md
 const secureOwnable = new SecureOwnable(publicClient, walletClient, contractAddress, chain);
 
 // Request must come from RECOVERY_ROLE (new owner is snapshotted from getRecovery() at request time)
@@ -78,19 +79,21 @@ const pending = await secureOwnable.getPendingTransactions();
 const txId = pending[pending.length - 1];
 const record = await secureOwnable.getTransaction(txId);
 
-// After record.releaseTime, owner or recovery may approve on the direct delayed path
+// Direct delayed approval requires chain time >= record.releaseTime — run this call later (or poll) after the timelock
 await secureOwnable.transferOwnershipDelayedApproval(txId, { from: ownerAddress });
 ```
 
-Sign in browser; optional relay per environment — [meta-transactions](./docs/meta-transactions.md) · [examples](./docs/examples-basic.md).
+Sign in browser; optional relay per environment — [meta-transactions](./docs/meta-transactions.md) · [examples](./docs/examples-basic.md) · [getting started](./docs/getting-started.md).
 
 ### Build smart contracts
 
-Install contracts package and compile from this monorepo (Node.js **>=22.12.0**):
+**Package consumption** (Node.js **>=18.20.5**):
 
 ```bash
 npm install @bloxchain/contracts
 ```
+
+**Build from this monorepo** (Node.js **>=22.12.0**):
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
