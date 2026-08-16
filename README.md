@@ -1,7 +1,6 @@
 <p align="center">
   <a href="https://github.com/PracticalParticle/Bloxchain-Protocol">
-    <img src="./docs/assets/logo-lockup-light.svg#gh-light-mode-only" alt="Bloxchain" width="100%">
-    <img src="./docs/assets/logo-lockup-dark.svg#gh-dark-mode-only" alt="Bloxchain" width="100%">
+    <img src="./docs/assets/logo-lockup-dark.svg" alt="Bloxchain" width="100%">
   </a>
 </p>
 
@@ -20,11 +19,7 @@ Build on-chain security and authorization rules into vaults, tokens, payments, a
 [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/protocol-composition-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/protocol-composition-light.svg">
-    <img src="./docs/assets/protocol-composition-light.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
-  </picture>
+  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
 </p>
 
 **Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
