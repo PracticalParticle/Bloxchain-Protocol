@@ -10,13 +10,7 @@
 
 Build on-chain security and authorization rules into vaults, tokens, payments, and governed accounts.
 
-[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol)
-[![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
-[![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml)
-[![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
-[![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
+[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0) [![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol) [![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk) [![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml) [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app) [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
 **Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
