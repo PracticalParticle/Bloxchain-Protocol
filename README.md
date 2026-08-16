@@ -7,7 +7,7 @@ Teams run sensitive on-chain actions through **roles, waiting periods, and audit
 <details>
 <summary><strong>For integrators</strong> — technical category line</summary>
 
-Composable on-chain framework: optional core components for vaults, tokens, payments, factories, and governed accounts — with two-party authorization, RBAC, timelocks, and guarded execution. See [architecture](#architecture-at-a-glance) and [what you can build](#what-you-can-build).
+Composable on-chain framework: optional core components for vaults, tokens, payments, factories, and governed accounts — with separated authorization actions, RBAC, direct approval delays, meta-transactions, and guarded execution. See [architecture](#architecture-at-a-glance) and [what you can build](#what-you-can-build).
 
 </details>
 
@@ -15,12 +15,13 @@ Composable on-chain framework: optional core components for vaults, tokens, paym
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol)
 [![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
 [![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml)
+[![Audited by Nethermind](./docs/assets/badge-audited-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)
 [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
-<!-- Brand logo (optional): uncomment when docs/assets/bloxchain-logo.svg is available
+**Install:** `npm install @bloxchain/sdk` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
+
 <img src="./docs/assets/bloxchain-logo.svg" alt="Bloxchain" width="48" align="left">
--->
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/hero-composition-framework.svg">
@@ -42,7 +43,7 @@ Composable on-chain framework: optional core components for vaults, tokens, paym
 | **Reviewing security** | Audit scope and architecture | [Nethermind report](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md) · [Architecture](#architecture-at-a-glance) |
 | **Evaluating for my organization** | Plain-language fit and product context | [docs.bloxchain.app](https://docs.bloxchain.app) · [Particle CS](https://particlecs.com/) |
 
-Hosted Console, Extended SDK, and UI widgets use the **same on-chain rules** — optional paths, not required to use the open protocol.
+The optional hosted Console ([bloxchain.app](https://bloxchain.app)) uses the **same on-chain rules** — not required to use the open protocol.
 
 ## Quick start
 
@@ -137,7 +138,7 @@ Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machin
 The audited core (`contracts/core/`) is a **library architecture**, not a single monolithic app:
 
 1. **Single mutation surface** — `SecureOperationState` mutated only by **EngineBlox** (linked via `DELEGATECALL`).
-2. **Mandatory two-party authorization** — time-delay (request → approve) or meta-transaction (sign → execute; signer ≠ executor), enforced in architecture.
+2. **Distinct authorization actions** — direct approval can enforce a delay; meta-transaction approval separates signing from submission but does not inherit that delay. Effective separation depends on wallet-to-role assignments.
 3. **Defense in depth** — redundant gates on handler vs execution selectors, permissions, and tx status before external calls.
 
 </details>
@@ -147,6 +148,7 @@ The audited core (`contracts/core/`) is a **library architecture**, not a single
 | Topic | Link |
 |-------|------|
 | Public docs (Platform + SDK + Protocol) | [docs.bloxchain.app](https://docs.bloxchain.app) |
+| Protocol technical thesis | [WHITEPAPER.md](./WHITEPAPER.md) |
 | Account pattern | [docs/account-pattern.md](./docs/account-pattern.md) |
 | Getting started (SDK) | [docs/getting-started.md](./docs/getting-started.md) |
 | API reference | [docs/api-reference.md](./docs/api-reference.md) |
@@ -177,6 +179,10 @@ No. See [what you can build](#what-you-can-build) — vaults, tokens, factories,
 
 **How is this different from ERC-4337 / smart wallets?**  
 Operation-level governed workflows on-chain — not wallet UX or bundler infrastructure. [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
+
+**Are meta-transactions timelocked?**
+
+Not by the core meta-transaction approval path. Direct approval enforces `releaseTime`; meta approval uses separately permissioned signing and submission. See the [technical paper](./WHITEPAPER.md#33-direct-delay-and-meta-authorization-are-different-policies).
 
 **How is this different from OpenZeppelin AccessControl + Timelock?**  
 Unified transaction lifecycle (request → approve, sign → execute), guarded external execution, function schemas, and a single audited **EngineBlox** state machine.
