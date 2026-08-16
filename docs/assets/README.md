@@ -26,7 +26,7 @@ Raster: [`.github/social-preview.png`](../../.github/social-preview.png) (1280×
 
 - Logo lockup SVG carries large **Bloxchain** wordmark + soft wash/gradient; outer plate uses card radius (`rx="20"`)
 - Composition figure: same outer plate radius; Title Case names; plain-language subtitles; soft plate/glow — no side rails
-- Composition embeds a solid `[Bx]` header badge plus annotated composition layout (reference-style: side notes, optional callout, footer examples)
+- Composition embeds a washed `[Bx]` mark (no diagram title); annotated optional siblings use wider cards so labels fit
 - No ALL-CAPS node titles; hierarchy via weight and stroke, not case
 - OG image is not embedded in the README body
 - Do not reintroduce light/dark dual embedding in `README.md`
