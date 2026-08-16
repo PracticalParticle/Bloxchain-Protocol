@@ -1,60 +1,130 @@
 name: Particle CI
 
 on:
-  # Temporarily disable all triggers
-  workflow_dispatch: # Only manual triggers allowed, comment out to re-enable automatic triggers
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
-    steps:   
-      # Step 1: Check out code from the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js (must satisfy root engines.node with engine-strict)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Step 4: Compile contracts
+      - name: Setup Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          version: v1.7.1
+
       - name: Compile contracts
-        run: npx hardhat compile
+        run: npm run compile:foundry
 
-      # Step 5: Run tests
-      - name: Run tests
-        run: npx hardhat test
+      - name: Run Foundry tests
+        run: npm run test:foundry
 
-      # Step 6: Run solhint
-      - name: Run solhint
-        run: npx solhint 'contracts/**/*.sol'
+      - name: Setup Python
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.10'
 
-      # Step 7: Run slither
-      - name: Install Slither
+      - name: Install Slither and Mythril
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          python3 -m pip install --user slither-analyzer
-          
+          python -m venv .venv-slither
+          .venv-slither/bin/python -m pip install --upgrade pip
+          .venv-slither/bin/python -m pip install slither-analyzer==0.11.6
+
+          python -m venv .venv-mythril
+          .venv-mythril/bin/python -m pip install --upgrade pip
+          .venv-mythril/bin/python -m pip install mythril==0.24.8
+
       - name: Run Slither
-        run: slither . --exclude-dependencies
-
-      # Step 8: Run Mythril analysis
-      - name: Install Mythril
-        run: |
-          python3 -m pip install mythril
+        if: github.event_name == 'workflow_dispatch'
+        run: .venv-slither/bin/slither . --exclude-dependencies
 
       - name: Run Mythril
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          find contracts -name "*.sol" -not -path "contracts/test/*" -not -path "contracts/mock/*" -exec myth analyze {} --execution-timeout 300 \;
+          python -c 'import json; from pathlib import Path; Path("mythril-solc-settings.json").write_text(json.dumps({"optimizer":{"enabled":True,"runs":200},"viaIR":True,"evmVersion":"osaka","remappings":["@openzeppelin/=node_modules/@openzeppelin/","forge-std/=lib/forge-std/src/"]}, indent=2) + "\n", encoding="utf-8")'
+          cat > check_mythril_result.py <<'PY'
+          import json
+          import sys
+
+          path, status, contract = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          failed = False
+
+          if status != 0:
+              print(f"Mythril process failed for {contract} (exit {status})")
+              failed = True
+
+          try:
+              with open(path, encoding="utf-8") as handle:
+                  payload = json.load(handle)
+          except Exception as exc:
+              print(f"Mythril JSON invalid for {contract}: {exc}")
+              sys.exit(1)
+
+          if not payload.get("success", False):
+              print(f"Mythril success=false for {contract}: {payload.get('error')}")
+              failed = True
+
+          issues = payload.get("issues") or []
+          if issues:
+              print(f"Mythril reported {len(issues)} finding(s) for {contract}")
+              failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+          mkdir -p mythril-out
+          failed=0
+          while IFS= read -r -d '' file; do
+            echo "::group::Mythril ${file}"
+            safe_name=$(printf '%s' "$file" | tr '/\\' '__')
+            out="mythril-out/${safe_name}.json"
+            err="mythril-out/${safe_name}.err"
+
+            set +e
+            .venv-mythril/bin/myth analyze "$file" \
+              --solc-json mythril-solc-settings.json \
+              --solv 0.8.35 \
+              --execution-timeout 300 \
+              -o json >"$out" 2>"$err"
+            status=$?
+            set -e
+
+            if [ -s "$err" ]; then
+              cat "$err"
+            fi
+
+            if ! .venv-mythril/bin/python check_mythril_result.py "$out" "$status" "$file"; then
+              failed=1
+            fi
+            echo "::endgroup::"
+          done < <(find contracts -name '*.sol' -not -path 'contracts/test/*' -not -path 'contracts/mock/*' -print0)
+
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more Mythril scans failed"
+            exit 1
+          fi
