@@ -2,15 +2,21 @@
 
 Visual system for **Protocol README IA + Visual System Reset** — Particle monochrome figure with soft atmosphere; colorful OSS badges stay as industry-standard trust chips.
 
-**README embeds dark plates only** (single image each). Dual light/dark `#gh-*-mode-only` / `<picture>` switching is avoided — GitHub often stacked both variants.
+**Dark plates only.** No light variants and no `#gh-*-mode-only` / `<picture>` theme switching in `README.md`.
 
-| File | Purpose |
-|------|---------|
-| `logo-bloxchain-dark.svg` | `[Bx]` mark alone (dark) |
-| `logo-lockup-dark.svg` | Full-width hero strip + centered mark/wordmark (README header) |
-| `protocol-composition-dark.svg` | Soft-field composition figure + plain-language labels (README body) |
-| `badge-audit-nethermind.svg` | Shields-style `audit \| Nethermind NM_0828` → PDF |
-| `social-preview.svg` | Source for OG card |
+| File | README placement | Purpose |
+|------|------------------|---------|
+| `logo-lockup-dark.svg` | Hero (header only) | Full-width hero strip + mark/wordmark |
+| `protocol-composition-dark.svg` | `## Architecture` only | Composition figure + plain-language labels |
+| `logo-bloxchain-dark.svg` | Not embedded | `[Bx]` mark alone (reuse / OG source) |
+| `badge-audit-nethermind.svg` | Badge row | Shields-style `audit \| Nethermind NM_0828` → PDF |
+| `social-preview.svg` | Not in body | Source for OG card |
+
+## README IA
+
+1. **Hero** — dark lockup only (brand).
+2. **Architecture** — one composition SVG for humans; Mermaid lives in a `<details>` block for agents / raw markdown.
+3. Do not embed the composition figure in the hero (avoids duplicate topology).
 
 ## Social preview
 

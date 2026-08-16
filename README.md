@@ -18,10 +18,6 @@ Build on-chain security and authorization rules into vaults, tokens, payments, a
 [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
 [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
-<p align="center">
-  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
-</p>
-
 **Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
 > [!IMPORTANT]
@@ -47,6 +43,17 @@ The optional hosted Console ([bloxchain.app](https://bloxchain.app)) uses the sa
 
 EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings** — most apps use a subset. The **Account** pattern composes all three. Example applications sit below as evidence, not as the product.
 
+<p align="center">
+  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
+</p>
+
+**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset; examples (vaults, payments, tokens, factories, Safe) sit below Account as evidence.
+
+Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
+
+<details>
+<summary><strong>Architecture graph (machine-readable)</strong></summary>
+
 ```mermaid
 graph TB
   EB["EngineBlox"]
@@ -64,7 +71,7 @@ graph TB
   GC --> ACC
 ```
 
-Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
+</details>
 
 <details>
 <summary><strong>Architecture guarantees (protocol engineers)</strong></summary>
