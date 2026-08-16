@@ -53,7 +53,6 @@ The optional hosted Console ([bloxchain.app](https://bloxchain.app)) uses the sa
 EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings** — most apps use a subset. The **Account** pattern composes all three. Example applications sit below as evidence, not as the product.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#0A0A0A', 'lineColor': '#525252', 'primaryColor': '#F6F7F9', 'primaryBorderColor': '#D1D5DB', 'background': '#FFFFFF'}}}%%
 graph TB
   EB["EngineBlox"]
   BSM["BaseStateMachine"]
