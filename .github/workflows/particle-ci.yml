@@ -1,60 +1,62 @@
 name: Particle CI
 
 on:
-  # Temporarily disable all triggers
-  workflow_dispatch: # Only manual triggers allowed, comment out to re-enable automatic triggers
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
-    steps:   
-      # Step 1: Check out code from the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js (must satisfy root engines.node with engine-strict)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Step 4: Compile contracts
+      - name: Setup Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+        with:
+          version: stable
+
       - name: Compile contracts
-        run: npx hardhat compile
+        run: npm run compile:foundry
 
-      # Step 5: Run tests
-      - name: Run tests
-        run: npx hardhat test
+      - name: Run Foundry tests
+        run: npm run test:foundry
 
-      # Step 6: Run solhint
-      - name: Run solhint
-        run: npx solhint 'contracts/**/*.sol'
-
-      # Step 7: Run slither
       - name: Install Slither
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          python3 -m pip install --user slither-analyzer
-          
+          python3 -m pip install --user slither-analyzer==0.11.6
+
       - name: Run Slither
+        if: github.event_name == 'workflow_dispatch'
         run: slither . --exclude-dependencies
 
-      # Step 8: Run Mythril analysis
       - name: Install Mythril
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          python3 -m pip install mythril
+          python3 -m pip install mythril==0.24.8
 
       - name: Run Mythril
+        if: github.event_name == 'workflow_dispatch'
         run: |
           find contracts -name "*.sol" -not -path "contracts/test/*" -not -path "contracts/mock/*" -exec myth analyze {} --execution-timeout 300 \;

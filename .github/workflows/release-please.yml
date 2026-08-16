@@ -7,26 +7,22 @@ on:
       # - dev
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Run release-please
         id: release
-        uses: google-github-actions/release-please-action@v4
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
