@@ -87,13 +87,13 @@ Sign in browser; optional relay per environment — [meta-transactions](./docs/m
 
 ### Build smart contracts
 
-**Package consumption** (Node.js **>=22.12.0**):
+**Package consumption** (Node.js **>=18.20.5**):
 
 ```bash
 npm install @bloxchain/contracts
 ```
 
-**Build from this monorepo:**
+**Build from this monorepo** (Node.js **>=22.12.0**):
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
