@@ -56,10 +56,10 @@
     "access": "public"
   },
   "dependencies": {
-    "viem": "2.50.4"
+    "viem": "2.55.11"
   },
   "devDependencies": {
-    "@types/node": "25.5.2",
+    "@types/node": "26.1.2",
     "typescript": "6.0.2"
   },
   "peerDependencies": {

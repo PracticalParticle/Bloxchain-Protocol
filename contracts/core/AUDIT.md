@@ -9,7 +9,7 @@ The Bloxchain **core protocol** in this directory is the audited source of truth
 | **Auditor** | [Nethermind](https://nethermind.io/) |
 | **Report** | [NM_0828](../../audits/nethermind/README.md) — PDF: [`Nethermind-Bloxchain-Core-NM_0828.pdf`](../../audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) |
 | **Scope** | All Solidity in `contracts/core/` (see [engagement scope](../../audits/nethermind/README.md#scope-in-repo-paths)) |
-| **Network** | Protocol is **pre-mainnet**; **mainnet deployment is planned soon**. An completed core audit does not by itself mean mainnet is live. |
+| **Network** | Official deployments on **Ethereum Sepolia** today; **Ethereum mainnet official deployments coming soon**. A completed core audit does not by itself mean official mainnet deployments are live. |
 
 Record the **audited git commit** from the report on the [Nethermind engagement page](../../audits/nethermind/README.md) when maintaining this documentation. Any change to files under `contracts/core/` after that commit is outside the published report until a new audit or addendum.
 
