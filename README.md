@@ -1,137 +1,96 @@
-# Bloxchain Protocol: Enterprise-Grade Blockchain Security Framework
+# Bloxchain Protocol
+
+**Open-source security framework for Ethereum applications.**
+
+Teams run sensitive on-chain actions through **roles, waiting periods, and auditable rules** — enforced on the blockchain, not only in a dashboard. MPL-2.0 · independently audited core · official deployments on **Sepolia** today.
+
+<details>
+<summary><strong>For integrators</strong> — technical category line</summary>
+
+Composable on-chain framework: optional core components for vaults, tokens, payments, factories, and governed accounts — with separated authorization actions, RBAC, direct approval delays, meta-transactions, and guarded execution. See [architecture](#architecture-at-a-glance) and [what you can build](#what-you-can-build).
+
+</details>
 
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.34-blue.svg)](https://soliditylang.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-SDK-green.svg)](./sdk/typescript/)
-[![Hardhat](https://img.shields.io/badge/Hardhat-v3-yellow.svg)](https://hardhat.org/)
-[![Sepolia](https://img.shields.io/badge/Sepolia-Testnet-purple.svg)](https://sepolia.etherscan.io/)
-[![Particle CS](https://img.shields.io/badge/Particle-CS-blue.svg)](https://particlecs.com/)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol)
+[![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
+[![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml)
+[![Audited by Nethermind](./docs/assets/badge-audited-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)
+[![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
+[![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
-> **Core audit:** [`contracts/core/`](./contracts/core/) independently audited by [Nethermind](./audits/nethermind/). Report: [`Nethermind-Bloxchain-Core-NM_0828.pdf`](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [details](./contracts/core/AUDIT.md). **Network:** pre-mainnet today; mainnet deployment coming soon. Security: [SECURITY.md](./SECURITY.md).
+**Install:** `npm install @bloxchain/sdk` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
-## System overview
+<img src="./docs/assets/bloxchain-logo.svg" alt="Bloxchain" width="48" align="left">
 
-The protocol’s security posture rests on three principles:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/hero-composition-framework.svg">
+  <img src="./docs/assets/hero-composition-framework.svg" alt="Bloxchain composition diagram: core state engine, optional components, Account pattern, and example applications" width="920">
+</picture>
 
-1. **Single source of mutation.** All mutable state lives in one struct (`SecureOperationState`), instantiated once per deployed contract. Only the **EngineBlox** library may mutate it, which isolates invariants to a single audit surface.
+> [!IMPORTANT]
+> **Audited core:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) ([policy](./contracts/core/AUDIT.md)). Example apps under `contracts/examples/` are **out of scope**.  
+> **Official deployments:** **Sepolia** today; **Ethereum mainnet official deployments coming soon**. Audit does not imply mainnet is live.  
+> **Security:** [SECURITY.md](./SECURITY.md) · Optional hosted Console: [bloxchain.app](https://bloxchain.app) (alpha, testnet-first) — [docs](https://docs.bloxchain.app).
 
-2. **Mandatory two-signature authorization.** Every state-changing operation must be authorized by at least two distinct parties—either **across time** (request now, approve later, with a window to intervene) or **across roles** (signer ≠ executor for meta-transactions). This is enforced **architecturally**, not by convention.
+## Who uses this
 
-3. **Defense in depth via redundant gates.** Where one check could suffice, the protocol layers two or more checks on the same property from different angles: identity vs. role membership, permission grant vs. handler/execution wiring, storage status vs. structural invariants. A single compromised layer cannot bypass the others.
+| I am… | I need… | Start here |
+|-------|---------|------------|
+| **Building smart contracts** (Solidity) | Audited components to compose into my app | [What you can build](#what-you-can-build) · [`@bloxchain/contracts`](https://www.npmjs.com/package/@bloxchain/contracts) |
+| **Integrating from my product** (TypeScript) | Typed clients for deployed contracts | [Integrate with the SDK](#integrate-with-the-sdk) · [Getting started](./docs/getting-started.md) |
+| **Deploying a governed account** (testnet) | A working account on Sepolia | [Deploy on Sepolia](#deploy-on-sepolia) |
+| **Reviewing security** | Audit scope and architecture | [Nethermind report](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md) · [Architecture](#architecture-at-a-glance) |
+| **Evaluating for my organization** | Plain-language fit and product context | [docs.bloxchain.app](https://docs.bloxchain.app) · [Particle CS](https://particlecs.com/) |
 
-Deeper treatment: [Protocol architecture](./docs/bloxchain-architecture.md) · [State machine engine](./docs/state-machine-engine.md).
+The optional hosted Console ([bloxchain.app](https://bloxchain.app)) uses the **same on-chain rules** — not required to use the open protocol.
 
-## ⚡ Get started: create a wallet
+## Quick start
 
-After [foundation and CopyBlox are deployed](#deployment) on a network (e.g. Sepolia), you can create your own secure wallet (AccountBlox clone) in a few steps:
+Pick one path. Node.js **>=18.20.5** for npm packages (`sdk/typescript/package.json`).
+
+### Deploy on Sepolia
+
+Deploy a **governed account** (full on-chain stack: ownership, roles, and execution rules):
 
 ```bash
 npm run create-wallet
 ```
 
-The script is interactive: choose the network, **basic wallet (AccountBlox)** or a custom blox, then set owner / broadcaster / recovery and time-lock. It uses your `.env.deployment` deployer key and writes the new clone address (and Sepolia explorer link) when done.  
-Non-interactive (all defaults): `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js`
+Uses **AccountBlox** after foundation is deployed. See [Account pattern](./docs/account-pattern.md) · [Sepolia addresses](#sepolia--deployed-addresses).
 
-## 🚀 What is Bloxchain Protocol?
+### Integrate with the SDK
 
-Enterprise-grade security through **multi-phase workflows**: time-locked operations and meta-transactions with **role separation**, so contracts control storage and operations require at least two parties. **EngineBlox** powers time-locks, gasless execution, and dynamic RBAC via modular composition (see **System overview** above).
-
-## 🏗️ Architecture Overview
-
-### Component layering
-
-| Layer | Role |
-|--------|------|
-| **EngineBlox** (library) | Linked into integrators via `DELEGATECALL` (storage context = `address(this)` of the caller). Mutates only the `SecureOperationState` reference passed in; owns no storage of its own. |
-| **BaseStateMachine** | The only contract that declares `_secureState`. Exposes wrappers, init helpers, hooks, and view helpers for every EngineBlox flow. |
-| **SecureOwnable** | Owner, Broadcaster, Recovery, and timelock-oriented operations. |
-| **RuntimeRBAC** | Dynamic role management and meta-transaction batch flows. |
-| **GuardController** | Arbitrary external execution paths and guard configuration (within protocol rules). |
-
-The framework is organized as **three tiers**: a stateless library at the top, a **single base contract** that owns the protocol storage, and **three composable components** that each add a slice of the public surface (plus definitions libraries for function schemas and default permission grants).
-
-**Concrete deployable contracts** inherit whichever pieces they need. A wallet-style contract typically composes all three components; a vault, ERC-20, or payment scheduler may inherit only **SecureOwnable**; a clone factory may inherit only **BaseStateMachine**. Composition is per deployment—the framework does not mandate one pattern.
-
-### Core Components
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151', 'edgeLabelBackground': '#ffffff', 'edgeLabelTextColor': '#111827'}}}%%
-graph TB
-  EB["EngineBlox<br/>(library)"]
-  BSM["BaseStateMachine<br/>owns _secureState<br/>wrappers for every EngineBlox flow<br/>init helper, hooks, view helpers"]
-  SO["SecureOwnable<br/>Owner, Broadcaster, Recovery + timelock operations"]
-  RBAC["RuntimeRBAC<br/>dynamic role management + meta-tx batch flow"]
-  GC["GuardController<br/>arbitrary external execution + guard config"]
-
-  EB -->|DELEGATECALL<br/>storage context preserved| BSM
-  BSM --> SO
-  BSM --> RBAC
-  BSM --> GC
-
-  style EB fill:#dbeafe,color:#1e3a8a,stroke:#2563eb
-  style BSM fill:#ccfbf1,color:#115e59,stroke:#0d9488
-  style SO fill:#ffedd5,color:#7c2d12,stroke:#ea580c
-  style RBAC fill:#ffedd5,color:#7c2d12,stroke:#ea580c
-  style GC fill:#ffedd5,color:#7c2d12,stroke:#ea580c
+```bash
+npm install @bloxchain/sdk
 ```
 
-### Modular composition
+```typescript
+import { SecureOwnable } from '@bloxchain/sdk';
 
-- **BaseStateMachine** → **SecureOwnable**, **RuntimeRBAC**, **GuardController** (optional **HookManager** in `contracts/experimental/`)
-- **Account** pattern composes all three components → **AccountBlox** template (`contracts/examples/templates/`)
-- **Examples:** SimpleVault, SimpleRWA20, PayBlox (**SecureOwnable** only); **CopyBlox** (**BaseStateMachine** only); GuardianSafe (**SecureOwnable** + Safe guard); BasicERC20 (standalone ERC20, typically minted by AccountBlox)
+const secureOwnable = new SecureOwnable(publicClient, walletClient, contractAddress, chain);
 
-### Transaction lifecycle
+// Request must come from RECOVERY_ROLE (new owner is snapshotted from getRecovery() at request time)
+const request = await secureOwnable.transferOwnershipRequest({ from: recoveryAddress });
+await request.wait();
 
-Every operation is a **TxRecord** keyed by a monotonically increasing **txId**, with a single **TxStatus** (Solidity enum order): `UNDEFINED`, `PENDING`, `EXECUTING`, `PROCESSING_PAYMENT`, `CANCELLED`, `COMPLETED`, `FAILED`.
+const pending = await secureOwnable.getPendingTransactions();
+const txId = pending[pending.length - 1];
+const record = await secureOwnable.getTransaction(txId);
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151', 'edgeLabelBackground': '#ffffff', 'edgeLabelTextColor': '#111827'}}}%%
-stateDiagram-v2
-  direction LR
-
-  classDef active fill:#dbeafe,color:#1e3a8a,stroke:#2563eb
-  classDef terminal fill:#dcfce7,color:#14532d,stroke:#16a34a
-  classDef cancelled fill:#fee2e2,color:#7f1d1d,stroke:#dc2626
-  classDef failed fill:#ffedd5,color:#7c2d12,stroke:#ea580c
-
-  [*] --> UNDEFINED
-  UNDEFINED --> PENDING: time-delay request
-  PENDING --> CANCELLED: cancel
-  PENDING --> EXECUTING: approve or meta-tx execute
-  EXECUTING --> COMPLETED: success
-  EXECUTING --> FAILED: revert
-  EXECUTING --> PROCESSING_PAYMENT: attached payment
-  PROCESSING_PAYMENT --> COMPLETED: payment ok
-  PROCESSING_PAYMENT --> FAILED: payment revert
-  CANCELLED --> [*]
-  COMPLETED --> [*]
-  FAILED --> [*]
-
-  class UNDEFINED,PENDING,EXECUTING,PROCESSING_PAYMENT active
-  class COMPLETED terminal
-  class CANCELLED cancelled
-  class FAILED failed
+// After record.releaseTime, owner or recovery may approve on the direct delayed path
+await secureOwnable.transferOwnershipDelayedApproval(txId, { from: ownerAddress });
 ```
 
-Two workflow patterns share the same **PENDING → EXECUTING → terminal** progression (`COMPLETED`, `FAILED`, or `CANCELLED`); they differ in how authorization is supplied and whether a wait window applies.
+Sign in browser; optional relay per environment — [meta-transactions](./docs/meta-transactions.md) · [examples](./docs/examples-basic.md).
 
-- **Time-delay flow.** A party with **EXECUTE_TIME_DELAY_REQUEST** creates a `PENDING` record with `releaseTime = block.timestamp + timeLockPeriodSec`. After the window, a party with **EXECUTE_TIME_DELAY_APPROVE** advances the record through `EXECUTING` to a terminal state. **EXECUTE_TIME_DELAY_CANCEL** can move to `CANCELLED` during the window.
+### Build smart contracts
 
-- **Meta-transaction flow.** A signer with `SIGN_META_*` permission produces an **EIP-712** signature off-chain over the full `MetaTransaction` struct. An executor with `EXECUTE_META_*` permission submits it on-chain. EngineBlox runs integrity checks (signature length, chain ID, deadline, gas price, nonce, handler binding, signer permission dual check, ECDSA recovery), increments the signer nonce, and completes the lifecycle in one call.
+Install contracts package and compile from this monorepo (Node.js **>=22.12.0**):
 
-- **Fused “request-and-approve” meta-tx.** Used where the protocol omits a time-delay (e.g. recovery rotation, time-lock change, role-config batch, guard-config batch): two-signature property is preserved via signer vs executor, without a separate on-chain wait window.
-
-**External execution:** the transition to **`EXECUTING`** is the only point at which the protocol invokes arbitrary external code.
-
-### Security model (roles)
-
-- **Time-delay:** Request → wait → Approve (two steps / two parties). **Meta-tx:** Sign → Execute (signer ≠ executor).
-- **Roles:** Owner (admin, approve), Broadcaster (execute meta-tx, gas), Recovery (emergency).
-
-## 🚀 Quick Start
-
-**Prerequisites:** Node.js **>=22.12.0** for this monorepo (dev tooling, CI, `npm ci`; enforced via root `engines` + `.npmrc` `engine-strict=true`). Published **`@bloxchain/sdk`** consumers still need **>=18.20.5** at runtime (see `sdk/typescript/package.json`).
+```bash
+npm install @bloxchain/contracts
+```
 
 ```bash
 git clone https://github.com/PracticalParticle/Bloxchain-Protocol.git
@@ -141,23 +100,129 @@ npm run compile:foundry
 npm run test:foundry
 ```
 
-**SDK / contracts:** `npm install @bloxchain/sdk @bloxchain/contracts`  
-**Networks:** Local (Hardhat), [Sepolia](https://sepolia.etherscan.io/)
+Extend patterns under [`contracts/examples/`](./contracts/examples/). Pin exact versions in production — [VERSIONING](./docs/VERSIONING.md).
 
-## Deployment
+## What you can build
 
-1. Copy `env.deployment.example` to `.env.deployment` and set `DEPLOY_RPC_URL`, `DEPLOY_PRIVATE_KEY`; optionally `DEPLOY_CHAIN_ID` (Sepolia: `11155111`) and `DEPLOY_NETWORK_NAME`.
-2. **Foundation (libraries + AccountBlox):** `npm run deploy:hardhat:foundation`  
-   Or: `npx hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia`
+For **Solidity developers** — compose only what you need. The **[Account pattern](./docs/account-pattern.md)** wires all three core components; most apps use a **subset**.
+
+| I want to build… | In plain terms | Protocol pieces | Example |
+|------------------|----------------|-----------------|---------|
+| Governed smart account / treasury | Full account stack with roles and execution rules | Account (SecureOwnable + RuntimeRBAC + GuardController) | [`AccountBlox`](./contracts/examples/templates/AccountBlox.sol) · `create-wallet` |
+| Asset vault (ETH / ERC-20) | Vault with ownership controls | SecureOwnable | [`SimpleVault`](./contracts/examples/applications/SimpleVault/) |
+| Scheduled payments | Payments with approval workflow | SecureOwnable | [`PayBlox`](./contracts/examples/applications/PayBlox/) |
+| RWA / governed token | Token with on-chain governance | SecureOwnable + ERC-20 | [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) |
+| Clone factory | Many instances from one template | BaseStateMachine | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) |
+| Safe + extra policy | Safe with added on-chain rules | SecureOwnable + guard | [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) |
+
+More: [`contracts/examples/`](./contracts/examples/) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
+
+## Architecture at a glance
+
+On-chain rules flow through a shared state engine into optional components; the **Account pattern** combines all three.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'lineColor': '#374151'}}}%%
+graph TB
+  EB["EngineBlox (library)"]
+  BSM["BaseStateMachine"]
+  SO["SecureOwnable"]
+  RBAC["RuntimeRBAC"]
+  GC["GuardController"]
+  ACC["Account pattern"]
+  EB --> BSM
+  BSM --> SO
+  BSM --> RBAC
+  BSM --> GC
+  SO --> ACC
+  RBAC --> ACC
+  GC --> ACC
+```
+
+Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md)
+
+<details>
+<summary><strong>Architecture guarantees (protocol engineers)</strong></summary>
+
+The audited core (`contracts/core/`) is a **library architecture**, not a single monolithic app:
+
+1. **Single mutation surface** — `SecureOperationState` mutated only by **EngineBlox** (linked via `DELEGATECALL`).
+2. **Distinct authorization actions** — direct approval can enforce a delay; meta-transaction approval separates signing from submission but does not inherit that delay. Effective separation depends on wallet-to-role assignments.
+3. **Defense in depth** — redundant gates on handler vs execution selectors, permissions, and tx status before external calls.
+
+</details>
+
+## Documentation
+
+| Topic | Link |
+|-------|------|
+| Public docs (Platform + SDK + Protocol) | [docs.bloxchain.app](https://docs.bloxchain.app) |
+| Protocol technical thesis | [WHITEPAPER.md](./WHITEPAPER.md) |
+| Account pattern | [docs/account-pattern.md](./docs/account-pattern.md) |
+| Getting started (SDK) | [docs/getting-started.md](./docs/getting-started.md) |
+| API reference | [docs/api-reference.md](./docs/api-reference.md) |
+| Core audit policy | [contracts/core/AUDIT.md](./contracts/core/AUDIT.md) |
+
+<details>
+<summary><strong>FAQ — for organizations</strong></summary>
+
+**What is Bloxchain in one sentence?**  
+An open-source framework so teams run blockchain operations through auditable on-chain rules — roles, waiting periods, and controlled external calls — instead of ad-hoc signing.
+
+**Can we use this on mainnet today?**  
+Official Protocol deployments are on **Sepolia** today. **Ethereum mainnet official deployments are coming soon.** Completing an audit does not mean mainnet is live.
+
+**What is bloxchain.app?**  
+An optional hosted Console to operate governed accounts in the browser (alpha, testnet-first). Same on-chain rules as self-hosted integrations — [docs.bloxchain.app](https://docs.bloxchain.app).
+
+**What was audited?**  
+The Protocol **core framework** (not every example app). [Nethermind NM_0828](./audits/nethermind/) · [AUDIT.md](./contracts/core/AUDIT.md).
+
+</details>
+
+<details>
+<summary><strong>FAQ — for developers</strong></summary>
+
+**Is this only for smart accounts?**  
+No. See [what you can build](#what-you-can-build) — vaults, tokens, factories, and Safe integrations compose subsets of the core.
+
+**How is this different from ERC-4337 / smart wallets?**  
+Operation-level governed workflows on-chain — not wallet UX or bundler infrastructure. [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
+
+**Are meta-transactions timelocked?**
+
+Not by the core meta-transaction approval path. Direct approval enforces `releaseTime`; meta approval uses separately permissioned signing and submission. See the [technical paper](./WHITEPAPER.md#33-direct-delay-and-meta-authorization-are-different-policies).
+
+**How is this different from OpenZeppelin AccessControl + Timelock?**  
+Unified transaction lifecycle (request → approve, sign → execute), guarded external execution, function schemas, and a single audited **EngineBlox** state machine.
+
+**Can I contribute to `contracts/core/`?**  
+No public PRs — audited core is maintained by Particle CS. See [CONTRIBUTING.md](./CONTRIBUTING.md) for docs, SDK, tooling, and examples.
+
+</details>
+
+<details id="sepolia--deployed-addresses">
+<summary><strong>Sepolia & deployed addresses</strong></summary>
+
+### Try on Sepolia
+
+```bash
+npm run create-wallet
+```
+
+Interactive: choose network, **AccountBlox** or custom blox, set owner / broadcaster / recovery and time-lock. Uses `.env.deployment` and prints the clone address.
+
+Non-interactive: `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js`
+
+### Deployment
+
+1. Copy `env.deployment.example` to `.env.deployment` — set `DEPLOY_RPC_URL`, `DEPLOY_PRIVATE_KEY`; Sepolia: `DEPLOY_CHAIN_ID=11155111`.
+2. **Foundation:** `npm run deploy:hardhat:foundation`
 3. **Example (CopyBlox):** `npx hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia`
 
 Addresses are written to **`deployed-addresses.json`**.
 
-### Deployed addresses
-
-**Ethereum Sepolia (testnet)**
-
-#### Foundation (libraries)
+### Official Sepolia addresses
 
 | Contract | Address |
 |----------|---------|
@@ -165,104 +230,45 @@ Addresses are written to **`deployed-addresses.json`**.
 | SecureOwnableDefinitions | [`0xcb8834e55c2c7b012e5643de98a1bf5fda22191c`](https://sepolia.etherscan.io/address/0xcb8834e55c2c7b012e5643de98a1bf5fda22191c) |
 | RuntimeRBACDefinitions | [`0x27c103b2b1a1e7dc345aeff766aa3656b4825653`](https://sepolia.etherscan.io/address/0x27c103b2b1a1e7dc345aeff766aa3656b4825653) |
 | GuardControllerDefinitions | [`0x6ce6f314fa35d34782f2743db4d0c1f824639938`](https://sepolia.etherscan.io/address/0x6ce6f314fa35d34782f2743db4d0c1f824639938) |
-
-#### Account
-
-| Contract | Address |
-|----------|---------|
 | AccountBlox | [`0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0`](https://sepolia.etherscan.io/address/0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0) |
+| CopyBlox (example) | [`0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7`](https://sepolia.etherscan.io/address/0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7) |
 
-#### Examples
+</details>
 
-| Contract | Address |
-|----------|---------|
-| CopyBlox | [`0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7`](https://sepolia.etherscan.io/address/0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7) |
-
-## 📖 Usage Examples
-
-```typescript
-import { SecureOwnable } from '@bloxchain/sdk';
-
-const secureOwnable = new SecureOwnable(publicClient, walletClient, contractAddress, chain);
-
-// Time-locked ownership transfer
-await secureOwnable.transferOwnershipRequest({ from: ownerAddress });
-await secureOwnable.transferOwnershipDelayedApproval(txId, { from: ownerAddress });
-```
-
-Meta-transactions (gasless) and Runtime RBAC examples: see [@bloxchain/sdk](https://www.npmjs.com/package/@bloxchain/sdk) and the repo `sdk/` and `test/` directories.
-
-## 🔐 Runtime RBAC & GuardController
-
-- **Runtime RBAC:** Dynamic roles via `roleConfigBatch`; function-level permissions (action bitmaps), protected system roles. Use `RuntimeRBAC` from `@bloxchain/sdk` for role creation and queries.
-- **GuardController:** Controlled external calls: per-function target whitelist, time-lock/meta-tx workflows. Register schemas, whitelist targets, then execute via EngineBlox workflows. See `AccountBlox` and example contracts.
-
-## 📋 Definition Data Layer
-
-`IDefinition` supplies **function schemas** and **role permissions** as `pure` functions; definitions live in separate libraries to keep contract size down. See `contracts/.../lib/definitions/` and SDK for discovery.
-
-## 🧪 Fuzz Testing
-
-**37 suites, 309 tests** (state machine, meta-tx, RBAC, GuardController, payments, hooks, definitions, gas limits, composite attacks). See [test/foundry/docs](test/foundry/docs/) for the Attack Vectors Codex.
+<details>
+<summary><strong>Development & testing</strong></summary>
 
 ```bash
-npm run test:foundry:fuzz
-# Or: forge test --match-path "test/foundry/fuzz/ComprehensiveStateMachineFuzz.t.sol" --fuzz-runs 10000
+npm run compile:foundry          # add :size for 24KB check
+npm run test:foundry
+npm run test:foundry:fuzz        # 37 suites, 309 tests — see test/foundry/docs/
+npm run test:e2e                 # SDK sanity on remote_evm
+npm run docgen
 ```
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full command matrix.
 
-## 🔧 Development Tools
+</details>
 
-Requires Node.js **>=22.12.0** for repo development (see root `package.json` `engines`). SDK runtime floor for npm consumers remains **>=18.20.5** in `sdk/typescript/package.json`.
+## Contributing
 
-```bash
-npm run compile:foundry          # compile; add :size for 24KB check
-npm run test:foundry            # tests
-npm run test:foundry:fuzz       # fuzz
-npm run test:e2e                # compile:foundry:abi + test:sanity-sdk:core (TypeScript SDK runner)
-npm run test:sanity-sdk:core    # live core suites (SecureOwnable, RuntimeRBAC, GuardController)
-npm run docgen                  # docs
-```
+Selective contributions welcome (docs, SDK aligned with core, tooling, examples) — **not** public PRs to **`contracts/core/`** (audited; Particle CS only). Security: [SECURITY.md](./SECURITY.md) only. DCO sign-off required (`git commit -s`). [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-**E2E vs legacy sanity:** `test:e2e` runs `compile:foundry:abi` then `test:sanity-sdk:core` — the TypeScript SDK-based runner for core integration suites on `remote_evm`. Prefer this over `test:sanity:core` (legacy Web3 `scripts/sanity/` runner; not in the default publish gate and may require extra deps). Use `RUN_SANITY_SDK_TESTS=1 npm run release:prepare` for the full pre-publish gate including live SDK tests.
+## License
 
-## 📚 Documentation
+**MPL-2.0** — [LICENSE](./LICENSE). **`contracts/examples/`** use per-file licenses (typically MIT).
 
-- **[Core audit & change policy](contracts/core/AUDIT.md)** · **[Nethermind report](audits/nethermind/)** · **[Technical overview](TECHNICAL_OVERVIEW.md)** – Source of truth, reviewer context, published audit
-- **[Versioning & releases](docs/VERSIONING.md)** – npm packages, on-chain `EngineBlox.VERSION`, Release Please
-- [Protocol Architecture](./docs/bloxchain-architecture.md) · [State Machine](./docs/state-machine-engine.md) · [Getting Started](./docs/getting-started.md) · [API Reference](./docs/api-reference.md) · [SecureOwnable](./docs/secure-ownable.md) · [RuntimeRBAC](./docs/runtime-rbac.md) · [Best Practices](./docs/best-practices.md) · [Examples](./docs/examples-basic.md)
-- **Contract API (generated):** [docs/](docs/) – generated from Solidity NatSpec via `npm run docgen`
+## Support
 
-## 🛡️ Security Features
+[GitHub Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues) · [Discussions](https://github.com/PracticalParticle/Bloxchain-Protocol/discussions)
 
-- **Single mutation surface, two-party ops, redundant gates** — see [System overview](#system-overview).
-- **Time-delay:** Request → (wait) → Approve → Execute. **Meta-tx:** Sign → Execute (signer ≠ executor).
-- **EIP-712** structured data, per-signer nonces, time-lock enforcement. Function-level permissions: Request/Approve/Cancel, Sign/Execute, plus dynamic RBAC.
+<details>
+<summary><strong>Star History</strong></summary>
 
-## 🌟 Key Benefits
+[![Star History Chart](https://api.star-history.com/svg?repos=PracticalParticle/Bloxchain-Protocol&type=Date)](https://star-history.com/#PracticalParticle/Bloxchain-Protocol&Date)
 
-**Developers:** No single-point failure; gasless meta-tx; runtime RBAC; type-safe SDK. **Enterprises:** Time-locks, audit trails, under-24KB contracts. **Users:** Recovery options, transparency.
-
-## 🔬 Technical Specifications
-
-**Stack:** Solidity 0.8.34, OpenZeppelin ^5.4.0 (upgradeable). **Libraries:** EngineBlox → BaseStateMachine → SecureOwnable, RuntimeRBAC, GuardController, HookManager. Contract size under 24KB; EIP-712; Viem-based TypeScript SDK. **Testing:** Foundry (fuzz + invariant), Hardhat, sanity scripts. All core components, template (AccountBlox), example apps, and Sepolia deployment are implemented and covered by tests.
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). We accept **selective** contributions (docs, SDK aligned with core, tooling, examples)—not public PRs to **`contracts/core/`** (audited; maintained by Particle CS only). Non-security core feedback: open a GitHub issue. Security: [SECURITY.md](SECURITY.md) only. All commits require [DCO](DCO) sign-off (`git commit -s`). [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## 📄 License
-
-**MPL-2.0** – see [LICENSE](LICENSE). Covers core contracts (`contracts/core/`), SDK (`sdk/typescript/`), docs, tests, tooling. **Excluded:** `contracts/examples/` (per-file SPDX licenses; in-repo samples are MIT). Inbound contributions: MPL-2.0 + [DCO](DCO); see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## 🙏 Acknowledgments
-
-[Particle CS](https://particlecs.com/), OpenZeppelin, Viem, Hardhat, Foundry.
-
-## 📞 Support & Community
-
-Docs: [`docs/`](./docs/). Examples: [`contracts/examples/`](./contracts/examples/). Tests: [`test/foundry/`](./test/foundry/) · [`scripts/sanity/`](./scripts/sanity/). [Issues](https://github.com/PracticalParticle/Bloxchain-Protocol/issues) · [Discussions](https://github.com/PracticalParticle/Bloxchain-Protocol/discussions).
+</details>
 
 ---
 
-Created by [Particle Crypto Security](https://particlecs.com/) · Copyright © 2025 Particle Crypto Security.
+Created by [Particle Crypto Security](https://particlecs.com/) · Copyright © 2025 Particle Crypto Security
