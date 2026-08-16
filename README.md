@@ -69,7 +69,16 @@ npm install @bloxchain/sdk
 import { SecureOwnable } from '@bloxchain/sdk';
 
 const secureOwnable = new SecureOwnable(publicClient, walletClient, contractAddress, chain);
-await secureOwnable.transferOwnershipRequest({ from: ownerAddress });
+
+// Request must come from RECOVERY_ROLE (new owner is snapshotted from getRecovery() at request time)
+const request = await secureOwnable.transferOwnershipRequest({ from: recoveryAddress });
+await request.wait();
+
+const pending = await secureOwnable.getPendingTransactions();
+const txId = pending[pending.length - 1];
+const record = await secureOwnable.getTransaction(txId);
+
+// After record.releaseTime, owner or recovery may approve on the direct delayed path
 await secureOwnable.transferOwnershipDelayedApproval(txId, { from: ownerAddress });
 ```
 
