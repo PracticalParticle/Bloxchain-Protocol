@@ -32,9 +32,9 @@ jobs:
         run: npm ci
 
       - name: Setup Foundry
-        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
-          version: v1.5.1
+          version: v1.7.1
 
       - name: Compile contracts
         run: npm run compile:foundry
@@ -51,15 +51,80 @@ jobs:
       - name: Install Slither and Mythril
         if: github.event_name == 'workflow_dispatch'
         run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install slither-analyzer==0.11.6 mythril==0.24.8
+          python -m venv .venv-slither
+          .venv-slither/bin/python -m pip install --upgrade pip
+          .venv-slither/bin/python -m pip install slither-analyzer==0.11.6
+
+          python -m venv .venv-mythril
+          .venv-mythril/bin/python -m pip install --upgrade pip
+          .venv-mythril/bin/python -m pip install mythril==0.24.8
 
       - name: Run Slither
         if: github.event_name == 'workflow_dispatch'
-        run: .venv/bin/slither . --exclude-dependencies
+        run: .venv-slither/bin/slither . --exclude-dependencies
 
       - name: Run Mythril
         if: github.event_name == 'workflow_dispatch'
         run: |
-          find contracts -name "*.sol" -not -path "contracts/test/*" -not -path "contracts/mock/*" -exec .venv/bin/myth analyze {} --execution-timeout 300 \;
+          python -c 'import json; from pathlib import Path; Path("mythril-solc-settings.json").write_text(json.dumps({"optimizer":{"enabled":True,"runs":200},"viaIR":True,"evmVersion":"osaka","remappings":["@openzeppelin/=node_modules/@openzeppelin/","forge-std/=lib/forge-std/src/"]}, indent=2) + "\n", encoding="utf-8")'
+          cat > check_mythril_result.py <<'PY'
+          import json
+          import sys
+
+          path, status, contract = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          failed = False
+
+          if status != 0:
+              print(f"Mythril process failed for {contract} (exit {status})")
+              failed = True
+
+          try:
+              with open(path, encoding="utf-8") as handle:
+                  payload = json.load(handle)
+          except Exception as exc:
+              print(f"Mythril JSON invalid for {contract}: {exc}")
+              sys.exit(1)
+
+          if not payload.get("success", False):
+              print(f"Mythril success=false for {contract}: {payload.get('error')}")
+              failed = True
+
+          issues = payload.get("issues") or []
+          if issues:
+              print(f"Mythril reported {len(issues)} finding(s) for {contract}")
+              failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+          mkdir -p mythril-out
+          failed=0
+          while IFS= read -r -d '' file; do
+            echo "::group::Mythril ${file}"
+            safe_name=$(printf '%s' "$file" | tr '/\\' '__')
+            out="mythril-out/${safe_name}.json"
+            err="mythril-out/${safe_name}.err"
+
+            set +e
+            .venv-mythril/bin/myth analyze "$file" \
+              --solc-json mythril-solc-settings.json \
+              --solv 0.8.35 \
+              --execution-timeout 300 \
+              -o json >"$out" 2>"$err"
+            status=$?
+            set -e
+
+            if [ -s "$err" ]; then
+              cat "$err"
+            fi
+
+            if ! .venv-mythril/bin/python check_mythril_result.py "$out" "$status" "$file"; then
+              failed=1
+            fi
+            echo "::endgroup::"
+          done < <(find contracts -name '*.sol' -not -path 'contracts/test/*' -not -path 'contracts/mock/*' -print0)
+
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more Mythril scans failed"
+            exit 1
+          fi
