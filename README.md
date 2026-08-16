@@ -6,7 +6,7 @@
 
 # Bloxchain Protocol
 
-**Composable security framework for governed Ethereum applications.**
+**Open-source composable security framework for governed Ethereum applications.**
 
 Build on-chain security and authorization rules into vaults, tokens, payments, and governed accounts.
 
