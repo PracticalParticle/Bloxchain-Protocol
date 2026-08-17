@@ -2,16 +2,21 @@
 
 Visual system for **Protocol README IA + Visual System Reset** — Particle monochrome figure with soft atmosphere; colorful OSS badges stay as industry-standard trust chips.
 
-| File | Purpose |
-|------|---------|
-| `logo-bloxchain.svg` | `[Bx]` mark alone (light) |
-| `logo-bloxchain-dark.svg` | `[Bx]` mark alone (dark) |
-| `logo-lockup-light.svg` | Full-width gradient hero strip + centered mark/wordmark |
-| `logo-lockup-dark.svg` | Full-width hero strip (dark) |
-| `protocol-composition-light.svg` | Soft-field composition figure + plain-language labels |
-| `protocol-composition-dark.svg` | Same geometry, dark atmosphere |
-| `badge-audit-nethermind.svg` | Shields-style `audit \| Nethermind NM_0828` → PDF |
-| `social-preview.svg` | Source for OG card |
+**Dark plates only.** No light variants and no `#gh-*-mode-only` / `<picture>` theme switching in `README.md`.
+
+| File | README placement | Purpose |
+|------|------------------|---------|
+| `logo-lockup-dark.svg` | Hero (header only) | Full-width hero strip + mark/wordmark |
+| `protocol-composition-dark.svg` | `## Architecture` only | Composition figure + plain-language labels |
+| `logo-bloxchain-dark.svg` | Not embedded | `[Bx]` mark alone (reuse / OG source) |
+| `badge-audit-nethermind.svg` | Badge row | Shields-style `audit \| Nethermind NM_0828` → PDF |
+| `social-preview.svg` | Not in body | Source for OG card |
+
+## README IA
+
+1. **Hero** — dark lockup only (brand).
+2. **Architecture** — one composition SVG for humans; Mermaid lives in a `<details>` block for agents / raw markdown.
+3. Do not embed the composition figure in the hero (avoids duplicate topology).
 
 ## Social preview
 
@@ -21,5 +26,7 @@ Raster: [`.github/social-preview.png`](../../.github/social-preview.png) (1280×
 
 - Logo lockup SVG carries large **Bloxchain** wordmark + soft wash/gradient; outer plate uses card radius (`rx="20"`)
 - Composition figure: same outer plate radius; Title Case names; plain-language subtitles; soft plate/glow — no side rails
+- Composition embeds a washed `[Bx]` mark (no diagram title); annotated optional siblings use wider cards so labels fit
 - No ALL-CAPS node titles; hierarchy via weight and stroke, not case
 - OG image is not embedded in the README body
+- Do not reintroduce light/dark dual embedding in `README.md`
