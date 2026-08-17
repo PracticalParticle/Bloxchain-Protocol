@@ -134,7 +134,7 @@ export abstract class BaseSDKTest {
    * Initialize in manual mode (use provided addresses and keys)
    */
   async initializeManualMode(): Promise<void> {
-    console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
+    console.log('👤 MANUAL MODE: Using provided contract addresses and wallets...');
 
     try {
       // Get contract address from environment
@@ -331,7 +331,7 @@ export abstract class BaseSDKTest {
       this.testResults.failedTests++;
     }
     console.log(`❌ ${testName} failed: ${error.message}`);
-    if (error.stack) {
+    if (process.env.DEBUG && error.stack) {
       console.log(`   Stack: ${error.stack}`);
     }
   }

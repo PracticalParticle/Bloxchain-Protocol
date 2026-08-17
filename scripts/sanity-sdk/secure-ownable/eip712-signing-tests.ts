@@ -167,8 +167,7 @@ export class EIP712SigningTests extends BaseSecureOwnableTest {
         ownerWallet.privateKey
       );
       this.assertTest(!!signedMetaTx.signature && signedMetaTx.signature.length > 0, 'Meta-transaction signed successfully');
-      console.log(`  ✅ Meta-transaction signed successfully`);
-      console.log(`  📋 Signature: ${signedMetaTx.signature}`);
+      console.log(`  ✅ Meta-transaction signed successfully (length=${signedMetaTx.signature.length})`);
 
       // Verify signature is valid format (65 bytes = 130 hex chars + 0x prefix)
       const signatureLength = signedMetaTx.signature.length;

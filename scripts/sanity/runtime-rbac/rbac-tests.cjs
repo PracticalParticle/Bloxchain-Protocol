@@ -88,7 +88,9 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             } catch (error) {
                 console.log(`  ⚠️  Could not check permissions: ${error.message}, assuming missing`);
-                console.log(`  🔍 DIAGNOSTIC: Error details: ${error.stack}`);
+                if (process.env.DEBUG && error.stack) {
+                    console.log(`  🔍 DIAGNOSTIC: Error details: ${error.stack}`);
+                }
             }
             
             console.log(`  📋 Handler permission (${this.ROLE_CONFIG_BATCH_META_SELECTOR}): ${handlerHasPermission ? '✅' : '❌'}`);
@@ -176,7 +178,9 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                         );
                     } catch (execError) {
                         console.log(`  ❌ executeRoleConfigBatch threw an error: ${execError.message}`);
-                        console.log(`  📋 Error stack: ${execError.stack}`);
+                        if (process.env.DEBUG && execError.stack) {
+                            console.log(`  📋 Error stack: ${execError.stack}`);
+                        }
                         
                         // Check if error is ResourceAlreadyExists
                         if (execError.message && (execError.message.includes('ResourceAlreadyExists') || execError.message.includes('0x430fab94'))) {
@@ -1976,7 +1980,9 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             } catch (e) {
                 console.log(`  ⚠️  DIAGNOSTIC: Could not check permissions: ${e.message}`);
-                console.log(`  📋 Error stack: ${e.stack}`);
+                if (process.env.DEBUG && e.stack) {
+                    console.log(`  📋 Error stack: ${e.stack}`);
+                }
             }
             
             // Create function permission for mint function

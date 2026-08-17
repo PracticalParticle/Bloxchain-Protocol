@@ -52,12 +52,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           python -m venv .venv-slither
-          .venv-slither/bin/python -m pip install --upgrade pip
-          .venv-slither/bin/python -m pip install slither-analyzer==0.11.6
+          .venv-slither/bin/python -m pip install --require-hashes -r .github/requirements/slither.txt
 
           python -m venv .venv-mythril
-          .venv-mythril/bin/python -m pip install --upgrade pip
-          .venv-mythril/bin/python -m pip install mythril==0.24.8
+          .venv-mythril/bin/python -m pip install --require-hashes -r .github/requirements/mythril.txt
 
       - name: Run Slither
         if: github.event_name == 'workflow_dispatch'

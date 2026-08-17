@@ -253,7 +253,7 @@ class BaseGuardControllerTest {
     }
 
     async initializeManualMode() {
-        console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
+        console.log('👤 MANUAL MODE: Using provided contract addresses and wallets...');
         
         try {
             const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
@@ -1008,7 +1008,9 @@ class BaseGuardControllerTest {
     handleTestError(testName, error) {
         this.testResults.failedTests++;
         console.log(`❌ ${testName} failed: ${error.message}`);
-        console.log(`   Stack: ${error.stack}`);
+        if (process.env.DEBUG && error.stack) {
+            console.log(`   Stack: ${error.stack}`);
+        }
     }
 
     async startTest(testDescription) {
@@ -1562,7 +1564,7 @@ class BaseGuardControllerTest {
             if (error.data) {
                 console.error(`  📋 Error data: ${JSON.stringify(error.data, null, 2)}`);
             }
-            if (error.stack) {
+            if (process.env.DEBUG && error.stack) {
                 console.error(`  📋 Stack trace: ${error.stack}`);
             }
             throw error;

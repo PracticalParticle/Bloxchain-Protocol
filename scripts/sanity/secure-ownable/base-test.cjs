@@ -138,7 +138,7 @@ class BaseSecureOwnableTest {
     }
 
     async initializeManualMode() {
-        console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
+        console.log('👤 MANUAL MODE: Using provided contract addresses and wallets...');
         
         try {
             const networkName = process.env.NETWORK_NAME || process.env.GUARDIAN_NETWORK || 'remote_evm';
@@ -443,7 +443,9 @@ class BaseSecureOwnableTest {
     handleTestError(testName, error) {
         this.testResults.failedTests++;
         console.log(`❌ ${testName} failed: ${error.message}`);
-        console.log(`   Stack: ${error.stack}`);
+        if (process.env.DEBUG && error.stack) {
+            console.log(`   Stack: ${error.stack}`);
+        }
     }
 
     async getRoleHash(roleName) {
