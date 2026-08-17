@@ -92,7 +92,7 @@ class EIP712SigningTests extends BaseSecureOwnableTest {
         this.assertTest(signature.signature.length > 0, 'Signature has content');
         this.assertTest(signature.signature.startsWith('0x'), 'Signature starts with 0x');
         this.assertTest(signature.signature.length === 132, 'Signature has correct length (65 bytes)');
-        console.log(`  ✅ Signature generated: ${signature.signature.substring(0, 20)}...`);
+        console.log(`  ✅ Signature generated (length=${signature.signature.length})`);
         console.log('✅ Meta-transaction signing tests passed\n');
     }
 
@@ -163,7 +163,7 @@ class EIP712SigningTests extends BaseSecureOwnableTest {
         console.log(`  ✅ Signature verification successful`);
         console.log(`  📋 Signer: ${fullMetaTx.params.signer}`);
         console.log(`  📡 Handler Contract: ${fullMetaTx.params.handlerContract}`);
-        console.log(`  🔐 Signature: ${signature.signature.substring(0, 20)}...`);
+        console.log(`  🔐 Signature present (length=${signature.signature.length})`);
         
         console.log('✅ Signature verification tests passed\n');
     }

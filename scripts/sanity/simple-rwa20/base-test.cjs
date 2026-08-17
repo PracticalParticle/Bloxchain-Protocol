@@ -110,7 +110,7 @@ class BaseSimpleRWA20Test {
     }
 
     async initializeManualMode() {
-        console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
+        console.log('👤 MANUAL MODE: Using provided contract addresses and wallets...');
         
         try {
             // Get contract address from environment

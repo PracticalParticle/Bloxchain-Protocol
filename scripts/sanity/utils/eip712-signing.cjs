@@ -154,7 +154,7 @@ class EIP712Signer {
                 hash: messageHash,
                 signature: signatureHex
             });
-            console.log(`✍️ Signature: ${signatureHex}`);
+            console.log(`✍️ Signature produced (length=${signatureHex.length})`);
             console.log(`🔑 Signer: ${recoveredAddress}`);
 
             const signerAddress = (metaTx.params && metaTx.params.signer) ? metaTx.params.signer : recoveredAddress;
