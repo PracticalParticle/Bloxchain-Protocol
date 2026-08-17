@@ -1,0 +1,9 @@
+# Scan shipped JS/TS (sdk/typescript). Local sanity harnesses read
+# ACCOUNTBLOX_ADDRESS / TEST_WALLET_*_PRIVATE_KEY from process.env and log
+# public contract addresses; js/clear-text-logging taints all process.env
+# and files High alerts that are not credential leaks.
+name: Bloxchain Protocol JS/TS
+paths-ignore:
+  - scripts/sanity/**
+  - scripts/sanity-sdk/**
+  - scripts/count-loc.cjs
