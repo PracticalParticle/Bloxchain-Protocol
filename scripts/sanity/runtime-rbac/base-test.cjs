@@ -594,10 +594,6 @@ class BaseRuntimeRBACTest {
     handleTestError(testName, error) {
         this.testResults.failedTests++;
         console.log(`❌ ${testName} failed: ${error.message}`);
-        if (process.env.DEBUG) {
-            const errorName = (error && error.name) ? error.name : 'Error';
-            console.log(`   Debug: ${errorName} (stack trace suppressed to avoid logging sensitive data)`);
-        }
     }
 
     async startTest(testDescription) {

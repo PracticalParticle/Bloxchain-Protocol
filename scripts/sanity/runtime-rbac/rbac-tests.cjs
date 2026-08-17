@@ -88,10 +88,6 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             } catch (error) {
                 console.log(`  ⚠️  Could not check permissions: ${error.message}, assuming missing`);
-                if (process.env.DEBUG) {
-                    const errorName = (error && error.name) ? error.name : 'Error';
-                    console.log(`  🔍 DIAGNOSTIC: ${errorName} (stack trace suppressed to avoid logging sensitive data)`);
-                }
             }
             
             console.log(`  📋 Handler permission (${this.ROLE_CONFIG_BATCH_META_SELECTOR}): ${handlerHasPermission ? '✅' : '❌'}`);
@@ -179,10 +175,6 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                         );
                     } catch (execError) {
                         console.log(`  ❌ executeRoleConfigBatch threw an error: ${execError.message}`);
-                        if (process.env.DEBUG) {
-                            const errorName = (execError && execError.name) ? execError.name : 'Error';
-                            console.log(`  📋 Debug: ${errorName} (stack trace suppressed to avoid logging sensitive data)`);
-                        }
                         
                         // Check if error is ResourceAlreadyExists
                         if (execError.message && (execError.message.includes('ResourceAlreadyExists') || execError.message.includes('0x430fab94'))) {
@@ -1982,10 +1974,6 @@ class RuntimeRBACTests extends BaseRuntimeRBACTest {
                 }
             } catch (e) {
                 console.log(`  ⚠️  DIAGNOSTIC: Could not check permissions: ${e.message}`);
-                if (process.env.DEBUG) {
-                    const errorName = (e && e.name) ? e.name : 'Error';
-                    console.log(`  📋 Debug: ${errorName} (stack trace suppressed to avoid logging sensitive data)`);
-                }
             }
             
             // Create function permission for mint function
