@@ -26,6 +26,11 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "dev"
+    ignore:
+      # docgen intentionally remains on the isolated Hardhat 2.x toolchain.
+      - dependency-name: "hardhat"
+        update-types:
+          - "version-update:semver-major"
 
   # Published contract package
   - package-ecosystem: "npm"

@@ -1,31 +1,16 @@
 <p align="center">
   <a href="https://github.com/PracticalParticle/Bloxchain-Protocol">
-    <img src="./docs/assets/logo-lockup-light.svg#gh-light-mode-only" alt="Bloxchain" width="100%">
-    <img src="./docs/assets/logo-lockup-dark.svg#gh-dark-mode-only" alt="Bloxchain" width="100%">
+    <img src="./docs/assets/logo-lockup-dark.svg" alt="Bloxchain" width="100%">
   </a>
 </p>
 
 # Bloxchain Protocol
 
-**Composable security framework for governed Ethereum applications.**
+**Open-source composable security framework for governed Ethereum applications.**
 
 Build on-chain security and authorization rules into vaults, tokens, payments, and governed accounts.
 
-[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol)
-[![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk)
-[![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml)
-[![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app)
-[![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/protocol-composition-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/protocol-composition-light.svg">
-    <img src="./docs/assets/protocol-composition-light.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
-  </picture>
-</p>
+[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0) [![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol) [![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk) [![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml) [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app) [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
 
 **Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
@@ -52,6 +37,17 @@ The optional hosted Console ([bloxchain.app](https://bloxchain.app)) uses the sa
 
 EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings** — most apps use a subset. The **Account** pattern composes all three. Example applications sit below as evidence, not as the product.
 
+<p align="center">
+  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
+</p>
+
+**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset; examples (vaults, payments, tokens, factories, Safe) sit below Account as evidence.
+
+Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
+
+<details>
+<summary><strong>Architecture graph (machine-readable)</strong></summary>
+
 ```mermaid
 graph TB
   EB["EngineBlox"]
@@ -69,7 +65,7 @@ graph TB
   GC --> ACC
 ```
 
-Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
+</details>
 
 <details>
 <summary><strong>Architecture guarantees (protocol engineers)</strong></summary>
