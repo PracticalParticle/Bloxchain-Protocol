@@ -100,8 +100,9 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         console.log(`    ✅ Execution params created for ${description}: ${executionOptions}`);
       } catch (error: any) {
         console.error(`    ❌ Failed to get execution params: ${error.message}`);
-        if (process.env.DEBUG && error.stack) {
-          console.error(`    ❌ Error stack: ${error.stack}`);
+        if (process.env.DEBUG) {
+          const errorName = (error && error.name) ? error.name : 'Error';
+          console.error(`    ❌ Debug: ${errorName} (stack trace suppressed to avoid logging sensitive data)`);
         }
         throw new Error(`Failed to get execution params: ${error.message}`);
       }
