@@ -56,6 +56,9 @@ library EngineBlox {
     
     /// @dev Maximum total number of functions allowed in the system (prevents gas exhaustion in function operations)
     uint256 public constant MAX_FUNCTIONS = 2000;
+
+    /// @dev SPIKE(EXP-0015-E11): ERC-1271 magic value — bytes4(keccak256("isValidSignature(bytes32,bytes)"))
+    bytes4 private constant ERC1271_IS_VALID_SIGNATURE_SELECTOR = 0x1626ba7e;
     
     using SharedValidation for *;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -1768,8 +1771,8 @@ library EngineBlox {
         SecureOperationState storage self,
         MetaTransaction memory metaTx
     ) private view returns (bool) {
-        // Basic validation
-        SharedValidation.validateSignatureLength(metaTx.signature);
+        // SPIKE(EXP-0015-E11): length is validated per-branch below. The ECDSA branch still enforces
+        // 65 bytes inside recoverSigner; the EIP-1271 branch accepts contract-defined signature blobs.
         _validateTxStatus(self, metaTx.txRecord.txId, TxStatus.PENDING);
         
         // Transaction parameters validation
@@ -1805,11 +1808,38 @@ library EngineBlox {
         }
           
         // Signature verification
+        // SPIKE(EXP-0015-E11): dual dispatch — EOA signers via ecrecover, contract signers via EIP-1271.
+        // The EIP-712 digest is identical on both branches, so the domain/struct hash and the SDK
+        // typed-data definition are unchanged.
         bytes32 messageHash = generateMessageHash(metaTx);
-        address recoveredSigner = recoverSigner(messageHash, metaTx.signature);
-        if (recoveredSigner != metaTx.params.signer) revert SharedValidation.InvalidSignature(metaTx.signature);
+        if (metaTx.params.signer.code.length == 0) {
+            address recoveredSigner = recoverSigner(messageHash, metaTx.signature);
+            if (recoveredSigner != metaTx.params.signer) revert SharedValidation.InvalidSignature(metaTx.signature);
+        } else if (!_isValidContractSignature(metaTx.params.signer, messageHash, metaTx.signature)) {
+            revert SharedValidation.InvalidSignature(metaTx.signature);
+        }
 
         return true;
+    }
+
+    /**
+     * @dev SPIKE(EXP-0015-E11): EIP-1271 verification for contract signers.
+     *      Fails closed: a staticcall that reverts, returns the wrong width, or returns any value
+     *      other than the ERC-1271 magic value is treated as an invalid signature.
+     * @param signer The contract expected to authorise `hash`
+     * @param hash The EIP-712 digest produced by generateMessageHash
+     * @param signature Opaque signature blob interpreted by `signer`
+     * @return True only on an explicit ERC-1271 magic-value response
+     */
+    function _isValidContractSignature(
+        address signer,
+        bytes32 hash,
+        bytes memory signature
+    ) private view returns (bool) {
+        (bool ok, bytes memory ret) = signer.staticcall(
+            abi.encodeWithSelector(ERC1271_IS_VALID_SIGNATURE_SELECTOR, hash, signature)
+        );
+        return ok && ret.length == 32 && bytes4(ret) == ERC1271_IS_VALID_SIGNATURE_SELECTOR;
     }
 
     /**
