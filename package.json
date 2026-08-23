@@ -76,6 +76,6 @@
     "husky": "9.1.7",
     "release-please": "17.11.1",
     "typescript": "7.0.2",
-    "viem": "2.55.15"
+    "viem": "2.55.19"
   }
 }
