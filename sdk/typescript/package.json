@@ -59,7 +59,7 @@
     "viem": "2.55.15"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
+    "@types/node": "26.4.0",
     "typescript": "6.0.2"
   },
   "peerDependencies": {
