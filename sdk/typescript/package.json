@@ -56,7 +56,7 @@
     "access": "public"
   },
   "dependencies": {
-    "viem": "2.55.15"
+    "viem": "2.56.3"
   },
   "devDependencies": {
     "@types/node": "26.2.0",
