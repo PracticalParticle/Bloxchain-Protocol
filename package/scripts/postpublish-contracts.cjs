@@ -10,6 +10,8 @@ const copiedAbiDir = path.join(contractsDir, 'abi');
 const copiedStandardsDir = path.join(contractsDir, 'standards');
 const copiedComponentsDir = path.join(contractsDir, 'components');
 const copiedCoreDir = path.join(contractsDir, 'core');
+const copiedArtifactsDir = path.join(contractsDir, 'artifacts');
+const copiedOfficialAddresses = path.join(contractsDir, 'official-deployed-addresses.json');
 
 console.log('🧹 Cleaning up after publish...\n');
 
@@ -36,6 +38,16 @@ if (fs.existsSync(copiedComponentsDir)) {
 if (fs.existsSync(copiedCoreDir)) {
   fs.rmSync(copiedCoreDir, { recursive: true, force: true });
   console.log('✅ Removed copied core directory');
+}
+
+if (fs.existsSync(copiedArtifactsDir)) {
+  fs.rmSync(copiedArtifactsDir, { recursive: true, force: true });
+  console.log('✅ Removed copied artifacts directory');
+}
+
+if (fs.existsSync(copiedOfficialAddresses)) {
+  fs.rmSync(copiedOfficialAddresses, { force: true });
+  console.log('✅ Removed copied official-deployed-addresses.json');
 }
 
 console.log('\n✅ Cleanup complete!');

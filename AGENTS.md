@@ -118,7 +118,7 @@ Agents **must not**:
 - Commit secrets or modify:
   - `.env`
   - Deployment keys or secret configs
-- Hard‑code private keys, RPC URLs, or production contract addresses in source; use envs or `deployed-addresses.json`.
+- Hard‑code private keys, RPC URLs, or production contract addresses in source; use envs, `official-deployed-addresses.json` (published, official networks) or `deployed-addresses.json` (local, git‑ignored).
 - Change CI / security enforcement to “work around” tests or linters (e.g. disabling checks, lowering coverage, skipping Slither/Semgrep).
 - Remove or weaken timelock, RBAC, or whitelist checks to “simplify” flows.
 
@@ -155,7 +155,7 @@ If an operation requires touching live deployments or production infra, stop and
   - When wiring flows (role config, guard config, meta‑tx ops), follow the same ordering and constraints as the definition libraries:
     - `contracts/core/access/lib/definitions/RuntimeRBACDefinitions.sol`
     - `contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol`
-  - Use `deployed-addresses.json` as the canonical source for contract addresses per network.
+  - Use `official-deployed-addresses.json` as the canonical source for addresses on official networks; it is what ships with `@bloxchain/contracts`. `deployed-addresses.json` is deployment‑script output for whatever network was targeted (local and lab included), is git‑ignored, and is never the published source of truth. Do not promote rows between them by hand: use `npm run promote:official-addresses`, which requires an explicit `--declare`.
 
 ---
 
