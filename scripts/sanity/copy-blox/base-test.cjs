@@ -102,7 +102,7 @@ class BaseCopyBloxTest {
     }
 
     async initializeManualMode() {
-        console.log('👤 MANUAL MODE: Using provided contract addresses and private keys...');
+        console.log('👤 MANUAL MODE: Using provided contract addresses and wallets...');
 
         try {
             this.contractAddress = process.env.COPYBLOX_ADDRESS;

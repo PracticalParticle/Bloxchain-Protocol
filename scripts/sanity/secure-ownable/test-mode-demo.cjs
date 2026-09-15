@@ -81,7 +81,7 @@ async function runDemo() {
         console.log('\n📋 NEXT STEPS:');
         console.log('1. Try switching TEST_MODE between "auto" and "manual" in your .env file');
         console.log('2. For auto mode: Start Ganache and run "npm run deploy:truffle"');
-        console.log('3. For manual mode: Update contract addresses and private keys in .env');
+        console.log('3. For manual mode: Update contract addresses and wallet env vars in .env');
         console.log('4. Run other sanity tests to verify full functionality');
     } else {
         console.log('\n❌ Test Mode Demo failed. Check the output above for details.');

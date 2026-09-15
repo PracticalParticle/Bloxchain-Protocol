@@ -66,8 +66,60 @@ export * from './utils/bitmap.js';
 export * from './utils/validations.js';
 export * from './utils/erc20/erc20Token.js';
 export { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransaction.js';
+
+// EIP-712 meta-transaction constants (public: build a signer-policy condition or a
+// browser `signTypedData` call without re-deriving the shape the SDK signs).
+export {
+  META_TX_DOMAIN,
+  META_TX_DOMAIN_NAME,
+  META_TX_PRIMARY_TYPE,
+  META_TX_TYPES,
+  META_TX_TYPED_DATA_TYPES_AS_SIGNED,
+  EIP712_DOMAIN_TYPE,
+  buildTypedDataMessage,
+  buildMetaTxTypedData,
+  metaTxDeadlineFor
+} from './utils/metaTx/metaTransaction.js';
+export type { MetaTxTypedData, MetaTxDeadlineDuration } from './utils/metaTx/metaTransaction.js';
+
 export * from './utils/contract-errors.js';
 export * from './utils/viem-error-handler.js';
+
+// Structured failure analysis (revert bytes kept, signer refusals named).
+export {
+  explainError,
+  extractRevertData,
+  decodeRevert,
+  classifySignerError,
+  errorTextChain,
+  isAddressShapedHex,
+  isRevertNamed
+} from './utils/errors.js';
+export type {
+  ExplainedError,
+  ExplainErrorOptions,
+  ExtractRevertDataOptions,
+  DecodedRevert,
+  SignerFailure,
+  SignerErrorCode,
+  FailureKind
+} from './utils/errors.js';
+
+// Inner transaction status — a mined transaction is not a successful one.
+export {
+  ENGINE_BLOX_EVENTS_ABI,
+  TX_STATUS_NAMES,
+  txStatusName,
+  readInnerOutcomes,
+  assertInnerSuccess,
+  waitForTransactionAndAssertInner,
+  InnerTransactionFailedError
+} from './utils/tx-inner-status.js';
+export type { InnerTxOutcome, InnerStatusAssertOptions } from './utils/tx-inner-status.js';
+
+// ABIs — also reachable as `@bloxchain/sdk/abi` and `@bloxchain/sdk/abi/<Name>`.
+export { ABIS, ALL_ERROR_ABI } from './abi.js';
+export type { BloxchainAbiName } from './abi.js';
 export {
   INTERFACE_IDS,
   ComponentDetection,

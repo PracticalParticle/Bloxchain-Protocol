@@ -1,0 +1,28 @@
+/**
+ * AccountBlox contract ABI — the published artifact, reachable without transcription.
+ *
+ * ```ts
+ * import { accountBloxAbi } from '@bloxchain/sdk/abi/AccountBlox';
+ * ```
+ *
+ * The same bytes are also reachable as raw JSON via
+ * `@bloxchain/sdk/abi/AccountBlox.abi.json`, and from the typed barrel
+ * `@bloxchain/sdk/abi`.
+ */
+import type { Abi } from 'viem';
+import abiJson from '../abi/AccountBlox.abi.json' with { type: 'json' };
+
+/** AccountBlox contract ABI (full, as published in `abi/AccountBlox.abi.json`). */
+export const accountBloxAbi = abiJson as Abi;
+
+/** AccountBlox ABI entries for custom errors only (for viem `decodeErrorResult`). */
+export const accountBloxErrorAbi = accountBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
+);
+
+/** AccountBlox ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
+export const accountBloxEventAbi = accountBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
+);
+
+export default accountBloxAbi;

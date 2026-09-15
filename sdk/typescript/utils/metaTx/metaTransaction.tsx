@@ -22,13 +22,35 @@ import { EngineBlox } from '../../lib/EngineBlox.js';
  * tuple for `bytes4` selectors such as `roleConfigBatchRequestAndApprove(...)`).
  */
 
+/** EIP-712 domain `name` for every Bloxchain meta-transaction (matches `EngineBlox.PROTOCOL_NAME_HASH`). */
+export const META_TX_DOMAIN_NAME = 'Bloxchain' as const;
+
+/** EIP-712 `primaryType` for every Bloxchain meta-transaction. */
+export const META_TX_PRIMARY_TYPE = 'MetaTransaction' as const;
+
 /** EIP-712 domain and types matching EngineBlox (selective MetaTxRecord: txId, params, payment only) */
 export const META_TX_DOMAIN = {
-  name: 'Bloxchain' as const,
+  name: META_TX_DOMAIN_NAME,
   version: EngineBlox.VERSION,
   chainId: 0, // set per sign
   verifyingContract: '0x' as Address // set per sign
 };
+
+/**
+ * The `EIP712Domain` type list for the four domain fields Bloxchain populates
+ * (`name`, `version`, `chainId`, `verifyingContract`).
+ *
+ * viem derives this itself from the domain's present fields and does not ask you
+ * for it — but signer *policies* do. Privy's `ethereum_typed_data_message`
+ * condition, for example, matches on the exact `types` object it receives, which
+ * is why {@link META_TX_TYPED_DATA_TYPES_AS_SIGNED} exists.
+ */
+export const EIP712_DOMAIN_TYPE = [
+  { name: 'name', type: 'string' },
+  { name: 'version', type: 'string' },
+  { name: 'chainId', type: 'uint256' },
+  { name: 'verifyingContract', type: 'address' }
+] as const;
 
 export const META_TX_TYPES = {
   MetaTransaction: [
@@ -68,6 +90,30 @@ export const META_TX_TYPES = {
   ]
 } as const;
 
+/**
+ * The type set exactly as it reaches a signer.
+ *
+ * viem's `signTypedData` prepends `EIP712Domain` (derived from the domain's
+ * present fields) before handing the request to the account, so this — not the
+ * bare {@link META_TX_TYPES} list — is what an `eth_signTypedData_v4` request
+ * actually carries.
+ *
+ * Use it wherever something matches on the request rather than producing it:
+ *
+ * - a signer **policy** condition that pins which typed data may be signed
+ *   (Privy's `ethereum_typed_data_message` compares `types` exactly — the bare
+ *   list without `EIP712Domain` matches nothing);
+ * - a browser `signTypedData` call through a library that takes an
+ *   eth-sig-util `TypedMessage`, which wants `EIP712Domain` in `types`.
+ *
+ * Pass {@link META_TX_TYPES} to viem itself; pass this to anything inspecting
+ * the outgoing request.
+ */
+export const META_TX_TYPED_DATA_TYPES_AS_SIGNED = {
+  EIP712Domain: EIP712_DOMAIN_TYPE,
+  ...META_TX_TYPES
+} as const;
+
 /** EIP-712 message shape for MetaTransaction (for typed-data signing) */
 export function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, unknown> {
   const params = metaTx.txRecord.params;
@@ -104,6 +150,113 @@ export function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, u
     },
     data: metaTx.data ?? ('0x' as Hex)
   };
+}
+
+/**
+ * A meta-transaction validity window, in **seconds of duration** — not an
+ * absolute Unix timestamp.
+ *
+ * `createMetaTxParams` (both the Solidity view and the SDK wrappers) adds this
+ * to `block.timestamp` on chain. Naming the argument through this alias is the
+ * only signal TypeScript can carry; see {@link metaTxDeadlineFor} for how to
+ * compute one safely.
+ */
+export type MetaTxDeadlineDuration = bigint;
+
+/**
+ * A complete EIP-712 typed-data payload for a Bloxchain meta-transaction.
+ *
+ * `types` is the as-signed set (it includes `EIP712Domain`), so the object can
+ * be handed straight to an eth-sig-util `TypedMessage` consumer or compared
+ * against a signer-policy condition. viem tolerates the extra entry.
+ */
+export interface MetaTxTypedData {
+  types: Record<string, ReadonlyArray<{ name: string; type: string }>>;
+  primaryType: typeof META_TX_PRIMARY_TYPE;
+  domain: {
+    name: typeof META_TX_DOMAIN_NAME;
+    version: string;
+    chainId: number;
+    verifyingContract: Address;
+  };
+  message: Record<string, unknown>;
+}
+
+/**
+ * Build the whole typed-data payload for a meta-transaction: domain, types,
+ * `primaryType` and message, in one call.
+ *
+ * This is what {@link MetaTransactionSigner.signMetaTransactionWithWallet}
+ * signs, exposed so that an integrator can send the identical payload to a
+ * remote signer, a browser wallet, or a policy check without rebuilding the
+ * shape by hand.
+ *
+ * @param metaTx Unsigned meta-transaction (from `createUnsignedMetaTransationFor*`)
+ * @param verifyingContract The account contract that will verify the signature —
+ *        the same address the meta-tx is submitted to (`address(this)` on verify)
+ * @param chainId Chain id; defaults to `metaTx.params.chainId`
+ */
+export function buildMetaTxTypedData(
+  metaTx: MetaTransaction,
+  verifyingContract: Address,
+  chainId?: bigint | number
+): MetaTxTypedData {
+  return {
+    types: META_TX_TYPED_DATA_TYPES_AS_SIGNED as unknown as MetaTxTypedData['types'],
+    primaryType: META_TX_PRIMARY_TYPE,
+    domain: {
+      name: META_TX_DOMAIN_NAME,
+      version: EngineBlox.VERSION,
+      chainId: Number(chainId ?? metaTx.params.chainId),
+      verifyingContract
+    },
+    message: buildTypedDataMessage(metaTx)
+  };
+}
+
+/**
+ * Compute the **duration** to pass as `createMetaTxParams(..., deadline, ...)`
+ * so the resulting meta-transaction is valid for `ttlSeconds` of wall-clock time.
+ *
+ * `createMetaTxParams` takes a *duration*, not an absolute timestamp: the
+ * contract returns `block.timestamp + duration`, evaluated on the **latest
+ * block** because it is a view. On a chain that mines on demand rather than on a
+ * schedule, the latest block's timestamp freezes between transactions while
+ * wall-clock time keeps running. Sit idle for longer than the TTL and every
+ * meta-transaction is born already expired: `eth_call` still passes (it replays
+ * against the stale block) but the mined transaction reverts, because
+ * `validateDeadline` compares against the *new* block's timestamp.
+ *
+ * So the duration returned here is the drift plus the window you asked for:
+ * `stale + (now - stale) + ttl = now + ttl`.
+ *
+ * On a chain with scheduled blocks the drift is at most one block time and this
+ * degrades to `ttlSeconds`, so it is always safe to use.
+ *
+ * ```ts
+ * const deadline = await metaTxDeadlineFor(publicClient, 600n); // valid ~10 min
+ * const params = await account.createMetaTxParams(
+ *   handler, selector, TxAction.SIGN_META_REQUEST_AND_APPROVE,
+ *   deadline, maxGasPrice, signer
+ * );
+ * ```
+ *
+ * @param client Public client used to read the latest block
+ * @param ttlSeconds How long the meta-transaction should remain valid, in seconds
+ * @returns Duration in seconds to pass as the `deadline` argument
+ */
+export async function metaTxDeadlineFor(
+  client: PublicClient,
+  ttlSeconds: bigint | number
+): Promise<bigint> {
+  const ttl = BigInt(ttlSeconds);
+  if (ttl <= 0n) {
+    throw new Error(`metaTxDeadlineFor: ttlSeconds must be positive (got ${ttl.toString()})`);
+  }
+  const latest = (await client.getBlock()).timestamp;
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const drift = now > latest ? now - latest : 0n;
+  return drift + ttl;
 }
 
 /**
@@ -440,7 +593,11 @@ export class MetaTransactionBuilder {
    * @param handlerContract Verifying account address (must match EIP-712 `verifyingContract` / `address(this)` on verify)
    * @param handlerSelector Selector of the **exact** external function that will submit this meta-tx (must equal on-chain `msg.sig`)
    * @param action Transaction action
-   * @param deadline Deadline timestamp
+   * @param deadlineDuration Validity window in **seconds from chain time**, not an
+   *        absolute timestamp. The on-chain `createMetaTxParams` stores
+   *        `block.timestamp + deadlineDuration`. Prefer
+   *        {@link metaTxDeadlineFor} to compute it, which also corrects for
+   *        latest-block drift on chains that mine on demand.
    * @param maxGasPrice Maximum gas price
    * @param signer Signer address
    * @param chainId Chain ID (optional, defaults to current chain)
@@ -451,7 +608,7 @@ export class MetaTransactionBuilder {
     handlerContract: Address,
     handlerSelector: Hex,
     action: TxAction,
-    deadline: bigint,
+    deadlineDuration: MetaTxDeadlineDuration,
     maxGasPrice: bigint,
     signer: Address,
     chainId: bigint,
@@ -463,7 +620,7 @@ export class MetaTransactionBuilder {
       handlerContract,
       handlerSelector,
       action,
-      deadline,
+      deadline: deadlineDuration,
       maxGasPrice,
       signer
     };

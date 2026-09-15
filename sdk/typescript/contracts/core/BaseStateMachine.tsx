@@ -1,23 +1,49 @@
-import { Address, PublicClient, WalletClient, Chain, Hex, parseGwei } from 'viem';
+import { Address, PublicClient, WalletClient, Chain, Hex, TransactionReceipt, parseGwei } from 'viem';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
 import { IBaseStateMachine } from '../../interfaces/base.state.machine.index.js';
 import { TxRecord, MetaTransaction, MetaTxParams } from '../../interfaces/lib.index.js';
 import { TxAction } from '../../types/lib.index.js';
 import { FunctionSchema } from '../../types/definition.index.js';
 import { handleViemError } from '../../utils/viem-error-handler.js';
+import type { MetaTxDeadlineDuration } from '../../utils/metaTx/metaTransaction.js';
+import {
+  assertInnerSuccess,
+  readInnerOutcomes,
+  type InnerStatusAssertOptions,
+  type InnerTxOutcome
+} from '../../utils/tx-inner-status.js';
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 /**
  * @title BaseStateMachine
  * @notice TypeScript wrapper for BaseStateMachine smart contract with common utilities
  */
 export abstract class BaseStateMachine implements IBaseStateMachine {
+  /**
+   * @param client Public client for reads
+   * @param walletClient Wallet client for writes; omit for a read-only wrapper
+   * @param contractAddress Address of the deployed contract
+   * @param chain Chain the contract lives on
+   * @param abi Contract ABI
+   * @param readAs Optional `from` address to use for **reads** (see {@link setReadSender}).
+   *        Many registry and permission views are role-gated (`_validateAnyRole`), so a
+   *        read-only wrapper built without a wallet client sends no sender and the
+   *        contract sees `address(0)` — which reverts `NoPermission(0x0)`. Pass an
+   *        address that holds a role here to read those views without a signer.
+   */
   constructor(
     protected client: PublicClient,
     protected walletClient: WalletClient | undefined,
     protected contractAddress: Address,
     protected chain: Chain,
-    protected abi: any
-  ) {}
+    protected abi: any,
+    protected readAs?: Address
+  ) {
+    if (readAs !== undefined) {
+      BaseStateMachine.assertUsableReadSender(readAs);
+    }
+  }
 
   // ============ COMMON UTILITY METHODS ============
 
@@ -28,6 +54,58 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     if (!this.walletClient) {
       throw new Error('Wallet client is required for this operation');
     }
+  }
+
+  // ============ READ SENDER (`readAs`) ============
+
+  /** Rejects a read sender that would reproduce the `NoPermission(0x0)` failure it exists to prevent. */
+  private static assertUsableReadSender(address: Address): void {
+    if (typeof address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+      throw new Error(`readAs: expected a 20-byte address, got "${String(address)}"`);
+    }
+    if (address.toLowerCase() === ZERO_ADDRESS) {
+      throw new Error(
+        'readAs: the zero address is not a usable read sender — role-gated views revert ' +
+          'NoPermission(0x0) for it. Pass an address that holds a role, or omit readAs.'
+      );
+    }
+  }
+
+  /**
+   * Sets the `from` address used for **read** calls (`eth_call`), without needing a wallet client.
+   *
+   * Registry and permission views on a Blox are role-gated for privacy
+   * (`getWalletRoles`, `getAuthorizedWallets`, `getActiveRolePermissions`, …).
+   * A read-only wrapper has no account to send, so the contract sees `address(0)`
+   * and reverts `NoPermission(0x0)` — a confusing failure for something that
+   * reads nothing but public-by-role state.
+   *
+   * ```ts
+   * const reader = new RuntimeRBAC(publicClient, undefined, account, chain);
+   * reader.setReadSender(ownerAddress);
+   * await reader.getWalletRoles(someWallet); // now answers
+   * ```
+   *
+   * @param address Address to send as `from`, or `undefined` to clear
+   * @returns `this`, for chaining
+   */
+  setReadSender(address?: Address): this {
+    if (address !== undefined) {
+      BaseStateMachine.assertUsableReadSender(address);
+    }
+    this.readAs = address;
+    return this;
+  }
+
+  /**
+   * The address reads are currently sent as, or `undefined` when none is set and
+   * no wallet client account is available.
+   *
+   * Resolution order: an explicit per-call `readAs` → the wrapper's
+   * {@link setReadSender} value → the wallet client's account. Never `address(0)`.
+   */
+  getReadSender(): Address | undefined {
+    return this.readAs ?? (this.walletClient?.account?.address as Address | undefined);
   }
 
   /**
@@ -152,19 +230,32 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
 
   /**
    * Common method to execute read contract operations
+   *
+   * @param functionName View / pure function to call
+   * @param args Call arguments
+   * @param readAs Optional `from` address for this call only; overrides
+   *        {@link setReadSender} and the wallet client's account. Role-gated views
+   *        need a sender that holds a role — see the `readAs` constructor note.
    */
   protected async executeReadContract<T>(
     functionName: string,
-    args: any[] = []
+    args: any[] = [],
+    readAs?: Address
   ): Promise<T> {
+    if (readAs !== undefined) {
+      BaseStateMachine.assertUsableReadSender(readAs);
+    }
+    // Resolution order: explicit per-call sender → wrapper `readAs` → wallet client account.
+    // `undefined` means "send no `from`" — never the zero address.
+    const account = readAs ?? this.readAs ?? this.walletClient?.account;
     try {
     const result = await this.client.readContract({
       address: this.contractAddress,
       abi: this.abi,
       functionName,
       args,
-      // Include account for permission checks if wallet client is available
-      account: this.walletClient?.account
+      // Include account for permission checks on role-gated views
+      account: account as any
     });
 
     return result as T;
@@ -190,13 +281,94 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
     }
   }
 
+  // ============ INNER TRANSACTION STATUS ============
+
+  /**
+   * Wait for a transaction and assert the work **inside** it succeeded.
+   *
+   * A mined transaction is not a successful one. When a guarded inner call
+   * reverts, `EngineBlox._completeTransaction` catches it: the record is written
+   * `TxStatus.FAILED`, the revert bytes are emitted on `TxExecutionResult`, and
+   * the outer transaction still mines with `status: 'success'` — having charged
+   * for all the gas it burned. A role-configuration batch can cost two million
+   * gas, report success, and grant nothing.
+   *
+   * Use this instead of `result.wait()` after any guarded write or config batch:
+   *
+   * ```ts
+   * const res = await account.roleConfigBatchRequestAndApprove(metaTx, { from: broadcaster });
+   * const receipt = await account.waitForTransactionAndAssertInner(res);
+   * // past this line the roles really were granted
+   * ```
+   *
+   * @param hashOrResult Transaction hash, or the `TransactionResult` from a write
+   * @param options `abi` to decode the inner revert against (pass the **target's**
+   *        ABI, or `ALL_ERROR_ABI` from `@bloxchain/sdk/abi`); `failOnCancelled`
+   *        to treat a cancellation as a failure. Scoped to this wrapper's
+   *        contract address unless `address` says otherwise.
+   * @throws InnerTransactionFailedError when the outer receipt succeeded but a record failed
+   */
+  async waitForTransactionAndAssertInner(
+    hashOrResult: Hex | TransactionResult,
+    options: InnerStatusAssertOptions & { confirmations?: number; timeout?: number } = {}
+  ): Promise<TransactionReceipt> {
+    const hash = typeof hashOrResult === 'string' ? hashOrResult : (hashOrResult.hash as Hex);
+    const receipt = await this.client.waitForTransactionReceipt({
+      hash,
+      ...(options.confirmations !== undefined ? { confirmations: options.confirmations } : {}),
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {})
+    });
+
+    if (receipt.status !== 'success') {
+      throw new Error(`Transaction ${hash} reverted (receipt status "${receipt.status}")`);
+    }
+
+    assertInnerSuccess(receipt, {
+      address: this.contractAddress,
+      abi: this.abi as readonly unknown[],
+      ...options
+    });
+    return receipt;
+  }
+
+  /**
+   * Every record in this receipt that reached a terminal state
+   * (`COMPLETED` / `FAILED` / `CANCELLED`), with any failure decoded.
+   *
+   * The non-throwing half of {@link waitForTransactionAndAssertInner} — for when
+   * you want to report what happened rather than stop on it.
+   */
+  readInnerOutcomes(
+    receipt: TransactionReceipt,
+    options: InnerStatusAssertOptions = {}
+  ): InnerTxOutcome[] {
+    return readInnerOutcomes(receipt, {
+      address: this.contractAddress,
+      abi: this.abi as readonly unknown[],
+      ...options
+    });
+  }
+
   // ============ META-TRANSACTION UTILITIES ============
 
+  /**
+   * @dev Builds `MetaTxParams` on chain (nonce and chain id come from the contract).
+   * @param handlerContract Verifying account address (EIP-712 `verifyingContract`)
+   * @param handlerSelector Selector of the exact external function that will submit this meta-tx
+   * @param action Transaction action
+   * @param deadlineDuration Validity window in **seconds from chain time**, not an
+   *        absolute timestamp — the contract stores `block.timestamp + deadlineDuration`.
+   *        Use {@link metaTxDeadlineFor} to compute it; on a chain that mines on
+   *        demand the latest block's timestamp can lag wall clock, and a duration
+   *        computed without that correction produces a meta-tx that is born expired.
+   * @param maxGasPrice Maximum gas price
+   * @param signer Signer address
+   */
   async createMetaTxParams(
     handlerContract: Address,
     handlerSelector: Hex,
     action: TxAction,
-    deadline: bigint,
+    deadlineDuration: MetaTxDeadlineDuration,
     maxGasPrice: bigint,
     signer: Address
   ): Promise<MetaTxParams> {
@@ -204,7 +376,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
       handlerContract,
       handlerSelector,
       action,
-      deadline,
+      deadlineDuration,
       maxGasPrice,
       signer
     ]);
@@ -245,21 +417,21 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
   // ============ STATE QUERIES ============
 
   /** Returns `[]` when there are no txs yet or the clamped id range does not overlap `1..txCounter`. */
-  async getTransactionHistory(fromTxId: bigint, toTxId: bigint): Promise<TxRecord[]> {
-    return this.executeReadContract<TxRecord[]>('getTransactionHistory', [fromTxId, toTxId]);
+  async getTransactionHistory(fromTxId: bigint, toTxId: bigint, readAs?: Address): Promise<TxRecord[]> {
+    return this.executeReadContract<TxRecord[]>('getTransactionHistory', [fromTxId, toTxId], readAs);
   }
 
-  async getTransaction(txId: bigint): Promise<TxRecord> {
-    return this.executeReadContract<TxRecord>('getTransaction', [txId]);
+  async getTransaction(txId: bigint, readAs?: Address): Promise<TxRecord> {
+    return this.executeReadContract<TxRecord>('getTransaction', [txId], readAs);
   }
 
-  async getPendingTransactions(): Promise<bigint[]> {
-    return this.executeReadContract<bigint[]>('getPendingTransactions');
+  async getPendingTransactions(readAs?: Address): Promise<bigint[]> {
+    return this.executeReadContract<bigint[]>('getPendingTransactions', [], readAs);
   }
 
   // ============ ROLE AND PERMISSION QUERIES ============
 
-  async getRole(roleHash: Hex): Promise<{
+  async getRole(roleHash: Hex, readAs?: Address): Promise<{
     roleName: string;
     roleHashReturn: Hex;
     maxWallets: bigint;
@@ -272,7 +444,7 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
       maxWallets: bigint;
       walletCount: bigint;
       isProtected: boolean;
-    }>('getRole', [roleHash]);
+    }>('getRole', [roleHash], readAs);
   }
 
   async hasRole(roleHash: Hex, wallet: Address): Promise<boolean> {
@@ -286,8 +458,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    * @notice Requires caller to have any role for privacy protection
    * @notice This function uses the reverse index for efficient lookup
    */
-  async getWalletRoles(wallet: Address): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getWalletRoles', [wallet]);
+  async getWalletRoles(wallet: Address, readAs?: Address): Promise<Hex[]> {
+    return this.executeReadContract<Hex[]>('getWalletRoles', [wallet], readAs);
   }
 
   /**
@@ -296,34 +468,34 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    * @returns Array of authorized wallet addresses
    * @notice Requires caller to have any role for privacy protection
    */
-  async getAuthorizedWallets(roleHash: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getAuthorizedWallets', [roleHash]);
+  async getAuthorizedWallets(roleHash: Hex, readAs?: Address): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getAuthorizedWallets', [roleHash], readAs);
   }
 
-  async getActiveRolePermissions(roleHash: Hex): Promise<any[]> {
-    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash]);
+  async getActiveRolePermissions(roleHash: Hex, readAs?: Address): Promise<any[]> {
+    return this.executeReadContract<any[]>('getActiveRolePermissions', [roleHash], readAs);
   }
 
-  async getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema> {
-    return this.executeReadContract<FunctionSchema>('getFunctionSchema', [functionSelector]);
+  async getFunctionSchema(functionSelector: Hex, readAs?: Address): Promise<FunctionSchema> {
+    return this.executeReadContract<FunctionSchema>('getFunctionSchema', [functionSelector], readAs);
   }
 
-  async getSignerNonce(signer: Address): Promise<bigint> {
-    return this.executeReadContract<bigint>('getSignerNonce', [signer]);
+  async getSignerNonce(signer: Address, readAs?: Address): Promise<bigint> {
+    return this.executeReadContract<bigint>('getSignerNonce', [signer], readAs);
   }
 
   // ============ SYSTEM STATE QUERIES ============
 
-  async getSupportedOperationTypes(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedOperationTypes');
+  async getSupportedOperationTypes(readAs?: Address): Promise<Hex[]> {
+    return this.executeReadContract<Hex[]>('getSupportedOperationTypes', [], readAs);
   }
 
-  async getSupportedRoles(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedRoles');
+  async getSupportedRoles(readAs?: Address): Promise<Hex[]> {
+    return this.executeReadContract<Hex[]>('getSupportedRoles', [], readAs);
   }
 
-  async getSupportedFunctions(): Promise<Hex[]> {
-    return this.executeReadContract<Hex[]>('getSupportedFunctions');
+  async getSupportedFunctions(readAs?: Address): Promise<Hex[]> {
+    return this.executeReadContract<Hex[]>('getSupportedFunctions', [], readAs);
   }
 
   async getTimeLockPeriodSec(): Promise<bigint> {
@@ -365,8 +537,8 @@ export abstract class BaseStateMachine implements IBaseStateMachine {
    * @param functionSelector The function selector to query hooks for
    * @return Array of hook contract addresses
    */
-  async getHooks(functionSelector: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getHooks', [functionSelector]);
+  async getHooks(functionSelector: Hex, readAs?: Address): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getHooks', [functionSelector], readAs);
   }
 
   // ============ INTERFACE SUPPORT ============

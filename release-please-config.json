@@ -4,15 +4,13 @@
     "package": {
       "release-type": "node",
       "package-name": "@bloxchain/contracts",
-      "version-file": "package/package.json",
-      "changelog-path": "package/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     },
     "sdk/typescript": {
       "release-type": "node",
       "package-name": "@bloxchain/sdk",
-      "version-file": "sdk/typescript/package.json",
-      "changelog-path": "sdk/typescript/CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md"
     }
   },
-  "$comment": "Independent semver per publishable package. Root package.json is not release-managed."
+  "$comment": "Independent semver per publishable package. Root package.json is not release-managed. Manifest keys are package dirs; changelog-path is relative to each dir (resolves to package/CHANGELOG.md, sdk/typescript/CHANGELOG.md)."
 }
