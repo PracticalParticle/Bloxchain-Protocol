@@ -219,13 +219,24 @@ function main() {
   }
 
   const contracts = {};
+  const mismatches = [];
   for (const { entry, artifact, stats } of built) {
     const fileName = `${entry.name}.json`;
     const body = `${JSON.stringify(artifact, null, 2)}\n`;
     const sha256 = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
+    const artifactPath = path.join(ARTIFACTS_DIR, fileName);
 
-    if (!checkOnly) {
-      fs.writeFileSync(path.join(ARTIFACTS_DIR, fileName), body);
+    if (checkOnly) {
+      if (!fs.existsSync(artifactPath)) {
+        mismatches.push(`${entry.name}: missing ${path.relative(ROOT_DIR, artifactPath)}`);
+      } else {
+        const onDisk = fs.readFileSync(artifactPath, 'utf8');
+        if (onDisk !== body) {
+          mismatches.push(`${entry.name}: artifact body differs from ${path.relative(ROOT_DIR, artifactPath)}`);
+        }
+      }
+    } else {
+      fs.writeFileSync(artifactPath, body);
     }
 
     const linkLibraries = [...new Set(stats.linkLibraries)].sort();
@@ -262,11 +273,34 @@ function main() {
     contracts,
   };
 
-  if (!checkOnly) {
-    fs.writeFileSync(
-      path.join(ARTIFACTS_DIR, 'manifest.json'),
-      `${JSON.stringify(manifest, null, 2)}\n`
-    );
+  const manifestPath = path.join(ARTIFACTS_DIR, 'manifest.json');
+  if (checkOnly) {
+    if (!fs.existsSync(manifestPath)) {
+      mismatches.push(`manifest: missing ${path.relative(ROOT_DIR, manifestPath)}`);
+    } else {
+      const onDiskManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      const onDiskContracts = onDiskManifest.contracts || {};
+      for (const [name, meta] of Object.entries(contracts)) {
+        const diskMeta = onDiskContracts[name];
+        if (!diskMeta) {
+          mismatches.push(`manifest: missing contract entry ${name}`);
+        } else if (diskMeta.sha256 !== meta.sha256) {
+          mismatches.push(
+            `manifest: ${name} sha256 mismatch (disk ${diskMeta.sha256}, built ${meta.sha256})`
+          );
+        }
+      }
+      for (const name of Object.keys(onDiskContracts)) {
+        if (!(name in contracts)) {
+          mismatches.push(`manifest: unexpected on-disk contract entry ${name}`);
+        }
+      }
+    }
+    if (mismatches.length > 0) {
+      fail(`Artifact check failed:\n  ${mismatches.join('\n  ')}`);
+    }
+  } else {
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   }
 
   const where = checkOnly

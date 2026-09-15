@@ -82,7 +82,7 @@ import {
   type ResolvedOfficialNetwork,
 } from '../../sdk/typescript/utils/official-addresses.ts';
 import { GAS_ENVELOPE, MAX_TX_GAS } from '../../sdk/typescript/utils/gas.ts';
-import { TxAction } from '../../sdk/typescript/types/lib.index.tsx';
+import { TxAction, TxStatus } from '../../sdk/typescript/types/lib.index.tsx';
 import type { MetaTransaction } from '../../sdk/typescript/interfaces/lib.index.tsx';
 import {
   GuardConfigActionType,
@@ -291,6 +291,7 @@ async function resolveAccount(
   broadcasterAddress: Address,
   recoveryAddress: Address,
   ownerWallet: WalletClient | undefined,
+  broadcasterWallet: WalletClient | undefined,
   chain: Chain
 ): Promise<Address | null> {
   if (options.account) {
@@ -300,7 +301,10 @@ async function resolveAccount(
   }
 
   const factoryAddress = getOfficialAddress(network, 'CopyBlox');
-  const factory = new CopyBlox(client, ownerWallet, factoryAddress, chain);
+  const cloneWallet = broadcasterWallet ?? ownerWallet;
+  const cloneFrom =
+    (cloneWallet?.account?.address as Address | undefined) ?? broadcasterAddress;
+  const factory = new CopyBlox(client, cloneWallet, factoryAddress, chain);
 
   // The factory must never read as an account; if it did, the gate below is worthless.
   const factoryInspection = await inspectAccountBlox(client, factoryAddress);
@@ -360,7 +364,7 @@ async function resolveAccount(
 
   console.log(`\n   cloning ${template} for ${ownerAddress}...`);
   const result = await factory.cloneBlox(cloneParams, {
-    from: broadcasterAddress,
+    from: cloneFrom,
     gas: GAS_ENVELOPE.cloneSendGasLimit,
     // The clone payload defeats estimation on public nodes; simulation still proves it
     // is revert-free, which is all it can prove.
@@ -490,6 +494,16 @@ async function syncRolePermissions(
   broadcasterWallet: WalletClient | undefined,
   options: Options
 ): Promise<void> {
+  if (options.roleSetVersion !== ROLE_SET_VERSION) {
+    record(
+      3,
+      'role set',
+      'blocked',
+      `unsupported role set version ${options.roleSetVersion}; this script supports version ${ROLE_SET_VERSION}`
+    );
+    return;
+  }
+
   const rbacDefinitions = getOfficialAddress(network, 'RuntimeRBACDefinitions');
   const grants = desiredRoleSet();
 
@@ -724,10 +738,10 @@ async function assertInnerSuccess(
   const base = new GuardController(client, undefined, ctx.account, chain);
   const record = await base.getTransaction(txId);
 
-  // TxStatus.COMPLETED (3) is the only outcome that means the batch took effect.
+  // TxStatus.COMPLETED (5) is the only outcome that means the batch took effect.
   // FAILED and other statuses must not be reported as applied.
   const status = Number((record as { status?: number | bigint }).status ?? -1);
-  if (status !== 3) {
+  if (status !== TxStatus.COMPLETED) {
     throw new Error(
       `${label}: outer receipt succeeded (gas ${receipt.gasUsed ?? 'unknown'}) but record ` +
         `${String(txId)} has inner status ${status}, not COMPLETED. ` +
@@ -850,6 +864,7 @@ async function main(): Promise<void> {
     broadcasterAddress,
     recoveryAddress,
     ownerWallet,
+    broadcasterWallet,
     chain
   );
 
