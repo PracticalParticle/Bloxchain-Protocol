@@ -2,6 +2,8 @@
 
 Complete reference for Bloxchain TypeScript SDK classes and methods. Contract source of truth: Solidity in `contracts/core/`. See [TECHNICAL_OVERVIEW.md](../TECHNICAL_OVERVIEW.md) and [contracts/core/AUDIT.md](../contracts/core/AUDIT.md).
 
+> Integrating from outside the repo? Start with the [Integrator Checklist](./integrator-checklist.md) - ABIs, EIP-712 constants, error unwrapping, deadline semantics, and the inner-status check, each with the workaround it replaces.
+
 ## 📚 **Core Classes**
 
 ### **SecureOwnable**
@@ -170,6 +172,206 @@ const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(definit
 
 
 
+## 📦 **Package Entry Points**
+
+| Specifier | Contents |
+|-----------|----------|
+| `@bloxchain/sdk` | Contract wrappers, meta-tx helpers, EIP-712 constants, error and inner-status utilities |
+| `@bloxchain/sdk/abi` | Typed ABI barrel — `copyBloxAbi`, `accountBloxAbi`, `erc20Abi`, …, plus `ABIS` and `ALL_ERROR_ABI` |
+| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (`@bloxchain/sdk/abi/CopyBlox`) |
+| `@bloxchain/sdk/abi/<Name>.abi.json` | The raw JSON file, for tools that want it |
+
+```typescript
+import { copyBloxAbi } from '@bloxchain/sdk/abi/CopyBlox';
+import { ABIS, ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
+```
+
+`<Name>` is any of: `AccountBlox`, `BareBlox`, `BaseStateMachine`, `CopyBlox`,
+`EngineBlox`, `ERC20`, `GuardController`, `GuardControllerDefinitions`,
+`IDefinition`, `RoleBlox`, `RuntimeRBAC`, `RuntimeRBACDefinitions`, `SecureBlox`,
+`SecureOwnable`, `SecureOwnableDefinitions`. Each module also exports
+`<name>ErrorAbi` and `<name>EventAbi` filters.
+
+## 🔑 **Reading permissioned views (`readAs`)**
+
+Role-gated views (`getWalletRoles`, `getAuthorizedWallets`, `getActiveRolePermissions`,
+`getSupportedRoles`, `getTransaction`, `getFunctionWhitelistTargets`, …) require the
+caller to hold a role. A wrapper built without a wallet client sends no `from`, the
+contract sees `address(0)`, and the call reverts `NoPermission(0x0)`.
+
+```typescript
+// At construction (optional 5th argument on every core wrapper)
+const reader = new RuntimeRBAC(publicClient, undefined, account, chain, ownerAddress);
+
+// Or later, or per call
+reader.setReadSender(ownerAddress);
+await reader.getWalletRoles(wallet, ownerAddress);
+```
+
+| Method | Effect |
+|--------|--------|
+| `setReadSender(address?)` | Sets (or clears) the `from` for reads; returns `this` |
+| `getReadSender()` | The address reads are currently sent as |
+| `<view>(…, readAs?)` | Per-call override, highest precedence |
+
+Resolution order: per-call `readAs` → `setReadSender` → wallet client account → no
+sender. The zero address is refused. `readAs` chooses an `eth_call` `from`; it grants
+nothing and cannot be used to write.
+
+## ✍️ **EIP-712 meta-transaction constants**
+
+```typescript
+import {
+  META_TX_DOMAIN, META_TX_DOMAIN_NAME, META_TX_PRIMARY_TYPE,
+  META_TX_TYPES, META_TX_TYPED_DATA_TYPES_AS_SIGNED, EIP712_DOMAIN_TYPE,
+  buildTypedDataMessage, buildMetaTxTypedData, metaTxDeadlineFor,
+} from '@bloxchain/sdk';
+```
+
+| Export | Use |
+|--------|-----|
+| `META_TX_TYPES` | Pass to viem's `signTypedData` — viem adds `EIP712Domain` itself |
+| `META_TX_TYPED_DATA_TYPES_AS_SIGNED` | The set *as a signer sees it*; use for signer-policy conditions and eth-sig-util `TypedMessage` |
+| `buildTypedDataMessage(metaTx)` | The EIP-712 message object |
+| `buildMetaTxTypedData(metaTx, verifyingContract, chainId?)` | Domain + types + primaryType + message in one call |
+| `metaTxDeadlineFor(client, ttlSeconds)` | Duration to pass as `deadline` (see below) |
+
+### `deadline` is a duration
+
+`createMetaTxParams(..., deadline, ...)` takes **seconds of validity**; the contract
+stores `block.timestamp + deadline`, read from the *latest block*. On a chain that
+mines on demand, that timestamp freezes between transactions while wall-clock time
+runs on, so a naive TTL produces meta-transactions that are born expired.
+`metaTxDeadlineFor` returns `drift + ttl` and degrades to exactly `ttl` on a chain
+with scheduled blocks.
+
+## ⛓️ **Inner transaction status**
+
+A mined transaction is not a successful one: `EngineBlox` catches an inner revert,
+records `TxStatus.FAILED`, and the outer receipt still says `success` — after
+charging for the gas.
+
+```typescript
+const res = await account.roleConfigBatchRequestAndApprove(metaTx, { from: broadcaster });
+const receipt = await account.waitForTransactionAndAssertInner(res);
+```
+
+| Export | Use |
+|--------|-----|
+| `assertInnerSuccess(receipt, opts)` | Throw `InnerTransactionFailedError` if a record is `FAILED` |
+| `readInnerOutcomes(receipt, opts)` | Non-throwing: every terminal record, failures decoded |
+| `waitForTransactionAndAssertInner(client, hash, opts)` | Wait, then assert |
+| `ENGINE_BLOX_EVENTS_ABI` | `TransactionEvent` / `TxExecutionResult` — declared on the library, so absent from a Blox's own ABI |
+| `TX_STATUS_NAMES`, `txStatusName(status)` | Name a `TxStatus` value |
+
+Options: `address` (scope to one Blox), `abi` (decode the inner revert — pass the
+**target's** ABI or `ALL_ERROR_ABI`), `failOnCancelled` (off by default).
+
+## 🧪 **Simulation, gas estimation, and `MAX_TX_GAS`**
+
+`simulationMode` proves the call would not revert against the latest block. It does
+**not** size gas, and it is not a promise about the block you land in.
+
+| Question | Mechanism |
+|----------|-----------|
+| Will it revert? | `simulateContract` via `simulationMode` (`'strict'` default, `'warn-only'`, `'skip'`) |
+| How much gas? | `eth_estimateGas` — see the state-override note below |
+| What is the ceiling? | On networks where EIP-7825 is active: `MAX_TX_GAS` = `2 ** 24` = 16,777,216; otherwise the target network's effective transaction gas limit |
+
+Public nodes answer `eth_estimateGas` with *"insufficient funds"* instead of a number
+when the sender cannot cover `gas × price + value`. Give it a notional balance for
+the estimate only:
+
+```typescript
+const gas = await publicClient.estimateContractGas({
+  address: accountAddress, abi: accountBloxAbi, functionName: 'executeGuarded',
+  args, account: caller,
+  stateOverride: [{ address: caller, balance: parseEther('10') }],
+});
+```
+
+Where EIP-7825 is active, it caps any single transaction at `2 ** 24` gas regardless
+of the block gas limit; elsewhere use the target network's published transaction gas
+cap. This bites on configuration batches, not single calls: split a batch that
+estimates near the cap rather than having it rejected outright. The `gasLimit` in
+`TxParams` is a cap the guard forwards to the inner call, not a price — but it still
+counts toward the outer transaction's limit.
+
+## 🧭 **Configuration Helpers**
+
+### **`flowReadiness`**
+
+##### `flowReadiness(account: FlowReadinessReader, options: FlowReadinessOptions): Promise<FlowReadiness>`
+
+Answers "is this governed flow open on this account?" in one call, by reading the three things a guarded call
+needs: the **function schema** for the execution selector, the **target whitelist** for that selector, and the
+**role grants** on it. View calls only — nothing is simulated or sent.
+
+```typescript
+import { flowReadiness, formatFlowReadiness, TxAction } from '@bloxchain/sdk';
+
+const readiness = await flowReadiness(guardController, {
+  selector: TRANSFER_SELECTOR,
+  targets: [tokenAddress],
+  roles: [
+    { role: OWNER_ROLE, actions: [TxAction.SIGN_META_REQUEST_AND_APPROVE] },
+    { role: BROADCASTER_ROLE, actions: [TxAction.EXECUTE_META_REQUEST_AND_APPROVE] }
+  ]
+});
+
+if (!readiness.open) throw new Error(formatFlowReadiness(readiness));
+```
+
+**Options**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `selector` | `Hex` | The **execution** selector the flow calls |
+| `targets` | `Address[]` | Every target the flow calls through that selector. Must be non-empty |
+| `roles` | `(Hex \| { role, actions })[]` | Roles that must hold the flow. Name the `actions` — a bare hash accepts any grant on the selector. Must be non-empty |
+| `accountAddress` | `Address?` | The account's own address, so a self-call target (always allowed on chain) reads as satisfied |
+
+**Result**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `open` | `boolean` | **True only if every row holds.** A missing row, a read that reverted, or an empty `targets` / `roles` list forces `false` |
+| `schema` | `SchemaReadinessRow` | Registration plus `enforceHandlerRelations`, `isGrantRevocable`, `supportedActions`, `handlerForSelectors` |
+| `whitelisted` | `WhitelistReadinessRow[]` | One row per target |
+| `grants` | `GrantReadinessRow[]` | One row per role: granted actions, missing actions, handler wiring |
+| `missing` | `string[]` | Human-readable name of every row that did not hold |
+| `errors` | `string[]` | Reads that could not be completed. Non-empty always forces `open === false` |
+
+> The underlying reads are gated by `_validateAnyRole()` on chain. A reader built with
+> `walletClient: undefined` sends `from = 0x0` and every read reverts `NoPermission(0x0)`, which is reported in
+> `errors` — never as "not configured".
+
+##### `formatFlowReadiness(readiness: FlowReadiness): string`
+Renders the result as a short multi-line report, naming every row that did not hold.
+
+### **`resolveHandlerForSelectors`**
+
+##### `resolveHandlerForSelectors(reader, functionSelector: Hex, explicit?: readonly Hex[]): Promise<Hex[]>`
+
+Reads the function schema and returns the `handlerForSelectors` a grant on that selector must carry — the only
+way to get it right for every selector, since a runtime-registered selector must **self-reference** while some
+built-in schemas point at a different handler. When `explicit` is supplied it is validated rather than
+replaced, so a wrong value throws here instead of reverting `HandlerForSelectorMismatch` on chain.
+
+```typescript
+import { encodeAddFunctionToRole, resolveHandlerForSelectors } from '@bloxchain/sdk';
+
+const handlerForSelectors = await resolveHandlerForSelectors(guardController, mySelector);
+const data = encodeAddFunctionToRole(publicClient, rbacDefinitions, MANAGER_ROLE, {
+  functionSelector: mySelector,
+  grantedActionsBitmap: 1 << TxAction.SIGN_META_REQUEST_AND_APPROVE,
+  handlerForSelectors
+});
+```
+
+`encodeAddFunctionToRole` also accepts an **omitted** `handlerForSelectors`, defaulting it to
+`[functionSelector]` — correct for every selector registered at runtime via `REGISTER_FUNCTION`.
+
 ## 📝 **Types & Interfaces**
 
 ### **Core Types**
@@ -198,11 +400,11 @@ type TxAction =
   | 'EXECUTE_META_APPROVE'
   | 'EXECUTE_META_CANCEL'
 
-type TxStatus = 
-  | 'UNDEFINED'
-  | 'PENDING'
-  | 'COMPLETED'
-  | 'CANCELLED'
+// TxStatus is a numeric enum matching EngineBlox.sol; `TX_STATUS_NAMES` names the values.
+const TxStatus = {
+  UNDEFINED: 0, PENDING: 1, EXECUTING: 2, PROCESSING_PAYMENT: 3,
+  CANCELLED: 4, COMPLETED: 5, FAILED: 6,
+} as const
 ```
 
 
@@ -221,28 +423,71 @@ interface TransactionOptions {
 }
 ```
 
-## 📊 **Error Types**
+## 📊 **Error handling**
 
 ```typescript
-class BloxchainError extends Error {
-  code: string
-  details?: any
-}
+import { explainError } from '@bloxchain/sdk';
+import { ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
 
-class ContractError extends BloxchainError {
-  contractAddress: Address
-  method: string
-}
-
-class ValidationError extends BloxchainError {
-  field: string
-  value: any
-}
-
-class ComplianceError extends BloxchainError {
-  violation: ComplianceViolation
+try {
+  await account.transferOwnershipRequest({ from: owner });
+} catch (e) {
+  const why = explainError(e, { abi: ALL_ERROR_ABI });
+  switch (why.errorName) {
+    case 'BeforeReleaseTime': /* still in timelock */ break;
+    case 'NoPermission':      /* caller holds no role */ break;
+    case 'SignerDenied':      /* the signer refused; nothing was broadcast */ break;
+    default: console.error(why.message, why.raw);
+  }
 }
 ```
+
+```typescript
+interface ExplainedError {
+  kind: 'revert' | 'signer' | 'transport' | 'unknown'
+  errorName: string                 // switch on this, never on `message`
+  args: Record<string, unknown>
+  selector?: `0x${string}`
+  raw?: `0x${string}`               // revert bytes, untouched
+  message: string
+  cause: unknown
+}
+```
+
+`explainError` never throws. It asks the **signer** layer first — a remote signer's
+refusal arrives wrapped as the cause of a contract error, and guessing a revert for
+it sends you to the wrong dashboard — then decodes the revert, then classifies
+transport failures.
+
+| Export | Use |
+|--------|-----|
+| `explainError(error, { abi, ignoreSelectors })` | One structured answer |
+| `extractRevertData(error, opts)` | Walk `cause` / `originalError` for the raw revert bytes |
+| `decodeRevert(data, abi?)` | Decode bytes: ABI first, then `Error(string)` / `Panic`, then the curated table |
+| `classifySignerError(error)` | `SignerDenied` or `SignerError`, or `undefined` if the chain reverted |
+| `isRevertNamed(explained, name)` | Narrow to one protocol error |
+| `ERROR_SIGNATURES`, `ERROR_DECODE_TYPES` | The curated selector tables |
+
+Do **not** infer broadcast or gas usage from `errorName` alone. A named protocol revert
+and an `RpcError` can both appear during simulation / preflight (`eth_call`,
+`estimateGas`, wallet dry-run) *or* after a send — `explainError` classifies the
+failure layer, not whether a transaction was mined.
+
+| Lifecycle | How to tell | Broadcast / gas |
+|-----------|-------------|-----------------|
+| Signer refused before send | `kind: 'signer'` (`SignerDenied` / `SignerError`) | Never broadcast; no gas |
+| Chain / simulation revert | `kind: 'revert'` (named custom error, or `Unknown` **with** `raw`) | Often preflight only — gas only if a receipt shows the tx was mined and reverted |
+| Transport / RPC failure | `kind: 'transport'` (`RpcError`) | Do not infer inclusion or gas |
+| Unclassified | `kind: 'unknown'` (`Unknown` **without** `raw`) | Do not infer inclusion or gas |
+
+Two things the unwrap will not do: read a 20-byte address as text, or read structured
+revert bytes as ASCII. An error it cannot name is reported as `Unknown`. `raw` is
+attached **only** when unnamed revert bytes were extracted for an undecodable
+revert (`kind: 'revert'`); transport and generic unknown results do not include `raw`.
+
+`enhanceViemError` / `handleViemError` (thrown by the wrappers themselves) carry the
+same facts as `errorName`, `args`, `selector`, `raw`, `kind`, and `signerFailure`
+alongside the existing message fields.
 
 ## 🎯 **Usage Examples**
 
@@ -276,5 +521,6 @@ console.log('Time lock period:', timeLock)
 ---
 
 **Need more details?** Check out the specific guides:
+- [Integrator Checklist](./integrator-checklist.md)
 - [SecureOwnable Guide](./secure-ownable.md)
 - [RuntimeRBAC Guide](./runtime-rbac.md)

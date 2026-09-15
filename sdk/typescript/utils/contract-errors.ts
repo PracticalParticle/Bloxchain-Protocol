@@ -369,6 +369,11 @@ export interface HandlerForSelectorMismatchError extends ContractError {
   params: { schemaHandlerForSelector: string; permissionHandlerForSelector: string }
 }
 
+export interface GrantNotRevocableError extends ContractError {
+  name: 'GrantNotRevocable'
+  params: { functionSelector: string }
+}
+
 /**
  * Payment and balance errors
  */
@@ -426,6 +431,43 @@ export interface NoPermissionForFunctionError extends ContractError {
 
 export interface NotSupportedError extends ContractError {
   name: 'NotSupported'
+  params: {}
+}
+
+/** EngineBlox errors declared in the shipped ABIs */
+export interface MetaTxPaymentMismatchStoredTxError extends ContractError {
+  name: 'MetaTxPaymentMismatchStoredTx'
+  params: { txId: string }
+}
+
+export interface MetaTxRecordMismatchStoredTxError extends ContractError {
+  name: 'MetaTxRecordMismatchStoredTx'
+  params: { txId: string }
+}
+
+export interface SafeERC20FailedOperationError extends ContractError {
+  name: 'SafeERC20FailedOperation'
+  params: { token: string }
+}
+
+/** Errors inherited from OpenZeppelin, present in every Blox ABI */
+export interface InvalidInitializationError extends ContractError {
+  name: 'InvalidInitialization'
+  params: {}
+}
+
+export interface NotInitializingError extends ContractError {
+  name: 'NotInitializing'
+  params: {}
+}
+
+export interface ReentrancyGuardReentrantCallError extends ContractError {
+  name: 'ReentrancyGuardReentrantCall'
+  params: {}
+}
+
+export interface FailedDeploymentError extends ContractError {
+  name: 'FailedDeployment'
   params: {}
 }
 
@@ -558,6 +600,7 @@ export type GuardianContractError =
   | ContractFunctionMustBeProtectedError
   | InvalidRangeError
   | HandlerForSelectorMismatchError
+  | GrantNotRevocableError
   | InsufficientBalanceError
   | PaymentFailedError
   | InvalidPaymentError
@@ -580,6 +623,13 @@ export type GuardianContractError =
   | MaxHooksExceededError
   | MaxFunctionsExceededError
   | RangeSizeExceededError
+  | MetaTxPaymentMismatchStoredTxError
+  | MetaTxRecordMismatchStoredTxError
+  | SafeERC20FailedOperationError
+  | InvalidInitializationError
+  | NotInitializingError
+  | ReentrancyGuardReentrantCallError
+  | FailedDeploymentError
 
 /**
  * Error signature mapping for quick lookup.
@@ -850,6 +900,11 @@ export const ERROR_SIGNATURES: Record<string, {
     params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
     userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema: ${params.schemaHandlerForSelector}, permission: ${params.permissionHandlerForSelector}`
   },
+  '0x3ae8c131': {
+    name: 'GrantNotRevocable',
+    params: ['functionSelector'],
+    userMessage: (params) => `GrantNotRevocable: The grant for selector ${params.functionSelector} cannot be removed from any role (schema isGrantRevocable is false)`
+  },
   '0x2457cde7': {
     name: 'InvalidRange',
     params: ['from', 'to'],
@@ -915,6 +970,47 @@ export const ERROR_SIGNATURES: Record<string, {
     name: 'RangeSizeExceeded',
     params: ['rangeSize', 'maxRangeSize'],
     userMessage: (params) => `RangeSizeExceeded: Range size ${params.rangeSize} exceeds max ${params.maxRangeSize}`
+  },
+
+  // ---- EngineBlox errors declared in the shipped ABIs but previously uncurated ----
+  // Without an entry here these fell through to the ASCII "ReadableText" path and
+  // surfaced as garbled text instead of a name.
+  '0xf192ea19': {
+    name: 'MetaTxPaymentMismatchStoredTx',
+    params: ['txId'],
+    userMessage: (params) => `MetaTxPaymentMismatchStoredTx: Meta-transaction payment details do not match stored transaction ${params.txId}`
+  },
+  '0x3c1c3543': {
+    name: 'MetaTxRecordMismatchStoredTx',
+    params: ['txId'],
+    userMessage: (params) => `MetaTxRecordMismatchStoredTx: Meta-transaction record does not match stored transaction ${params.txId}`
+  },
+  '0x5274afe7': {
+    name: 'SafeERC20FailedOperation',
+    params: ['token'],
+    userMessage: (params) => `SafeERC20FailedOperation: ERC-20 operation failed on token ${params.token}`
+  },
+
+  // ---- Errors inherited from OpenZeppelin, present in every Blox ABI ----
+  '0xf92ee8a9': {
+    name: 'InvalidInitialization',
+    params: [],
+    userMessage: () => 'InvalidInitialization: Contract is already initialized (or initialization is not in progress)'
+  },
+  '0xd7e6bcf8': {
+    name: 'NotInitializing',
+    params: [],
+    userMessage: () => 'NotInitializing: Function may only be called while the contract is initializing'
+  },
+  '0x3ee5aeb5': {
+    name: 'ReentrancyGuardReentrantCall',
+    params: [],
+    userMessage: () => 'ReentrancyGuardReentrantCall: Reentrant call blocked by the reentrancy guard'
+  },
+  '0xb06ebf3d': {
+    name: 'FailedDeployment',
+    params: [],
+    userMessage: () => 'FailedDeployment: Contract deployment failed (CopyBlox clone creation)'
   }
 }
 
@@ -974,6 +1070,7 @@ export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0x1fe7e0ac': 'address, bytes4',
   '0x2584c569': 'bytes4, bytes4',
   '0xc0baa221': 'bytes4, bytes4',
+  '0x3ae8c131': 'bytes4',
   '0x2457cde7': 'uint256, uint256',
   '0x0364eed2': '',
   '0x3c6b4b28': '',
@@ -985,7 +1082,16 @@ export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0xc37aabb4': 'uint256, uint256',
   '0x0c285f2e': 'uint256, uint256',
   '0x106e9da6': 'uint256, uint256',
-  '0x82289375': 'uint256, uint256'
+  '0x82289375': 'uint256, uint256',
+  // EngineBlox errors previously uncurated
+  '0xf192ea19': 'uint256',
+  '0x3c1c3543': 'uint256',
+  '0x5274afe7': 'address',
+  // OpenZeppelin errors present in every Blox ABI
+  '0xf92ee8a9': '',
+  '0xd7e6bcf8': '',
+  '0x3ee5aeb5': '',
+  '0xb06ebf3d': ''
 }
 
 /**
@@ -1024,6 +1130,14 @@ export const COMMON_ERROR_PATTERNS = [
  */
 export function decodeRevertReason(data: string): GuardianContractError | null {
   try {
+    if (typeof data !== 'string') return null
+
+    // A 20-byte address is not revert data. It is, however, the first hex run in
+    // a viem write-failure message, and reading its bytes as ASCII produces
+    // confident nonsense ("yT'VUZt.k" for what was really a NoPermission revert).
+    // Refuse it outright, before any decoding path can claim it.
+    if (/^0x[0-9a-fA-F]{40}$/.test(data)) return null
+
     // Ensure data is hex string without 0x prefix (normalize to lowercase for lookup)
     if (data.startsWith('0x')) {
       data = data.slice(2)
@@ -1132,7 +1246,13 @@ export function decodeRevertReason(data: string): GuardianContractError | null {
       }
     }
 
-    // Try to extract readable ASCII from the data
+    // Try to extract readable ASCII from the data.
+    // Only for payloads that are *not* shaped like an ABI-encoded revert: a
+    // selector plus whole 32-byte words is structured data, and reading it as
+    // text invents a message the contract never sent. Such payloads have simply
+    // not matched any known selector — say nothing rather than something wrong.
+    if (data.length >= 8 && (data.length - 8) % 64 === 0) return null
+
     let readableText = ''
     for (let i = 0; i < bytes.length; i++) {
       const byte = bytes[i]

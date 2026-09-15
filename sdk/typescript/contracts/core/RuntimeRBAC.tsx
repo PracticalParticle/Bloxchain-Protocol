@@ -13,13 +13,20 @@ import { ComponentDetection } from '../../utils/interface-ids.js';
  * @dev Extends BaseStateMachine directly for modular architecture
  */
 export class RuntimeRBAC extends BaseStateMachine implements IRuntimeRBAC {
+  /**
+   * @param readAs Optional `from` address for role-gated **reads** — lets a read-only
+   *        wrapper (no `walletClient`) query permissioned views such as
+   *        `getWalletRoles` instead of being refused `NoPermission(0x0)`.
+   *        See `BaseStateMachine.setReadSender`.
+   */
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
-    chain: Chain
+    chain: Chain,
+    readAs?: Address
   ) {
-    super(client, walletClient, contractAddress, chain, RuntimeRBACABIJson);
+    super(client, walletClient, contractAddress, chain, RuntimeRBACABIJson, readAs);
   }
 
   // ============ ROLE CONFIGURATION BATCH ============

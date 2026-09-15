@@ -11,13 +11,19 @@ import { INTERFACE_IDS } from '../../utils/interface-ids.js';
  * @notice TypeScript wrapper for SecureOwnable smart contract
  */
 export class SecureOwnable extends BaseStateMachine implements ISecureOwnable {
+  /**
+   * @param readAs Optional `from` address for role-gated **reads** — lets a read-only
+   *        wrapper (no `walletClient`) query permissioned views instead of being
+   *        refused `NoPermission(0x0)`. See `BaseStateMachine.setReadSender`.
+   */
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
-    chain: Chain
+    chain: Chain,
+    readAs?: Address
   ) {
-    super(client, walletClient, contractAddress, chain, SecureOwnableABIJson);
+    super(client, walletClient, contractAddress, chain, SecureOwnableABIJson, readAs);
   }
 
   // Ownership Management

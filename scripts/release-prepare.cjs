@@ -226,13 +226,23 @@ function verifyContractsPackage() {
   } catch (error) {
     fail('npm pack --dry-run failed: ' + error.message);
   }
-  const requiredInPack = ['core', 'abi', 'standards'];
+  const requiredInPack = ['core', 'abi', 'standards', 'artifacts', 'official-deployed-addresses'];
   for (const dir of requiredInPack) {
-    if (!new RegExp(dir + '[/\\\\]').test(packOutput)) {
-      fail(`npm pack output missing ${dir}/`);
+    if (!new RegExp(dir + '[/\\\\]|' + dir + '\\.json').test(packOutput)) {
+      fail(`npm pack output missing ${dir}`);
     }
   }
   logSuccess('npm pack --dry-run OK');
+}
+
+function verifyFreshConsumerPack() {
+  logStep('📋', 'Step 5b: Fresh-consumer install from npm pack tarball...');
+  // Package is already prepared in Step 3; skip a second prepublish inside the harness.
+  exec('npm run verify:package-consumption', {
+    cwd: rootDir,
+    env: { ...process.env, SKIP_PREPUBLISH: '1' },
+  });
+  logSuccess('Fresh-consumer package consumption OK');
 }
 
 function distImportUrl(...segments) {
@@ -401,6 +411,7 @@ async function runReleasePrepare() {
   prepareContractsPackage();
   runTests();
   verifyContractsPackage();
+  verifyFreshConsumerPack();
   await prepareSdk();
   printPrepareSummary();
 }

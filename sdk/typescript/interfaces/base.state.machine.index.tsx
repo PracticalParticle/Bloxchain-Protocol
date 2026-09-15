@@ -75,12 +75,12 @@ export interface IBaseStateMachine {
   ): Promise<MetaTransaction>;
 
   // State queries
-  getTransactionHistory(fromTxId: bigint, toTxId: bigint): Promise<TxRecord[]>;
-  getTransaction(txId: bigint): Promise<TxRecord>;
-  getPendingTransactions(): Promise<bigint[]>;
+  getTransactionHistory(fromTxId: bigint, toTxId: bigint, readAs?: Address): Promise<TxRecord[]>;
+  getTransaction(txId: bigint, readAs?: Address): Promise<TxRecord>;
+  getPendingTransactions(readAs?: Address): Promise<bigint[]>;
 
   // Role and permission queries
-  getRole(roleHash: Hex): Promise<{
+  getRole(roleHash: Hex, readAs?: Address): Promise<{
     roleName: string;
     roleHashReturn: Hex;
     maxWallets: bigint;
@@ -88,16 +88,16 @@ export interface IBaseStateMachine {
     isProtected: boolean;
   }>;
   hasRole(roleHash: Hex, wallet: Address): Promise<boolean>;
-  getWalletRoles(wallet: Address): Promise<Hex[]>;
-  getAuthorizedWallets(roleHash: Hex): Promise<Address[]>;
-  getFunctionSchema(functionSelector: Hex): Promise<FunctionSchema>;
-  getActiveRolePermissions(roleHash: Hex): Promise<any[]>;
-  getSignerNonce(signer: Address): Promise<bigint>;
+  getWalletRoles(wallet: Address, readAs?: Address): Promise<Hex[]>;
+  getAuthorizedWallets(roleHash: Hex, readAs?: Address): Promise<Address[]>;
+  getFunctionSchema(functionSelector: Hex, readAs?: Address): Promise<FunctionSchema>;
+  getActiveRolePermissions(roleHash: Hex, readAs?: Address): Promise<any[]>;
+  getSignerNonce(signer: Address, readAs?: Address): Promise<bigint>;
 
   // System state queries
-  getSupportedOperationTypes(): Promise<Hex[]>;
-  getSupportedRoles(): Promise<Hex[]>;
-  getSupportedFunctions(): Promise<Hex[]>;
+  getSupportedOperationTypes(readAs?: Address): Promise<Hex[]>;
+  getSupportedRoles(readAs?: Address): Promise<Hex[]>;
+  getSupportedFunctions(readAs?: Address): Promise<Hex[]>;
   getTimeLockPeriodSec(): Promise<bigint>;
   initialized(): Promise<boolean>;
 

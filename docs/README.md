@@ -8,6 +8,7 @@ Welcome to the Bloxchain TypeScript SDK documentation. This guide covers SDK usa
 - [**Versioning & releases**](./VERSIONING.md) – npm `@bloxchain/contracts` / `@bloxchain/sdk`, on-chain protocol version, publishing
 - [**Getting Started**](./getting-started.md) – Quick setup, basic usage, and [deployment / initializer checklist](./getting-started.md#deployment-and-initialization) (upgradeable Account contracts)
 - [**API Reference**](./api-reference.md) – Core SDK classes and types
+- [**Integrator Checklist**](./integrator-checklist.md) – Ten things an outside builder hits, and what the SDK gives you instead
 - [**SecureOwnable**](./secure-ownable.md) – SecureOwnable contract integration
 - [**RuntimeRBAC**](./runtime-rbac.md) – RuntimeRBAC contract integration
 - [**GuardController**](./guard-controller.md) – Guarded execution and whitelists
@@ -56,15 +57,16 @@ console.log('Contract owner:', owner)
 
 1. [Getting Started](./getting-started.md)
 2. [API Reference](./api-reference.md)
-3. [SecureOwnable](./secure-ownable.md)
-4. [RuntimeRBAC](./runtime-rbac.md)
-5. [Definitions](./definition-contract.md)
-6. [Meta-Transactions](./meta-transactions.md)
-7. [Types & Interfaces](./types-interfaces.md)
-8. [Best Practices](./best-practices.md)
-9. [Basic Examples](./examples-basic.md)
-10. [Bloxchain Architecture](./bloxchain-architecture.md)
-11. [State Machine Engine](./state-machine-engine.md)
+3. [Integrator Checklist](./integrator-checklist.md)
+4. [SecureOwnable](./secure-ownable.md)
+5. [RuntimeRBAC](./runtime-rbac.md)
+6. [Definitions](./definition-contract.md)
+7. [Meta-Transactions](./meta-transactions.md)
+8. [Types & Interfaces](./types-interfaces.md)
+9. [Best Practices](./best-practices.md)
+10. [Basic Examples](./examples-basic.md)
+11. [Bloxchain Architecture](./bloxchain-architecture.md)
+12. [State Machine Engine](./state-machine-engine.md)
 
 ## 🔗 **External Resources**
 

@@ -13,7 +13,13 @@
     "./abi": {
       "import": "./dist/abi.js",
       "types": "./dist/abi.d.ts"
-    }
+    },
+    "./abi/*.json": "./abi/*.json",
+    "./abi/*": {
+      "import": "./dist/abis/*.js",
+      "types": "./dist/abis/*.d.ts"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -56,10 +62,10 @@
     "access": "public"
   },
   "dependencies": {
-    "viem": "2.55.15"
+    "viem": "2.56.3"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
+    "@types/node": "26.5.1",
     "typescript": "6.0.2"
   },
   "peerDependencies": {
