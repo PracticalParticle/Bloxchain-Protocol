@@ -435,11 +435,6 @@ export interface NotSupportedError extends ContractError {
 }
 
 /** EngineBlox errors declared in the shipped ABIs */
-export interface GrantNotRevocableError extends ContractError {
-  name: 'GrantNotRevocable'
-  params: { functionSelector: string }
-}
-
 export interface MetaTxPaymentMismatchStoredTxError extends ContractError {
   name: 'MetaTxPaymentMismatchStoredTx'
   params: { txId: string }
@@ -628,7 +623,6 @@ export type GuardianContractError =
   | MaxHooksExceededError
   | MaxFunctionsExceededError
   | RangeSizeExceededError
-  | GrantNotRevocableError
   | MetaTxPaymentMismatchStoredTxError
   | MetaTxRecordMismatchStoredTxError
   | SafeERC20FailedOperationError
@@ -981,11 +975,6 @@ export const ERROR_SIGNATURES: Record<string, {
   // ---- EngineBlox errors declared in the shipped ABIs but previously uncurated ----
   // Without an entry here these fell through to the ASCII "ReadableText" path and
   // surfaced as garbled text instead of a name.
-  '0x3ae8c131': {
-    name: 'GrantNotRevocable',
-    params: ['functionSelector'],
-    userMessage: (params) => `GrantNotRevocable: Grant for function selector ${params.functionSelector} is not revocable`
-  },
   '0xf192ea19': {
     name: 'MetaTxPaymentMismatchStoredTx',
     params: ['txId'],
@@ -1095,7 +1084,6 @@ export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0x106e9da6': 'uint256, uint256',
   '0x82289375': 'uint256, uint256',
   // EngineBlox errors previously uncurated
-  '0x3ae8c131': 'bytes4',
   '0xf192ea19': 'uint256',
   '0x3c1c3543': 'uint256',
   '0x5274afe7': 'address',

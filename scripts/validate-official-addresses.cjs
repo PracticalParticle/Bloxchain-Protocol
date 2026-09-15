@@ -104,8 +104,13 @@ function validateContract(networkName, contractName, row) {
       error(where, 'a factory row must declare gas.maxTxGas (EIP-7825 per-tx cap for the network)');
     } else {
       const { cloneBloxObserved, sendWithGasLimit, maxTxGas } = row.gas;
-      if (typeof cloneBloxObserved === 'number' && cloneBloxObserved > maxTxGas) {
-        error(where, `gas.cloneBloxObserved (${cloneBloxObserved}) exceeds gas.maxTxGas (${maxTxGas})`);
+      if (typeof cloneBloxObserved !== 'number' || !Number.isFinite(cloneBloxObserved)) {
+        error(where, 'a factory row must declare numeric gas.cloneBloxObserved');
+      } else if (!(cloneBloxObserved < maxTxGas)) {
+        error(
+          where,
+          `gas.cloneBloxObserved (${cloneBloxObserved}) must be strictly less than gas.maxTxGas (${maxTxGas})`
+        );
       }
       if (typeof sendWithGasLimit === 'number' && sendWithGasLimit > maxTxGas) {
         error(where, `gas.sendWithGasLimit (${sendWithGasLimit}) exceeds gas.maxTxGas (${maxTxGas})`);
@@ -219,6 +224,11 @@ function main() {
     const network = data.networks[requireOfficial];
     if (!network) {
       error(`--require-official ${requireOfficial}`, 'network is not in the file');
+    } else if (onlyNetwork && onlyNetwork !== requireOfficial) {
+      error(
+        `--require-official ${requireOfficial}`,
+        `excluded by --network ${onlyNetwork}; omit --network or pass --network ${requireOfficial}`
+      );
     } else if (network.status !== 'official') {
       error(`networks.${requireOfficial}`, `status is ${network.status}, expected official`);
     } else if ((pendingByNetwork[requireOfficial] ?? []).length > 0) {

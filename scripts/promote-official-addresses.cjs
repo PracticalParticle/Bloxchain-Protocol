@@ -77,7 +77,17 @@ function main() {
   const official = JSON.parse(fs.readFileSync(OFFICIAL_FILE, 'utf8'));
   const existing = official.networks[networkName];
 
-  const chainId = existing ? existing.chainId : chainIdArg === null ? null : Number(chainIdArg);
+  let chainId;
+  if (existing) {
+    if (chainIdArg !== null && Number(chainIdArg) !== existing.chainId) {
+      fail(
+        `--chain-id ${chainIdArg} does not match existing chainId ${existing.chainId} for network "${networkName}"`
+      );
+    }
+    chainId = existing.chainId;
+  } else {
+    chainId = chainIdArg === null ? null : Number(chainIdArg);
+  }
   if (!Number.isInteger(chainId) || chainId <= 0) {
     fail(`--chain-id <id> is required for a network not already in the official file`);
   }
