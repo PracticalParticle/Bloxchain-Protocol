@@ -2,7 +2,7 @@ import { Address, PublicClient, WalletClient, Chain, parseAbiItem, getAddress } 
 import { BaseStateMachine } from '../core/BaseStateMachine.js';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
 import { GAS_ENVELOPE, MAX_TX_GAS, assertCloneGasEstimate } from '../../utils/gas.js';
-import { isAccountBlox, inspectAccountBlox } from '../../utils/account-gate.js';
+import { isAccountBlox, inspectAccountBlox, isExpectedContractFailure } from '../../utils/account-gate.js';
 import CopyBloxAbi from '../../abi/CopyBlox.abi.json' with { type: 'json' };
 
 /**
@@ -175,8 +175,9 @@ export class CopyBlox extends BaseStateMachine {
     try {
       const clones = await this.executeReadContract<readonly Address[]>('clonesOf', [initialOwner]);
       return { clones: [...clones], source: 'on-chain-index' };
-    } catch {
+    } catch (error) {
       // Older factory: no owner index in its ABI or its code.
+      if (!isExpectedContractFailure(error)) throw error;
       return {
         clones: await this.clonesOfFromLogs(initialOwner, options),
         source: 'bloxcloned-logs',
@@ -231,7 +232,8 @@ export class CopyBlox extends BaseStateMachine {
         '0x0000000000000000000000000000000000000000' as Address,
       ]);
       return true;
-    } catch {
+    } catch (error) {
+      if (!isExpectedContractFailure(error)) throw error;
       return false;
     }
   }

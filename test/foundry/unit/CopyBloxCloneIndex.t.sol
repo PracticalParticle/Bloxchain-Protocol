@@ -222,7 +222,7 @@ contract CopyBloxCloneIndexTest is Test {
 
     /// @dev After mixed cloning, every indexed address satisfies isClone and per-owner
     ///      counts remain consistent with the global clone count.
-    function test_Invariant_IndexedAddressesAreClonesAndCountsConsistent() public {
+    function test_IndexedAddressesAreClonesAndCountsConsistent() public {
         _clone(alice);
         _clone(alice);
         _clone(bob);
@@ -247,5 +247,98 @@ contract CopyBloxCloneIndexTest is Test {
         for (uint256 i = 0; i < bobs.length; i++) {
             assertTrue(factory.isClone(bobs[i]), "bob index isClone");
         }
+    }
+}
+
+/**
+ * @dev Handler for Foundry invariant fuzzing of CopyBlox owner indexes.
+ *      Creates clones for arbitrary owners across generated call sequences.
+ */
+contract CopyBloxCloneIndexHandler {
+    CopyBlox internal immutable factory;
+    AccountBlox internal immutable template;
+    address internal immutable broadcaster;
+    address internal immutable recovery;
+    uint256 internal constant TIMELOCK = 3600;
+
+    address[] public ownersSeen;
+    mapping(address => bool) internal seenOwner;
+
+    constructor(
+        CopyBlox factory_,
+        AccountBlox template_,
+        address broadcaster_,
+        address recovery_
+    ) {
+        factory = factory_;
+        template = template_;
+        broadcaster = broadcaster_;
+        recovery = recovery_;
+    }
+
+    function createClone(address owner) external {
+        if (owner == address(0)) {
+            owner = address(uint160(uint256(keccak256(abi.encode(owner, ownersSeen.length))) | 1));
+        }
+        factory.cloneBlox(address(template), owner, broadcaster, recovery, TIMELOCK);
+        if (!seenOwner[owner]) {
+            seenOwner[owner] = true;
+            ownersSeen.push(owner);
+        }
+    }
+
+    function ownersSeenCount() external view returns (uint256) {
+        return ownersSeen.length;
+    }
+}
+
+/**
+ * @title CopyBloxCloneIndexInvariantTest
+ * @dev Stateful invariant: every indexed address is a clone, and tracked owner counts
+ *      stay consistent with created clones across arbitrary createClone sequences.
+ */
+contract CopyBloxCloneIndexInvariantTest is Test {
+    CopyBlox internal factory;
+    AccountBlox internal template;
+    CopyBloxCloneIndexHandler internal handler;
+
+    address internal broadcaster;
+    address internal recovery;
+    uint256 internal constant TIMELOCK = 3600;
+
+    function setUp() public {
+        broadcaster = address(0xBCA5);
+        recovery = address(0xBEC0);
+
+        factory = new CopyBlox();
+        template = new AccountBlox();
+        template.initialize(address(this), broadcaster, recovery, TIMELOCK, address(0));
+
+        handler = new CopyBloxCloneIndexHandler(factory, template, broadcaster, recovery);
+        targetContract(address(handler));
+    }
+
+    /// forge-config: default.invariant.runs = 32
+    /// forge-config: default.invariant.depth = 8
+    function invariant_IndexedAddressesAreClonesAndCountsConsistent() public {
+        uint256 global = factory.getCloneCount();
+        for (uint256 i = 0; i < global; i++) {
+            assertTrue(factory.isClone(factory.getCloneAtIndex(i)), "flat list entry isClone");
+        }
+
+        uint256 sumOwners = 0;
+        uint256 ownerCount = handler.ownersSeenCount();
+        for (uint256 o = 0; o < ownerCount; o++) {
+            address owner = handler.ownersSeen(o);
+            uint256 n = factory.clonesOfCount(owner);
+            sumOwners += n;
+            address[] memory clones = factory.clonesOf(owner);
+            assertEq(clones.length, n, "clonesOf length matches clonesOfCount");
+            for (uint256 i = 0; i < clones.length; i++) {
+                assertTrue(factory.isClone(clones[i]), "owner index isClone");
+                assertEq(factory.cloneOfOwnerAt(owner, i), clones[i], "cloneOfOwnerAt matches");
+            }
+        }
+        assertEq(sumOwners, global, "sum of tracked-owner counts equals global");
     }
 }
