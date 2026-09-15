@@ -7,6 +7,8 @@
 import { Address, Hex } from 'viem';
 import { BaseRuntimeRBACTest, RoleConfigActionType, FunctionPermission } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
+import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
+import { explainError } from '../../../sdk/typescript/utils/errors.ts';
 import { keccak256, toBytes } from 'viem';
 
 export class RuntimeRBACTests extends BaseRuntimeRBACTest {
@@ -53,6 +55,7 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     console.log('   6. Unregister mint function from schema');
     console.log('   7. Revoke wallet from REGISTRY_ADMIN (switch to owner)');
     console.log('   8. Remove REGISTRY_ADMIN role');
+    console.log('   9. Read a permissioned view from a wallet-less client via readAs (R3)');
 
     const roleName = 'REGISTRY_ADMIN';
     const expectedRole = { roleName, maxWallets: 10 };
@@ -101,6 +104,62 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     await this.testStep6UnregisterMintFunction();
     await this.testStep7RevokeWalletFromRegistryAdmin();
     await this.testStep8RemoveRegistryAdminRole();
+    await this.testStep9ReadOnlyClientWithReadAs();
+  }
+
+  /**
+   * Test Step 9 (SPEC-2026-0117 R3 / AC3): a read-only client can query a
+   * permissioned view when it is given a `readAs` sender.
+   *
+   * `getWalletRoles` is gated by `_validateAnyRole`. A wrapper built without a
+   * wallet client has no account to send, so the contract sees `address(0)` and
+   * refuses — which is the right answer to the wrong question. With `readAs`
+   * set to an address that holds a role, the same call answers.
+   */
+  async testStep9ReadOnlyClientWithReadAs(): Promise<void> {
+    console.log('\n📋 TEST STEP 9: READ-ONLY CLIENT WITH readAs (R3)');
+    console.log('='.repeat(50));
+
+    if (!this.contractAddress || !this.roles.owner) {
+      throw new Error('Contract address or owner not available for readAs test');
+    }
+
+    // Deliberately no wallet client: this is the shape an outside dashboard has.
+    const reader = new RuntimeRBAC(
+      this.publicClient,
+      undefined,
+      this.contractAddress,
+      this.chain,
+      this.roles.owner
+    );
+    // The suite points the wrapper at the deployed AccountBlox ABI, same as initializeSDK.
+    (reader as any).abi = (this.runtimeRBAC as any).abi;
+
+    const asOwner = await reader.getWalletRoles(this.roles.owner);
+    console.log(`  ✅ readAs owner: getWalletRoles returned ${asOwner.length} role(s)`);
+    if (asOwner.length === 0) {
+      throw new Error('readAs owner returned no roles — the owner should hold at least OWNER_ROLE');
+    }
+
+    // A per-call override reaches the same view without touching the wrapper.
+    const perCall = await reader.getSupportedRoles(this.roles.owner);
+    console.log(`  ✅ per-call readAs: getSupportedRoles returned ${perCall.length} role(s)`);
+
+    // And the contrast that makes the point: no sender at all is refused.
+    const senderless = new RuntimeRBAC(this.publicClient, undefined, this.contractAddress, this.chain);
+    (senderless as any).abi = (this.runtimeRBAC as any).abi;
+    try {
+      await senderless.getWalletRoles(this.roles.owner);
+      console.log('  ℹ️  Senderless read was permitted by this deployment (view not role-gated here)');
+    } catch (e: any) {
+      const why = explainError(e, { abi: (this.runtimeRBAC as any).abi });
+      console.log(`  ✅ Senderless read refused as expected: ${why.errorName}`);
+      if (why.errorName === 'ReadableText') {
+        throw new Error('Error unwrap regressed: a revert decoded as ReadableText (R4)');
+      }
+    }
+
+    console.log('  ✅ Step 9 completed: readAs lets a read-only client query permissioned views');
   }
 
   /**

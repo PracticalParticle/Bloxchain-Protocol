@@ -13,7 +13,13 @@
     "./abi": {
       "import": "./dist/abi.js",
       "types": "./dist/abi.d.ts"
-    }
+    },
+    "./abi/*.json": "./abi/*.json",
+    "./abi/*": {
+      "import": "./dist/abis/*.js",
+      "types": "./dist/abis/*.d.ts"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
