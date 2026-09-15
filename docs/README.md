@@ -64,9 +64,9 @@ console.log('Contract owner:', owner)
 7. [Meta-Transactions](./meta-transactions.md)
 8. [Types & Interfaces](./types-interfaces.md)
 9. [Best Practices](./best-practices.md)
-9. [Basic Examples](./examples-basic.md)
-10. [Bloxchain Architecture](./bloxchain-architecture.md)
-11. [State Machine Engine](./state-machine-engine.md)
+10. [Basic Examples](./examples-basic.md)
+11. [Bloxchain Architecture](./bloxchain-architecture.md)
+12. [State Machine Engine](./state-machine-engine.md)
 
 ## 🔗 **External Resources**
 

@@ -9,19 +9,20 @@
  * `@bloxchain/sdk/abi/RoleBlox.abi.json`, and from the typed barrel
  * `@bloxchain/sdk/abi`.
  */
+import type { Abi } from 'viem';
 import abiJson from '../abi/RoleBlox.abi.json' with { type: 'json' };
 
 /** RoleBlox contract ABI (full, as published in `abi/RoleBlox.abi.json`). */
-export const roleBloxAbi = abiJson as readonly unknown[];
+export const roleBloxAbi = abiJson as Abi;
 
 /** RoleBlox ABI entries for custom errors only (for viem `decodeErrorResult`). */
-export const roleBloxErrorAbi = (roleBloxAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'error'
+export const roleBloxErrorAbi = roleBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
 );
 
 /** RoleBlox ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
-export const roleBloxEventAbi = (roleBloxAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const roleBloxEventAbi = roleBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default roleBloxAbi;

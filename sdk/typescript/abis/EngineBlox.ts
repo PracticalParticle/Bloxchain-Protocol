@@ -9,19 +9,20 @@
  * `@bloxchain/sdk/abi/EngineBlox.abi.json`, and from the typed barrel
  * `@bloxchain/sdk/abi`.
  */
+import type { Abi } from 'viem';
 import abiJson from '../abi/EngineBlox.abi.json' with { type: 'json' };
 
 /** EngineBlox contract ABI (full, as published in `abi/EngineBlox.abi.json`). */
-export const engineBloxAbi = abiJson as readonly unknown[];
+export const engineBloxAbi = abiJson as Abi;
 
 /** EngineBlox ABI entries for custom errors only (for viem `decodeErrorResult`). */
-export const engineBloxErrorAbi = (engineBloxAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'error'
+export const engineBloxErrorAbi = engineBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
 );
 
 /** EngineBlox ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
-export const engineBloxEventAbi = (engineBloxAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const engineBloxEventAbi = engineBloxAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default engineBloxAbi;

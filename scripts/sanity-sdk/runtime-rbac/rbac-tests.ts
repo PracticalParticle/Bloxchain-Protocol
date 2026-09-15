@@ -7,7 +7,7 @@
 import { Address, Hex } from 'viem';
 import { BaseRuntimeRBACTest, RoleConfigActionType, FunctionPermission } from './base-test.ts';
 import { TxAction } from '../../../sdk/typescript/types/lib.index.tsx';
-import { RuntimeRBAC } from '../../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
+import { RuntimeRBAC, extractRevertData } from '../../../sdk/typescript/index.tsx';
 import { explainError } from '../../../sdk/typescript/utils/errors.ts';
 import { keccak256, toBytes } from 'viem';
 
@@ -95,6 +95,8 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
     }
     if (this.skipRemainingSteps) {
       console.log('  ⏭️  RBAC workflow skipped (role creation failed with SANITY_SDK_RBAC_SKIP_IF_CREATE_FAILED=1)');
+      // Step 9 uses the owner address and does not depend on REGISTRY_ADMIN.
+      await this.testStep9ReadOnlyClientWithReadAs();
       return;
     }
     await this.testStep2AddWalletToRegistryAdmin();
@@ -153,10 +155,19 @@ export class RuntimeRBACTests extends BaseRuntimeRBACTest {
       console.log('  ℹ️  Senderless read was permitted by this deployment (view not role-gated here)');
     } catch (e: any) {
       const why = explainError(e, { abi: (this.runtimeRBAC as any).abi });
-      console.log(`  ✅ Senderless read refused as expected: ${why.errorName}`);
       if (why.errorName === 'ReadableText') {
         throw new Error('Error unwrap regressed: a revert decoded as ReadableText (R4)');
       }
+      // Only a decoded NoPermission is the expected gated refusal; transport / RPC / ABI
+      // failures must surface so the harness does not hide an infra problem.
+      if (why.errorName !== 'NoPermission') {
+        throw e;
+      }
+      const raw = extractRevertData(e);
+      console.log(
+        `  ✅ Senderless read refused as expected: ${why.errorName}` +
+          (raw ? ` (raw ${raw.slice(0, 10)})` : '')
+      );
     }
 
     console.log('  ✅ Step 9 completed: readAs lets a read-only client query permissioned views');
