@@ -175,7 +175,8 @@ const functionPermissions = [
   {
     functionSelector: '0xa9059cbb', // transfer(address,uint256)
     grantedActionsBitmap: 0b000000111, // EXECUTE_TIME_DELAY_REQUEST, APPROVE, CANCEL
-    handlerForSelectors: ['0x00000000'] // bytes4(0) for execution selector
+    // Runtime-registered selectors must self-reference; prefer resolveHandlerForSelectors for built-ins.
+    handlerForSelectors: ['0xa9059cbb']
   }
 ]
 
@@ -257,7 +258,8 @@ const addFunctionToRoleAction = {
       {
         functionSelector: '0xa9059cbb',
         grantedActionsBitmap: 0b000000111,
-        handlerForSelectors: ['0x00000000']
+        // Or: await resolveHandlerForSelectors(reader, '0xa9059cbb')
+        handlerForSelectors: ['0xa9059cbb']
       }
     ]
   )
@@ -409,7 +411,8 @@ const addPermissionAction = {
       {
         functionSelector: '0x...', // withdraw selector
         grantedActionsBitmap: 0b000000011,
-        handlerForSelectors: ['0x00000000']
+        // Self-reference for a REGISTER_FUNCTION selector; or resolveHandlerForSelectors(...)
+        handlerForSelectors: ['0x...']
       }
     ]
   )

@@ -150,13 +150,22 @@ function main() {
     );
   }
 
-  if (changes.length === 0) {
+  // An existing network with nothing to change is done. A *missing* network with no
+  // promotable source addresses is not a match — fall through so --declare can still
+  // create the network row with pending-declaration contract stubs.
+  if (changes.length === 0 && existing) {
     console.log(`✅ nothing to promote: ${networkName} already matches ${path.basename(sourcePath)}`);
     return;
   }
 
   console.log(`\n${networkName} (chain ${chainId}) from ${path.relative(ROOT_DIR, sourcePath)}:`);
-  for (const change of changes) console.log(`   ${change}`);
+  if (changes.length === 0) {
+    console.log(
+      `   ⚠️ network is missing from the official file and ${path.basename(sourcePath)} has no promotable addresses`
+    );
+  } else {
+    for (const change of changes) console.log(`   ${change}`);
+  }
 
   // Contracts this network has not deployed yet get an explicit pending row rather than
   // no row at all, so the file stays valid and the gap is visible instead of implied.
