@@ -23,8 +23,13 @@ interface TestConfig {
 }
 
 class SanitySDKTestRunner {
-  /** Core test order: run secure-ownable, then runtime-rbac, and guard-controller last. */
+  /**
+   * Core test order: public-surface first (offline, seconds, and it fails fast if
+   * the package's own exports or error decoding regressed), then secure-ownable,
+   * runtime-rbac, and guard-controller last.
+   */
   private coreTests: TestConfig = {
+    'public-surface': resolve(__dirname, 'public-surface', 'run-tests.ts'),
     'secure-ownable': resolve(__dirname, 'secure-ownable', 'run-tests.ts'),
     'runtime-rbac': resolve(__dirname, 'runtime-rbac', 'run-tests.ts'),
     'guard-controller': resolve(__dirname, 'guard-controller', 'run-tests.ts')
@@ -51,6 +56,7 @@ class SanitySDKTestRunner {
     console.log('Options:');
     console.log('  --all                    Run all tests (core + examples)');
     console.log('  --core                   Run core tests only (default)');
+    console.log('  --public-surface         Run the offline public integrator surface suite only');
     console.log('  --examples               Run example tests only');
     console.log('  --repeat N                Run selected tests N times sequentially (default: 1)');
     console.log('  --secure-ownable         Run secure-ownable tests only');

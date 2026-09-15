@@ -38,6 +38,7 @@
     "test:sanity-sdk": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts",
     "test:sanity-sdk:core": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --core",
     "test:sanity-sdk:examples": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --examples",
+    "test:sanity-sdk:public-surface": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/public-surface/run-tests.ts",
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
     "test:e2e": "npm run compile:foundry:abi && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",

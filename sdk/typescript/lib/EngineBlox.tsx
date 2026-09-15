@@ -19,7 +19,7 @@ const keccak256 = (str: string): Hex => {
  * 
  * @example
  * ```typescript
- * import { EngineBlox } from '@bloxchain/sdk/lib/EngineBlox';
+ * import { EngineBlox } from '@bloxchain/sdk';
  * 
  * // Access constants
  * const protocolName = EngineBlox.PROTOCOL_NAME_HASH;
