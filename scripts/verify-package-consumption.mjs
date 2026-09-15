@@ -136,7 +136,7 @@ for (const [name, network] of declared) {
   );
   // R4: the gas envelope travels with the address, so a consumer never has to guess it.
   const gas = network.contracts?.CopyBlox?.gas ?? {};
-  check(\`\${name}: clone gas fits the per-tx cap\`, typeof gas.maxTxGas === 'number' && gas.cloneBloxObserved < gas.maxTxGas, \`\${gas.cloneBloxObserved} < \${gas.maxTxGas}\`);
+  check(\`\${name}: clone gas fits the per-tx cap\`, typeof gas.maxTxGas === 'number' && Number.isFinite(gas.cloneBloxObserved) && gas.cloneBloxObserved < gas.maxTxGas, \`\${gas.cloneBloxObserved} < \${gas.maxTxGas}\`);
 }
 
 // No lab or local chain may reach npm through this file.
