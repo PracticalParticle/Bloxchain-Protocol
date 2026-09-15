@@ -66,7 +66,10 @@ import { CopyBlox } from '../../sdk/typescript/contracts/factories/CopyBlox.tsx'
 import { GuardController } from '../../sdk/typescript/contracts/core/GuardController.tsx';
 import { RuntimeRBAC } from '../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import { SecureOwnable } from '../../sdk/typescript/contracts/core/SecureOwnable.tsx';
-import { MetaTransactionSigner } from '../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
+import {
+  MetaTransactionSigner,
+  metaTxDeadlineFor,
+} from '../../sdk/typescript/utils/metaTx/metaTransaction.tsx';
 import { EngineBlox } from '../../sdk/typescript/lib/EngineBlox.tsx';
 import {
   inspectAccountBlox,
@@ -263,14 +266,6 @@ function makeChain(chainId: number, rpcUrl: string, name: string): Chain {
     nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
     rpcUrls: { default: { http: [rpcUrl] } },
   });
-}
-
-/** Deadline is a duration the contract adds to `block.timestamp`, not a timestamp. */
-async function metaTxDuration(client: PublicClient, ttlSeconds: number): Promise<bigint> {
-  const block = await client.getBlock({ blockTag: 'latest' });
-  const now = BigInt(Math.floor(Date.now() / 1000));
-  const drift = now > block.timestamp ? now - block.timestamp : 0n;
-  return drift + BigInt(ttlSeconds);
 }
 
 // ============ LOCK 1: initialize ============
@@ -647,7 +642,7 @@ async function signBatch(
     // A duration, not a timestamp, and corrected for block-time drift on chains that
     // mine on demand: the view reads the latest block, so an idle chain hands out a
     // deadline that is already in the past.
-    await metaTxDuration(client, META_TX_TTL_SEC),
+    await metaTxDeadlineFor(client, META_TX_TTL_SEC),
     0n,
     ctx.owner
   );

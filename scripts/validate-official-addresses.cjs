@@ -112,7 +112,7 @@ function validateContract(networkName, contractName, row) {
       if (!isPositiveSafeInteger(cloneBloxObserved)) {
         error(
           where,
-          `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)})`
+          `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)}). Fresh CopyBlox promotions leave this field null — populate it from a real transaction receipt before re-running validation.`
         );
       } else if (isPositiveSafeInteger(maxTxGas) && !(cloneBloxObserved < maxTxGas)) {
         error(

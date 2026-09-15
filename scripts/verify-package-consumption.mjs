@@ -75,7 +75,9 @@ try {
     fail(`npm pack tarball missing: ${tarballPath}`);
   }
   const stagedTarball = path.join(packDir, tarballName);
-  fs.renameSync(tarballPath, stagedTarball);
+  // copy + unlink: rename fails when package/ and os.tmpdir() are on different volumes
+  fs.copyFileSync(tarballPath, stagedTarball);
+  fs.unlinkSync(tarballPath);
 
   fs.writeFileSync(
     path.join(workDir, 'package.json'),

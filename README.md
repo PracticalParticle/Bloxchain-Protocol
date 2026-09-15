@@ -260,7 +260,7 @@ const factory = getOfficialAddress(sepolia, 'CopyBlox');
 ```bash
 npm run compile:foundry          # add :size for 24KB check
 npm run build:artifacts          # publishable artifacts (ABI + bytecode) into artifacts/
-npm run verify:package-consumption   # a fresh install can provision without this repo
+npm run verify:package-consumption   # packed @bloxchain/contracts installs with artifacts + addresses
 npm run validate:official-addresses  # schema-check the published address file
 npm run provision:account -- --offline   # reference provisioner, no chain needed
 npm run test:foundry
