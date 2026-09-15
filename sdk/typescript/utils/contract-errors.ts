@@ -369,6 +369,11 @@ export interface HandlerForSelectorMismatchError extends ContractError {
   params: { schemaHandlerForSelector: string; permissionHandlerForSelector: string }
 }
 
+export interface GrantNotRevocableError extends ContractError {
+  name: 'GrantNotRevocable'
+  params: { functionSelector: string }
+}
+
 /**
  * Payment and balance errors
  */
@@ -558,6 +563,7 @@ export type GuardianContractError =
   | ContractFunctionMustBeProtectedError
   | InvalidRangeError
   | HandlerForSelectorMismatchError
+  | GrantNotRevocableError
   | InsufficientBalanceError
   | PaymentFailedError
   | InvalidPaymentError
@@ -850,6 +856,11 @@ export const ERROR_SIGNATURES: Record<string, {
     params: ['schemaHandlerForSelector', 'permissionHandlerForSelector'],
     userMessage: (params) => `HandlerForSelectorMismatch: Handler selector mismatch - schema: ${params.schemaHandlerForSelector}, permission: ${params.permissionHandlerForSelector}`
   },
+  '0x3ae8c131': {
+    name: 'GrantNotRevocable',
+    params: ['functionSelector'],
+    userMessage: (params) => `GrantNotRevocable: The grant for selector ${params.functionSelector} cannot be removed from any role (schema isGrantRevocable is false)`
+  },
   '0x2457cde7': {
     name: 'InvalidRange',
     params: ['from', 'to'],
@@ -974,6 +985,7 @@ export const ERROR_DECODE_TYPES: Record<string, string> = {
   '0x1fe7e0ac': 'address, bytes4',
   '0x2584c569': 'bytes4, bytes4',
   '0xc0baa221': 'bytes4, bytes4',
+  '0x3ae8c131': 'bytes4',
   '0x2457cde7': 'uint256, uint256',
   '0x0364eed2': '',
   '0x3c6b4b28': '',

@@ -17,9 +17,10 @@ export {
   encodeAddWallet,
   encodeRevokeWallet,
   encodeAddFunctionToRole,
-  encodeRemoveFunctionFromRole
+  encodeRemoveFunctionFromRole,
+  resolveHandlerForSelectors
 } from './RuntimeRBACDefinitions.js';
-export type { FunctionPermissionForEncoding } from './RuntimeRBACDefinitions.js';
+export type { FunctionPermissionForEncoding, FunctionSchemaReader } from './RuntimeRBACDefinitions.js';
 
 export {
   guardConfigBatchExecutionParams,

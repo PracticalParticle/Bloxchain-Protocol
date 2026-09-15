@@ -170,6 +170,81 @@ const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(definit
 
 
 
+## 🧭 **Configuration Helpers**
+
+### **`flowReadiness`**
+
+##### `flowReadiness(account: FlowReadinessReader, options: FlowReadinessOptions): Promise<FlowReadiness>`
+
+Answers "is this governed flow open on this account?" in one call, by reading the three things a guarded call
+needs: the **function schema** for the execution selector, the **target whitelist** for that selector, and the
+**role grants** on it. View calls only — nothing is simulated or sent.
+
+```typescript
+import { flowReadiness, formatFlowReadiness, TxAction } from '@bloxchain/sdk';
+
+const readiness = await flowReadiness(guardController, {
+  selector: TRANSFER_SELECTOR,
+  targets: [tokenAddress],
+  roles: [
+    { role: OWNER_ROLE, actions: [TxAction.SIGN_META_REQUEST_AND_APPROVE] },
+    { role: BROADCASTER_ROLE, actions: [TxAction.EXECUTE_META_REQUEST_AND_APPROVE] }
+  ]
+});
+
+if (!readiness.open) throw new Error(formatFlowReadiness(readiness));
+```
+
+**Options**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `selector` | `Hex` | The **execution** selector the flow calls |
+| `targets` | `Address[]` | Every target the flow calls through that selector. Must be non-empty |
+| `roles` | `(Hex \| { role, actions })[]` | Roles that must hold the flow. Name the `actions` — a bare hash accepts any grant on the selector. Must be non-empty |
+| `accountAddress` | `Address?` | The account's own address, so a self-call target (always allowed on chain) reads as satisfied |
+
+**Result**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `open` | `boolean` | **True only if every row holds.** A missing row, a read that reverted, or an empty `targets` / `roles` list forces `false` |
+| `schema` | `SchemaReadinessRow` | Registration plus `enforceHandlerRelations`, `isGrantRevocable`, `supportedActions`, `handlerForSelectors` |
+| `whitelisted` | `WhitelistReadinessRow[]` | One row per target |
+| `grants` | `GrantReadinessRow[]` | One row per role: granted actions, missing actions, handler wiring |
+| `missing` | `string[]` | Human-readable name of every row that did not hold |
+| `errors` | `string[]` | Reads that could not be completed. Non-empty always forces `open === false` |
+
+> The underlying reads are gated by `_validateAnyRole()` on chain. A reader built with
+> `walletClient: undefined` sends `from = 0x0` and every read reverts `NoPermission(0x0)`, which is reported in
+> `errors` — never as "not configured".
+
+##### `formatFlowReadiness(readiness: FlowReadiness): string`
+Renders the result as a short multi-line report, naming every row that did not hold.
+
+### **`resolveHandlerForSelectors`**
+
+##### `resolveHandlerForSelectors(reader, functionSelector: Hex, explicit?: readonly Hex[]): Promise<Hex[]>`
+
+Reads the function schema and returns the `handlerForSelectors` a grant on that selector must carry — the only
+way to get it right for every selector, since a runtime-registered selector must **self-reference** while some
+built-in schemas point at a different handler. When `explicit` is supplied it is validated rather than
+replaced, so a wrong value throws here instead of reverting `HandlerForSelectorMismatch` on chain.
+
+```typescript
+import { encodeAddFunctionToRole, resolveHandlerForSelectors } from '@bloxchain/sdk';
+
+const handlerForSelectors = await resolveHandlerForSelectors(guardController, mySelector);
+const data = encodeAddFunctionToRole(publicClient, rbacDefinitions, MANAGER_ROLE, {
+  functionSelector: mySelector,
+  grantedActionsBitmap: 1 << TxAction.SIGN_META_REQUEST_AND_APPROVE,
+  handlerForSelectors
+});
+```
+
+`encodeAddFunctionToRole` also accepts an **omitted** `handlerForSelectors`, defaulting it to
+`[functionSelector]` — correct for every selector registered at runtime via `REGISTER_FUNCTION`.
+
 ## 📝 **Types & Interfaces**
 
 ### **Core Types**

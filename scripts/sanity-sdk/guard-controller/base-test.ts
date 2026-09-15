@@ -973,6 +973,9 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       '0xa0387940': 'NotSupported',
       '0x405c16b9': 'ConflictingMetaTxPermissions',
       '0xee809d50': 'CannotModifyProtected',
+      '0xc0baa221': 'HandlerForSelectorMismatch',
+      '0x3ae8c131': 'GrantNotRevocable',
+      '0x1fe7e0ac': 'TargetNotWhitelisted',
     };
     return errorMap[errorSelector.toLowerCase()] || `Unknown(${errorSelector})`;
   }

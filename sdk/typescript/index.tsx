@@ -20,13 +20,14 @@ export {
   encodeRevokeWallet,
   encodeAddFunctionToRole,
   encodeRemoveFunctionFromRole,
+  resolveHandlerForSelectors,
   getGuardConfigActionSpecs,
   encodeAddTargetToWhitelist,
   encodeRemoveTargetFromWhitelist,
   encodeRegisterFunction,
   encodeUnregisterFunction
 } from './lib/definitions/index.js';
-export type { FunctionPermissionForEncoding } from './lib/definitions/index.js';
+export type { FunctionPermissionForEncoding, FunctionSchemaReader } from './lib/definitions/index.js';
 
 // Interfaces
 export * from './interfaces/base.index.js';
@@ -67,6 +68,21 @@ export * from './utils/validations.js';
 export * from './utils/erc20/erc20Token.js';
 export { MetaTransactionSigner, MetaTransactionBuilder } from './utils/metaTx/metaTransaction.js';
 export * from './utils/contract-errors.js';
+export {
+  flowReadiness,
+  formatFlowReadiness,
+  txActionName
+} from './utils/readiness.js';
+export type {
+  FlowReadiness,
+  FlowReadinessReader,
+  FlowReadinessOptions,
+  FlowReadinessRoleInput,
+  FlowReadinessRoleRequirement,
+  SchemaReadinessRow,
+  WhitelistReadinessRow,
+  GrantReadinessRow
+} from './utils/readiness.js';
 export * from './utils/viem-error-handler.js';
 export {
   INTERFACE_IDS,

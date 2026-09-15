@@ -495,13 +495,22 @@ describe('RuntimeRBAC Integration', () => {
 **Solution**: Use the correct role hash. Generate it using `keccak256(abi.encodePacked(roleName))`.
 
 ### **Issue: "Handler selector mismatch"**
-**Solution**: Ensure `handlerForSelectors` array in function permission matches the function schema's `handlerForSelectors` array. Use `bytes4(0)` for execution selectors.
+**Solution**: Ensure the **`handlerForSelectors`** array on the function permission is drawn from the **function schema's** own `handlerForSelectors` array — `addFunctionToRole` validates this whenever the schema sets **`enforceHandlerRelations`**, and reverts **`HandlerForSelectorMismatch(bytes4(0), <offending handler>)`** otherwise (the first argument is a placeholder; the second names the handler that was rejected).
+
+The right value is **not** uniform, and `bytes4(0)` is never it:
+
+- A selector **registered at runtime** via `REGISTER_FUNCTION` is created by `GuardController._registerGuardedFunction` with `enforceHandlerRelations: true` and `handlerForSelectors: [self]`, and the batch format `(string, string, TxAction[])` exposes no field to change either. Its grants must **self-reference**.
+- Some **built-in** schemas also run strict mode but list a *different* handler — `roleConfigBatchRequestAndApprove` lists `[executeRoleConfigBatch]`. Self-referencing those reverts.
+- **Flexible** schemas (`enforceHandlerRelations: false`) are not validated at grant time at all.
+
+Let the SDK decide instead of guessing: **`encodeAddFunctionToRole`** defaults an omitted `handlerForSelectors` to `[functionSelector]` (correct for every runtime-registered selector), and **`resolveHandlerForSelectors(reader, selector)`** reads the schema and returns the right value for any selector — rejecting a wrong explicit value before it costs a transaction. See [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md#2-a-selector-you-registered-yourself-must-self-reference).
 
 ### **Issue: `ResourceAlreadyExists` when adding a function to a role**
 **Solution**: Re-adding the same selector with **`RoleConfigActionType.ADD_FUNCTION_TO_ROLE`** hits the same **`ResourceAlreadyExists`** revert as a direct **`addFunctionToRole`** would when the selector is already on the role. To change the stored permission bitmap or **`handlerForSelectors`**, include **`RoleConfigActionType.REMOVE_FUNCTION_FROM_ROLE`** in a **`roleConfigBatchRequestAndApprove` → `executeRoleConfigBatch`** flow first, then **`ADD_FUNCTION_TO_ROLE`** with the new values—the engine applies removal through that batch path; there is no supported separate public **`removeFunctionFromRole`** entrypoint for integrators. Note: for registered selectors, **`removeFunctionFromRole`** reverts with **`GrantNotRevocable`** when the schema's **`isGrantRevocable`** is false; when true, grants may be removed from protected roles (OWNER / BROADCASTER / RECOVERY) as well as custom roles.
 
 ## 📚 **Related Documentation**
 
+- [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md) - Guard/RBAC rules builders otherwise learn by revert, and `flowReadiness`
 - [API Reference](./api-reference.md) - Complete API documentation
 - [SecureOwnable Guide](./secure-ownable.md) - Base contract functionality
 - [State Machine Engine](./state-machine-engine.md) - State machine architecture
