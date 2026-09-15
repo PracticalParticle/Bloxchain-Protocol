@@ -49,6 +49,10 @@ by hand. See [`docs/integrator-checklist.md`](../../docs/integrator-checklist.md
   `SafeERC20FailedOperation`, and the OpenZeppelin `InvalidInitialization`,
   `NotInitializing`, `ReentrancyGuardReentrantCall`, `FailedDeployment`.
 
+### Added — public provisioning (SPEC-2026-0118)
+
+- CopyBlox factory wrapper (`cloneBlox`, `clonesOf` with on-chain index or `BloxCloned` log fallback), account shape gate (`isAccountBlox` / `inspectAccountBlox` / `assertOwnedAccount`), gas envelope helpers (`MAX_TX_GAS`, `GAS_ENVELOPE`, `assertCloneGasEstimate`), and official-address resolvers (`resolveOfficialNetwork`, `assertNetworkIsOfficial`, `getOfficialAddress`).
+
 ### Fixed
 
 - `extractErrorData` no longer returns the first hex run found in an error message.
