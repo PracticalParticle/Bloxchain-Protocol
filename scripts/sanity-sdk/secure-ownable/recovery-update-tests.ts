@@ -100,7 +100,6 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         console.log(`    ✅ Execution params created for ${description}: ${executionOptions}`);
       } catch (error: any) {
         console.error(`    ❌ Failed to get execution params: ${error.message}`);
-        console.error(`    ❌ Error stack: ${error.stack}`);
         throw new Error(`Failed to get execution params: ${error.message}`);
       }
 
@@ -143,13 +142,7 @@ export class RecoveryUpdateTests extends BaseSecureOwnableTest {
         executionParams: executionOptions as Hex
       };
       
-      console.log(`    🔍 txParams:`, {
-        requester: txParams.requester,
-        target: txParams.target,
-        operationType: txParams.operationType,
-        executionSelector: txParams.executionSelector,
-        executionParams: txParams.executionParams
-      });
+      console.log(`    🔍 txParams: operationType=${txParams.operationType}, executionSelector=${txParams.executionSelector}`);
 
       const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
         txParams,

@@ -18,13 +18,20 @@ import { INTERFACE_IDS } from '../../utils/interface-ids.js';
  * This contract is modular and can be combined with RuntimeRBAC and SecureOwnable for role management.
  */
 export class GuardController extends BaseStateMachine implements IGuardController {
+  /**
+   * @param readAs Optional `from` address for role-gated **reads** — lets a read-only
+   *        wrapper (no `walletClient`) query permissioned views such as
+   *        `getFunctionWhitelistTargets` instead of being refused `NoPermission(0x0)`.
+   *        See `BaseStateMachine.setReadSender`.
+   */
   constructor(
     client: PublicClient,
     walletClient: WalletClient | undefined,
     contractAddress: Address,
-    chain: Chain
+    chain: Chain,
+    readAs?: Address
   ) {
-    super(client, walletClient, contractAddress, chain, GuardControllerABIJson);
+    super(client, walletClient, contractAddress, chain, GuardControllerABIJson, readAs);
   }
 
   // ============ INITIALIZATION ============
@@ -232,10 +239,13 @@ export class GuardController extends BaseStateMachine implements IGuardControlle
   /**
    * @dev Gets all whitelisted targets for a function selector (from BaseStateMachine).
    * @param functionSelector The function selector
+   * @param readAs Optional `from` address for this call. This view is role-gated
+   *        (`_validateAnyRole`), so a read-only wrapper must supply a sender that
+   *        holds a role or the call reverts `NoPermission(0x0)`.
    * @return Promise<Address[]> Array of whitelisted target addresses
    */
-  async getFunctionWhitelistTargets(functionSelector: Hex): Promise<Address[]> {
-    return this.executeReadContract<Address[]>('getFunctionWhitelistTargets', [functionSelector]);
+  async getFunctionWhitelistTargets(functionSelector: Hex, readAs?: Address): Promise<Address[]> {
+    return this.executeReadContract<Address[]>('getFunctionWhitelistTargets', [functionSelector], readAs);
   }
 
   // ============ INTERFACE SUPPORT ============

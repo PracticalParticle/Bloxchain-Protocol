@@ -67,3 +67,7 @@ package/components/
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/
+.readme-preview.html
+
+# Throwaway consumer package created by scripts/sanity-sdk/public-surface (R1 exports probe)
+sdk/.sdk-export-probe-*/

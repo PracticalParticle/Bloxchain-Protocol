@@ -140,13 +140,7 @@ export class TimelockPeriodTests extends BaseSecureOwnableTest {
         executionParams: executionOptions as Hex
       };
       
-      console.log(`    🔍 txParams:`, {
-        requester: txParams.requester,
-        target: txParams.target,
-        operationType: txParams.operationType,
-        executionSelector: txParams.executionSelector,
-        executionParams: txParams.executionParams
-      });
+      console.log(`    🔍 txParams: operationType=${txParams.operationType}, executionSelector=${txParams.executionSelector}`);
 
       const unsignedMetaTx = await this.metaTxSigner.createUnsignedMetaTransactionForNew(
         txParams,
