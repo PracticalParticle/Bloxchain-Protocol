@@ -13,13 +13,38 @@ import "../../../core/lib/utils/SharedValidation.sol";
 /**
  * @title CopyBlox
  * @dev A simple blox that can clone other blox contracts and initialize them with user values
- * 
+ *
  * This contract provides functionality to:
  * - Clone any blox contract using EIP-1167 minimal proxy pattern
  * - Initialize the cloned contract with user-provided values
  * - Centralize events from clones by setting eventForwarder to CopyBlox address
  * - Implement IEventForwarder to receive and forward events from all clones
  * - Ensure all clones implement at least IBaseStateMachine interface
+ * - Enumerate the clones created for a given initial owner (`clonesOf`)
+ *
+ * ## Support statement (public provisioning path)
+ *
+ * CopyBlox is an **example application** of the protocol, and it is also the
+ * **sanctioned public provisioning surface**: `cloneBlox` is the supported way for an
+ * outside integrator to obtain a governed `AccountBlox` from the published packages
+ * alone. It stays under `contracts/examples/applications/` (it is not core protocol
+ * and must not be moved into `contracts/core`), but the clone + owner-index +
+ * event-forwarding API below is treated as a public API: additive changes only, and
+ * the storage layout is preserved for already-deployed factories.
+ *
+ * A CopyBlox instance is deliberately **not** an account. It answers ERC-165
+ * `IBaseStateMachine` (it inherits `BaseStateMachine`) but it never answers
+ * `ISecureOwnable`, and while it is left uninitialized `owner()` reverts and
+ * `initialized()` is false. Integrators must therefore gate "is this an account I can
+ * load?" on `getCode` + `owner()` + `initialized()` + ERC-165 `ISecureOwnable`, never
+ * on `IBaseStateMachine` alone, or they will adopt the factory as an account.
+ * See the SDK helper `isAccountBlox` and `docs/account-pattern.md`.
+ *
+ * ## Gas
+ *
+ * `cloneBlox` against the `AccountBlox` template costs ~16.2 M gas, against a public
+ * per-transaction cap of 2^24 = 16,777,216 (EIP-7825). Send it with an explicit gas
+ * limit at the cap, never with a bare estimate. See `docs/getting-started.md`.
  */
 contract CopyBlox is BaseStateMachine, IEventForwarder {
     using Clones for address;
@@ -30,6 +55,17 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
      * @dev Set to store all created clone addresses (length used as clone count)
      */
     EnumerableSet.AddressSet private _clones;
+
+    /**
+     * @dev Clones created for each initial owner, in creation order.
+     * @notice Keyed by the `initialOwner` passed to `cloneBlox`, which is the owner the
+     *         clone was initialized with. It is **not** re-keyed when a clone later
+     *         transfers ownership through `SecureOwnable`, so a consumer that needs
+     *         current ownership must still read `owner()` on each entry.
+     * @dev Consumes one slot from `__gap` (50 -> 49) so the storage layout of already
+     *      deployed CopyBlox instances is unchanged.
+     */
+    mapping(address => address[]) private _clonesByOwner;
 
     /**
      * @dev Event emitted when a blox is cloned
@@ -109,6 +145,7 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         if (!success) revert SharedValidation.OperationFailed();
 
         _clones.add(cloneAddress);
+        _clonesByOwner[initialOwner].push(cloneAddress);
         emit BloxCloned(bloxAddress, cloneAddress, initialOwner, _clones.length());
         return cloneAddress;
     }
@@ -148,6 +185,41 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
      */
     function isClone(address cloneAddress) external view returns (bool) {
         return _clones.contains(cloneAddress);
+    }
+
+    /**
+     * @notice Get every clone this CopyBlox created for an initial owner
+     * @param initialOwner The initial owner to look up
+     * @return The clone addresses created for that owner, in creation order
+     * @dev Returns all of them, not only the most recent one: an owner may hold several
+     *      accounts, and picking "the latest `BloxCloned` log" silently strands the rest.
+     *      The key is the owner the clone was initialized with; verify `owner()` on an
+     *      entry before treating it as currently owned.
+     */
+    function clonesOf(address initialOwner) external view returns (address[] memory) {
+        return _clonesByOwner[initialOwner];
+    }
+
+    /**
+     * @notice Get the number of clones created for an initial owner
+     * @param initialOwner The initial owner to look up
+     * @return The number of clones created for that owner
+     */
+    function clonesOfCount(address initialOwner) external view returns (uint256) {
+        return _clonesByOwner[initialOwner].length;
+    }
+
+    /**
+     * @notice Get one clone created for an initial owner, by index
+     * @param initialOwner The initial owner to look up
+     * @param index The index into that owner's clone list (creation order)
+     * @return The clone address at the specified index
+     * @dev Reverts on an out-of-range index, matching `getCloneAtIndex`.
+     */
+    function cloneOfOwnerAt(address initialOwner, uint256 index) external view returns (address) {
+        address[] storage clonesForOwner = _clonesByOwner[initialOwner];
+        if (index >= clonesForOwner.length) revert SharedValidation.InvalidOperation(initialOwner);
+        return clonesForOwner[index];
     }
 
     // ============ IEventForwarder IMPLEMENTATION ============
@@ -243,6 +315,8 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * @dev 50 -> 49: `_clonesByOwner` (SPEC-2026-0118) took one slot from this gap so the
+     *      layout of already deployed CopyBlox instances is preserved.
      */
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }
