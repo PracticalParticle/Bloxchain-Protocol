@@ -10,18 +10,18 @@
  * (`utils/erc20/ERC20Token.abi.json`). `erc20MinimalAbi` is the hand-checked
  * standard subset, handy when you want a narrow, fully inferred viem type.
  */
+import type { Abi } from 'viem';
 import { parseAbi } from 'viem';
 import abiJson from '../utils/erc20/ERC20Token.abi.json' with { type: 'json' };
 
 /** Full ERC-20 ABI as published with the SDK. */
-export const erc20Abi = abiJson as readonly unknown[];
+export const erc20Abi = abiJson as Abi;
 
 /**
  * Minimal, strongly typed ERC-20 surface.
  *
  * Declared with `parseAbi` so viem infers exact argument and return types —
- * unlike the JSON import above, which is intentionally widened to
- * `readonly unknown[]` so it can be passed to any viem call site.
+ * unlike the JSON import above, which is cast to `Abi` for call-site compatibility.
  */
 export const erc20MinimalAbi = parseAbi([
   'function name() view returns (string)',
@@ -38,8 +38,8 @@ export const erc20MinimalAbi = parseAbi([
 ]);
 
 /** ERC-20 ABI entries for events only. */
-export const erc20EventAbi = (erc20Abi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const erc20EventAbi = erc20Abi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default erc20Abi;

@@ -9,19 +9,20 @@
  * `@bloxchain/sdk/abi/RuntimeRBACDefinitions.abi.json`, and from the typed barrel
  * `@bloxchain/sdk/abi`.
  */
+import type { Abi } from 'viem';
 import abiJson from '../abi/RuntimeRBACDefinitions.abi.json' with { type: 'json' };
 
 /** RuntimeRBACDefinitions contract ABI (full, as published in `abi/RuntimeRBACDefinitions.abi.json`). */
-export const runtimeRBACDefinitionsAbi = abiJson as readonly unknown[];
+export const runtimeRBACDefinitionsAbi = abiJson as Abi;
 
 /** RuntimeRBACDefinitions ABI entries for custom errors only (for viem `decodeErrorResult`). */
-export const runtimeRBACDefinitionsErrorAbi = (runtimeRBACDefinitionsAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'error'
+export const runtimeRBACDefinitionsErrorAbi = runtimeRBACDefinitionsAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
 );
 
 /** RuntimeRBACDefinitions ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
-export const runtimeRBACDefinitionsEventAbi = (runtimeRBACDefinitionsAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const runtimeRBACDefinitionsEventAbi = runtimeRBACDefinitionsAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default runtimeRBACDefinitionsAbi;

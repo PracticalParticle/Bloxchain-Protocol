@@ -13,11 +13,13 @@
  * they work under every bundler and Node resolver without JSON import
  * attributes. Reach for the raw JSON only when a tool insists on the file.
  *
- * ABIs are widened to `readonly unknown[]` so they can be handed to any viem
- * call site without variance complaints. When you want full viem type
- * inference for a narrow surface, use `erc20MinimalAbi` from
- * `@bloxchain/sdk/abi/ERC20`, or `parseAbi` your own fragment.
+ * ABIs are typed as viem `Abi` (JSON imports cast once at the module boundary).
+ * When you want full viem type inference for a narrow surface, use
+ * `erc20MinimalAbi` from `@bloxchain/sdk/abi/ERC20`, or `parseAbi` your own
+ * fragment.
  */
+
+import type { Abi } from 'viem';
 
 export {
   accountBloxAbi,
@@ -118,11 +120,11 @@ export type BloxchainAbiName = keyof typeof ABIS;
  * know which contract produced them — a guarded inner call can revert inside a
  * target the caller's ABI has never heard of.
  */
-export const ALL_ERROR_ABI: readonly unknown[] = (() => {
+export const ALL_ERROR_ABI: Abi = (() => {
   const seen = new Set<string>();
-  const out: unknown[] = [];
+  const out: Extract<Abi[number], { type: 'error' }>[] = [];
   for (const abi of Object.values(ABIS)) {
-    for (const item of abi as Array<{ type?: string; name?: string; inputs?: Array<{ type?: string }> }>) {
+    for (const item of abi) {
       if (item.type !== 'error') continue;
       const key = `${item.name}(${(item.inputs ?? []).map((i) => i.type).join(',')})`;
       if (seen.has(key)) continue;

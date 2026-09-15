@@ -142,8 +142,9 @@ compatibility contract.
 **Two things the unwrap will not do.** It will not read a 20-byte address as text
 (an address is 40 hex characters — never a selector plus whole 32-byte words, so it
 can never be mistaken for revert data), and it will not read structured revert bytes
-as ASCII. An unnamed error is reported as `Unknown` with its bytes attached, which is
-the honest answer.
+as ASCII. An unnamed error is reported as `Unknown`. `raw` is attached only when
+unnamed revert bytes were extracted for an undecodable revert; transport and
+generic unknown results do not include `raw`.
 
 ---
 
@@ -282,19 +283,23 @@ explicit `gas`.
 
 ### `MAX_TX_GAS` (EIP-7825)
 
-EIP-7825 caps the gas limit of a single transaction at **2²⁴ = 16,777,216**. No
-transaction may exceed it, whatever the block gas limit says.
+On networks / forks where **EIP-7825** is active, the per-transaction gas limit is
+capped at **2²⁴ = 16,777,216**. That figure is **not** universal — use the target
+chain's effective transaction gas cap (client / explorer / chain docs) rather than
+assuming 16,777,216 everywhere. Chains that have not adopted EIP-7825 still follow
+their own block and tx limits.
 
 ```ts
+// Only where EIP-7825 applies; otherwise use the network's published tx gas cap.
 const MAX_TX_GAS = 16_777_216n; // 2 ** 24
 ```
 
-This bites on batches, not on single calls. If a configuration batch or a
-multi-action meta-transaction estimates near the cap, split it — a transaction over
-the cap is rejected outright rather than mined and failed. Remember also that the
-`gasLimit` you put in `TxParams` is a **cap the guard forwards** to the inner call,
-not a price: over-provisioning it costs nothing directly, but it counts toward the
-outer transaction's limit.
+Where the cap applies, it bites on batches more often than on single calls. If a
+configuration batch or a multi-action meta-transaction estimates near the cap, split
+it — a transaction over the cap is rejected outright rather than mined and failed.
+Remember also that the `gasLimit` you put in `TxParams` is a **cap the guard
+forwards** to the inner call, not a price: over-provisioning it costs nothing
+directly, but it counts toward the outer transaction's limit.
 
 ---
 

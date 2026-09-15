@@ -9,19 +9,20 @@
  * `@bloxchain/sdk/abi/SecureOwnableDefinitions.abi.json`, and from the typed barrel
  * `@bloxchain/sdk/abi`.
  */
+import type { Abi } from 'viem';
 import abiJson from '../abi/SecureOwnableDefinitions.abi.json' with { type: 'json' };
 
 /** SecureOwnableDefinitions contract ABI (full, as published in `abi/SecureOwnableDefinitions.abi.json`). */
-export const secureOwnableDefinitionsAbi = abiJson as readonly unknown[];
+export const secureOwnableDefinitionsAbi = abiJson as Abi;
 
 /** SecureOwnableDefinitions ABI entries for custom errors only (for viem `decodeErrorResult`). */
-export const secureOwnableDefinitionsErrorAbi = (secureOwnableDefinitionsAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'error'
+export const secureOwnableDefinitionsErrorAbi = secureOwnableDefinitionsAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
 );
 
 /** SecureOwnableDefinitions ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
-export const secureOwnableDefinitionsEventAbi = (secureOwnableDefinitionsAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const secureOwnableDefinitionsEventAbi = secureOwnableDefinitionsAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default secureOwnableDefinitionsAbi;

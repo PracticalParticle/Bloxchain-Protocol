@@ -9,19 +9,20 @@
  * `@bloxchain/sdk/abi/BaseStateMachine.abi.json`, and from the typed barrel
  * `@bloxchain/sdk/abi`.
  */
+import type { Abi } from 'viem';
 import abiJson from '../abi/BaseStateMachine.abi.json' with { type: 'json' };
 
 /** BaseStateMachine contract ABI (full, as published in `abi/BaseStateMachine.abi.json`). */
-export const baseStateMachineAbi = abiJson as readonly unknown[];
+export const baseStateMachineAbi = abiJson as Abi;
 
 /** BaseStateMachine ABI entries for custom errors only (for viem `decodeErrorResult`). */
-export const baseStateMachineErrorAbi = (baseStateMachineAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'error'
+export const baseStateMachineErrorAbi = baseStateMachineAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'error' }> => item.type === 'error'
 );
 
 /** BaseStateMachine ABI entries for events only (for viem `decodeEventLog` / `parseEventLogs`). */
-export const baseStateMachineEventAbi = (baseStateMachineAbi as Array<{ type?: string }>).filter(
-  (item) => item.type === 'event'
+export const baseStateMachineEventAbi = baseStateMachineAbi.filter(
+  (item): item is Extract<Abi[number], { type: 'event' }> => item.type === 'event'
 );
 
 export default baseStateMachineAbi;

@@ -392,16 +392,22 @@ transport failures.
 | `isRevertNamed(explained, name)` | Narrow to one protocol error |
 | `ERROR_SIGNATURES`, `ERROR_DECODE_TYPES` | The curated selector tables |
 
-| `errorName` | Broadcast? | Gas spent? |
-|-------------|-----------|------------|
-| `SignerDenied` — policy violation or user rejection | no | none |
-| `SignerError` — signer auth failure or outage | no | none |
-| a protocol error name — the chain reverted | yes | yes |
-| `RpcError` — transport | maybe | maybe |
+Do **not** infer broadcast or gas usage from `errorName` alone. A named protocol revert
+and an `RpcError` can both appear during simulation / preflight (`eth_call`,
+`estimateGas`, wallet dry-run) *or* after a send — `explainError` classifies the
+failure layer, not whether a transaction was mined.
+
+| Lifecycle | How to tell | Broadcast / gas |
+|-----------|-------------|-----------------|
+| Signer refused before send | `kind: 'signer'` (`SignerDenied` / `SignerError`) | Never broadcast; no gas |
+| Chain / simulation revert | `kind: 'revert'` (named custom error, or `Unknown` **with** `raw`) | Often preflight only — gas only if a receipt shows the tx was mined and reverted |
+| Transport / RPC failure | `kind: 'transport'` (`RpcError`) | Do not infer inclusion or gas |
+| Unclassified | `kind: 'unknown'` (`Unknown` **without** `raw`) | Do not infer inclusion or gas |
 
 Two things the unwrap will not do: read a 20-byte address as text, or read structured
-revert bytes as ASCII. An error it cannot name is reported as `Unknown` with its
-bytes attached.
+revert bytes as ASCII. An error it cannot name is reported as `Unknown`. `raw` is
+attached **only** when unnamed revert bytes were extracted for an undecodable
+revert (`kind: 'revert'`); transport and generic unknown results do not include `raw`.
 
 `enhanceViemError` / `handleViemError` (thrown by the wrappers themselves) carry the
 same facts as `errorName`, `args`, `selector`, `raw`, `kind`, and `signerFailure`
