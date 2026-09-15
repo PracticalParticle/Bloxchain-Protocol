@@ -6,6 +6,14 @@ export { default as BaseStateMachine } from './contracts/core/BaseStateMachine.j
 export { default as SecureOwnable } from './contracts/core/SecureOwnable.js';
 export { default as RuntimeRBAC } from './contracts/core/RuntimeRBAC.js';
 export { default as GuardController } from './contracts/core/GuardController.js';
+
+// Provisioning: the sanctioned clone factory (SPEC-2026-0118)
+export { default as CopyBlox } from './contracts/factories/CopyBlox.js';
+export type {
+  CloneAccountParams,
+  CloneLogScanOptions,
+  CloneListResult
+} from './contracts/factories/CopyBlox.js';
 export { Definitions } from './lib/Definition.js';
 export { EngineBlox } from './lib/EngineBlox.js';
 export {
@@ -125,6 +133,50 @@ export {
   ComponentDetection,
   supportsInterface,
 } from './utils/interface-ids.js';
+
+// The account shape gate: never adopt an address without it (SPEC-2026-0118 R3)
+export {
+  isAccountBlox,
+  inspectAccountBlox,
+  assertOwnedAccount,
+  NotAnAccountError,
+  AccountNotOwnedError,
+} from './utils/account-gate.js';
+export type { AccountBloxInspection, AccountBloxRejection } from './utils/account-gate.js';
+
+// Gas envelope and the EIP-7825 per-transaction cap (SPEC-2026-0118 R4)
+export {
+  MAX_TX_GAS,
+  GAS_ENVELOPE,
+  assertUnderMaxTxGas,
+  assertGasEnvelope,
+  assertCloneGasEstimate,
+  getBlockGasLimit,
+  MaxTxGasExceededError,
+  GasFloorNotMetError,
+} from './utils/gas.js';
+
+// official-deployed-addresses.json (SPEC-2026-0118 R2)
+export {
+  OFFICIAL_ADDRESSES_FORMAT,
+  resolveOfficialNetwork,
+  assertNetworkIsOfficial,
+  getOfficialAddress,
+  pendingOfficialContracts,
+  factorySupportsClonesOf,
+  OfficialNetworkNotFoundError,
+  OfficialContractNotDeclaredError,
+  NetworkNotOfficialError,
+} from './utils/official-addresses.js';
+export type {
+  OfficialAddressesFile,
+  OfficialNetwork,
+  ResolvedOfficialNetwork,
+  OfficialContract,
+  OfficialContractKind,
+  OfficialGasNotes,
+  OfficialStatus,
+} from './utils/official-addresses.js';
 
 // Re-export commonly used types from viem
 export type { Address, Hex, PublicClient, WalletClient, Chain } from 'viem';

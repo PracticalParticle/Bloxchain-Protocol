@@ -1,0 +1,108 @@
+# Builds the publishable compiled artifacts for @bloxchain/contracts and proves a fresh
+# install can provision an account without the protocol repo (SPEC-2026-0118 R1/R2).
+#
+# Runs on release tags so the artifacts a release publishes are built by CI from the
+# pinned compiler with the audited optimizer settings, and their sha256 is recorded.
+# It also runs on pull requests that touch the publish surface, so the exports map and
+# the official address file cannot regress unnoticed.
+#
+# This workflow does NOT publish to npm. Publishing stays a human step
+# (`npm run publish:contracts`), which runs the same prepublish pipeline.
+
+name: Contracts Artifacts
+
+on:
+  push:
+    tags:
+      - 'contracts-v*'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'contracts/**'
+      - 'package/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/build-artifacts.cjs'
+      - 'scripts/validate-official-addresses.cjs'
+      - 'scripts/promote-official-addresses.cjs'
+      - 'scripts/verify-package-consumption.mjs'
+      - 'official-deployed-addresses.json'
+      - 'foundry.toml'
+      - '.github/workflows/contracts-artifacts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          version: v1.7.1
+
+      # The official address file is what integrators read. A malformed file, or one that
+      # has picked up a lab chain, must fail here rather than reach npm.
+      - name: Validate official deployed addresses
+        run: npm run validate:official-addresses
+
+      - name: Compile contracts
+        run: npm run compile:foundry
+
+      - name: Check contract sizes (EIP-170)
+        run: npm run compile:foundry:size
+
+      - name: Build publishable artifacts
+        run: node scripts/build-artifacts.cjs
+
+      # Resolves the published subpaths through the package exports map from a throwaway
+      # consumer directory: ABI plus bytecode plus official addresses, no compile step.
+      - name: Verify a fresh install can provision
+        run: npm run verify:package-consumption
+
+      - name: Record artifact sizes and hashes
+        run: |
+          echo '### @bloxchain/contracts artifacts' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '| Contract | Runtime (B) | Creation (B) | Links | sha256 |' >> "$GITHUB_STEP_SUMMARY"
+          echo '|---|---:|---:|---|---|' >> "$GITHUB_STEP_SUMMARY"
+          node -e '
+            const m = require("./artifacts/manifest.json");
+            for (const [name, c] of Object.entries(m.contracts)) {
+              const links = c.linkLibraries.length ? c.linkLibraries.join(", ") : "-";
+              console.log(`| ${name} | ${c.runtimeBytes} | ${c.creationBytes} | ${links} | \`${c.sha256.slice(0, 16)}\` |`);
+            }
+          ' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          node -e '
+            const m = require("./artifacts/manifest.json");
+            console.log(`solc ${m.compiler.solc}, optimizer ${m.compiler.optimizer ? `on/${m.compiler.runs}` : "off"}, viaIR ${m.compiler.viaIR}, evm ${m.compiler.evmVersion}`);
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bloxchain-contracts-artifacts
+          path: |
+            artifacts/
+            official-deployed-addresses.json
+          if-no-files-found: error
+          retention-days: 30
