@@ -99,6 +99,58 @@ Once instantiated:
 
 ---
 
+## Getting an Account, and Recognising One
+
+### A fresh account is a vault
+
+`initialize` gives an account its owner, broadcaster, recovery address and time lock. It
+does **not** give it the ability to do anything. A newly initialized account refuses every
+execution until two more things are configured:
+
+1. a **guard batch** that whitelists the execution target for its selector, and
+2. a **role batch** that grants a role an action on the execution selector and its handler.
+
+The second one is the one that catches people. `initialize` registers the
+`transfer(address,uint256)` schema with all nine actions *supported*, so the schema read
+looks complete, while `getActiveRolePermissions` shows no role actually *holding* an
+action on that selector. Whitelisting a token and stopping there reverts
+`NoPermission(caller)`. **A supported action is not a granted action, and a whitelist is
+not a permission.** The full recipe is in
+[Getting Started, three locks](./getting-started.md#5-the-three-locks).
+
+### Creating one: the clone factory
+
+The sanctioned way to create an account is a **CopyBlox-shaped clone factory**:
+`cloneBlox` deploys an EIP-1167 minimal proxy of an account template and calls
+`initialize` on it in the **same transaction**, so no uninitialized account is ever live
+at a public address. The factory also indexes clones by their initial owner
+(`clonesOf(owner)`), because an owner can hold several accounts and picking the most
+recent one strands the others.
+
+The factory is an *example application* of the protocol that is supported as the public
+provisioning surface. It is deliberately **not** in `contracts/core`, and an account never
+depends on it at runtime.
+
+### Recognising one: the shape gate
+
+An account and a factory are both `BaseStateMachine`s, so ERC-165 `IBaseStateMachine` does
+**not** distinguish them. Gate on all four of:
+
+| Check | An account | The factory |
+|---|---|---|
+| `getCode` non-empty | yes | yes |
+| `owner()` answers | yes | **reverts** while uninitialized |
+| `initialized()` | `true` | `false` |
+| ERC-165 `ISecureOwnable` | `true` | **`false`** |
+
+`ISecureOwnable` is the sharp edge: the account components (`SecureOwnable`,
+`RuntimeRBAC`, `GuardController`, composed by `Account`) answer it, and a bare
+`BaseStateMachine` such as the factory does not. The SDK ships this as `isAccountBlox` /
+`inspectAccountBlox`, and `assertOwnedAccount` adds the owner match you need before
+adopting an address a user named.
+
+---
+
 ## When to Use the Account Pattern
 
 Use `Account` (or an `Account`‑based implementation) when you want:
