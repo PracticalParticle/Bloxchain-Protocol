@@ -252,7 +252,8 @@ contract CopyBloxCloneIndexTest is Test {
 
 /**
  * @dev Handler for Foundry invariant fuzzing of CopyBlox owner indexes.
- *      Creates clones for arbitrary owners across generated call sequences.
+ *      Creates clones for arbitrary owners across generated call sequences and
+ *      retains each returned clone in a per-owner expected sequence.
  */
 contract CopyBloxCloneIndexHandler {
     CopyBlox internal immutable factory;
@@ -263,6 +264,7 @@ contract CopyBloxCloneIndexHandler {
 
     address[] public ownersSeen;
     mapping(address => bool) internal seenOwner;
+    mapping(address => address[]) internal expectedClones;
 
     constructor(
         CopyBlox factory_,
@@ -280,7 +282,8 @@ contract CopyBloxCloneIndexHandler {
         if (owner == address(0)) {
             owner = address(uint160(uint256(keccak256(abi.encode(owner, ownersSeen.length))) | 1));
         }
-        factory.cloneBlox(address(template), owner, broadcaster, recovery, TIMELOCK);
+        address clone = factory.cloneBlox(address(template), owner, broadcaster, recovery, TIMELOCK);
+        expectedClones[owner].push(clone);
         if (!seenOwner[owner]) {
             seenOwner[owner] = true;
             ownersSeen.push(owner);
@@ -289,6 +292,10 @@ contract CopyBloxCloneIndexHandler {
 
     function ownersSeenCount() external view returns (uint256) {
         return ownersSeen.length;
+    }
+
+    function expectedClonesOf(address owner) external view returns (address[] memory) {
+        return expectedClones[owner];
     }
 }
 
@@ -330,13 +337,16 @@ contract CopyBloxCloneIndexInvariantTest is Test {
         uint256 ownerCount = handler.ownersSeenCount();
         for (uint256 o = 0; o < ownerCount; o++) {
             address owner = handler.ownersSeen(o);
+            address[] memory expected = handler.expectedClonesOf(owner);
             uint256 n = factory.clonesOfCount(owner);
             sumOwners += n;
             address[] memory clones = factory.clonesOf(owner);
             assertEq(clones.length, n, "clonesOf length matches clonesOfCount");
+            assertEq(expected.length, n, "expected sequence length matches clonesOfCount");
             for (uint256 i = 0; i < clones.length; i++) {
                 assertTrue(factory.isClone(clones[i]), "owner index isClone");
-                assertEq(factory.cloneOfOwnerAt(owner, i), clones[i], "cloneOfOwnerAt matches");
+                assertEq(clones[i], expected[i], "clonesOf matches expected sequence");
+                assertEq(factory.cloneOfOwnerAt(owner, i), expected[i], "cloneOfOwnerAt matches expected");
             }
         }
         assertEq(sumOwners, global, "sum of tracked-owner counts equals global");

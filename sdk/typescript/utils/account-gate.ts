@@ -3,6 +3,7 @@ import {
   BaseError,
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,
+  ContractFunctionZeroDataError,
   PublicClient,
   getAddress,
   isAddress,
@@ -68,37 +69,27 @@ const REJECTION_REASONS: Record<AccountBloxRejection, string> = {
  * True when the failure is an expected contract answer (revert / missing method), not a
  * transport problem. RPC timeouts and provider failures must surface to the caller.
  *
- * Non-recursive: a `ContractFunctionExecutionError` is classified from its own message
- * (and a direct revert cause), then the walk continues through `cause` without re-entering.
+ * Class-based only: match nested `ContractFunctionRevertedError` /
+ * `ContractFunctionZeroDataError`. Do not classify by generic message substrings such as
+ * "does not exist", which also appear on JSON-RPC method-not-found transport errors.
  */
 export function isExpectedContractFailure(error: unknown): boolean {
-  const matchesExecutionMessage = (message: string): boolean => {
-    const lower = message.toLowerCase();
-    return (
-      lower.includes('reverted') ||
-      lower.includes('execution reverted') ||
-      lower.includes('does not exist') ||
-      lower.includes('returned no data') ||
-      lower.includes('function returned an unexpected')
-    );
-  };
+  const isContractAnswer = (value: unknown): boolean =>
+    value instanceof ContractFunctionRevertedError ||
+    value instanceof ContractFunctionZeroDataError;
 
-  if (error instanceof ContractFunctionRevertedError) return true;
+  if (isContractAnswer(error)) return true;
 
   if (error instanceof ContractFunctionExecutionError) {
-    if (error.cause instanceof ContractFunctionRevertedError) return true;
-    if (matchesExecutionMessage(error.message)) return true;
+    if (isContractAnswer(error.cause)) return true;
   }
 
   if (error instanceof BaseError) {
     let current: BaseError | undefined = error;
     while (current) {
-      if (current instanceof ContractFunctionRevertedError) return true;
-      if (current instanceof ContractFunctionExecutionError) {
-        if (current.cause instanceof ContractFunctionRevertedError) return true;
-        if (matchesExecutionMessage(current.message)) return true;
-        current = current.cause instanceof BaseError ? current.cause : undefined;
-        continue;
+      if (isContractAnswer(current)) return true;
+      if (current instanceof ContractFunctionExecutionError && isContractAnswer(current.cause)) {
+        return true;
       }
       current = current.cause instanceof BaseError ? current.cause : undefined;
     }
