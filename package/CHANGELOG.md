@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Publish compiled `artifacts/*.json` (ABI + bytecode + link refs + compiler settings) with `exports` map coverage for AccountBlox, CopyBlox, EngineBlox, and definition libraries (SPEC-2026-0118).
+- Ship `official-deployed-addresses.json` as the official multi-network address SoT (Sepolia first); distinct from lab `deployed-addresses.json`.
+- CI workflow `contracts-artifacts.yml` builds and verifies artifacts on `contracts-v*` tags and related PRs.
+
 ## [1.0.0](https://github.com/PracticalParticle/Bloxchain-Protocol/releases/tag/contracts-v1.0.0) - 2026-06-03
 
 First **stable** documented release on npm (`latest`). Publishable Solidity artifacts: `core`, `abi`, `standards`, `components`.

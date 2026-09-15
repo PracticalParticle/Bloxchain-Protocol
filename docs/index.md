@@ -9,6 +9,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 - [**Versioning & releases**](./VERSIONING.md) – npm packages, protocol version, Release Please
 - [**Getting Started**](./getting-started.md) – Quick setup and basic usage
 - [**API Reference**](./api-reference.md) – Core SDK classes and method reference
+- [**Integrator Checklist**](./integrator-checklist.md) – Ten things an outside builder hits, and what the SDK gives you instead
 
 ### **🏗️ Architecture & Concepts**
 - [**Bloxchain Architecture**](./bloxchain-architecture.md) – Protocol overview and state machine concepts
@@ -38,6 +39,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 **I want to…**
 - **Understand npm vs on-chain version** → [Versioning & releases](./VERSIONING.md)
 - **Get started quickly** → [Getting Started](./getting-started.md)
+- **Integrate from outside this repo** → [Integrator Checklist](./integrator-checklist.md)
 - **Deploy or clone an Account / initializer contract safely** → [Deployment and initialization](./getting-started.md#deployment-and-initialization)
 - **Understand the on-chain architecture** → [Bloxchain Architecture](./bloxchain-architecture.md)
 - **See how contracts relate** → [Core Contract Graph](./core-contract-graph.md)
@@ -59,6 +61,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 | [README](./README.md) | ✅ Up to date | Entry point for SDK docs |
 | [Getting Started](./getting-started.md) | ✅ Up to date | Basic setup and first calls |
 | [API Reference](./api-reference.md) | ✅ Up to date | Core SDK classes and types |
+| [Integrator Checklist](./integrator-checklist.md) | ✅ Up to date | Public-integrator surface: ABIs, EIP-712, errors, deadlines, inner status |
 | [SecureOwnable](./secure-ownable.md) | ✅ Up to date | Maps to `SecureOwnable.sol` and TS wrapper |
 | [RuntimeRBAC](./runtime-rbac.md) | ✅ Up to date | Maps to `RuntimeRBAC.sol` and TS wrapper |
 | [GuardController](./guard-controller.md) | ✅ Up to date | Maps to `GuardController.sol` and TS wrapper |

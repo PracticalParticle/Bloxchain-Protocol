@@ -47,6 +47,7 @@ Comprehensive documentation is available in the repository root [`docs/`](../../
 ### **🚀 Getting Started**
 - **[Getting Started](../../docs/getting-started.md)** - Quick setup and basic usage
 - **[API Reference](../../docs/api-reference.md)** - Complete API documentation
+- **[Integrator Checklist](../../docs/integrator-checklist.md)** - Ten things an outside builder hits, and what the SDK gives you instead
 - **[SecureOwnable Guide](../../docs/secure-ownable.md)** - Ownership management
 - **[RuntimeRBAC Guide](../../docs/runtime-rbac.md)** - Role-based access control
 
@@ -95,7 +96,14 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 | `roleConfigBatchExecutionParams`, `guardConfigBatchExecutionParams`, encoders | Batch calldata builders |
 | `updateRecoveryExecutionParams`, `updateTimeLockExecutionParams` | SecureOwnable execution params via deployed `SecureOwnableDefinitions` |
 | `extractErrorInfo`, `enhanceViemError` | Revert decoding and Viem error enrichment |
-| `@bloxchain/sdk/abi` | `engineBloxAbi`, `engineBloxErrorAbi` |
+| `explainError`, `extractRevertData`, `decodeRevert`, `classifySignerError` | Structured failure analysis — keeps the revert bytes, names signer refusals before contract reverts |
+| `META_TX_DOMAIN`, `META_TX_TYPES`, `META_TX_TYPED_DATA_TYPES_AS_SIGNED`, `buildTypedDataMessage`, `buildMetaTxTypedData` | EIP-712 meta-transaction shape, including the `EIP712Domain`-prefixed set a signer policy matches on |
+| `metaTxDeadlineFor(client, ttlSeconds)` | Duration for `createMetaTxParams`'s `deadline`, corrected for latest-block drift |
+| `assertInnerSuccess`, `readInnerOutcomes`, `waitForTransactionAndAssertInner`, `ENGINE_BLOX_EVENTS_ABI` | A mined transaction is not a successful one — read the inner `TxStatus` back |
+| `BaseStateMachine.setReadSender()` / `readAs` argument | Query role-gated views from a wallet-less client instead of being refused `NoPermission(0x0)` |
+| `@bloxchain/sdk/abi` | Typed barrel: every shipped ABI, plus `ABIS` and `ALL_ERROR_ABI` |
+| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (e.g. `@bloxchain/sdk/abi/CopyBlox`) |
+| `@bloxchain/sdk/abi/<Name>.abi.json` | The raw ABI JSON, for tools that want the file |
 
 ## Quick Start
 

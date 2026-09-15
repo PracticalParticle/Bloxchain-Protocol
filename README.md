@@ -217,9 +217,31 @@ Non-interactive: `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wa
 2. **Foundation:** `npm run deploy:hardhat:foundation`
 3. **Example (CopyBlox):** `npx hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia`
 
-Addresses are written to **`deployed-addresses.json`**.
+Addresses are written to **`deployed-addresses.json`** (git-ignored, any network the
+scripts were pointed at, never published).
+
+Once a deployment is declared official by a release owner, promote it into the published
+file and validate it:
+
+```bash
+npm run promote:official-addresses -- --network sepolia   # prints the diff, writes nothing
+npm run promote:official-addresses -- --network sepolia --declare
+npm run validate:official-addresses -- --require-official sepolia
+```
 
 ### Official Sepolia addresses
+
+Machine-readable, and published with `@bloxchain/contracts`:
+**[`official-deployed-addresses.json`](./official-deployed-addresses.json)**. Read it with
+the SDK rather than transcribing the table below:
+
+```typescript
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+
+const sepolia = resolveOfficialNetwork(official, 11155111);
+const factory = getOfficialAddress(sepolia, 'CopyBlox');
+```
 
 | Contract | Address |
 |----------|---------|
@@ -237,6 +259,10 @@ Addresses are written to **`deployed-addresses.json`**.
 
 ```bash
 npm run compile:foundry          # add :size for 24KB check
+npm run build:artifacts          # publishable artifacts (ABI + bytecode) into artifacts/
+npm run verify:package-consumption   # a fresh install can provision without this repo
+npm run validate:official-addresses  # schema-check the published address file
+npm run provision:account -- --offline   # reference provisioner, no chain needed
 npm run test:foundry
 npm run test:foundry:fuzz        # 37 suites, 309 tests — see test/foundry/docs/
 npm run test:e2e                 # SDK sanity on remote_evm

@@ -1,12 +1,15 @@
 # Ignore everything except what we want to publish
 *
 
-# Include only core, abi, standards, and components
+# Include only core, abi, artifacts, standards, components and the official addresses
 !core/**
 !abi/**
+!artifacts/**
 !standards/**
 !components/**
+!official-deployed-addresses.json
 !README.md
+!CHANGELOG.md
 !package.json
 !package-lock.json
 
