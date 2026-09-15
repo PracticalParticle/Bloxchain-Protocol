@@ -65,6 +65,14 @@ const txHash = await guardController.approveTimeLockExecution(
 )
 ```
 
+> **`releaseTime` is enforced on this path only.** `approveTimeLockExecution` calls `validateReleaseTime` and
+> reverts **`BeforeReleaseTime(releaseTime, currentTime)`** before the delay elapses.
+> **`approveTimeLockExecutionWithMetaTx` does not** — by design, the meta-tx path lets authorized signers
+> approve without waiting. So the timelock bounds the direct path; holders of the meta-approve pair can
+> collapse it to zero. The pair is always two roles, because one grant may not hold both a meta-*sign* and a
+> meta-*execute* action for the same selector (**`ConflictingMetaTxPermissions`**). See
+> [Meta-approve is not the timelock](./five-things-the-revert-will-teach-you.md#meta-approve-is-not-the-timelock).
+
 #### **Request and Approve in One Step (Meta-Transaction)**
 ```typescript
 const txHash = await guardController.requestAndApproveExecution(
@@ -325,6 +333,13 @@ unwatch()
 
 ### **1. Whitelist Validation**
 
+> **Scope: the guard checks `(target, selector)` — and nothing else.** It does **not** decode calldata, so it
+> sees neither the amount nor a router's inner `bytes[]`. Whitelisting a token for `transfer(address,uint256)`
+> permits *any* amount to *any* recipient the call names; whitelisting a router permits every command its
+> `execute` can carry. **A whitelist is not a spend limit** — do not describe it as one to a user or an
+> auditor. Amount- and destination-aware enforcement is separate protocol work, not a guard configuration.
+> See [What the guard does not see](./five-things-the-revert-will-teach-you.md#what-the-guard-does-not-see).
+
 For **external** contract targets, the address must be on the per-function-selector whitelist (unless the engine rule below applies):
 
 ```typescript
@@ -501,6 +516,9 @@ describe('GuardController Integration', () => {
 ### **Issue: "Function schema not found"**
 **Solution**: Register the function schema using `REGISTER_FUNCTION` action via GuardController (not RuntimeRBAC).
 
+### **Issue: A configured-looking account still reverts**
+**Solution**: Check all three prerequisites in one call with **`flowReadiness`** — schema registered, target whitelisted, and a role holding the right actions on the execution selector. It fails closed (`open` is true only if every row holds) and names what is missing. See [Probe the flow before you send it](./five-things-the-revert-will-teach-you.md#probe-the-flow-before-you-send-it).
+
 ### **Issue: "Transaction execution failed"**
 **Solution**: Ensure:
 1. Function schema is registered
@@ -509,7 +527,7 @@ describe('GuardController Integration', () => {
 4. Gas limit is sufficient (a `gasLimit` of **0** in `TxParams` means "forward all remaining gas" — equivalent to `gasleft()`. Set a positive value for a strict upper bound.)
 
 ### **Issue: "Handler selector mismatch"**
-**Solution**: Ensure the function selector in the execution params matches the registered function schema.
+**Solution**: `HandlerForSelectorMismatch` has two sources. At **grant** time, `addFunctionToRole` rejects a `handlerForSelectors` entry the schema does not list — a selector you registered at runtime must **self-reference**, because `_registerGuardedFunction` hard-codes `enforceHandlerRelations: true` with `handlerForSelectors: [self]`. At **call** time, `_validateExecutionAndHandlerPermissions` requires the execution selector to appear in the *handler's* schema `handlerForSelectors` when that schema is strict. Use `resolveHandlerForSelectors(guardController, selector)` to derive the grant value from the schema instead of guessing; see [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md#2-a-selector-you-registered-yourself-must-self-reference).
 
 ### **Issue: OWNER cannot call `executeWithPayment`**
 **Solution**: Default `GuardControllerDefinitions` registers the **schema** for `executeWithPayment` (`EXECUTE_WITH_PAYMENT_SELECTOR` in `contracts/core/execution/lib/definitions/GuardControllerDefinitions.sol`) but intentionally **does not** grant an `OWNER_ROLE` `FunctionPermission` for it—the permission surface is kept minimal out of the box.
@@ -529,6 +547,7 @@ describe('GuardController Integration', () => {
 
 ## 📚 **Related Documentation**
 
+- [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md) - Whitelist vs permission, the self-handler rule, meta-approve vs timelock, and what the guard does not see
 - [RuntimeRBAC Guide](./runtime-rbac.md) - Role and permission management
 - [API Reference](./api-reference.md) - Complete API documentation
 - [State Machine Engine](./state-machine-engine.md) - State machine architecture

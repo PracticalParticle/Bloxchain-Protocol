@@ -28,13 +28,14 @@ export {
   encodeRevokeWallet,
   encodeAddFunctionToRole,
   encodeRemoveFunctionFromRole,
+  resolveHandlerForSelectors,
   getGuardConfigActionSpecs,
   encodeAddTargetToWhitelist,
   encodeRemoveTargetFromWhitelist,
   encodeRegisterFunction,
   encodeUnregisterFunction
 } from './lib/definitions/index.js';
-export type { FunctionPermissionForEncoding } from './lib/definitions/index.js';
+export type { FunctionPermissionForEncoding, FunctionSchemaReader } from './lib/definitions/index.js';
 
 // Interfaces
 export * from './interfaces/base.index.js';
@@ -91,6 +92,21 @@ export {
 export type { MetaTxTypedData, MetaTxDeadlineDuration } from './utils/metaTx/metaTransaction.js';
 
 export * from './utils/contract-errors.js';
+export {
+  flowReadiness,
+  formatFlowReadiness,
+  txActionName
+} from './utils/readiness.js';
+export type {
+  FlowReadiness,
+  FlowReadinessReader,
+  FlowReadinessOptions,
+  FlowReadinessRoleInput,
+  FlowReadinessRoleRequirement,
+  SchemaReadinessRow,
+  WhitelistReadinessRow,
+  GrantReadinessRow
+} from './utils/readiness.js';
 export * from './utils/viem-error-handler.js';
 
 // Structured failure analysis (revert bytes kept, signer refusals named).
