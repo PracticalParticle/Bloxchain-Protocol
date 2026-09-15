@@ -7,7 +7,7 @@ For a deeper explanation of the pattern itself, see the [Account Pattern doc](./
 ## 📋 **Prerequisites**
 
 - Node.js 18+
-- TypeScript 4.5+
+- TypeScript 5.3+ (JSON import attributes: `import ... with { type: 'json' }`)
 - npm or yarn
 - Basic knowledge of Ethereum and smart contracts
 
@@ -79,20 +79,26 @@ const walletClient = createWalletClient({
 
 ### 3. **Connect to an Account-Based Contract**
 
-Use a deployed Account implementation (for example `AccountBlox`) from `deployed-addresses.json`:
+Resolve a deployed Account implementation (for example the official Sepolia `AccountBlox`
+template) from `official-deployed-addresses.json`, which ships with `@bloxchain/contracts`.
+Do not use the git-ignored lab file `deployed-addresses.json` for public setup.
 
 ```typescript
-// Example shape – adjust the import path to your deployed-addresses.json (often at the repository root)
-import deployed from '../deployed-addresses.json';
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialAddress, assertNetworkIsOfficial } from '@bloxchain/sdk';
 
-const network = 'sepolia' as const;
-const accountAddress = deployed[network].AccountBlox.address as `0x${string}`;
+const network = resolveOfficialNetwork(official, 11155111);
+assertNetworkIsOfficial(network);
+const accountAddress = getOfficialAddress(network, 'AccountBlox');
 
 // All three wrappers point to the SAME address
 const secureOwnable = new SecureOwnable(publicClient, walletClient, accountAddress, sepolia);
 const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, accountAddress, sepolia);
 const guardController = new GuardController(publicClient, walletClient, accountAddress, sepolia);
 ```
+
+To operate a clone you created (not the template), pass that clone's address instead of
+`getOfficialAddress(network, 'AccountBlox')`, and gate it with `assertOwnedAccount` first.
 
 ### Definition library addresses (public testnets)
 

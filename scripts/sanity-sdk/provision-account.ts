@@ -55,11 +55,12 @@
  */
 
 import './load-env.ts';
-import { createPublicClient, createWalletClient, http, defineChain } from 'viem';
-import type { Address, Chain, Hex, PublicClient, WalletClient } from 'viem';
+import { createPublicClient, createWalletClient, http, defineChain, parseEventLogs } from 'viem';
+import type { Address, Chain, Hex, PublicClient, WalletClient, Abi, Log } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
 import officialAddresses from '../../official-deployed-addresses.json';
+import engineBloxAbiJson from '../../sdk/typescript/abi/EngineBlox.abi.json' with { type: 'json' };
 
 import { CopyBlox } from '../../sdk/typescript/contracts/factories/CopyBlox.tsx';
 import { GuardController } from '../../sdk/typescript/contracts/core/GuardController.tsx';
@@ -73,6 +74,7 @@ import {
 } from '../../sdk/typescript/utils/account-gate.ts';
 import {
   resolveOfficialNetwork,
+  assertNetworkIsOfficial,
   getOfficialAddress,
   pendingOfficialContracts,
   factorySupportsClonesOf,
@@ -102,6 +104,8 @@ import {
   encodeRemoveFunctionFromRole,
 } from '../../sdk/typescript/lib/definitions/index.ts';
 import { createBitmapFromActions, getBitValue } from '../../sdk/typescript/utils/bitmap.ts';
+
+const ENGINE_BLOX_ABI = engineBloxAbiJson as Abi;
 
 /**
  * Version of the desired role set below.
@@ -653,14 +657,53 @@ async function signBatch(
 /**
  * A mined receipt is not a result.
  *
- * A config batch can mine `success`, burn its gas and grant nothing. Read the record the
- * batch created and check its inner status before reporting the lock as applied.
+ * A config batch can mine `success`, burn its gas and grant nothing. Decode the indexed
+ * txId from `TransactionEvent` / `TxExecutionResult` on this receipt, then read that
+ * record — never assume history slot 1 is the batch just sent.
  */
+function txIdFromBatchReceipt(logs: readonly Log[], account: Address): bigint | null {
+  const accountLower = account.toLowerCase();
+  const fromAccount = (log: { address?: string }) =>
+    typeof log.address === 'string' && log.address.toLowerCase() === accountLower;
+
+  try {
+    const txEvents = parseEventLogs({
+      abi: ENGINE_BLOX_ABI,
+      logs: logs as Log[],
+      eventName: 'TransactionEvent',
+    }).filter(fromAccount);
+    if (txEvents.length > 0) {
+      const last = txEvents[txEvents.length - 1];
+      const txId = (last.args as { txId?: bigint }).txId;
+      if (typeof txId === 'bigint') return txId;
+    }
+  } catch {
+    // Fall through to TxExecutionResult.
+  }
+
+  try {
+    const execEvents = parseEventLogs({
+      abi: ENGINE_BLOX_ABI,
+      logs: logs as Log[],
+      eventName: 'TxExecutionResult',
+    }).filter(fromAccount);
+    if (execEvents.length > 0) {
+      const last = execEvents[execEvents.length - 1];
+      const txId = (last.args as { txId?: bigint }).txId;
+      if (typeof txId === 'bigint') return txId;
+    }
+  } catch {
+    // No usable event.
+  }
+
+  return null;
+}
+
 async function assertInnerSuccess(
   client: PublicClient,
   ctx: AccountContext,
   chain: Chain,
-  receipt: { status: unknown; gasUsed?: bigint },
+  receipt: { status: unknown; gasUsed?: bigint; logs?: readonly Log[] },
   label: string
 ): Promise<void> {
   const outerOk =
@@ -669,20 +712,25 @@ async function assertInnerSuccess(
     throw new Error(`${label}: transaction reverted (status ${String(receipt.status)})`);
   }
 
-  const base = new GuardController(client, undefined, ctx.account, chain);
-  const history = await base.getTransactionHistory(1n, 1n);
-  const latest = history[0];
-  if (!latest) {
-    console.warn(`   ⚠️  ${label}: no transaction record to read back; inner status unverified`);
+  const logs = receipt.logs ?? [];
+  const txId = txIdFromBatchReceipt(logs, ctx.account);
+  if (txId == null) {
+    console.warn(
+      `   ⚠️  ${label}: no TransactionEvent/TxExecutionResult txId on receipt; inner status unverified`
+    );
     return;
   }
 
-  // TxStatus.COMPLETED is the only outcome that means the batch took effect.
-  const status = Number((latest as { status?: number | bigint }).status ?? -1);
+  const base = new GuardController(client, undefined, ctx.account, chain);
+  const record = await base.getTransaction(txId);
+
+  // TxStatus.COMPLETED (3) is the only outcome that means the batch took effect.
+  // FAILED and other statuses must not be reported as applied.
+  const status = Number((record as { status?: number | bigint }).status ?? -1);
   if (status !== 3) {
     throw new Error(
       `${label}: outer receipt succeeded (gas ${receipt.gasUsed ?? 'unknown'}) but record ` +
-        `${String((latest as { txId?: bigint }).txId ?? '?')} has inner status ${status}, not COMPLETED. ` +
+        `${String(txId)} has inner status ${status}, not COMPLETED. ` +
         'Nothing was configured.'
     );
   }
@@ -710,6 +758,7 @@ async function main(): Promise<void> {
       : Number(process.env.CHAIN_ID ?? process.env.REMOTE_NETWORK_ID ?? 11155111);
 
   const network = resolveOfficialNetwork(file, chainLookup);
+  assertNetworkIsOfficial(network);
   const pending = pendingOfficialContracts(network);
   console.log(`network: ${network.network} (chain ${network.chainId}, ${network.status})`);
   console.log(`factory: ${network.contracts.CopyBlox?.address}`);
@@ -760,9 +809,11 @@ async function main(): Promise<void> {
   const ownerPrivateKey = normalize(ownerKey);
   const broadcasterPrivateKey = normalize(broadcasterKey);
 
-  if (!ownerPrivateKey && !options.dryRun && !options.account) {
+  if (!ownerPrivateKey) {
     throw new Error(
-      'OWNER_PRIVATE_KEY is not set. Set it in .env to apply, or use --dry-run with --account to inspect.'
+      'OWNER_PRIVATE_KEY is not set. Set it in .env to apply or dry-run against a chain ' +
+        '(owner address and owned-account checks come from the key). Use --offline to validate ' +
+        'configuration without keys or RPC.'
     );
   }
 

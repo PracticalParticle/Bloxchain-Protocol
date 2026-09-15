@@ -94,6 +94,10 @@ export function assertUnderMaxTxGas(gas: bigint, label = 'transaction', cap = MA
  * An estimate that comes back **at** the cap is the shape of a failure, not a price: the
  * node clamped it. Treat it the same as being over the cap.
  *
+ * Prefer {@link assertUnderMaxTxGas} alone for generic `IBaseStateMachine` templates whose
+ * clone cost is not the measured AccountBlox envelope. Pass an explicit `floor` (for
+ * example {@link GAS_ENVELOPE.cloneGasFloor}) only when pricing that measured path.
+ *
  * @param estimate Gas the estimator returned
  * @param floor Minimum credible gas for this operation
  * @param label What the gas is for, used in the message
@@ -113,6 +117,32 @@ export function assertGasEnvelope(
     );
   }
   if (estimate < floor) throw new GasFloorNotMetError(label, estimate, floor);
+}
+
+/**
+ * Cap-only check for a clone gas estimate, with an optional AccountBlox-measured floor.
+ *
+ * When `floor` is omitted, only the EIP-7825 per-transaction cap is enforced — correct for
+ * arbitrary `IBaseStateMachine` templates. Pass {@link GAS_ENVELOPE.cloneGasFloor} (or
+ * another measured floor) when the template is the official AccountBlox shape.
+ */
+export function assertCloneGasEstimate(
+  estimate: bigint,
+  options: { floor?: bigint; label?: string; cap?: bigint } = {}
+): void {
+  const label = options.label ?? 'CopyBlox.cloneBlox';
+  const cap = options.cap ?? MAX_TX_GAS;
+  if (options.floor !== undefined) {
+    assertGasEnvelope(estimate, options.floor, label, cap);
+    return;
+  }
+  if (estimate >= cap) {
+    throw new MaxTxGasExceededError(
+      `${label} (estimate came back at or over the cap, which is what a clamped estimate looks like)`,
+      estimate,
+      cap
+    );
+  }
 }
 
 /**

@@ -21,6 +21,8 @@ on:
     paths:
       - 'contracts/**'
       - 'package/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'scripts/build-artifacts.cjs'
       - 'scripts/validate-official-addresses.cjs'
       - 'scripts/promote-official-addresses.cjs'

@@ -1,7 +1,7 @@
 import { Address, PublicClient, WalletClient, Chain, parseAbiItem, getAddress } from 'viem';
 import { BaseStateMachine } from '../core/BaseStateMachine.js';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
-import { GAS_ENVELOPE, MAX_TX_GAS, assertGasEnvelope } from '../../utils/gas.js';
+import { GAS_ENVELOPE, MAX_TX_GAS, assertCloneGasEstimate } from '../../utils/gas.js';
 import { isAccountBlox, inspectAccountBlox } from '../../utils/account-gate.js';
 import CopyBloxAbi from '../../abi/CopyBlox.abi.json' with { type: 'json' };
 
@@ -98,18 +98,27 @@ export class CopyBlox extends BaseStateMachine {
   }
 
   /**
-   * Estimate the clone and check it against the measured envelope.
+   * Estimate the clone and check it against the per-transaction cap.
    *
    * Prefer sending {@link GAS_ENVELOPE.cloneSendGasLimit} over sending this estimate: the
    * value of this call is that it fails loudly when the estimator is not actually pricing
    * the clone.
    *
+   * The AccountBlox-measured {@link GAS_ENVELOPE.cloneGasFloor} is applied only when
+   * `options.floor` is set (pass `GAS_ENVELOPE.cloneGasFloor` for that template). Generic
+   * `IBaseStateMachine` templates get cap validation only.
+   *
    * @param params Same parameters the clone will be sent with
    * @param from Sender to estimate for
-   * @throws {GasFloorNotMetError} when the estimate is implausibly low
+   * @param options Optional measured floor for the AccountBlox path
+   * @throws {GasFloorNotMetError} when a floor is set and the estimate is implausibly low
    * @throws {MaxTxGasExceededError} when the estimate is at or over the per-transaction cap
    */
-  async estimateCloneGas(params: CloneAccountParams, from: Address): Promise<bigint> {
+  async estimateCloneGas(
+    params: CloneAccountParams,
+    from: Address,
+    options: { floor?: bigint } = {}
+  ): Promise<bigint> {
     const estimate = await this.client.estimateContractGas({
       address: this.contractAddress,
       abi: this.abi,
@@ -124,7 +133,10 @@ export class CopyBlox extends BaseStateMachine {
       account: from,
     });
 
-    assertGasEnvelope(estimate, GAS_ENVELOPE.cloneGasFloor, 'CopyBlox.cloneBlox');
+    assertCloneGasEstimate(estimate, {
+      floor: options.floor,
+      label: 'CopyBlox.cloneBlox',
+    });
     return estimate;
   }
 

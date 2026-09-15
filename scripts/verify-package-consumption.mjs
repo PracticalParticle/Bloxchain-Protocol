@@ -3,13 +3,14 @@
 // @bloxchain/contracts can resolve the factory and template ABI *and bytecode*, plus the
 // official per-network addresses, without cloning or compiling the protocol repo.
 //
-// Assembles the package layout the publish pipeline produces into a throwaway directory,
-// installs nothing, and resolves the published subpaths exactly as a consumer would
-// (through the package.json "exports" map, not by guessing file paths).
+// Uses the same package preparation as release-prepare.cjs (`prepublish-contracts.cjs`),
+// then `npm pack` from package/ and installs that tarball into a throwaway consumer —
+// not a hand-assembled fs.cpSync tree — so the exports map and prune behaviour match npm.
 //
 //   npm run verify:package-consumption
 //
-// Requires artifacts/ to exist: run `npm run build:artifacts` first.
+// Requires a compile (prepublish runs ABI extract + artifact build). Prefer
+// `npm run build:artifacts` first in CI so sizes are already checked.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -18,39 +19,74 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const ARTIFACTS_DIR = path.join(ROOT_DIR, 'artifacts');
+const PACKAGE_DIR = path.join(ROOT_DIR, 'package');
+const PREPUBLISH = path.join(PACKAGE_DIR, 'scripts', 'prepublish-contracts.cjs');
 const OFFICIAL_ADDRESSES = path.join(ROOT_DIR, 'official-deployed-addresses.json');
-const PACKAGE_JSON = path.join(ROOT_DIR, 'package', 'package.json');
+const SKIP_PREPUBLISH = process.env.SKIP_PREPUBLISH === '1';
 
 function fail(message) {
   console.error(`❌ ${message}`);
   process.exit(1);
 }
 
-if (!fs.existsSync(ARTIFACTS_DIR)) {
-  fail('artifacts/ not found. Run "npm run build:artifacts" first.');
-}
 if (!fs.existsSync(OFFICIAL_ADDRESSES)) {
   fail('official-deployed-addresses.json not found at repository root.');
 }
+if (!fs.existsSync(PREPUBLISH)) {
+  fail(`prepublish script not found at ${PREPUBLISH}`);
+}
 
 const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloxchain-consumer-'));
-const packageDir = path.join(workDir, 'node_modules', '@bloxchain', 'contracts');
+const packDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloxchain-pack-'));
 
 try {
-  fs.mkdirSync(packageDir, { recursive: true });
-  fs.cpSync(PACKAGE_JSON, path.join(packageDir, 'package.json'));
-  fs.cpSync(ARTIFACTS_DIR, path.join(packageDir, 'artifacts'), { recursive: true });
-  fs.cpSync(OFFICIAL_ADDRESSES, path.join(packageDir, 'official-deployed-addresses.json'));
-  const abiDir = path.join(ROOT_DIR, 'abi');
-  if (fs.existsSync(abiDir)) {
-    fs.cpSync(abiDir, path.join(packageDir, 'abi'), { recursive: true });
+  if (SKIP_PREPUBLISH) {
+    const preparedArtifact = path.join(PACKAGE_DIR, 'artifacts', 'CopyBlox.json');
+    if (!fs.existsSync(preparedArtifact)) {
+      fail(
+        'SKIP_PREPUBLISH=1 but package/artifacts/CopyBlox.json is missing. Run prepublish first.'
+      );
+    }
+    console.log('📦 SKIP_PREPUBLISH=1 — using already-prepared package/\n');
+  } else {
+    console.log('📦 Preparing @bloxchain/contracts the same way release-prepare does\n');
+    execFileSync(process.execPath, [PREPUBLISH], { cwd: PACKAGE_DIR, stdio: 'inherit' });
   }
+
+  console.log('\n📦 npm pack from prepared package/\n');
+  const packOut = execFileSync('npm', ['pack', '--json'], {
+    cwd: PACKAGE_DIR,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  let packMeta;
+  try {
+    packMeta = JSON.parse(packOut.trim());
+  } catch {
+    fail(`npm pack --json did not return JSON:\n${packOut}`);
+  }
+  const packed = Array.isArray(packMeta) ? packMeta[0] : packMeta;
+  const tarballName = packed?.filename;
+  if (!tarballName || typeof tarballName !== 'string') {
+    fail(`npm pack did not report a filename:\n${packOut}`);
+  }
+  const tarballPath = path.join(PACKAGE_DIR, tarballName);
+  if (!fs.existsSync(tarballPath)) {
+    fail(`npm pack tarball missing: ${tarballPath}`);
+  }
+  const stagedTarball = path.join(packDir, tarballName);
+  fs.renameSync(tarballPath, stagedTarball);
 
   fs.writeFileSync(
     path.join(workDir, 'package.json'),
     `${JSON.stringify({ name: 'fresh-consumer', type: 'module', private: true }, null, 2)}\n`
   );
+
+  console.log(`\n📦 Installing ${tarballName} into throwaway consumer\n`);
+  execFileSync('npm', ['install', stagedTarball, '--no-save', '--no-package-lock'], {
+    cwd: workDir,
+    stdio: 'inherit',
+  });
 
   fs.writeFileSync(
     path.join(workDir, 'check.mjs'),
@@ -114,9 +150,10 @@ process.exitCode = failed.length > 0 ? 1 : 0;
 `
   );
 
-  console.log('📦 Resolving @bloxchain/contracts as a fresh consumer would\n');
+  console.log('\n📦 Resolving @bloxchain/contracts as a fresh consumer would\n');
   execFileSync(process.execPath, ['check.mjs'], { cwd: workDir, stdio: 'inherit' });
   console.log('\n✨ A fresh install can provision without the protocol repo.');
 } finally {
   fs.rmSync(workDir, { recursive: true, force: true });
+  fs.rmSync(packDir, { recursive: true, force: true });
 }

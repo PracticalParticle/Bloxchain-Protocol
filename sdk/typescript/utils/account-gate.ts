@@ -1,4 +1,12 @@
-import { Address, PublicClient, getAddress, isAddress } from 'viem';
+import {
+  Address,
+  BaseError,
+  ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
+  PublicClient,
+  getAddress,
+  isAddress,
+} from 'viem';
 import { INTERFACE_IDS } from './interface-ids.js';
 
 /**
@@ -56,12 +64,47 @@ const REJECTION_REASONS: Record<AccountBloxRejection, string> = {
     'does not answer ERC-165 ISecureOwnable, so it is not an account (the clone factory lands here: it answers IBaseStateMachine but is not an account)',
 };
 
-/** A read that may legitimately revert; a revert is an answer, not an error. */
+/**
+ * True when the failure is an expected contract answer (revert / missing method), not a
+ * transport problem. RPC timeouts and provider failures must surface to the caller.
+ */
+function isExpectedContractFailure(error: unknown): boolean {
+  if (error instanceof ContractFunctionRevertedError) return true;
+  if (error instanceof ContractFunctionExecutionError) {
+    const cause = error.cause;
+    if (cause instanceof ContractFunctionRevertedError) return true;
+    // Missing selectors / unsupported methods land as execution errors without a revert body.
+    const message = error.message.toLowerCase();
+    if (
+      message.includes('reverted') ||
+      message.includes('execution reverted') ||
+      message.includes('does not exist') ||
+      message.includes('returned no data') ||
+      message.includes('function returned an unexpected')
+    ) {
+      return true;
+    }
+  }
+  if (error instanceof BaseError) {
+    let current: BaseError | undefined = error;
+    while (current) {
+      if (current instanceof ContractFunctionRevertedError) return true;
+      if (current instanceof ContractFunctionExecutionError) {
+        return isExpectedContractFailure(current);
+      }
+      current = current.cause instanceof BaseError ? current.cause : undefined;
+    }
+  }
+  return false;
+}
+
+/** A read that may legitimately revert; a revert is an answer. Transport errors rethrow. */
 async function tryRead<T>(read: () => Promise<T>): Promise<T | null> {
   try {
     return await read();
-  } catch {
-    return null;
+  } catch (error) {
+    if (isExpectedContractFailure(error)) return null;
+    throw error;
   }
 }
 

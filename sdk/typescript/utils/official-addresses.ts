@@ -104,6 +104,16 @@ export class OfficialContractNotDeclaredError extends Error {
   }
 }
 
+export class NetworkNotOfficialError extends Error {
+  constructor(network: string, status: OfficialStatus) {
+    super(
+      `Network ${network} has status "${status}", not "official". Provisioning and public ` +
+        'setup must use a network declared official in official-deployed-addresses.json.'
+    );
+    this.name = 'NetworkNotOfficialError';
+  }
+}
+
 /**
  * Find a network in the official address file by chain id or by key.
  *
@@ -142,10 +152,29 @@ export function resolveOfficialNetwork(
 }
 
 /**
+ * Throw unless the resolved network is declared `official`.
+ *
+ * Use this in provisioning and public setup before reading contract addresses. Valid
+ * addresses on a pending or deprecated network remain readable via
+ * {@link getOfficialAddress}; this gate is separate so staged rows are not rejected at
+ * the contract level.
+ *
+ * @param network Network from {@link resolveOfficialNetwork}
+ * @throws {NetworkNotOfficialError} when `status` is not `official`
+ */
+export function assertNetworkIsOfficial(network: ResolvedOfficialNetwork): void {
+  if (network.status !== 'official') {
+    throw new NetworkNotOfficialError(network.network, network.status);
+  }
+}
+
+/**
  * Get one declared contract address from a resolved network.
  *
  * Throws rather than returning null for a pending row: a caller that silently falls back
- * to some other address is the failure mode this file exists to prevent.
+ * to some other address is the failure mode this file exists to prevent. Does **not**
+ * require the network itself to be `official` — use {@link assertNetworkIsOfficial} for
+ * that in provisioning flows.
  *
  * @param network Network from {@link resolveOfficialNetwork}
  * @param contractName Contract key, e.g. `'CopyBlox'`

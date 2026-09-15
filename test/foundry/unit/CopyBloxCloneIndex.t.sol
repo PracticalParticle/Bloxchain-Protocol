@@ -168,4 +168,84 @@ contract CopyBloxCloneIndexTest is Test {
         assertLt(firstForOwner, MAX_TX_GAS, "first clone under cap");
         assertLt(secondForOwner, MAX_TX_GAS, "second clone under cap");
     }
+
+    // ============ Fuzz / invariant properties ============
+
+    /// @dev Distinct owners keep separate indexes; counts stay consistent with the flat list.
+    function testFuzz_ClonesOf_OwnerSeparation(address ownerA, address ownerB, uint8 countA, uint8 countB)
+        public
+    {
+        vm.assume(ownerA != address(0) && ownerB != address(0) && ownerA != ownerB);
+        uint256 nA = bound(countA, 1, 5);
+        uint256 nB = bound(countB, 1, 5);
+
+        for (uint256 i = 0; i < nA; i++) {
+            _clone(ownerA);
+        }
+        for (uint256 j = 0; j < nB; j++) {
+            _clone(ownerB);
+        }
+
+        assertEq(factory.clonesOfCount(ownerA), nA, "ownerA count");
+        assertEq(factory.clonesOfCount(ownerB), nB, "ownerB count");
+        assertEq(factory.getCloneCount(), nA + nB, "global count is sum of per-owner counts");
+
+        address[] memory aClones = factory.clonesOf(ownerA);
+        address[] memory bClones = factory.clonesOf(ownerB);
+        for (uint256 i = 0; i < aClones.length; i++) {
+            assertTrue(factory.isClone(aClones[i]), "ownerA entry isClone");
+            for (uint256 j = 0; j < bClones.length; j++) {
+                assertTrue(aClones[i] != bClones[j], "owners do not share clone addresses");
+            }
+        }
+    }
+
+    /// @dev Valid indexes return entries that are clones; out-of-range reverts.
+    function testFuzz_CloneOfOwnerAt_ValidAndInvalidIndex(address owner, uint8 count, uint256 index)
+        public
+    {
+        vm.assume(owner != address(0));
+        uint256 n = bound(count, 1, 8);
+        for (uint256 i = 0; i < n; i++) {
+            _clone(owner);
+        }
+
+        uint256 validIndex = bound(index, 0, n - 1);
+        address at = factory.cloneOfOwnerAt(owner, validIndex);
+        assertTrue(factory.isClone(at), "indexed address is a clone");
+        assertEq(at, factory.clonesOf(owner)[validIndex], "matches clonesOf slice");
+
+        uint256 invalidIndex = n + bound(index, 0, 100);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, owner));
+        factory.cloneOfOwnerAt(owner, invalidIndex);
+    }
+
+    /// @dev After mixed cloning, every indexed address satisfies isClone and per-owner
+    ///      counts remain consistent with the global clone count.
+    function test_Invariant_IndexedAddressesAreClonesAndCountsConsistent() public {
+        _clone(alice);
+        _clone(alice);
+        _clone(bob);
+        _clone(alice);
+        _clone(bob);
+
+        uint256 global = factory.getCloneCount();
+        uint256 sumOwners = factory.clonesOfCount(alice) + factory.clonesOfCount(bob);
+        assertEq(sumOwners, global, "sum of known-owner counts equals global");
+
+        for (uint256 i = 0; i < global; i++) {
+            assertTrue(factory.isClone(factory.getCloneAtIndex(i)), "flat list entry isClone");
+        }
+
+        address[] memory alices = factory.clonesOf(alice);
+        for (uint256 i = 0; i < alices.length; i++) {
+            assertTrue(factory.isClone(alices[i]), "alice index isClone");
+            assertEq(factory.cloneOfOwnerAt(alice, i), alices[i], "cloneOfOwnerAt matches");
+        }
+
+        address[] memory bobs = factory.clonesOf(bob);
+        for (uint256 i = 0; i < bobs.length; i++) {
+            assertTrue(factory.isClone(bobs[i]), "bob index isClone");
+        }
+    }
 }
