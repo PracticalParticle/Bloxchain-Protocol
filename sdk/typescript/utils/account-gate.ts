@@ -67,34 +67,43 @@ const REJECTION_REASONS: Record<AccountBloxRejection, string> = {
 /**
  * True when the failure is an expected contract answer (revert / missing method), not a
  * transport problem. RPC timeouts and provider failures must surface to the caller.
+ *
+ * Non-recursive: a `ContractFunctionExecutionError` is classified from its own message
+ * (and a direct revert cause), then the walk continues through `cause` without re-entering.
  */
-function isExpectedContractFailure(error: unknown): boolean {
+export function isExpectedContractFailure(error: unknown): boolean {
+  const matchesExecutionMessage = (message: string): boolean => {
+    const lower = message.toLowerCase();
+    return (
+      lower.includes('reverted') ||
+      lower.includes('execution reverted') ||
+      lower.includes('does not exist') ||
+      lower.includes('returned no data') ||
+      lower.includes('function returned an unexpected')
+    );
+  };
+
   if (error instanceof ContractFunctionRevertedError) return true;
+
   if (error instanceof ContractFunctionExecutionError) {
-    const cause = error.cause;
-    if (cause instanceof ContractFunctionRevertedError) return true;
-    // Missing selectors / unsupported methods land as execution errors without a revert body.
-    const message = error.message.toLowerCase();
-    if (
-      message.includes('reverted') ||
-      message.includes('execution reverted') ||
-      message.includes('does not exist') ||
-      message.includes('returned no data') ||
-      message.includes('function returned an unexpected')
-    ) {
-      return true;
-    }
+    if (error.cause instanceof ContractFunctionRevertedError) return true;
+    if (matchesExecutionMessage(error.message)) return true;
   }
+
   if (error instanceof BaseError) {
     let current: BaseError | undefined = error;
     while (current) {
       if (current instanceof ContractFunctionRevertedError) return true;
       if (current instanceof ContractFunctionExecutionError) {
-        return isExpectedContractFailure(current);
+        if (current.cause instanceof ContractFunctionRevertedError) return true;
+        if (matchesExecutionMessage(current.message)) return true;
+        current = current.cause instanceof BaseError ? current.cause : undefined;
+        continue;
       }
       current = current.cause instanceof BaseError ? current.cause : undefined;
     }
   }
+
   return false;
 }
 

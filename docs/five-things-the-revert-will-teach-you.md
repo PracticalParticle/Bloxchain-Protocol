@@ -239,9 +239,15 @@ It never decodes the calldata.
   router, not what the commands inside do. A Uniswap-aware guard is a thing someone could build; the guard
   itself is not one.
 
-"The account can only talk to those three contracts with those three selectors" is true and enforced on chain.
-"The account cannot spend more than X" is a **different** claim, and the whitelist does not make it. Do not
-describe a whitelist to a user, an auditor or a regulator as a spend limit.
+"The account can only talk to those three contracts with those three selectors" is true for **primary
+external `TxParams.target` validation** — each execution selector's whitelist — and that is enforced on
+chain. It is not the whole story: **self-targeting** (`TxParams.target == address(this)`) is an
+engine-level exception once the execution selector is registered, further constrained on
+`GuardController` entrypoints by the system-macro restriction (`_validateNotInternalFunction`).
+Attached payments separately validate `payment.recipient` and `payment.erc20TokenAddress` through
+`ATTACHED_PAYMENT_RECIPIENT_SELECTOR` and `ERC20_TRANSFER_SELECTOR`. "The account cannot spend more
+than X" is a **different** claim, and the whitelist does not make it. Do not describe a whitelist to
+a user, an auditor or a regulator as a spend limit.
 
 **If you need amount- or destination-aware enforcement**, that is separate work, not a guard configuration.
 On-account spend ceilings and destination allowlists — which decode the calldata the guard does not read — are

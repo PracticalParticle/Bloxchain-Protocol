@@ -276,7 +276,7 @@ Options: `address` (scope to one Blox), `abi` (decode the inner revert — pass 
 |----------|-----------|
 | Will it revert? | `simulateContract` via `simulationMode` (`'strict'` default, `'warn-only'`, `'skip'`) |
 | How much gas? | `eth_estimateGas` — see the state-override note below |
-| What is the ceiling? | `MAX_TX_GAS` = `2 ** 24` = 16,777,216 (EIP-7825) |
+| What is the ceiling? | On networks where EIP-7825 is active: `MAX_TX_GAS` = `2 ** 24` = 16,777,216; otherwise the target network's effective transaction gas limit |
 
 Public nodes answer `eth_estimateGas` with *"insufficient funds"* instead of a number
 when the sender cannot cover `gas × price + value`. Give it a notional balance for
@@ -290,8 +290,9 @@ const gas = await publicClient.estimateContractGas({
 });
 ```
 
-EIP-7825 caps any single transaction at `2 ** 24` gas regardless of the block gas
-limit. This bites on configuration batches, not single calls: split a batch that
+Where EIP-7825 is active, it caps any single transaction at `2 ** 24` gas regardless
+of the block gas limit; elsewhere use the target network's published transaction gas
+cap. This bites on configuration batches, not single calls: split a batch that
 estimates near the cap rather than having it rejected outright. The `gasLimit` in
 `TxParams` is a cap the guard forwards to the inner call, not a price — but it still
 counts toward the outer transaction's limit.

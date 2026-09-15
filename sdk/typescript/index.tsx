@@ -155,6 +155,7 @@ export {
   isAccountBlox,
   inspectAccountBlox,
   assertOwnedAccount,
+  isExpectedContractFailure,
   NotAnAccountError,
   AccountNotOwnedError,
 } from './utils/account-gate.js';

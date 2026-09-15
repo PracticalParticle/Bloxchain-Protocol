@@ -144,8 +144,10 @@ Pass either source's addresses to SDK helpers such as
 
 ## 🏗 **Provisioning an account from npm alone**
 
-This is the supported public path: `npm i @bloxchain/contracts @bloxchain/sdk` and an RPC
-URL are enough to create a governed account on an official network.
+This is the supported public path: `npm i @bloxchain/contracts @bloxchain/sdk`, an RPC
+URL, a **broadcaster wallet** (with its `broadcasterAddress`), and enough funds for the
+clone transaction are required to create a governed account on an official network.
+Packages and RPC alone are not sufficient.
 
 Working reference: **`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`).
 It is idempotent and safe to re-run; `--offline` validates configuration without a chain
@@ -234,14 +236,16 @@ EIP-7825 per-transaction cap        16,777,216 (2^24)
 head-room                             ~540,000 gas
 ```
 
-Public networks enforce **EIP-7825**: a single transaction may not ask for more than
+On networks where **EIP-7825** is active, a single transaction may not ask for more than
 `2^24` gas, whatever the block gas limit is. A 60 M block still rejects a 20 M
 transaction with `transaction gas limit too high (cap: 16777216, tx: 20000000)`.
+Chains that have not activated EIP-7825 follow their own transaction gas limit instead.
 
-Practical rules, in order of importance:
+Practical rules, in order of importance (where EIP-7825 applies):
 
 1. **Send an explicit gas limit at the cap**, not an estimate. The SDK wrapper does this by
-   default (`GAS_ENVELOPE.cloneSendGasLimit`).
+   default (`GAS_ENVELOPE.cloneSendGasLimit`). On networks without EIP-7825, use that
+   network's effective transaction gas limit instead of assuming `2^24`.
 2. **Fail loudly below the floor.** An estimate well under ~15 M means the estimator never
    priced the clone: a public node without a state override answers "insufficient funds"
    rather than a number, and an estimate that comes back exactly *at* the cap was clamped.

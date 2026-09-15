@@ -128,10 +128,13 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
 
         _validateBloxImplementation(bloxAddress); // rejects zero (code.length==0), self, non-contract, non-IBaseStateMachine
 
-        // Clone first (no state change yet)
+        // Clone first, then register before initialize so any reentrant read of the
+        // indexes sees a consistent set. A failed initialize reverts the registrations.
         cloneAddress = Clones.clone(bloxAddress);
-        address eventForwarder = address(this);
+        _clones.add(cloneAddress);
+        _clonesByOwner[initialOwner].push(cloneAddress);
 
+        address eventForwarder = address(this);
         (bool success, ) = cloneAddress.call(
             abi.encodeWithSignature(
                 "initialize(address,address,address,uint256,address)",
@@ -144,8 +147,6 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
         );
         if (!success) revert SharedValidation.OperationFailed();
 
-        _clones.add(cloneAddress);
-        _clonesByOwner[initialOwner].push(cloneAddress);
         emit BloxCloned(bloxAddress, cloneAddress, initialOwner, _clones.length());
         return cloneAddress;
     }
