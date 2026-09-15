@@ -195,10 +195,17 @@ function main() {
 
   const built = PUBLISHED_CONTRACTS.map(buildArtifact);
 
-  // One compiler configuration for the whole set, or the publish is not self-consistent.
-  const fingerprints = new Set(
-    built.map((b) => JSON.stringify(b.artifact.compiler)).filter((f) => f !== 'null')
-  );
+  // Every artifact must carry compiler metadata, and the set must be self-consistent.
+  // Do not drop nulls from the fingerprint set: a missing metadata block must fail publish.
+  const missingCompiler = built
+    .filter((b) => b.artifact.compiler == null)
+    .map((b) => b.entry.name);
+  if (missingCompiler.length > 0) {
+    fail(
+      `Artifacts missing compiler metadata (cannot publish):\n  ${missingCompiler.join('\n  ')}`
+    );
+  }
+  const fingerprints = new Set(built.map((b) => JSON.stringify(b.artifact.compiler)));
   if (fingerprints.size > 1) {
     fail(
       `Artifacts were built with more than one compiler configuration:\n  ${[...fingerprints].join('\n  ')}`

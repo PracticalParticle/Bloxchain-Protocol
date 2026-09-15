@@ -150,6 +150,7 @@ export {
   GAS_ENVELOPE,
   assertUnderMaxTxGas,
   assertGasEnvelope,
+  assertCloneGasEstimate,
   getBlockGasLimit,
   MaxTxGasExceededError,
   GasFloorNotMetError,
@@ -159,11 +160,13 @@ export {
 export {
   OFFICIAL_ADDRESSES_FORMAT,
   resolveOfficialNetwork,
+  assertNetworkIsOfficial,
   getOfficialAddress,
   pendingOfficialContracts,
   factorySupportsClonesOf,
   OfficialNetworkNotFoundError,
   OfficialContractNotDeclaredError,
+  NetworkNotOfficialError,
 } from './utils/official-addresses.js';
 export type {
   OfficialAddressesFile,
