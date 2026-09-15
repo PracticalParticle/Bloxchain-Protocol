@@ -5,11 +5,26 @@
   "files": [
     "core",
     "abi",
+    "artifacts",
     "standards",
     "components",
+    "official-deployed-addresses.json",
     "README.md",
     "CHANGELOG.md"
   ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./artifacts/manifest.json": "./artifacts/manifest.json",
+    "./artifacts/*.json": "./artifacts/*.json",
+    "./artifacts/*": "./artifacts/*.json",
+    "./official-deployed-addresses.json": "./official-deployed-addresses.json",
+    "./abi/*.json": "./abi/*.json",
+    "./abi/*": "./abi/*.json",
+    "./core/*": "./core/*",
+    "./standards/*": "./standards/*",
+    "./components/*": "./components/*",
+    "./*": "./*"
+  },
   "scripts": {
     "prepublishOnly": "node scripts/prepublish-contracts.cjs",
     "postpublish": "node scripts/postpublish-contracts.cjs",
