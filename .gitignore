@@ -45,6 +45,7 @@ docker/.dockerignore
 
 ### Python Virtual Environment ###
 .venv/
+.venv-*/
 venv/
 env/
 ENV/
