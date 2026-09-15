@@ -104,15 +104,28 @@ function validateContract(networkName, contractName, row) {
       error(where, 'a factory row must declare gas.maxTxGas (EIP-7825 per-tx cap for the network)');
     } else {
       const { cloneBloxObserved, sendWithGasLimit, maxTxGas } = row.gas;
-      if (typeof cloneBloxObserved !== 'number' || !Number.isFinite(cloneBloxObserved)) {
-        error(where, 'a factory row must declare numeric gas.cloneBloxObserved');
-      } else if (!(cloneBloxObserved < maxTxGas)) {
+      const isPositiveSafeInteger = (value) => Number.isSafeInteger(value) && value > 0;
+
+      if (!isPositiveSafeInteger(maxTxGas)) {
+        error(where, `gas.maxTxGas must be a positive safe integer (got ${JSON.stringify(maxTxGas)})`);
+      }
+      if (!isPositiveSafeInteger(cloneBloxObserved)) {
+        error(
+          where,
+          `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)})`
+        );
+      } else if (isPositiveSafeInteger(maxTxGas) && !(cloneBloxObserved < maxTxGas)) {
         error(
           where,
           `gas.cloneBloxObserved (${cloneBloxObserved}) must be strictly less than gas.maxTxGas (${maxTxGas})`
         );
       }
-      if (typeof sendWithGasLimit === 'number' && sendWithGasLimit > maxTxGas) {
+      if (!isPositiveSafeInteger(sendWithGasLimit)) {
+        error(
+          where,
+          `gas.sendWithGasLimit must be a positive safe integer (got ${JSON.stringify(sendWithGasLimit)})`
+        );
+      } else if (isPositiveSafeInteger(maxTxGas) && sendWithGasLimit > maxTxGas) {
         error(where, `gas.sendWithGasLimit (${sendWithGasLimit}) exceeds gas.maxTxGas (${maxTxGas})`);
       }
     }
