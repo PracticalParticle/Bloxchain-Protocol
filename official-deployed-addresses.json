@@ -1,0 +1,80 @@
+{
+  "_format": "bloxchain-official-addresses/1",
+  "description": "Official Bloxchain deployments, per network. This is the source of truth an integrator reads; it ships with @bloxchain/contracts and is mirrored in the public documentation. It is NOT the same file as deployed-addresses.json, which is written by the deployment scripts for whatever network they were pointed at (including local and lab chains), is git-ignored, and is never published.",
+  "declarationPolicy": {
+    "whoDeclares": "A network appears here only after a human release owner declares its deployment official; the release checklist records the declaration.",
+    "whatQualifies": "Deployed from a tagged release, verified on the network's explorer, and intended for outside integrators. Local, lab and throwaway deployments never qualify.",
+    "howToAdd": "Deploy, verify, then run: node scripts/promote-official-addresses.cjs --network <name> --chain-id <id> --declare. The script copies addresses out of deployed-addresses.json and refuses to write without --declare. Validate with: npm run validate:official-addresses",
+    "pendingRows": "A contract that is not yet deployed on an official network is listed with \"address\": null and \"status\": \"pending-declaration\". Addresses are never guessed."
+  },
+  "updated": "2026-09-15",
+  "networks": {
+    "sepolia": {
+      "chainId": 11155111,
+      "status": "official",
+      "explorer": "https://sepolia.etherscan.io",
+      "declaredIn": "README.md#sepolia--deployed-addresses",
+      "mirroredAt": "2026-09-15",
+      "notes": "Alpha testnet. These are the contracts the Bloxchain Platform uses by default. Verify on the explorer before relying on them.",
+      "contracts": {
+        "EngineBlox": {
+          "address": "0x726d78c9683a96d66196d2b8350923e8ca0d8597",
+          "kind": "library",
+          "artifact": "artifacts/EngineBlox.json",
+          "linkTime": true,
+          "notes": "State machine library. Linked into AccountBlox at compile time; an account does not call it by address."
+        },
+        "SecureOwnableDefinitions": {
+          "address": "0xcb8834e55c2c7b012e5643de98a1bf5fda22191c",
+          "kind": "definition-library",
+          "artifact": "artifacts/SecureOwnableDefinitions.json",
+          "linkTime": true,
+          "notes": "Passed as definitionAddress to the SDK's updateRecovery / updateTimeLock execution-parameter helpers."
+        },
+        "RuntimeRBACDefinitions": {
+          "address": "0x27c103b2b1a1e7dc345aeff766aa3656b4825653",
+          "kind": "definition-library",
+          "artifact": "artifacts/RuntimeRBACDefinitions.json",
+          "linkTime": true,
+          "notes": "Passed as definitionAddress to roleConfigBatchExecutionParams and getRoleConfigActionSpecs."
+        },
+        "GuardControllerDefinitions": {
+          "address": "0x6ce6f314fa35d34782f2743db4d0c1f824639938",
+          "kind": "definition-library",
+          "artifact": "artifacts/GuardControllerDefinitions.json",
+          "linkTime": true,
+          "notes": "Passed as definitionAddress to guardConfigBatchExecutionParams and getGuardConfigActionSpecs."
+        },
+        "AccountBlox": {
+          "address": "0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0",
+          "kind": "template",
+          "artifact": "artifacts/AccountBlox.json",
+          "initialized": true,
+          "linkedLibraries": [
+            "EngineBlox",
+            "SecureOwnableDefinitions",
+            "RuntimeRBACDefinitions",
+            "GuardControllerDefinitions"
+          ],
+          "notes": "Clone source for the official factory. Already initialized so the implementation cannot be claimed; Clones.clone copies runtime code, not storage, so an initialized template is a valid source. Do not operate this address as an account."
+        },
+        "CopyBlox": {
+          "address": "0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7",
+          "kind": "factory",
+          "artifact": "artifacts/CopyBlox.json",
+          "cloneTarget": "AccountBlox",
+          "supports": {
+            "clonesOf": false
+          },
+          "gas": {
+            "cloneBloxObserved": 16183550,
+            "sendWithGasLimit": 16777216,
+            "maxTxGas": 16777216,
+            "notes": "Observed gasUsed for cloneBlox against the AccountBlox template. Public networks cap a single transaction at 2^24 = 16,777,216 (EIP-7825), so send cloneBlox with an explicit gas limit at the cap and never with a bare estimate: an estimate that returns the cap looks like a real number."
+          },
+          "notes": "Sanctioned public provisioning path: cloneBlox deploys and initializes an account in one transaction. This deployment predates the owner-indexed clone list, so supports.clonesOf is false and an owner's accounts must be enumerated from BloxCloned logs. The SDK factory wrapper does this automatically."
+        }
+      }
+    }
+  }
+}

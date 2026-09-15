@@ -10,6 +10,9 @@ const rootDir = path.join(contractsDir, '..');
 const sourceContractsDir = path.join(rootDir, 'contracts');
 const sourceAbiDir = path.join(rootDir, 'abi');
 const destAbiDir = path.join(contractsDir, 'abi');
+const sourceArtifactsDir = path.join(rootDir, 'artifacts');
+const destArtifactsDir = path.join(contractsDir, 'artifacts');
+const OFFICIAL_ADDRESSES_FILE = 'official-deployed-addresses.json';
 
 console.log('📦 Preparing @bloxchain/contracts for publishing...\n');
 
@@ -30,6 +33,29 @@ try {
   console.log('✅ ABIs extracted\n');
 } catch (error) {
   console.error('❌ Failed to extract ABIs:', error.message);
+  process.exit(1);
+}
+
+// Step 1b: Build publishable compiled artifacts (ABI + bytecode + link references).
+// SPEC-2026-0118 R1: an integrator must be able to deploy or clone from the package alone.
+console.log('\u{1F4CB} Step 1b: Building compiled artifacts...');
+try {
+  execSync('node scripts/build-artifacts.cjs', { cwd: rootDir, stdio: 'inherit' });
+  console.log('\u2705 Artifacts built\n');
+} catch (error) {
+  console.error('\u274C Failed to build artifacts:', error.message);
+  process.exit(1);
+}
+
+// Step 1c: Validate the official address file that ships with the package.
+// SPEC-2026-0118 R2: this is the source of truth integrators read, so a malformed or
+// lab-contaminated file must stop the publish rather than reach npm.
+console.log('\u{1F4CB} Step 1c: Validating official deployed addresses...');
+try {
+  execSync('node scripts/validate-official-addresses.cjs', { cwd: rootDir, stdio: 'inherit' });
+  console.log('\u2705 Official addresses valid\n');
+} catch (error) {
+  console.error('\u274C Official address validation failed:', error.message);
   process.exit(1);
 }
 
@@ -105,6 +131,32 @@ if (removed.length > 0) {
 const remaining = fs.existsSync(destAbiDir) ? fs.readdirSync(destAbiDir).filter(f => f.endsWith('.abi.json')).length : 0;
 console.log(`   Packaged ABIs remaining: ${remaining}`);
 console.log('✅ ABI prune complete\n');
+
+// Step 5: Copy compiled artifacts into the package
+console.log('\u{1F4CB} Step 5: Copying compiled artifacts...');
+if (!fs.existsSync(sourceArtifactsDir)) {
+  console.error('\u274C Artifacts directory not found! Step 1b should have created it.');
+  process.exit(1);
+}
+if (fs.existsSync(destArtifactsDir)) {
+  fs.rmSync(destArtifactsDir, { recursive: true, force: true });
+}
+copyDir(sourceArtifactsDir, destArtifactsDir, []);
+const artifactCount = fs
+  .readdirSync(destArtifactsDir)
+  .filter((f) => f.endsWith('.json') && f !== 'manifest.json').length;
+console.log(`   Packaged artifacts: ${artifactCount} (+ manifest.json)`);
+console.log('\u2705 Artifacts copied\n');
+
+// Step 6: Copy the official deployed addresses file
+console.log('\u{1F4CB} Step 6: Copying official deployed addresses...');
+const sourceOfficialAddresses = path.join(rootDir, OFFICIAL_ADDRESSES_FILE);
+if (!fs.existsSync(sourceOfficialAddresses)) {
+  console.error(`\u274C ${OFFICIAL_ADDRESSES_FILE} not found at repository root!`);
+  process.exit(1);
+}
+fs.copyFileSync(sourceOfficialAddresses, path.join(contractsDir, OFFICIAL_ADDRESSES_FILE));
+console.log('\u2705 Official addresses copied\n');
 
 console.log('✅ Package ready for publishing!\n');
 
