@@ -16,11 +16,29 @@ Pin **`@bloxchain/sdk`** and optionally **`@bloxchain/contracts`** to exact vers
 ## 🚀 **Installation**
 
 ```bash
-npm install @bloxchain/sdk
+npm install @bloxchain/contracts @bloxchain/sdk viem
 
 # Or with yarn
-yarn add @bloxchain/sdk
+yarn add @bloxchain/contracts @bloxchain/sdk viem
 ```
+
+Those two packages are enough to **create** an account as well as operate one. You do not
+need to clone or compile this repository:
+
+| Package | What you get |
+|---------|--------------|
+| `@bloxchain/sdk` | Typed wrappers, encoders, meta-transaction signing, the account shape gate |
+| `@bloxchain/contracts` | `artifacts/*.json` (ABI **and** bytecode, link references, compiler settings), `official-deployed-addresses.json`, Solidity sources |
+
+```typescript
+// Compiled artifacts, no solc in your build
+import factory from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
+import template from '@bloxchain/contracts/artifacts/AccountBlox.json' with { type: 'json' };
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+```
+
+`artifacts/manifest.json` records a sha256 per artifact plus the compiler configuration
+they were built with, so you can pin what you consumed.
 
 ## 🔧 **Basic Setup (Account-Based Contract)**
 
@@ -78,7 +96,33 @@ const guardController = new GuardController(publicClient, walletClient, accountA
 
 ### Definition library addresses (public testnets)
 
-Integrators need deployed **definition libraries** for execution-param helpers (`updateRecoveryExecutionParams`, batch encoders, schema refresh). Keys in `deployed-addresses.json` map to env vars:
+Integrators need deployed **definition libraries** for execution-param helpers
+(`updateRecoveryExecutionParams`, batch encoders, schema refresh).
+
+**Read them from `official-deployed-addresses.json`**, which ships with
+`@bloxchain/contracts` and holds the addresses a human release owner has declared official,
+per network:
+
+```typescript
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+
+const sepolia = resolveOfficialNetwork(official, 11155111);
+const gcd = getOfficialAddress(sepolia, 'GuardControllerDefinitions');
+const rbd = getOfficialAddress(sepolia, 'RuntimeRBACDefinitions');
+const sod = getOfficialAddress(sepolia, 'SecureOwnableDefinitions');
+```
+
+`getOfficialAddress` throws rather than returning null for a contract that is not declared
+on that network, because quietly falling back to some other address is the failure this
+file exists to prevent.
+
+> **`official-deployed-addresses.json` is not `deployed-addresses.json`.** The deployment
+> scripts in this repository write `deployed-addresses.json` for whatever network they were
+> pointed at, including local and lab chains. It is git-ignored, it is never published, and
+> it is not a source of truth for an integrator. Only the official file is.
+
+For local protocol development against `deployed-addresses.json`, the keys map to env vars:
 
 | `deployed-addresses.json` key | Env variable |
 |-------------------------------|--------------|
@@ -87,18 +131,176 @@ Integrators need deployed **definition libraries** for execution-param helpers (
 | `GuardControllerDefinitions` | `GUARD_CONTROLLER_DEFINITIONS_ADDRESS` |
 | `GuardControllerDefinitions` | `DEFINITION_CONTRACT_ADDRESS` (alias for single schema-refresh address) |
 
-Example for Sepolia:
+Pass either source's addresses to SDK helpers such as
+`updateRecoveryExecutionParams(client, sod, newRecovery)`.
+
+---
+
+## 🏗 **Provisioning an account from npm alone**
+
+This is the supported public path: `npm i @bloxchain/contracts @bloxchain/sdk` and an RPC
+URL are enough to create a governed account on an official network.
+
+Working reference: **`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`).
+It is idempotent and safe to re-run; `--offline` validates configuration without a chain
+and `--dry-run` checks every lock against a chain without sending anything.
+
+### 1. The sanctioned factory
+
+Provisioning goes through a **CopyBlox-shaped clone factory**. `cloneBlox` creates an
+EIP-1167 minimal proxy of the account template and runs `initialize` on it **in the same
+transaction**, so there is never a live, uninitialized account at a public address.
 
 ```typescript
-import deployed from '../deployed-addresses.json';
+import { CopyBlox, resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 
-const network = 'sepolia' as const;
-const sod = deployed[network].SecureOwnableDefinitions.address;
-const rbd = deployed[network].RuntimeRBACDefinitions.address;
-const gcd = deployed[network].GuardControllerDefinitions.address;
+const network = resolveOfficialNetwork(official, 11155111);
+const factory = new CopyBlox(
+  publicClient,
+  broadcasterWallet,
+  getOfficialAddress(network, 'CopyBlox'),
+  sepolia,
+);
+
+const result = await factory.cloneBlox(
+  {
+    template: getOfficialAddress(network, 'AccountBlox'),
+    initialOwner: ownerAddress,
+    broadcaster: broadcasterAddress,
+    recovery: recoveryAddress,
+    timeLockPeriodSec: 3600n,
+  },
+  { from: broadcasterAddress },
+);
+
+const receipt = await result.wait();
+const account = factory.cloneAddressFromReceipt(receipt);
 ```
 
-Pass these addresses to SDK helpers such as `updateRecoveryExecutionParams(client, sod, newRecovery)`.
+### 2. Finding the accounts an owner already has
+
+An owner can hold **more than one** account. Ask for all of them:
+
+```typescript
+const { clones, source } = await factory.clonesOf(ownerAddress);
+// source: 'on-chain-index' when the factory carries clonesOf,
+//         'bloxcloned-logs'  when it predates it (the wrapper falls back automatically)
+```
+
+Taking "the latest `BloxCloned` log" strands every earlier account the owner holds,
+including ones with balances or pending time-locked transfers. Newer factories answer
+`clonesOf(owner)` on-chain; `official-deployed-addresses.json` records which deployments
+have it (`contracts.CopyBlox.supports.clonesOf`). For a log scan, pass the factory's
+deployment block as `fromBlock`, because public providers refuse wide ranges.
+
+### 3. The shape gate: never adopt an address unchecked
+
+Before you point a session, a signing policy or a user's passbook at an address, check
+that it is actually an account **and** that the caller owns it:
+
+```typescript
+import { isAccountBlox, inspectAccountBlox, assertOwnedAccount } from '@bloxchain/sdk';
+
+await isAccountBlox(publicClient, candidate);                    // boolean
+await inspectAccountBlox(publicClient, candidate);               // which check failed, and why
+await assertOwnedAccount(publicClient, candidate, ownerAddress); // throws unless owned
+```
+
+The gate is `getCode` + `owner()` + `initialized()` + ERC-165 **`ISecureOwnable`**, and
+every part earns its place. Measured against four real contracts:
+
+| Address | `getCode` | `owner()` | `initialized()` | `IBaseStateMachine` | `ISecureOwnable` |
+|---|---|---|---|---|---|
+| An account clone | 20,853 B | the owner | `true` | `true` | `true` |
+| An EOA | none | reverts | reverts | reverts | reverts |
+| A plain ERC-20 | 2,771 B | reverts | reverts | `false` | `false` |
+| **The factory itself** | 11,684 B | reverts | `false` | **`true`** | **`false`** |
+
+The factory answers `IBaseStateMachine` because it **is** one. A gate built on that check
+alone loads the factory as if it were an account.
+
+### 4. Gas: the clone sits just under a hard protocol cap
+
+```text
+clone + initialize (AccountBlox)   ~16,236,000 gas measured
+EIP-7825 per-transaction cap        16,777,216 (2^24)
+head-room                             ~540,000 gas
+```
+
+Public networks enforce **EIP-7825**: a single transaction may not ask for more than
+`2^24` gas, whatever the block gas limit is. A 60 M block still rejects a 20 M
+transaction with `transaction gas limit too high (cap: 16777216, tx: 20000000)`.
+
+Practical rules, in order of importance:
+
+1. **Send an explicit gas limit at the cap**, not an estimate. The SDK wrapper does this by
+   default (`GAS_ENVELOPE.cloneSendGasLimit`).
+2. **Fail loudly below the floor.** An estimate well under ~15 M means the estimator never
+   priced the clone: a public node without a state override answers "insufficient funds"
+   rather than a number, and an estimate that comes back exactly *at* the cap was clamped.
+   `assertGasEnvelope` treats both as errors.
+3. **Simulation does not size gas.** `simulationMode` proves the call is revert-free and
+   nothing more.
+4. **A lab chain that has not implemented EIP-7825 will accept more**, which is how this
+   passes locally and fails on Sepolia.
+
+```typescript
+import { MAX_TX_GAS, GAS_ENVELOPE, assertUnderMaxTxGas } from '@bloxchain/sdk';
+```
+
+### 5. The three locks
+
+A fresh account is a **vault**: it exists, it is owned, and it will refuse everything.
+Three things must be true before the first `requestAndApproveExecution` succeeds.
+
+| Lock | What it does | What its absence looks like |
+|---|---|---|
+| **1. `initialize`** | Sets owner, broadcaster, recovery, time lock | The clone factory does this atomically with the clone |
+| **2. Guard batch** | Registers schemas and **whitelists the target** for its selector | `TargetNotWhitelisted` |
+| **3. Role batch** | **Grants a role an action** on the execution selector and the handler | `NoPermission(caller)` |
+
+**Whitelist is not permission**, and this is the step that surprises people.
+`initialize` already registers the `transfer(address,uint256)` schema with all nine
+actions supported, so `getFunctionSchema(0xa9059cbb)` looks complete. But
+`getActiveRolePermissions` shows **no role holding any action on that selector**, and
+`requestAndApproveExecution` checks the *execution* selector. Whitelisting the token and
+stopping there yields `NoPermission`. Locks 2 and 3 are both required.
+
+Lock 3 needs **both halves** of the pair:
+
+- OWNER: `SIGN_META_REQUEST_AND_APPROVE`
+- BROADCASTER: `EXECUTE_META_REQUEST_AND_APPROVE`
+
+with `handlerForSelectors` naming the handler the call arrives through
+(`REQUEST_AND_APPROVE_EXECUTION_SELECTOR` for the built-in schemas). A selector you
+**register yourself** is different: `GuardController._registerGuardedFunction` sets
+`enforceHandlerRelations: true` with a self-reference, so a grant on a self-registered
+selector must name **that selector itself** or the batch reverts
+`HandlerForSelectorMismatch`.
+
+Configuring the guard and role sides is covered in
+[Guard Controller](./guard-controller.md) and [Runtime RBAC](./runtime-rbac.md).
+
+### 6. Keep provisioning idempotent
+
+Provisioning gets run more than once against the same account, so write it to converge
+rather than to apply:
+
+- **Read back before sending.** Whitelist membership (`getFunctionWhitelistTargets`),
+  grants (`getActiveRolePermissions`) and balances. A repeat run should send nothing.
+- **Version the desired role set.** Keep a `ROLE_SET_VERSION` next to it and bump it when
+  the set changes, so a deployment can be asked which set an account is on.
+- **Change a grant with REMOVE + ADD in one batch.** A second `addFunctionToRole` for the
+  same `(role, selector)` reverts `ResourceAlreadyExists`.
+- **A mined receipt is not a result.** A config batch can mine `success`, burn 2 M gas and
+  grant nothing. Read the record back and check its inner `TxStatus` is `COMPLETED`.
+- **Registry views are permissioned.** A reader built with no wallet client sends
+  `from = 0x0` and is refused `NoPermission(0x0)`. Build readers with a wallet client.
+- **`createMetaTxParams` takes a duration, not a timestamp.** The contract adds
+  `block.timestamp`. On a chain that mines on demand, also correct for the drift between
+  wall clock and the latest block, or the deadline is already past when the transaction
+  mines while `eth_call` still passes.
 
 ---
 
@@ -183,7 +385,7 @@ Account‑style contracts use OpenZeppelin **Initializable** semantics: there is
 
 ### **1. Recommended: factory / cloner pattern**
 
-To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. The repo includes **`CopyBlox`** as a reference pattern (`contracts/examples/applications/CopyBlox/CopyBlox.sol`):
+To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. A **CopyBlox-shaped** clone factory is the sanctioned public provisioning path: see [Provisioning an account from npm alone](#-provisioning-an-account-from-npm-alone) for the supported flow, and `contracts/examples/applications/CopyBlox/CopyBlox.sol` for the contract:
 
 - Validates the implementation implements **`IBaseStateMachine`**.
 - **`Clones.clone`** (EIP‑1167) then **`call`s** `initialize(address,address,address,uint256,address)` on the new clone.
