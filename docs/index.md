@@ -27,6 +27,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 - [**Meta-Transactions**](./meta-transactions.md) – Meta-tx params, signing, and execution
 
 ### **📖 Development Guides**
+- [**Five things the revert will teach you**](./five-things-the-revert-will-teach-you.md) – Guard/RBAC rules outside builders learn by revert, `flowReadiness`, meta-approve vs timelock, and what the guard does not see
 - [**Best Practices**](./best-practices.md) – Development guidelines and security patterns
 
 ### **💡 Examples & Tutorials**
@@ -44,6 +45,8 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 - **Use SecureOwnable** → [SecureOwnable](./secure-ownable.md)
 - **Configure roles at runtime** → [RuntimeRBAC](./runtime-rbac.md)
 - **Configure guarded execution / whitelists** → [GuardController](./guard-controller.md)
+- **Check whether a flow is actually open** → [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md#probe-the-flow-before-you-send-it)
+- **Know what a whitelist does *not* bound** → [What the guard does not see](./five-things-the-revert-will-teach-you.md#what-the-guard-does-not-see)
 - **Work with definitions and schemas** → [Definitions](./definition-contract.md)
 - **Use meta-transactions safely** → [Meta-Transactions](./meta-transactions.md)
 - **Explore SDK types** → [Types & Interfaces](./types-interfaces.md)
@@ -62,6 +65,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 | [Definitions](./definition-contract.md) | ✅ Up to date | Definition libraries and `IDefinition` |
 | [Meta-Transactions](./meta-transactions.md) | ✅ Up to date | EngineBlox meta‑tx flows |
 | [Types & Interfaces](./types-interfaces.md) | ✅ Up to date | Shared TypeScript types |
+| [Five things the revert will teach you](./five-things-the-revert-will-teach-you.md) | ✅ New | Guard/RBAC ergonomics, `flowReadiness`, guard scope |
 | [Best Practices](./best-practices.md) | ✅ Up to date | Security and usage guidance |
 | [Basic Examples](./examples-basic.md) | ✅ Up to date | Sanity‑style examples |
 | [Bloxchain Architecture](./bloxchain-architecture.md) | ✅ Up to date | State machine overview |
