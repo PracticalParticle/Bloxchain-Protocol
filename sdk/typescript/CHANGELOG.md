@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * tighten gas metadata checks and contract-failure classification ([ac86ac0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ac86ac04a1d3846fc08b15de10792781d0737efb))
 * tighten gas metadata checks and contract-failure classification ([9427e99](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9427e99d32af000a7ac7c8378eed423657c3d1a4))
 
-## [Unreleased]
-
 ### Added — public-integrator surface (SPEC-2026-0117)
 
 Additive only. Every item below closes a seam measured on a real outside build that
@@ -54,10 +52,11 @@ by hand. See [`docs/integrator-checklist.md`](../../docs/integrator-checklist.md
 - **Signer-layer classification.** A signer refusal or fault is reported as
   `SignerDenied` / `SignerError` **before** any contract-revert decoding, so a policy
   violation is no longer presented as a chain revert.
-- **`metaTxDeadlineFor(client, ttlSeconds)`.** Returns the *duration* to pass as
-  `createMetaTxParams`'s `deadline`, corrected for latest-block drift on chains that
-  mine on demand. The `deadline` parameter is renamed `deadlineDuration` and typed
-  `MetaTxDeadlineDuration` with NatSpec saying so (same position, same `bigint`).
+- **`metaTxDeadlineFor(client, ttlSeconds)`.** Returns the *duration* to pass as the
+  **on-chain** `createMetaTxParams` view / account-wrapper `deadline`, corrected for
+  latest-block drift. Typed `MetaTxDeadlineDuration`. The off-chain
+  `MetaTransactionBuilder.createMetaTxParams` takes an **absolute** unix timestamp
+  instead — do not pass `metaTxDeadlineFor` into the Builder.
 - **Inner transaction status.** `assertInnerSuccess`, `readInnerOutcomes`,
   `waitForTransactionAndAssertInner`, `InnerTransactionFailedError`,
   `ENGINE_BLOX_EVENTS_ABI`, `TX_STATUS_NAMES`, `txStatusName`; plus
@@ -92,6 +91,8 @@ by hand. See [`docs/integrator-checklist.md`](../../docs/integrator-checklist.md
   the *text* of `message` and `userMessage` now differs for signer-layer failures and
   for reverts that previously decoded as `ReadableText`. Branch on `errorName`, not on
   message wording.
+
+## [Unreleased]
 
 ## [1.0.0](https://github.com/PracticalParticle/Bloxchain-Protocol/releases/tag/sdk-v1.0.0) - 2026-06-03
 

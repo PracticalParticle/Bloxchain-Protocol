@@ -125,6 +125,18 @@ export interface InnerStatusAssertOptions {
    * deliberate outcome, not a fault.
    */
   failOnCancelled?: boolean;
+  /**
+   * Forwarded to `waitForTransactionReceipt` by
+   * {@link waitForTransactionAndAssertInner}. Ignored by {@link assertInnerSuccess}
+   * / {@link readInnerOutcomes}.
+   */
+  confirmations?: number;
+  /**
+   * Forwarded to `waitForTransactionReceipt` by
+   * {@link waitForTransactionAndAssertInner}. Ignored by {@link assertInnerSuccess}
+   * / {@link readInnerOutcomes}.
+   */
+  timeout?: number;
 }
 
 /** Minimal log shape — matches viem's `TransactionReceipt['logs'][number]`. */
@@ -318,7 +330,7 @@ export function assertInnerSuccess(
 export async function waitForTransactionAndAssertInner(
   client: PublicClient,
   hash: Hex,
-  options: InnerStatusAssertOptions & { confirmations?: number; timeout?: number } = {}
+  options: InnerStatusAssertOptions = {}
 ): Promise<TransactionReceipt> {
   const receipt = await client.waitForTransactionReceipt({
     hash,

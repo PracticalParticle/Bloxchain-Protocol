@@ -1,7 +1,7 @@
 /**
  * R3 / AC3 — a read-only wrapper sends a real `from`, never `address(0)`.
- * R6 — `createMetaTxParams` takes a duration, and `metaTxDeadlineFor` corrects
- *      for a chain whose latest block has gone stale.
+ * R6 — `createMetaTxParams` takes an absolute unix deadline; `metaTxDeadlineFor`
+ *      returns a duration that corrects for a chain whose latest block is stale.
  *
  * Both run against a recording stub client, so they assert what the SDK *sends*
  * rather than what a particular chain happens to answer. AC3's on-chain half —
@@ -180,20 +180,21 @@ export async function runReaderAndDeadlineTests(): Promise<SurfaceTestResult[]> 
     add('metaTxDeadlineFor refuses a non-positive TTL', refused);
   }
 
-  // --- R6: the builder passes the duration straight through ---
+  // --- R6: the builder writes the absolute deadline verbatim ---
   {
+    const absoluteDeadline = BigInt(Math.floor(Date.now() / 1000)) + 600n;
     const params = MetaTransactionBuilder.createMetaTxParams(
       ACCOUNT,
       '0xdeadbeef' as Hex,
       TxAction.SIGN_META_REQUEST_AND_APPROVE,
-      600n,
+      absoluteDeadline,
       100n,
       ROLE_HOLDER,
       31337n
     );
     add(
-      'createMetaTxParams carries the duration, not a timestamp',
-      params.deadline === 600n,
+      'createMetaTxParams carries the absolute unix deadline',
+      params.deadline === absoluteDeadline,
       `${params.deadline}`
     );
   }

@@ -167,10 +167,15 @@ not whoever owns the contract.
 
 ---
 
-## 6. `deadline` is a duration, not a timestamp
+## 6. Two deadline APIs — do not cross-wire them
 
-`createMetaTxParams(..., deadline, ...)` takes **seconds of validity**, and the
-contract stores `block.timestamp + deadline`.
+There are **two** legitimate `createMetaTxParams` paths. Mixing them produces
+born-expired meta-transactions.
+
+### On-chain view / account wrapper — **duration**
+
+`account.createMetaTxParams(..., deadline, ...)` (and the Solidity view it calls)
+takes **seconds of validity**. The contract stores `block.timestamp + deadline`.
 
 That `block.timestamp` is read from the *latest block*, because the function is a
 view. On a chain that mines on demand rather than on a schedule, the latest block's
@@ -181,7 +186,7 @@ passes (it replays against the stale block) and the mined transaction reverts.
 ```ts
 import { metaTxDeadlineFor } from '@bloxchain/sdk';
 
-const deadline = await metaTxDeadlineFor(publicClient, 600n); // valid ~10 minutes
+const deadline = await metaTxDeadlineFor(publicClient, 600n); // duration, ~10 minutes
 const params = await account.createMetaTxParams(
   handler, selector, TxAction.SIGN_META_REQUEST_AND_APPROVE,
   deadline, maxGasPrice, signer
@@ -190,7 +195,15 @@ const params = await account.createMetaTxParams(
 
 `metaTxDeadlineFor` returns `drift + ttl`. On a chain with scheduled blocks the drift
 is at most one block time and it degrades to exactly your TTL, so it is always safe
-to use.
+to use **with the on-chain view**.
+
+### Off-chain `MetaTransactionBuilder` — **absolute unix timestamp**
+
+`MetaTransactionBuilder.createMetaTxParams(..., deadline, ...)` writes
+`params.deadline` **verbatim**. `validateMetaTxDeadline` compares that field to
+`block.timestamp`. Pass an absolute unix time (e.g. `chainTime + ttl`). **Do not**
+pass `metaTxDeadlineFor`'s return value into the Builder — that is a duration and
+will revert `MetaTxExpired` at execution.
 
 ---
 
