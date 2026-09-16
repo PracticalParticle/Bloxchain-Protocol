@@ -5,6 +5,20 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.0.0...contracts-v1.1.0) (2026-09-16)
+
+
+### Features
+
+* **contracts:** publish compiled artifacts and official deployed addresses ([159513a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/159513afcf06ac16ea6b6c4bcdd30bde391cdcd2))
+* **sdk:** add flowReadiness probe and guard/RBAC public-builder docs ([c5a28b3](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c5a28b3d0f20522b1a25b2b3302cd2297ddead26))
+* **sdk:** public-integrator surface — exports, EIP-712, errors, deadline, inner status ([6d3213a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6d3213aa05804c751580f38ec7e375c9673a277f))
+
+
+### Bug Fixes
+
+* **sdk:** address SPEC-0118 review findings on provisioning surface ([b06002b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b06002bdb198cdf203feb36665fe0908cf85c2dc))
+
 ## [Unreleased]
 
 ### Added
