@@ -5,6 +5,14 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.1.0...sdk-v1.1.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **sdk:** peer-only viem, absolute Builder deadline, type widenings ([01390cc](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/01390cc890248ee2e00696c4ff6c48b9eeba6ca8))
+* **sdk:** peer-only viem, absolute Builder deadline, type widenings ([1b3fb81](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/1b3fb819c2000fdf97bd061ed956478fc483fad3))
+
 ## [1.1.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.0.0...sdk-v1.1.0) (2026-09-16)
 
 
