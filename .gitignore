@@ -64,6 +64,7 @@ package/abi/
 package/core/
 package/standards/
 package/components/
+package/official-deployed-addresses.json
 
 # Build output for @bloxchain/sdk
 sdk/typescript/dist/

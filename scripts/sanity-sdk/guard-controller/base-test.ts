@@ -31,6 +31,28 @@ import { extractErrorInfo } from '../../../sdk/typescript/utils/contract-errors.
 import { RoleConfigActionType, RoleConfigAction, FunctionPermission } from '../runtime-rbac/base-test.ts';
 import { keccak256, toBytes } from 'viem';
 
+/** Named SDK shape or positional ABI tuple from getRole. */
+type RoleQueryResult =
+  | {
+      roleName?: string;
+      roleHashReturn?: Hex | string;
+      roleHash?: Hex | string;
+      maxWallets?: bigint | number;
+      walletCount?: bigint | number;
+      isProtected?: boolean;
+    }
+  | readonly [string, Hex | string, bigint | number, bigint | number, boolean];
+
+function hashFromRoleResult(role: RoleQueryResult | null | undefined): string | undefined {
+  if (!role || typeof role !== 'object') return undefined;
+  if (Array.isArray(role)) {
+    const hash = role[1];
+    return typeof hash === 'string' && hash.startsWith('0x') ? hash : undefined;
+  }
+  const named = role.roleHashReturn ?? role.roleHash;
+  return typeof named === 'string' && named.startsWith('0x') ? named : undefined;
+}
+
 /** Extract raw revert data from a viem/contract error for decoding. */
 function getRevertDataFromError(error: any): string | null {
   const data = error?.data ?? error?.cause?.data ?? error?.cause?.cause?.data;
@@ -606,24 +628,37 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
   /**
    * Check if role exists (for mint flow setup).
+   * Prefer getRole; if that reverts, fall back to getSupportedRoles — same pattern as
+   * runtime-rbac/base-test so ResourceAlreadyExists soft-continues stay honest.
+   * AccountBlox/viem may return getRole as a positional tuple
+   * `[roleName, roleHash, maxWallets, walletCount, isProtected]` rather than a named object.
    */
   protected async roleExists(roleHash: Hex): Promise<boolean> {
     if (!this.contractAddress) return false;
-    try {
-      // Use an owner-scoped RuntimeRBAC client for reads that require _validateAnyRole.
-      const ownerWallet = this.getRoleWallet('owner');
-      const ownerWalletName =
-        Object.keys(this.wallets).find(
-          (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
-        ) || 'wallet1';
-      const rbac = this.createRuntimeRBACWithWallet(ownerWalletName);
-      (rbac as any).abi = AccountBloxABIJson;
+    const ownerWallet = this.getRoleWallet('owner');
+    const ownerWalletName =
+      Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+    // createRuntimeRBACWithWallet already installs AccountBloxABIJson on the wrapper.
+    const rbac = this.createRuntimeRBACWithWallet(ownerWalletName);
 
-      const role = await (rbac as any).getRole(roleHash);
-      const h = (role as any).roleHashReturn ?? (role as any).roleHash;
-      return !!h && String(h).toLowerCase() !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+    try {
+      // Runtime return may be the SDK named shape or a raw ABI tuple; widen after the typed call.
+      const role = (await rbac.getRole(roleHash)) as RoleQueryResult;
+      const h = hashFromRoleResult(role);
+      return (
+        !!h &&
+        h.toLowerCase() === roleHash.toLowerCase() &&
+        h.toLowerCase() !== '0x0000000000000000000000000000000000000000000000000000000000000000'
+      );
     } catch {
-      return false;
+      try {
+        const supported = await rbac.getSupportedRoles();
+        return supported.some((h) => h.toLowerCase() === roleHash.toLowerCase());
+      } catch {
+        return false;
+      }
     }
   }
 
