@@ -5,6 +5,26 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.0.0...sdk-v1.1.0) (2026-09-16)
+
+
+### Features
+
+* **examples:** index CopyBlox clones by owner ([d446288](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d446288100460a3482ee2fc66589b2876c29781e))
+* **sdk:** add factory wrapper, account gate, gas envelope and address helpers ([86dd148](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/86dd1484c8b8f3564a503807a9e25af48d381184))
+* **sdk:** add flowReadiness probe and guard/RBAC public-builder docs ([c5a28b3](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c5a28b3d0f20522b1a25b2b3302cd2297ddead26))
+* **sdk:** public-integrator surface — exports, EIP-712, errors, deadline, inner status ([6d3213a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6d3213aa05804c751580f38ec7e375c9673a277f))
+
+
+### Bug Fixes
+
+* address still-valid review findings on artifacts, CopyBlox, and … ([b3e63d8](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b3e63d848d5ab0fa03878427f0dbe0a7ab5627da))
+* address still-valid review findings on artifacts, CopyBlox, and provisioner ([f4798f0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f4798f02fcd8eb07629d46d71d2ccd6c1a348d2a))
+* **sdk:** address review notes on explainError docs, ABIs, and RBAC sanity ([41ff788](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/41ff788217b66ca1b439bc9b7c6e5be3dfee67bf))
+* **sdk:** address SPEC-0118 review findings on provisioning surface ([b06002b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b06002bdb198cdf203feb36665fe0908cf85c2dc))
+* tighten gas metadata checks and contract-failure classification ([ac86ac0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ac86ac04a1d3846fc08b15de10792781d0737efb))
+* tighten gas metadata checks and contract-failure classification ([9427e99](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9427e99d32af000a7ac7c8378eed423657c3d1a4))
+
 ## [Unreleased]
 
 ### Added — public-integrator surface (SPEC-2026-0117)
