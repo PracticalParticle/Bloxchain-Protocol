@@ -10,11 +10,22 @@ jobs:
   check-source-branch:
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure only dev can target main
+      - name: Ensure only dev (or Release Please) can target main
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [ "$HEAD_REF" != "dev" ]; then
-            echo "::error::Only the 'dev' branch can be merged into main. This PR is from '$HEAD_REF'. Please open a PR from dev to main instead."
-            exit 1
+          # Normal path: all product work lands via dev → main.
+          # Exception: Release Please opens release-please--branches--main → main
+          # (see CONTRIBUTING.md Release Process). Dependabot targets dev instead.
+          if [ "$HEAD_REF" = "dev" ]; then
+            echo "OK: PR source is 'dev'."
+            exit 0
           fi
+          case "$HEAD_REF" in
+            release-please--branches--*)
+              echo "OK: Release Please release branch '$HEAD_REF' may target main."
+              exit 0
+              ;;
+          esac
+          echo "::error::Only the 'dev' branch (or a Release Please release branch) can be merged into main. This PR is from '$HEAD_REF'. Please open a PR from dev to main instead."
+          exit 1

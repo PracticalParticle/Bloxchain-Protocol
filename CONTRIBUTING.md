@@ -134,7 +134,7 @@ For multi-commit PRs, **each commit** must contain `Signed-off-by`.
 
 ### Automated check (required)
 
-Pull requests run the **[DCO / Signed-off-by](.github/workflows/dco-signoff.yml)** GitHub Actions workflow. The PR cannot be merged while this check fails.
+Pull requests run the **[DCO / Signed-off-by](.github/workflows/dco-signoff.yml)** GitHub Actions workflow. The PR cannot be merged while this check fails. **Exceptions:** Dependabot PRs and Release Please release branches (`release-please--branches--*`) skip this check (bot commits lack `Signed-off-by`).
 
 Repository admins should mark **DCO / Signed-off-by** as a **required status check** on protected branches (`dev`, `main`) under **Settings → Branches → Branch protection rules**.
 
@@ -709,9 +709,11 @@ git push origin feature/new-feature
 
 Releases use **Release Please** on `main`, then **human npm publish** after the release line is on `main`.
 
-1. **Merge feature/fix PRs to `main`** using scoped conventional commits (`feat(contracts):`, `fix(sdk):`, etc.).
-2. **Release Please** opens one or two release PRs (`@bloxchain/contracts`, `@bloxchain/sdk`) with updated versions and per-package changelogs.
-3. **Review and merge** the release PR(s) on `main`. Tags/GitHub releases are created per package.
+**Branching:** product work merges **`dev` → `main`** (enforced by [require-dev-to-main](.github/workflows/require-dev-to-main.yml)). **Exception:** Release Please may open `release-please--branches--main` (and related `release-please--branches--*` heads) **directly onto `main`**. Those bot PRs are exempt from the DCO sign-off check the same way Dependabot is (Dependabot still targets `dev`). Do **not** retarget a Release Please PR to `dev` — merge it into `main` after review.
+
+1. **Land feature/fix work on `main` via `dev`** using scoped conventional commits (`feat(contracts):`, `fix(sdk):`, etc.).
+2. **Release Please** opens a release PR onto `main` (`release-please--branches--main`) with updated versions and per-package changelogs.
+3. **Review and merge** that release PR **into `main`** (do not retarget to `dev`). Tags/GitHub releases are created per package.
 4. **Publish to npm** (maintainers, after `main` contains the release versions) — three commands only:
 
    ```bash
