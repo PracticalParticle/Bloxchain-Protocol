@@ -18,6 +18,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// npm is `npm.cmd` on Windows: the bare name raises ENOENT (execFileSync does not
+// apply PATHEXT) and `npm.cmd` raises EINVAL (Node refuses to execFile a batch file
+// without a shell). Run npm's own JS entry point under this node instead, which needs
+// no shell and so keeps paths containing spaces intact.
+const NPM_CLI = (() => {
+  const candidate = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  return fs.existsSync(candidate) ? candidate : null;
+})();
+const npmArgv = (args) => (NPM_CLI ? [NPM_CLI, ...args] : args);
+const npmBin = NPM_CLI ? process.execPath : 'npm';
+
+
 const ROOT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_DIR = path.join(ROOT_DIR, 'package');
 const PREPUBLISH = path.join(PACKAGE_DIR, 'scripts', 'prepublish-contracts.cjs');
@@ -54,7 +66,7 @@ try {
   }
 
   console.log('\n📦 npm pack from prepared package/\n');
-  const packOut = execFileSync('npm', ['pack', '--json'], {
+  const packOut = execFileSync(npmBin, npmArgv(['pack', '--json']), {
     cwd: PACKAGE_DIR,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
@@ -85,7 +97,7 @@ try {
   );
 
   console.log(`\n📦 Installing ${tarballName} into throwaway consumer\n`);
-  execFileSync('npm', ['install', stagedTarball, '--no-save', '--no-package-lock'], {
+  execFileSync(npmBin, npmArgv(['install', stagedTarball, '--no-save', '--no-package-lock']), {
     cwd: workDir,
     stdio: 'inherit',
   });
