@@ -24,6 +24,28 @@ const PREPUBLISH = path.join(PACKAGE_DIR, 'scripts', 'prepublish-contracts.cjs')
 const OFFICIAL_ADDRESSES = path.join(ROOT_DIR, 'official-deployed-addresses.json');
 const SKIP_PREPUBLISH = process.env.SKIP_PREPUBLISH === '1';
 
+/** Windows: node `execFileSync('npm')` looks for npm.exe; the installer ships `npm.cmd`. */
+function resolveNpmCli() {
+  if (process.env.npm_execpath && fs.existsSync(process.env.npm_execpath)) {
+    return { command: process.execPath, argsPrefix: [process.env.npm_execpath] };
+  }
+  if (process.platform === 'win32') {
+    const npmCmd = path.join(path.dirname(process.execPath), 'npm.cmd');
+    if (fs.existsSync(npmCmd)) {
+      return { command: npmCmd, argsPrefix: [] };
+    }
+  }
+  return { command: 'npm', argsPrefix: [] };
+}
+
+function runNpm(args, options = {}) {
+  const { command, argsPrefix } = resolveNpmCli();
+  return execFileSync(command, [...argsPrefix, ...args], {
+    shell: process.platform === 'win32' && command.endsWith('.cmd'),
+    ...options,
+  });
+}
+
 function fail(message) {
   console.error(`❌ ${message}`);
   process.exit(1);
@@ -54,7 +76,7 @@ try {
   }
 
   console.log('\n📦 npm pack from prepared package/\n');
-  const packOut = execFileSync('npm', ['pack', '--json'], {
+  const packOut = runNpm(['pack', '--json'], {
     cwd: PACKAGE_DIR,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
@@ -85,7 +107,7 @@ try {
   );
 
   console.log(`\n📦 Installing ${tarballName} into throwaway consumer\n`);
-  execFileSync('npm', ['install', stagedTarball, '--no-save', '--no-package-lock'], {
+  runNpm(['install', stagedTarball, '--no-save', '--no-package-lock'], {
     cwd: workDir,
     stdio: 'inherit',
   });

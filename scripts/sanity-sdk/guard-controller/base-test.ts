@@ -606,24 +606,52 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
 
   /**
    * Check if role exists (for mint flow setup).
+   * Prefer getRole; if that reverts, fall back to getSupportedRoles — same pattern as
+   * runtime-rbac/base-test so ResourceAlreadyExists soft-continues stay honest.
+   * AccountBlox/viem may return getRole as a positional tuple
+   * `[roleName, roleHash, maxWallets, walletCount, isProtected]` rather than a named object.
    */
   protected async roleExists(roleHash: Hex): Promise<boolean> {
     if (!this.contractAddress) return false;
-    try {
-      // Use an owner-scoped RuntimeRBAC client for reads that require _validateAnyRole.
-      const ownerWallet = this.getRoleWallet('owner');
-      const ownerWalletName =
-        Object.keys(this.wallets).find(
-          (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
-        ) || 'wallet1';
-      const rbac = this.createRuntimeRBACWithWallet(ownerWalletName);
-      (rbac as any).abi = AccountBloxABIJson;
+    const ownerWallet = this.getRoleWallet('owner');
+    const ownerWalletName =
+      Object.keys(this.wallets).find(
+        (k) => this.wallets[k].address.toLowerCase() === ownerWallet.address.toLowerCase()
+      ) || 'wallet1';
+    const rbac = this.createRuntimeRBACWithWallet(ownerWalletName);
+    (rbac as any).abi = AccountBloxABIJson;
 
+    const hashFromRole = (role: unknown): string | undefined => {
+      if (!role || typeof role !== 'object') return undefined;
+      const named =
+        (role as any).roleHashReturn ?? (role as any).roleHash ?? (role as any).roleHashReturn;
+      if (typeof named === 'string' && named.startsWith('0x')) return named;
+      if (Array.isArray(role) && typeof role[1] === 'string' && role[1].startsWith('0x')) {
+        return role[1];
+      }
+      return undefined;
+    };
+
+    try {
       const role = await (rbac as any).getRole(roleHash);
-      const h = (role as any).roleHashReturn ?? (role as any).roleHash;
-      return !!h && String(h).toLowerCase() !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+      const h = hashFromRole(role);
+      return (
+        !!h &&
+        h.toLowerCase() === roleHash.toLowerCase() &&
+        h.toLowerCase() !== '0x0000000000000000000000000000000000000000000000000000000000000000'
+      );
     } catch {
-      return false;
+      try {
+        const supported = await (rbac as any).getSupportedRoles();
+        return (
+          Array.isArray(supported) &&
+          supported.some(
+            (h: string) => typeof h === 'string' && h.toLowerCase() === roleHash.toLowerCase()
+          )
+        );
+      } catch {
+        return false;
+      }
     }
   }
 
