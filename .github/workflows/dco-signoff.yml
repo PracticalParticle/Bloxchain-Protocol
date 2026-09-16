@@ -14,7 +14,14 @@ jobs:
     name: DCO / Signed-off-by
     runs-on: ubuntu-latest
     # Dependabot commits are not signed with -s unless configured separately.
-    if: github.actor != 'dependabot[bot]'
+    # Release Please bot commits (chore: release) likewise lack Signed-off-by;
+    # those branches are an allowed release path onto main (see require-dev-to-main).
+    # Same-repo only: fork heads that reuse the release-please--branches-- prefix
+    # must still pass DCO.
+    if: >
+      github.actor != 'dependabot[bot]' &&
+      !(startsWith(github.head_ref, 'release-please--branches--') &&
+        github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Checkout pull request head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
