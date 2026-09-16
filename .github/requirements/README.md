@@ -15,5 +15,9 @@ Regenerate the `.txt` files with Python 3.10 and `pip-compile
 
 ```bash
 python -m pip install --require-hashes -r .github/requirements/slither.txt
-python -m pip install --require-hashes -r .github/requirements/mythril.txt
+python -m pip install --require-hashes --no-deps -r .github/requirements/mythril.txt
 ```
+
+Mythril install uses `--no-deps` because Mythril 0.24.8 declares `eth-abi<5.0.0`
+while the lockfile pins `eth-abi>=5.0.1` to remediate GHSA-3qwc-47jf-5rf7. The
+hash lockfile is the source of truth for the resolved graph.

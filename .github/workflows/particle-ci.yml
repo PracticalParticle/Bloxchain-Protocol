@@ -55,7 +55,8 @@ jobs:
           .venv-slither/bin/python -m pip install --require-hashes -r .github/requirements/slither.txt
 
           python -m venv .venv-mythril
-          .venv-mythril/bin/python -m pip install --require-hashes -r .github/requirements/mythril.txt
+          # Mythril 0.24.8 metadata caps eth-abi<5; lockfile pins eth-abi>=5.0.1 for GHSA-3qwc-47jf-5rf7.
+          .venv-mythril/bin/python -m pip install --require-hashes --no-deps -r .github/requirements/mythril.txt
 
       - name: Run Slither
         if: github.event_name == 'workflow_dispatch'
