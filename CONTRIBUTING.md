@@ -480,7 +480,7 @@ Report security issues to: security@particlecs.com
 ### Review process
 
 1. Automated checks must pass (where enabled for the branch).
-2. **Human** maintainer review with a GitHub **Approve** from someone other than the merger when practical. Bot and AI reviews (Dependabot, Bugbot, etc.) **do not** satisfy OpenSSF Scorecard Code-Review.
+2. On protected branches (`dev`, `main`): **Human** maintainer review with a GitHub **Approve** from someone other than the merger is **required**. Bot and AI reviews (Dependabot, Bugbot, etc.) **do not** count.
 3. Smart contract changes **outside** `contracts/core/` may still require additional scrutiny.
 4. PRs touching `contracts/core/` from non-maintainers will be **closed** unless explicitly authorized in writing by Particle CS.
 
