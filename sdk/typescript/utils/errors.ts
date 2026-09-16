@@ -465,6 +465,11 @@ export interface ExplainedError {
   message: string;
   /** The error this was derived from. */
   cause: unknown;
+  /**
+   * Present when {@link kind} is `signer` — the full {@link SignerFailure} from
+   * {@link classifySignerError}. Prefer this over re-calling the classifier.
+   */
+  signerFailure?: SignerFailure;
 }
 
 const TRANSPORT_PATTERNS =
@@ -510,6 +515,7 @@ export function explainError(error: unknown, options: ExplainErrorOptions = {}):
         args: signer.status !== undefined ? { status: signer.status } : {},
         message: signer.detail || signer.code,
         cause: error,
+        signerFailure: signer,
       };
     }
   } catch {
