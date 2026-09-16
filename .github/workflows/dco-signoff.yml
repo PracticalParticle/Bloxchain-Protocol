@@ -22,8 +22,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Fetch pull request base
-        run: git fetch --no-tags origin ${{ github.event.pull_request.base.sha }}
+      - name: Fetch pull request base and main
+        run: |
+          git fetch --no-tags origin ${{ github.event.pull_request.base.sha }}
+          # Commits already on main (e.g. release-please) must not fail DCO when
+          # syncing main into another branch; only new contribution commits count.
+          git fetch --no-tags origin main:refs/remotes/origin/main
 
       - name: Verify Signed-off-by on all commits
         env:
@@ -32,9 +36,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          commits=$(git rev-list --no-merges "${BASE_SHA}".."${HEAD_SHA}")
+          # Exclude merge commits and anything already reachable from main.
+          commits=$(git rev-list --no-merges "${BASE_SHA}".."${HEAD_SHA}" --not origin/main)
           if [ -z "${commits}" ]; then
-            echo "No non-merge commits to verify."
+            echo "No new non-merge commits to verify (merges / main history skipped)."
             exit 0
           fi
 
@@ -49,7 +54,7 @@ jobs:
 
           if [ "${failed}" -ne 0 ]; then
             echo ""
-            echo "Every commit in this pull request must include a DCO sign-off line, for example:"
+            echo "Every new commit in this pull request must include a DCO sign-off line, for example:"
             echo "  Signed-off-by: Your Name <you@example.com>"
             echo ""
             echo "Fix the latest commit:  git commit --amend -s --no-edit"

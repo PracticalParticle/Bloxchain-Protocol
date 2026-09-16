@@ -908,9 +908,9 @@ distlib==0.4.3 \
     # via
     #   -r .github/requirements/mythril-resolved.in
     #   virtualenv
-eth-abi==4.2.1 \
-    --hash=sha256:60d88788d53725794cdb07c0f0bb0df2a31a6e1ad19644313fe6117ac24eeeb0 \
-    --hash=sha256:abd83410a5326145bf178675c276de0ed154f6dc695dcad1beafaa44d97f44ae
+eth-abi==5.2.0 \
+    --hash=sha256:178703fa98c07d8eecd5ae569e7e8d159e493ebb6eeb534a8fe973fbc4e40ef0 \
+    --hash=sha256:17abe47560ad753f18054f5b3089fcb588f3e3a092136a416b6c1502cb7e8877
     # via
     #   -r .github/requirements/mythril-resolved.in
     #   eth-account
@@ -1550,8 +1550,9 @@ packaging==26.3 \
     #   -r .github/requirements/mythril-resolved.in
     #   matplotlib
     #   pytest
-parsimonious==0.9.0 \
-    --hash=sha256:b2ad1ae63a2f65bd78f5e0a8ac510a98f3607a43f1db2a8d46636a5d9e4a30c1
+parsimonious==0.10.0 \
+    --hash=sha256:8281600da180ec8ae35427a4ab4f7b82bfec1e3d1e52f80cb60ea82b9512501c \
+    --hash=sha256:982ab435fabe86519b57f6b35610aa4e4e977e9f02a14353edf4bbc75369fc0f
     # via
     #   -r .github/requirements/mythril-resolved.in
     #   eth-abi

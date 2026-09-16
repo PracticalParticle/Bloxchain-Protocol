@@ -5,7 +5,7 @@ Master test runner for TypeScript SDK sanity tests of the Bloxchain protocol.
 ## Quick Start
 
 ```bash
-# Run core tests (default: secure-ownable, runtime-rbac, guard-controller)
+# Run core tests (default: public-surface, secure-ownable, runtime-rbac, guard-controller)
 npm run test:sanity-sdk
 
 # Run all tests (core + examples)
@@ -13,6 +13,9 @@ npm run test:sanity-sdk:all
 
 # Run example tests only
 npm run test:sanity-sdk:examples
+
+# Public integrator surface only -- offline, no chain and no .env needed
+npm run test:sanity-sdk:public-surface
 ```
 
 ## Direct Usage
@@ -34,9 +37,19 @@ npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-t
 ## Test Structure
 
 ### Core Tests (Required)
+- **public-surface**: Public integrator surface (SPEC-2026-0117) -- ABI subpath exports,
+  EIP-712 constants, `readAs` sender, error unwrap and signer classification, deadline
+  duration, inner transaction status. **Offline**: no RPC, no deployed contracts, no
+  `.env`. Runs first because it is fast and fails loudly if the package's own exports
+  or error decoding have regressed.
 - **secure-ownable**: Ownership transfer, timelock, recovery, broadcaster SDK tests
 - **runtime-rbac**: Role-based access control SDK tests
 - **guard-controller**: Guard configuration and whitelist SDK tests
+
+> The public-surface suite resolves the package through its published `exports` map
+> rather than through relative paths, so it needs a build first:
+> `cd sdk/typescript && npm run build`. Without `dist` it reports that plainly
+> instead of failing for the wrong reason.
 
 ### Example Tests (Optional)
 - **workflow**: Workflow integration tests

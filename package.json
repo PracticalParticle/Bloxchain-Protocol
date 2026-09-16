@@ -38,9 +38,16 @@
     "test:sanity-sdk": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts",
     "test:sanity-sdk:core": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --core",
     "test:sanity-sdk:examples": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --examples",
+    "test:sanity-sdk:public-surface": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/public-surface/run-tests.ts",
     "test:sanity-sdk:all": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/run-all-tests.ts --all",
+    "provision:account": "npx tsx --tsconfig scripts/sanity-sdk/tsconfig.json scripts/sanity-sdk/provision-account.ts",
     "test:e2e": "npm run compile:foundry:abi && npm run test:sanity-sdk:core",
     "extract-abi": "node scripts/extract-abi.cjs",
+    "build:artifacts": "npm run compile:foundry && node scripts/build-artifacts.cjs",
+    "check:artifacts": "node scripts/build-artifacts.cjs --check",
+    "validate:official-addresses": "node scripts/validate-official-addresses.cjs",
+    "verify:package-consumption": "node scripts/verify-package-consumption.mjs",
+    "promote:official-addresses": "node scripts/promote-official-addresses.cjs",
     "generate:sanity-env": "npx tsx scripts/generate-remote-evm-env.ts",
     "build:sdk": "cd sdk/typescript && npm run build",
     "build:sdk:clean": "cd sdk/typescript && npm run clean && npm run build",
@@ -70,12 +77,12 @@
   "devDependencies": {
     "@commitlint/cli": "21.2.2",
     "@commitlint/config-conventional": "21.2.2",
-    "@types/node": "26.2.0",
+    "@types/node": "26.4.0",
     "dotenv": "17.4.2",
-    "hardhat": "3.13.0",
+    "hardhat": "3.15.0",
     "husky": "9.1.7",
-    "release-please": "17.11.1",
+    "release-please": "17.11.2",
     "typescript": "7.0.2",
-    "viem": "2.55.15"
+    "viem": "2.56.0"
   }
 }
