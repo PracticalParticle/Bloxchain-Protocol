@@ -136,7 +136,7 @@ For multi-commit PRs, **each commit** must contain `Signed-off-by`.
 
 Pull requests run the **[DCO / Signed-off-by](.github/workflows/dco-signoff.yml)** GitHub Actions workflow. The PR cannot be merged while this check fails. **Exceptions:** Dependabot PRs and **same-repo** Release Please heads (`release-please--branches--*` from this repository only) skip this check (bot commits lack `Signed-off-by`). Fork PRs never skip DCO via that branch-name pattern.
 
-Repository admins should mark **DCO / Signed-off-by** as a **required status check** on protected branches (`dev`, `main`) under **Settings → Branches → Branch protection rules**.
+Repository admins must mark **DCO / Signed-off-by** as a **required status check** on protected branches (`dev`, `main`). Prefer **Settings → Rules → Rulesets** (see [Branch protection (maintainers)](#branch-protection-maintainers)).
 
 ```bash
 # Re-sign all commits on your branch after rebasing onto latest base
@@ -144,6 +144,41 @@ git rebase --signoff origin/dev
 ```
 
 By signing off, you certify the DCO terms (original work or right to submit, permission to contribute under the project license, and good-faith belief in the above).
+
+## Branch protection (maintainers)
+
+OpenSSF Scorecard **Branch-Protection** and **Code-Review** expect enforced human review on `main` and `dev`. Repo files alone are not enough — configure GitHub as follows.
+
+### In this repository
+
+- Root [`CODEOWNERS`](CODEOWNERS) lists default maintainers.
+- [Particle CI](.github/workflows/particle-ci.yml) runs on pull requests (and pushes) to **`main` and `dev`**.
+- [DCO / Signed-off-by](.github/workflows/dco-signoff.yml) runs on PRs (with Dependabot / same-repo Release Please exemptions).
+- [Require dev as PR source to main](.github/workflows/require-dev-to-main.yml) runs on PRs targeting **`main`** only.
+
+### GitHub rulesets (manual)
+
+Create **Active** rulesets `protect-main` (target `main`) and `protect-dev` (target `dev`):
+
+| Rule | `main` | `dev` |
+|------|--------|-------|
+| Restrict deletions / block force pushes | Yes | Yes |
+| Require a pull request before merging | Yes | Yes |
+| Required approving reviews | **1** (bar A) | **1** |
+| Dismiss stale approvals when new commits are pushed | Yes | Yes |
+| Require review from Code Owners | Yes | Yes |
+| Require approval of the most recent reviewable push | Yes | Yes |
+| Require status checks + require branch up to date | Yes | Yes |
+| Bypass list (admins / apps) | **Empty** | **Empty** |
+
+**Required status checks** (copy exact names from a PR’s Checks tab after this PR lands):
+
+- **Both branches:** Particle CI (`test` job / whatever GitHub shows) and **DCO / Signed-off-by** (note Dependabot / Release Please may skip DCO via workflow `if` — if GitHub blocks those PRs on a missing DCO check, keep DCO required on `main` only, or confirm skipped checks do not block).
+- **`main` only:** the check from [require-dev-to-main](.github/workflows/require-dev-to-main.yml) (source must be `dev` or same-repo `release-please--branches--*`).
+
+Do **not** grant ruleset bypass to administrators. Self-merges without a second-human **Approve** hurt Scorecard Code-Review.
+
+After changing rulesets, re-run **Actions → Scorecard analysis workflow**.
 
 ## Getting Started
 
@@ -445,7 +480,7 @@ Report security issues to: security@particlecs.com
 ### Review process
 
 1. Automated checks must pass (where enabled for the branch).
-2. Maintainer review; we may request changes or close out-of-scope PRs without merge.
+2. On protected branches (`dev`, `main`): **Human** maintainer review with a GitHub **Approve** from someone other than the merger is **required**. Bot and AI reviews (Dependabot, Bugbot, etc.) **do not** count.
 3. Smart contract changes **outside** `contracts/core/` may still require additional scrutiny.
 4. PRs touching `contracts/core/` from non-maintainers will be **closed** unless explicitly authorized in writing by Particle CS.
 
@@ -713,7 +748,11 @@ Releases use **Release Please** on `main`, then **human npm publish** after the 
 
 1. **Land feature/fix work on `main` via `dev`** using scoped conventional commits (`feat(contracts):`, `fix(sdk):`, etc.).
 2. **Release Please** opens a release PR onto `main` (`release-please--branches--main`) with updated versions and per-package changelogs.
-3. **Review and merge** that release PR **into `main`** (do not retarget to `dev`). Tags/GitHub releases are created per package.
+3. **Second-human review, then merge** that release PR **into `main`** (do not retarget to `dev`):
+   - A maintainer who did not author the merge clicks GitHub **Approve**.
+   - Then merge (prefer merger ≠ sole approver when two maintainers are available).
+   - Do **not** use admin/ruleset bypass and do **not** count bot/AI reviews.
+   - Tags/GitHub releases are created per package.
 4. **Publish to npm** (maintainers, after `main` contains the release versions) — three commands only:
 
    ```bash
