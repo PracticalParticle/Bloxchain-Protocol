@@ -109,7 +109,8 @@ Our State Abstraction framework implements multiple layers of security:
 
 - **Nethermind (core):** Completed — see [audits/nethermind/](audits/nethermind/)
 - **Internal security review:** Ongoing with releases
-- **Code review:** Ongoing with each release
+- **Code review:** Human GitHub Approve on protected-branch merges (including Release Please); see [CONTRIBUTING.md — Branch protection](CONTRIBUTING.md#branch-protection-maintainers)
+- **Supply-chain posture:** OpenSSF Scorecard workflow on `main` ([`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml)); Foundry fuzz/invariant suites under `test/foundry/` (Scorecard’s Fuzzing check does not detect Foundry — local/CI fuzz remains the source of truth)
 
 ## Bug Bounty Program
 
