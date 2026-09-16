@@ -753,7 +753,8 @@ Releases use **Release Please** on `main`, then **human npm publish** after the 
    - Then merge (prefer merger ≠ sole approver when two maintainers are available).
    - Do **not** use admin/ruleset bypass and do **not** count bot/AI reviews.
    - Tags/GitHub releases are created per package.
-4. **Publish to npm** (maintainers, after `main` contains the release versions) — three commands only:
+4. **Required back-merge `main` → `dev` immediately after** any Release Please merge (and after any other `main`-only merge). Release Please updates versions, the release-please manifest, and per-package changelogs on `main` only. If `dev` is left behind, the next `dev` → `main` PR conflicts on those files every cycle. Prefer a fast merge commit (not a rewrite of `main`). Do **not** move RP onto `dev` — tags and npm publish stay tied to `main`.
+5. **Publish to npm** (maintainers, after `main` contains the release versions) — three commands only:
 
    ```bash
    npm run release:prepare      # gate: protocol VERSION, build, tests
