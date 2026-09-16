@@ -1,0 +1,13 @@
+# Default owners for all paths (OpenSSF Scorecard Branch-Protection / Code-Review).
+# Require "Code Owners" review on protected branches (GitHub rulesets) so merges
+# need approval from at least one listed maintainer.
+#
+# Prefer a GitHub team with write access once one exists, e.g.:
+#   * @PracticalParticle/bloxchain-protocol-maintainers
+
+* @KeyMasterCS @ElectroCoderX
+
+/contracts/core/ @KeyMasterCS @ElectroCoderX
+/sdk/typescript/ @KeyMasterCS @ElectroCoderX
+/.github/ @KeyMasterCS @ElectroCoderX
+/CODEOWNERS @KeyMasterCS @ElectroCoderX

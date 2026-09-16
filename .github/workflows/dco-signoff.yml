@@ -1,5 +1,6 @@
 # Validates Developer Certificate of Origin (Signed-off-by) on every commit in a PR.
-# Mark this check as required under branch protection: "DCO / Signed-off-by"
+# Mark this check as required under branch rulesets on protected branches: "DCO / Signed-off-by"
+# (See CONTRIBUTING.md § Branch protection (maintainers).)
 name: DCO Sign-off
 
 on:
