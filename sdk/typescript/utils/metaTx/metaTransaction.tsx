@@ -156,10 +156,15 @@ export function buildTypedDataMessage(metaTx: MetaTransaction): Record<string, u
  * A meta-transaction validity window, in **seconds of duration** — not an
  * absolute Unix timestamp.
  *
- * `createMetaTxParams` (both the Solidity view and the SDK wrappers) adds this
- * to `block.timestamp` on chain. Naming the argument through this alias is the
- * only signal TypeScript can carry; see {@link metaTxDeadlineFor} for how to
- * compute one safely.
+ * Use this only with the **on-chain** `createMetaTxParams` view (and the
+ * {@link BaseStateMachine} wrapper that calls it). That path stores
+ * `block.timestamp + duration`. Prefer {@link metaTxDeadlineFor} to compute the
+ * duration (it also corrects for latest-block drift).
+ *
+ * Do **not** pass a {@link MetaTxDeadlineDuration} into
+ * {@link MetaTransactionBuilder.createMetaTxParams} — the Builder writes the
+ * struct field verbatim, and `validateMetaTxDeadline` compares it to
+ * `block.timestamp` as an **absolute** unix timestamp.
  */
 export type MetaTxDeadlineDuration = bigint;
 
@@ -589,15 +594,15 @@ export class MetaTransactionSigner {
 export class MetaTransactionBuilder {
 
   /**
-   * @dev Creates meta-transaction parameters
+   * @dev Creates meta-transaction parameters for **off-chain** signing.
    * @param handlerContract Verifying account address (must match EIP-712 `verifyingContract` / `address(this)` on verify)
    * @param handlerSelector Selector of the **exact** external function that will submit this meta-tx (must equal on-chain `msg.sig`)
    * @param action Transaction action
-   * @param deadlineDuration Validity window in **seconds from chain time**, not an
-   *        absolute timestamp. The on-chain `createMetaTxParams` stores
-   *        `block.timestamp + deadlineDuration`. Prefer
-   *        {@link metaTxDeadlineFor} to compute it, which also corrects for
-   *        latest-block drift on chains that mine on demand.
+   * @param deadline Absolute unix timestamp after which the meta-tx expires.
+   *        Written into `MetaTxParams.deadline` **verbatim** — this helper does
+   *        **not** add `block.timestamp`. Do not pass {@link metaTxDeadlineFor}
+   *        here (that returns a **duration** for the on-chain view). Use
+   *        `chainTime + ttl` (as Extended / blox-ui do) or another absolute.
    * @param maxGasPrice Maximum gas price
    * @param signer Signer address
    * @param chainId Chain ID (optional, defaults to current chain)
@@ -608,7 +613,7 @@ export class MetaTransactionBuilder {
     handlerContract: Address,
     handlerSelector: Hex,
     action: TxAction,
-    deadlineDuration: MetaTxDeadlineDuration,
+    deadline: bigint,
     maxGasPrice: bigint,
     signer: Address,
     chainId: bigint,
@@ -620,7 +625,7 @@ export class MetaTransactionBuilder {
       handlerContract,
       handlerSelector,
       action,
-      deadline: deadlineDuration,
+      deadline,
       maxGasPrice,
       signer
     };
