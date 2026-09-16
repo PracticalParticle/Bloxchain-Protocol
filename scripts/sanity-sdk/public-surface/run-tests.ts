@@ -3,8 +3,9 @@
  *
  * Everything an outside builder touches with only `npm i @bloxchain/sdk viem`:
  * reachable ABIs, exported EIP-712 constants, a read sender that is not
- * `address(0)`, honest error unwrapping, duration-typed deadlines, and the
- * inner-status check that separates "mined" from "worked".
+ * `address(0)`, honest error unwrapping, absolute Builder deadlines (duration
+ * via `metaTxDeadlineFor`), and the inner-status check that separates "mined"
+ * from "worked".
  *
  * **Offline.** No RPC, no deployed contracts, no `.env`. The package-exports
  * suite needs `sdk/typescript/dist` (run `npm run build` there first) because
@@ -25,7 +26,7 @@ type Suite = { key: string; title: string; run: () => Promise<SurfaceTestResult[
 const SUITES: Suite[] = [
   { key: 'exports', title: 'R1 — ABI subpath exports', run: runPackageExportTests },
   { key: 'eip712', title: 'R2 — EIP-712 constants', run: runEip712ExportTests },
-  { key: 'reader', title: 'R3 / R6 — read sender and deadline duration', run: runReaderAndDeadlineTests },
+  { key: 'reader', title: 'R3 / R6 — read sender and absolute deadline', run: runReaderAndDeadlineTests },
   { key: 'errors', title: 'R4 / R5 — error unwrap and signer classification', run: runErrorUnwrapTests },
   { key: 'inner', title: 'R7 — inner transaction status', run: runInnerStatusTests },
 ];
