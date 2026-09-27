@@ -75,14 +75,14 @@
     "@openzeppelin/contracts-upgradeable": "5.6.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "21.2.2",
-    "@commitlint/config-conventional": "21.2.2",
-    "@types/node": "26.4.0",
-    "dotenv": "17.4.2",
-    "hardhat": "3.15.0",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@types/node": "26.6.2",
+    "dotenv": "18.0.3",
+    "hardhat": "3.17.0",
     "husky": "9.1.7",
     "release-please": "17.11.2",
     "typescript": "7.0.2",
-    "viem": "2.56.0"
+    "viem": "2.56.8"
   }
 }
