@@ -131,23 +131,44 @@ The factory is an *example application* of the protocol that is supported as the
 provisioning surface. It is deliberately **not** in `contracts/core`, and an account never
 depends on it at runtime.
 
+### Two pipelines
+
+| | Developer pipeline (declared on Sepolia) | Canonical source (SPEC-2026-0130) |
+|---|---|---|
+| Account | `AccountBlox`, 1-second timelock floor | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked |
+| Factory | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor |
+| Mint | Permissionless | Permissionless, `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` |
+| Governance on the factory | None | None: no owner, roles, timelock or whitelist. A new official account means a new factory |
+
+Both factories send the clone with gas limit `16777216` (the EIP-7825 cap); see
+[Getting Started, gas](./getting-started.md#4-gas-the-clone-sits-just-under-a-hard-protocol-cap).
+Measured for the pinned pair: `cloneBlox` 16,231,085 gas, factory runtime 2,036 bytes.
+
+The lineage check for the canonical pipeline is `BasicFactory.isClone(address)`: the address
+was minted by **that** factory. It is not a property of the bytecode, and other deployment
+paths for the same implementation remain possible. The canonical pair is source only:
+nothing is declared in `official-deployed-addresses.json`, and the Nethermind core audit does
+not cover it. See
+[Getting Started, two pipelines](./getting-started.md#7-two-pipelines-developer-and-canonical).
+
 ### Recognising one: the shape gate
 
 An account and a factory are both `BaseStateMachine`s, so ERC-165 `IBaseStateMachine` does
 **not** distinguish them. Gate on all four of:
 
-| Check | An account | The factory |
-|---|---|---|
-| `getCode` non-empty | yes | yes |
-| `owner()` answers | yes | **reverts** while uninitialized |
-| `initialized()` | `true` | `false` |
-| ERC-165 `ISecureOwnable` | `true` | **`false`** |
+| Check | An account | CopyBlox | BasicFactory |
+|---|---|---|---|
+| `getCode` non-empty | yes | yes | yes |
+| `owner()` answers | yes | **reverts** while uninitialized | **no such function** |
+| `initialized()` | `true` | `false` | no such function |
+| ERC-165 `ISecureOwnable` | `true` | **`false`** | `false` |
 
-`ISecureOwnable` is the sharp edge: the account components (`SecureOwnable`,
+`ISecureOwnable` is the sharp edge for CopyBlox: the account components (`SecureOwnable`,
 `RuntimeRBAC`, `GuardController`, composed by `Account`) answer it, and a bare
-`BaseStateMachine` such as the factory does not. The SDK ships this as `isAccountBlox` /
-`inspectAccountBlox`, and `assertOwnedAccount` adds the owner match you need before
-adopting an address a user named.
+`BaseStateMachine` such as CopyBlox does not. The pinned `BasicFactory` is not a state
+machine at all and has no `owner()`, so the gate stops it at the owner check. The SDK ships
+this as `isAccountBlox` / `inspectAccountBlox` (rejection `no-owner`), and `assertOwnedAccount`
+adds the owner match you need before adopting an address a user named.
 
 ---
 

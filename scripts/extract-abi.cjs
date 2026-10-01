@@ -18,6 +18,9 @@ const contractsToProcess = [
   'IDefinition',
   'AccountBlox',
   'CopyBlox',
+  // SPEC-2026-0130 canonical source (no official deployment declared)
+  'BasicAccount',
+  'BasicFactory',
 ];
 
 const outFolder = path.join(__dirname, '..', 'out');

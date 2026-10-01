@@ -312,6 +312,53 @@ rather than to apply:
   wall clock and the latest block, or the deadline is already past when the transaction
   mines while `eth_call` still passes.
 
+### 7. Two pipelines: developer and canonical
+
+The protocol repo carries two account + factory pairs. Only the first one is declared on
+any network.
+
+| | Developer pipeline (declared on Sepolia) | Canonical source (SPEC-2026-0130) |
+|---|---|---|
+| Account | `AccountBlox` (`contracts/examples/templates/`), 1-second timelock floor | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked |
+| Factory | `CopyBlox` (`contracts/examples/applications/`), the open factory: clones any `IBaseStateMachine` | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor |
+| Who may mint | Anyone | Anyone |
+| What may be minted | Any blox the caller names | Only the blox pinned at construction (`BasicAccount` for the canonical account) |
+| Governance on the factory | None | None: no owner, no roles, no timelock, no whitelist. A new official account means a new factory |
+| License | MIT examples | MPL-2.0 |
+
+`BasicFactory.cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` clones
+`implementation()` and runs `initialize` on the clone in the same transaction, in the CopyBlox
+sequence (clone, register, initialize, `BloxCloned`); a failed initialize reverts
+the mint. **Send it with an explicit gas limit of `16777216`** (the EIP-7825 cap), exactly
+like CopyBlox. The SDK wrapper `BasicFactory` does this by default.
+
+```text
+BasicFactory.cloneBlox (BasicAccount)   16,231,085 gas measured (Foundry, execution)
+EIP-7825 per-transaction cap            16,777,216 (2^24)
+head-room                                 ~546,000 gas before intrinsic and calldata cost
+BasicFactory runtime size                   2,036 bytes (EIP-170 limit 24,576)
+BasicFactory creation                     450,409 gas
+```
+
+The factory vets the pin **once, in its constructor**: the implementation must answer ERC-165
+`IBaseStateMachine`. A failed call or a false answer reverts the deployment, including an
+address without code. `AccountBlox`, `CopyBlox`, and `BasicAccount` all pass, because each is
+a blox. This is not a bytecode proof. `cloneBlox` does not repeat the check. The clone's own
+`initialize` still enforces that pin's rules, so a `BasicAccount` clone keeps the 1-day to
+90-day timelock. The factory is not an account: it answers ERC-165
+`IEventForwarder`, has no `owner()`, and never answers `ISecureOwnable`, so the shape gate
+rejects it at the owner check (below). Only its own clones may call `forwardTxEvent`.
+
+**Lineage, not bytecode.** `isClone(address)` on a `BasicFactory` means that address was
+minted **by that factory**. It does not mean every copy of `BasicAccount` on the chain came
+from it: anyone can deploy or clone the same implementation by another path (including
+`CopyBlox`). Check `isClone` on the factory address you trust.
+
+**Status.** Source only. There is no `BasicAccount` or `BasicFactory` row in
+`official-deployed-addresses.json`, no network is declared, and the Nethermind core audit
+(NM_0828) does not cover these two contracts. Keep using the developer pipeline above until a
+declaration says otherwise.
+
 ---
 
 ## 📖 **Common Tasks with an Account**
