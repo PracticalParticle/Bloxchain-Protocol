@@ -27,6 +27,8 @@ export {
   accountBloxEventAbi,
 } from './abis/AccountBlox.js';
 export { bareBloxAbi, bareBloxErrorAbi, bareBloxEventAbi } from './abis/BareBlox.js';
+export { basicAccountAbi, basicAccountErrorAbi, basicAccountEventAbi } from './abis/BasicAccount.js';
+export { basicFactoryAbi, basicFactoryErrorAbi, basicFactoryEventAbi } from './abis/BasicFactory.js';
 export {
   baseStateMachineAbi,
   baseStateMachineErrorAbi,
@@ -67,6 +69,8 @@ export { erc20Abi, erc20MinimalAbi, erc20EventAbi } from './abis/ERC20.js';
 
 import { accountBloxAbi } from './abis/AccountBlox.js';
 import { bareBloxAbi } from './abis/BareBlox.js';
+import { basicAccountAbi } from './abis/BasicAccount.js';
+import { basicFactoryAbi } from './abis/BasicFactory.js';
 import { baseStateMachineAbi } from './abis/BaseStateMachine.js';
 import { copyBloxAbi } from './abis/CopyBlox.js';
 import { engineBloxAbi } from './abis/EngineBlox.js';
@@ -95,6 +99,8 @@ import { erc20Abi } from './abis/ERC20.js';
 export const ABIS = {
   AccountBlox: accountBloxAbi,
   BareBlox: bareBloxAbi,
+  BasicAccount: basicAccountAbi,
+  BasicFactory: basicFactoryAbi,
   BaseStateMachine: baseStateMachineAbi,
   CopyBlox: copyBloxAbi,
   EngineBlox: engineBloxAbi,

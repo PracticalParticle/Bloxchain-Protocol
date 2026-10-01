@@ -14,6 +14,10 @@ export type {
   CloneLogScanOptions,
   CloneListResult
 } from './contracts/factories/CopyBlox.js';
+
+// Canonical source: pinned one-implementation factory (SPEC-2026-0130). No official deployment declared.
+export { default as BasicFactory, BASIC_FACTORY_SELECTORS } from './contracts/factories/BasicFactory.js';
+export type { BasicCloneParams } from './contracts/factories/BasicFactory.js';
 export { Definitions } from './lib/Definition.js';
 export { EngineBlox } from './lib/EngineBlox.js';
 export {
