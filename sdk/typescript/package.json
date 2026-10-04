@@ -62,7 +62,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@types/node": "26.5.1",
+    "@types/node": "26.6.3",
     "typescript": "6.0.2",
     "viem": "2.56.3"
   },
