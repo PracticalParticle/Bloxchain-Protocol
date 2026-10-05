@@ -1,14 +1,19 @@
 import {
   Address,
+  Hex,
   PublicClient,
   WalletClient,
   Chain,
   Abi,
+  concat,
+  encodeAbiParameters,
   getAddress,
+  getContractAddress,
   keccak256,
   parseGwei,
   toBytes,
   toFunctionSelector,
+  zeroHash,
 } from 'viem';
 import { TransactionOptions, TransactionResult } from '../../interfaces/base.index.js';
 import { GAS_ENVELOPE, MAX_TX_GAS } from '../../utils/gas.js';
@@ -25,8 +30,15 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  * It is **not** an account: no owner, no roles, no timelock, no catalog. A new official
  * account means a new factory, so this wrapper has nothing to govern.
  *
- * - **Mint:** permissionless, four arguments, no implementation argument.
- *   {@link cloneBlox} sends at the EIP-7825 cap (`16777216`), like CopyBlox.
+ * - **Mint:** permissionless, no implementation argument. {@link cloneBlox} (nonce, a new
+ *   address every call) and {@link cloneBloxDeterministic} (CREATE2, SPEC-2026-0138) both send
+ *   at the EIP-7825 cap (`16777216`), like CopyBlox.
+ * - **Predict:** {@link predictClone} reads the deterministic address from the factory;
+ *   {@link BasicFactory.computeCloneAddress} derives it offline. The address binds the
+ *   **minter** (the sender), the owner, an `index` and a `salt`, and nothing else: the
+ *   broadcaster, recovery and timelock are not inputs, so they can differ per chain unless
+ *   you pass the same values. A relayer or a different wallet gets a different address.
+ *   Default convention: `salt = 0x00…00`, `index = 0n, 1n, 2n, …`.
  * - **Pin:** {@link implementation} reads the one address every mint clones.
  * - **Lineage:** {@link isClone} means "minted by this factory". It does not mean every copy
  *   of the implementation on the chain came from this factory.
@@ -38,6 +50,10 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
 /** Selectors on the pinned factory. */
 export const BASIC_FACTORY_SELECTORS = {
   CLONE_BLOX: toFunctionSelector('cloneBlox(address,address,address,uint256)'),
+  CLONE_BLOX_DETERMINISTIC: toFunctionSelector(
+    'cloneBloxDeterministic(address,address,address,uint256,uint256,bytes32)'
+  ),
+  PREDICT_CLONE: toFunctionSelector('predictClone(address,address,uint256,bytes32)'),
   IMPLEMENTATION: toFunctionSelector('implementation()'),
 } as const;
 
@@ -47,6 +63,27 @@ export interface BasicCloneParams {
   broadcaster: Address;
   recovery: Address;
   timeLockPeriodSec: bigint;
+}
+
+/**
+ * Deterministic mint parameters. Only `initialOwner`, `index` and `salt` (with the sender)
+ * pick the address; the roles and timelock are applied to the clone but are not hashed.
+ */
+export interface BasicDeterministicCloneParams extends BasicCloneParams {
+  /** Slot for this minter and owner: `0n, 1n, 2n, …` by convention. */
+  index: bigint;
+  /** User salt. Defaults to `bytes32(0)`. */
+  salt?: Hex;
+}
+
+/** Inputs to the deterministic address, mirroring `predictClone(deployer, initialOwner, index, salt)`. */
+export interface BasicCloneAddressInputs {
+  /** The account that sends the mint (`msg.sender`). */
+  deployer: Address;
+  initialOwner: Address;
+  index: bigint;
+  /** Defaults to `bytes32(0)`. */
+  salt?: Hex;
 }
 
 const BLOX_CLONED_TOPIC = keccak256(toBytes('BloxCloned(address,address,address)')).toLowerCase();
@@ -71,7 +108,7 @@ export class BasicFactory {
   // ============ MINT ============
 
   /**
-   * Clone the pinned implementation and initialize it in one transaction.
+   * Clone the pinned implementation and initialize it in one transaction (nonce path).
    *
    * Sends `gas` at the EIP-7825 per-transaction cap (`16777216`) by default, never a bare
    * estimate. Pass `options.gas` only to override deliberately.
@@ -80,15 +117,54 @@ export class BasicFactory {
    * @param options Transaction options; `from` is the sender that pays for the clone
    */
   async cloneBlox(params: BasicCloneParams, options: TransactionOptions): Promise<TransactionResult> {
+    return this.sendMint(
+      'cloneBlox',
+      [params.initialOwner, params.broadcaster, params.recovery, params.timeLockPeriodSec],
+      options
+    );
+  }
+
+  /**
+   * Clone the pinned implementation at a deterministic address (CREATE2) and initialize it.
+   *
+   * The clone lands on `predictClone(options.from, initialOwner, index, salt)`. A repeat on the
+   * same chain reverts `ItemAlreadyExists`. Same gas rule as {@link cloneBlox}: `16777216`.
+   *
+   * @param params Roles, timelock, `index` and optional `salt` (default `bytes32(0)`)
+   * @param options Transaction options; `from` is the minter, and it is part of the address
+   */
+  async cloneBloxDeterministic(
+    params: BasicDeterministicCloneParams,
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
+    return this.sendMint(
+      'cloneBloxDeterministic',
+      [
+        params.initialOwner,
+        params.broadcaster,
+        params.recovery,
+        params.timeLockPeriodSec,
+        params.index,
+        params.salt ?? zeroHash,
+      ],
+      options
+    );
+  }
+
+  private async sendMint(
+    functionName: 'cloneBlox' | 'cloneBloxDeterministic',
+    args: readonly unknown[],
+    options: TransactionOptions
+  ): Promise<TransactionResult> {
     if (!this.walletClient) {
-      throw new Error('BasicFactory.cloneBlox needs a wallet client');
+      throw new Error(`BasicFactory.${functionName} needs a wallet client`);
     }
     const request: any = {
       chain: this.chain,
       address: this.contractAddress,
       abi: this.abi,
-      functionName: 'cloneBlox',
-      args: [params.initialOwner, params.broadcaster, params.recovery, params.timeLockPeriodSec],
+      functionName,
+      args,
     };
     const walletAccount = this.walletClient.account?.address;
     if (!walletAccount || walletAccount.toLowerCase() !== options.from.toLowerCase()) {
@@ -103,7 +179,7 @@ export class BasicFactory {
         } catch (simulateError) {
           if (simulationMode === 'strict') throw simulateError;
           // eslint-disable-next-line no-console
-          console.warn(`[BasicFactory] Pre-flight simulation failed for cloneBlox; continuing (mode=${simulationMode})`);
+          console.warn(`[BasicFactory] Pre-flight simulation failed for ${functionName}; continuing (mode=${simulationMode})`);
         }
       }
 
@@ -123,7 +199,7 @@ export class BasicFactory {
   }
 
   /**
-   * Pull the new clone's address out of a `cloneBlox` receipt (`BloxCloned` from this factory).
+   * Pull the new clone's address out of a mint receipt (`BloxCloned` from this factory), either path.
    *
    * @returns The clone address, or null when the receipt carries no `BloxCloned` log
    */
@@ -152,8 +228,61 @@ export class BasicFactory {
    * Lineage of this factory only: other copies of the same implementation (deployed or cloned
    * by another path) are not `isClone` here. Combine with {@link isAccountBlox} for shape.
    */
-  async   isClone(cloneAddress: Address): Promise<boolean> {
+  async isClone(cloneAddress: Address): Promise<boolean> {
     return this.read<boolean>('isClone', [cloneAddress]);
+  }
+
+  // ============ DETERMINISTIC ADDRESS ============
+
+  /**
+   * The address {@link cloneBloxDeterministic} mints when `deployer` sends it with these inputs.
+   *
+   * Read from the factory. It does not say whether the address is already minted; use
+   * {@link isClone}. The same inputs give the same address on another chain only when the
+   * factory and its pinned implementation sit at the same addresses there.
+   */
+  async predictClone(inputs: BasicCloneAddressInputs): Promise<Address> {
+    return this.read<Address>('predictClone', [
+      inputs.deployer,
+      inputs.initialOwner,
+      inputs.index,
+      inputs.salt ?? zeroHash,
+    ]);
+  }
+
+  /**
+   * The CREATE2 salt the factory uses: `keccak256(abi.encode(deployer, initialOwner, index, salt))`.
+   * Nothing else is hashed (no roles, timelock, chain id, factory address or version tag).
+   */
+  static create2Salt(inputs: BasicCloneAddressInputs): Hex {
+    return keccak256(
+      encodeAbiParameters(
+        [{ type: 'address' }, { type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }],
+        [inputs.deployer, inputs.initialOwner, inputs.index, inputs.salt ?? zeroHash]
+      )
+    );
+  }
+
+  /**
+   * Offline twin of {@link predictClone}: CREATE2 over the EIP-1167 init code of `implementation`,
+   * deployed by `factory`. No RPC.
+   */
+  static computeCloneAddress(
+    factory: Address,
+    implementation: Address,
+    inputs: BasicCloneAddressInputs
+  ): Address {
+    const initCode = concat([
+      '0x3d602d80600a3d3981f3363d3d373d3d3d363d73',
+      implementation,
+      '0x5af43d82803e903d91602b57fd5bf3',
+    ]);
+    return getContractAddress({
+      opcode: 'CREATE2',
+      from: factory,
+      salt: BasicFactory.create2Salt(inputs),
+      bytecode: initCode,
+    });
   }
 
   // ============ GATE ============

@@ -323,27 +323,72 @@ any network.
 | Factory | `CopyBlox` (`contracts/examples/applications/`), the open factory: clones any `IBaseStateMachine` | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor |
 | Who may mint | Anyone | Anyone |
 | What may be minted | Any blox the caller names | Only the blox pinned at construction (`BasicAccount` for the canonical account) |
+| How the address is chosen | Nonce (`CREATE`): a new address every call | Nonce `cloneBlox`, **or** deterministic `cloneBloxDeterministic` (`CREATE2`, SPEC-2026-0138) with `predictClone` |
 | Governance on the factory | None | None: no owner, no roles, no timelock, no whitelist. A new official account means a new factory |
 | License | MIT examples | MPL-2.0 |
 
 `BasicFactory.cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` clones
 `implementation()` and runs `initialize` on the clone in the same transaction, in the CopyBlox
 sequence (clone, register, initialize, `BloxCloned`); a failed initialize reverts
-the mint. **Send it with an explicit gas limit of `16777216`** (the EIP-7825 cap), exactly
-like CopyBlox. The SDK wrapper `BasicFactory` does this by default.
+the mint. **Send either mint with an explicit gas limit of `16777216`** (the EIP-7825 cap),
+exactly like CopyBlox. The SDK wrapper `BasicFactory` does this by default.
 
 ```text
-BasicFactory.cloneBlox (BasicAccount)   16,231,085 gas measured (Foundry, execution)
-EIP-7825 per-transaction cap            16,777,216 (2^24)
-head-room                                 ~546,000 gas before intrinsic and calldata cost
-BasicFactory runtime size                   2,036 bytes (EIP-170 limit 24,576)
-BasicFactory creation                     450,409 gas
+BasicFactory.cloneBlox (BasicAccount)               16,139,633 gas measured (Foundry, execution, cold)
+BasicFactory.cloneBloxDeterministic (BasicAccount)  16,142,830 gas measured (same state; +3,197)
+EIP-7825 per-transaction cap                        16,777,216 (2^24)
+head-room (deterministic)                             ~634,000 gas before intrinsic and calldata cost
+BasicFactory runtime size                               1,929 bytes (EIP-170 limit 24,576)
+BasicFactory creation                                 425,253 gas
+```
+
+`test/foundry/unit/BasicFactory.t.sol` (`test_BothMints_FitUnderEip7825Cap`) logs these.
+
+#### Deterministic mint: same address on every matched network
+
+`cloneBloxDeterministic(initialOwner, broadcaster, recovery, timeLockPeriodSec, index, salt)`
+mints at a `CREATE2` address you can compute first with
+`predictClone(deployer, initialOwner, index, salt)`. The salt is exactly:
+
+```text
+create2Salt = keccak256(abi.encode(minter, initialOwner, index, salt))
+clone       = CREATE2(factory, create2Salt, EIP-1167(implementation))
+```
+
+`minter` is `msg.sender` on the mint (`deployer` on the view). Nothing else is hashed: not the
+broadcaster, recovery or timelock, not the chain id, not the factory address, no version tag.
+
+What that promises, and what it does not:
+
+- **The key is the minter, not the owner.** The same address needs the same **minter**, owner,
+  `index` and `salt`, on a network where the factory and its pinned implementation sit at the
+  same addresses. Mint from a chain-stable key. A relayer, a different wallet, or a smart
+  account whose address differs per chain derives a different clone address.
+- **Roles and timelock can differ per chain.** They are `initialize` arguments, not address
+  inputs. Two clones at the same address on two chains have the same broadcaster, recovery and
+  timelock only if the minter passed the same values on both.
+- **A repeat on the same chain reverts** `ItemAlreadyExists(address)`. A failed `initialize`
+  reverts the whole mint and leaves the address free.
+- **Default convention:** `salt = bytes32(0)` and `index = 0, 1, 2, …` per minter and owner.
+  Use a non-zero salt only when you need a second, independent address space.
+
+```typescript
+import { BasicFactory } from '@bloxchain/sdk';
+
+const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
+const inputs = { deployer: minter, initialOwner: owner, index: 0n }; // salt defaults to 0x00…00
+
+const predicted = await factory.predictClone(inputs); // or BasicFactory.computeCloneAddress(factoryAddress, implementation, inputs)
+const tx = await factory.cloneBloxDeterministic(
+  { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
+  { from: minter }, // gas defaults to 16777216
+);
 ```
 
 The factory vets the pin **once, in its constructor**: the implementation must answer ERC-165
 `IBaseStateMachine`. A failed call or a false answer reverts the deployment, including an
 address without code. `AccountBlox`, `CopyBlox`, and `BasicAccount` all pass, because each is
-a blox. This is not a bytecode proof. `cloneBlox` does not repeat the check. The clone's own
+a blox. This is not a bytecode proof. Neither mint repeats the check. The clone's own
 `initialize` still enforces that pin's rules, so a `BasicAccount` clone keeps the 1-day to
 90-day timelock. The factory is not an account: it answers ERC-165
 `IEventForwarder`, has no `owner()`, and never answers `ISecureOwnable`, so the shape gate

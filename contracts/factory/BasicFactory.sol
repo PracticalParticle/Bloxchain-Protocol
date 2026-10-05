@@ -19,15 +19,38 @@ import "../core/lib/utils/SharedValidation.sol";
  *
  * The constructor vets and stores one already-deployed implementation as an `immutable`.
  * The pin must answer ERC-165 `IBaseStateMachine`. That check runs once, at deployment.
- * `cloneBlox` has no implementation argument, so there is no way to mint anything else from
+ * Neither mint has an implementation argument, so there is no way to mint anything else from
  * this factory. There is no owner, no role, no timelock and no whitelist to change.
  * A new template means a new factory. `BasicAccount` is the intended canonical pin; the
  * 1-day floor is enforced by that account, not by this factory.
  *
- * `cloneBlox` is permissionless and follows the CopyBlox sequence: EIP-1167 clone, record
- * the clone, `initialize(address,address,address,uint256,address)` in the same transaction
- * with this factory as the clone's event forwarder, then `BloxCloned`. A failed initialize
- * reverts the whole mint. The only lineage record is whether this factory minted that address.
+ * ## Two mint paths, one sequence
+ *
+ * - `cloneBlox` (nonce, `CREATE`): every call lands on a new address.
+ * - `cloneBloxDeterministic` (`CREATE2`): the address is fixed by the minter, the owner, an
+ *   `index` and a user `salt`. `predictClone` returns it before the mint.
+ *
+ * Both are permissionless and follow the CopyBlox sequence: EIP-1167 clone, record the clone,
+ * `initialize(address,address,address,uint256,address)` in the same transaction with this
+ * factory as the clone's event forwarder, then `BloxCloned`. A failed initialize reverts the
+ * whole mint, code and lineage. The only lineage record is whether this factory minted that
+ * address, by either path.
+ *
+ * ## Deterministic address (SPEC-2026-0138)
+ *
+ * The `CREATE2` salt is `keccak256(abi.encode(minter, initialOwner, index, salt))`, where
+ * `minter` is `msg.sender` on the write path and `deployer` on `predictClone`. Nothing else
+ * goes in the hash: no broadcaster, recovery or timelock (those are `initialize` arguments
+ * only), no `block.chainid`, no factory address (the factory is already the `CREATE2`
+ * deployer), and no version tag. A different formula needs a different factory.
+ *
+ * The cross-chain key is the **minter**, not the owner alone. The same minter repeating the
+ * same owner, index and salt gets the same clone address on every chain where this factory
+ * and its pinned implementation sit at the same addresses (this contract does not arrange
+ * that). A relayer, a different wallet or a per-chain smart-account address derives a
+ * different address. The broadcaster, recovery and timelock at that address may differ per
+ * chain unless the minter passes the same values. Default convention: `salt = bytes32(0)`
+ * and `index = 0, 1, 2, ...` per minter and owner.
  *
  * ## Lineage claim (what `isClone` means)
  *
@@ -47,9 +70,10 @@ import "../core/lib/utils/SharedValidation.sol";
  * ## Gas
  *
  * Per-mint cost is the implementation's `initialize` (Account pattern) plus the clone and
- * one lineage write. Against `BasicAccount` it sits under the public per-transaction cap of
- * 2^24 = 16,777,216 (EIP-7825); `test/foundry/unit/BasicFactory.t.sol` records the number.
- * Send `cloneBlox` with an explicit gas limit of `16777216`, never a bare estimate. See
+ * one lineage write; the deterministic path adds one salt hash and the `CREATE2` address
+ * check. Against `BasicAccount` both sit under the public per-transaction cap of
+ * 2^24 = 16,777,216 (EIP-7825); `test/foundry/unit/BasicFactory.t.sol` records the numbers.
+ * Send either mint with an explicit gas limit of `16777216`, never a bare estimate. See
  * `docs/getting-started.md`.
  *
  * ## Status
@@ -123,9 +147,9 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
      * @param recovery The recovery address for the clone
      * @param timeLockPeriodSec The timelock period in seconds (`BasicAccount` accepts 1 day to 90 days)
      * @return cloneAddress The address of the new clone
-     * @dev Registration happens before initialize so the clone can forward events during its
-     *      own initialize; a failed initialize reverts the registration. Send with gas limit
-     *      `16777216`.
+     * @dev Nonce path (`CREATE`): each call yields a new address. Registration happens before
+     *      initialize so the clone can forward events during its own initialize; a failed
+     *      initialize reverts the registration. Send with gas limit `16777216`.
      */
     function cloneBlox(
         address initialOwner,
@@ -133,23 +157,41 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
         address recovery,
         uint256 timeLockPeriodSec
     ) external nonReentrant returns (address cloneAddress) {
-        SharedValidation.validateNotZeroAddress(initialOwner);
-        SharedValidation.validateNotZeroAddress(broadcaster);
-        SharedValidation.validateNotZeroAddress(recovery);
+        _validateRoles(initialOwner, broadcaster, recovery);
+        cloneAddress = Clones.clone(implementation);
+        _register(cloneAddress, initialOwner, broadcaster, recovery, timeLockPeriodSec);
+    }
 
+    /**
+     * @notice Clone the pinned implementation at a deterministic address and initialize it.
+     * @param initialOwner The initial owner address for the clone (part of the address)
+     * @param broadcaster The broadcaster address for the clone (not part of the address)
+     * @param recovery The recovery address for the clone (not part of the address)
+     * @param timeLockPeriodSec The timelock period in seconds (not part of the address;
+     *        `BasicAccount` accepts 1 day to 90 days)
+     * @param index Caller-chosen slot, so one minter and owner can hold many clones (default 0, 1, 2, ...)
+     * @param salt Caller-chosen salt (default `bytes32(0)`)
+     * @return cloneAddress The new clone; equals `predictClone(msg.sender, initialOwner, index, salt)`
+     * @dev `CREATE2` path. The address binds `msg.sender`, so a different sender (relayer, other
+     *      wallet) derives a different address. Reverts `ItemAlreadyExists` when the address
+     *      already holds code (a repeat on this chain). A failed initialize reverts the code and
+     *      the lineage, so the address stays free. Send with gas limit `16777216`.
+     */
+    function cloneBloxDeterministic(
+        address initialOwner,
+        address broadcaster,
+        address recovery,
+        uint256 timeLockPeriodSec,
+        uint256 index,
+        bytes32 salt
+    ) external nonReentrant returns (address cloneAddress) {
+        _validateRoles(initialOwner, broadcaster, recovery);
         address source = implementation;
-        cloneAddress = Clones.clone(source);
-        _isClone[cloneAddress] = true;
-
-        (bool success, ) = cloneAddress.call(
-            abi.encodeCall(
-                IGuardController.initialize,
-                (initialOwner, broadcaster, recovery, timeLockPeriodSec, address(this))
-            )
-        );
-        if (!success) revert SharedValidation.OperationFailed();
-
-        emit BloxCloned(source, cloneAddress, initialOwner);
+        bytes32 create2Salt = _create2Salt(msg.sender, initialOwner, index, salt);
+        address predicted = Clones.predictDeterministicAddress(source, create2Salt);
+        if (predicted.code.length != 0) revert SharedValidation.ItemAlreadyExists(predicted);
+        cloneAddress = Clones.cloneDeterministic(source, create2Salt);
+        _register(cloneAddress, initialOwner, broadcaster, recovery, timeLockPeriodSec);
     }
 
     // ============ VIEWS ============
@@ -160,6 +202,26 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
      */
     function isClone(address cloneAddress) external view returns (bool) {
         return _isClone[cloneAddress];
+    }
+
+    /**
+     * @notice The address `cloneBloxDeterministic` mints when `deployer` sends it with these arguments.
+     * @param deployer The account that will send the mint (`msg.sender` on the write path)
+     * @param initialOwner The initial owner the mint will pass
+     * @param index The index the mint will pass
+     * @param salt The salt the mint will pass
+     * @dev Broadcaster, recovery and timelock do not affect the address. Independent of
+     *      `block.chainid`; matches another chain only when this factory and the pinned
+     *      implementation sit at the same addresses there. Does not say whether the address is
+     *      already minted; check `isClone`.
+     */
+    function predictClone(
+        address deployer,
+        address initialOwner,
+        uint256 index,
+        bytes32 salt
+    ) external view returns (address) {
+        return Clones.predictDeterministicAddress(implementation, _create2Salt(deployer, initialOwner, index, salt));
     }
 
     // ============ IEventForwarder ============
@@ -189,5 +251,42 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
             operationType,
             resultHash
         );
+    }
+
+    // ============ INTERNAL ============
+
+    /// @dev `CREATE2` salt, locked by SPEC-2026-0138: minter, owner, index, user salt. Nothing else.
+    function _create2Salt(
+        address minter,
+        address initialOwner,
+        uint256 index,
+        bytes32 salt
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encode(minter, initialOwner, index, salt));
+    }
+
+    function _validateRoles(address initialOwner, address broadcaster, address recovery) private pure {
+        SharedValidation.validateNotZeroAddress(initialOwner);
+        SharedValidation.validateNotZeroAddress(broadcaster);
+        SharedValidation.validateNotZeroAddress(recovery);
+    }
+
+    /// @dev Record lineage, then initialize with this factory as forwarder. Any failure reverts the mint.
+    function _register(
+        address cloneAddress,
+        address initialOwner,
+        address broadcaster,
+        address recovery,
+        uint256 timeLockPeriodSec
+    ) private {
+        _isClone[cloneAddress] = true;
+        (bool success, ) = cloneAddress.call(
+            abi.encodeCall(
+                IGuardController.initialize,
+                (initialOwner, broadcaster, recovery, timeLockPeriodSec, address(this))
+            )
+        );
+        if (!success) revert SharedValidation.OperationFailed();
+        emit BloxCloned(implementation, cloneAddress, initialOwner);
     }
 }
