@@ -272,13 +272,51 @@ export async function runAccountGateTests(): Promise<SurfaceTestResult[]> {
   let noWalletDet: unknown = null;
   try {
     await wrapper.cloneBloxDeterministic(
-      { initialOwner: OWNER, broadcaster: OWNER, recovery: OWNER, timeLockPeriodSec: 86_400n, index: 0n },
-      { from: MINTER }
+      { initialOwner: OWNER, broadcaster: MINTER, recovery: MINTER, timeLockPeriodSec: 86_400n, index: 0n },
+      { from: OWNER }
     );
   } catch (e) {
     noWalletDet = e;
   }
-  add('client cloneBloxDeterministic refuses without a wallet client', noWalletDet instanceof Error);
+  add(
+    'client cloneBloxDeterministic refuses without a wallet client',
+    noWalletDet instanceof Error && noWalletDet.message.includes('needs a wallet client')
+  );
+
+  // --- SPEC-2026-0142 self-owner mint: the client refuses a third-party owner before any RPC ---
+  const mints = {
+    cloneBlox: (from: Address) =>
+      wrapper.cloneBlox({ initialOwner: OWNER, broadcaster: MINTER, recovery: MINTER, timeLockPeriodSec: 86_400n }, { from }),
+    cloneBloxDeterministic: (from: Address) =>
+      wrapper.cloneBloxDeterministic(
+        { initialOwner: OWNER, broadcaster: MINTER, recovery: MINTER, timeLockPeriodSec: 86_400n, index: 0n },
+        { from }
+      ),
+  };
+  for (const [name, mint] of Object.entries(mints)) {
+    let thirdParty: unknown = null;
+    try {
+      await mint(MINTER);
+    } catch (e) {
+      thirdParty = e;
+    }
+    add(
+      `client ${name} refuses a third-party owner (sender must be initialOwner)`,
+      thirdParty instanceof Error && thirdParty.message.includes('sender must be the initial owner'),
+      String(thirdParty)
+    );
+    let selfMint: unknown = null;
+    try {
+      await mint(`0x${OWNER.slice(2).toUpperCase()}` as Address);
+    } catch (e) {
+      selfMint = e;
+    }
+    add(
+      `client ${name} accepts a self-owner mint (case-insensitive), then needs a wallet`,
+      selfMint instanceof Error && selfMint.message.includes('needs a wallet client'),
+      String(selfMint)
+    );
+  }
   add('isAccountBlox(factory) is still false', (await isAccountBlox(client, FACTORY)) === false);
 
   return results;
