@@ -137,15 +137,25 @@ depends on it at runtime.
 |---|---|---|
 | Account | `AccountBlox`, 1-second timelock floor | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked |
 | Factory | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor |
-| Mint | Permissionless | Permissionless, `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` |
+| Mint | Permissionless, nonce (`CREATE`) | Permissionless: nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` |
 | Governance on the factory | None | None: no owner, roles, timelock or whitelist. A new official account means a new factory |
 
 Both factories send the clone with gas limit `16777216` (the EIP-7825 cap); see
 [Getting Started, gas](./getting-started.md#4-gas-the-clone-sits-just-under-a-hard-protocol-cap).
-Measured for the pinned pair: `cloneBlox` 16,231,085 gas, factory runtime 2,036 bytes.
+Measured for the pinned pair: `cloneBlox` 16,139,633 gas, `cloneBloxDeterministic`
+16,142,830 gas, factory runtime 1,929 bytes.
+
+The deterministic address (SPEC-2026-0138) is `CREATE2` over
+`keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. The
+cross-chain key is the **minter**, not the owner alone: the same minter, owner, index and salt
+give the same address on every network where the factory and implementation share addresses.
+Broadcaster, recovery and timelock are not hashed, so they may differ across chains unless the
+minter passes the same values. Default: `salt = bytes32(0)`, `index = 0, 1, 2, …`. See
+[Getting Started, deterministic mint](./getting-started.md#deterministic-mint-same-address-on-every-matched-network).
 
 The lineage check for the canonical pipeline is `BasicFactory.isClone(address)`: the address
-was minted by **that** factory. It is not a property of the bytecode, and other deployment
+was minted by **that** factory, by either path. A clone at the same address on another chain
+is a claim about that chain's factory; check `isClone` there. It is not a property of the bytecode, and other deployment
 paths for the same implementation remain possible. The canonical pair is source only:
 nothing is declared in `official-deployed-addresses.json`, and the Nethermind core audit does
 not cover it. See

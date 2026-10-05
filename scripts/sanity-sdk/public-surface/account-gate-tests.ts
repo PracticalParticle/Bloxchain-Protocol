@@ -4,7 +4,11 @@
  * The pinned `BasicFactory` is not an account: it has code and answers ERC-165
  * `IEventForwarder`, but has no `owner()`, no `initialized()`, and never answers
  * `ISecureOwnable`. The gate refuses it at `no-owner`. This suite also drives the thin
- * `BasicFactory` client's reads (pin, lineage) against the same fake.
+ * `BasicFactory` client's reads (pin, lineage, deterministic predict) against the same fake.
+ *
+ * SPEC-2026-0138: the offline CREATE2 helper is pinned to vectors computed with Foundry `cast`
+ * (`keccak256(abi.encode(deployer, owner, index, salt))` over the EIP-1167 init code), not viem,
+ * so the TS formula and the Solidity formula are checked against an independent tool.
  *
  * **Offline.** A fake `PublicClient` answers `getCode` / `readContract` from a table, so
  * the cases below are the shapes measured in Foundry (`test/foundry/unit/BasicFactory.t.sol`),
@@ -14,7 +18,7 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { type Address, type Chain, type Hex, type PublicClient } from 'viem';
+import { type Address, type Chain, type Hex, type PublicClient, zeroHash } from 'viem';
 import {
   INTERFACE_IDS,
   inspectAccountBlox,
@@ -32,6 +36,21 @@ const CLONE = '0x00000000000000000000000000000000000000c1' as Address;
 const COPYBLOX = '0x00000000000000000000000000000000000000c0' as Address;
 const NO_CODE_ACCOUNT = '0x00000000000000000000000000000000000000d1' as Address;
 const IMPLEMENTATION = '0x00000000000000000000000000000000000000b1' as Address;
+const MINTER = '0x00000000000000000000000000000000000000a1' as Address;
+
+/** `cast`-computed deterministic clones of IMPLEMENTATION from FACTORY for (MINTER, OWNER, index, 0x0). */
+const CAST_VECTORS = [
+  {
+    index: 0n,
+    salt: '0x53ff14b52aa8528d92cde3bdbd4b4417f41118ab3232ae051eed105d04963b84' as Hex,
+    clone: '0x111fFd70a9b237df2CD494Dd5eF0E8351E2444DA' as Address,
+  },
+  {
+    index: 1n,
+    salt: '0xa0ef10b7cda7d601c28d23ba88418f455f2276d6e36e157ced99c19537730dac' as Hex,
+    clone: '0x18BD724Dbd5828bf350008D015c27805AE0A68a8' as Address,
+  },
+] as const;
 
 /** What one address answers. `undefined` in `interfaces` means "supportsInterface reverts". */
 interface FakeContract {
@@ -134,6 +153,19 @@ function fakeClient(ContractFunctionZeroDataError: ZeroDataErrorCtor): PublicCli
       if (c.pinned && functionName === 'isClone') {
         return c.pinned.clones.some((a) => a.toLowerCase() === String(args?.[0]).toLowerCase());
       }
+      if (c.pinned && functionName === 'predictClone') {
+        // Answers only the exact argument tuple the factory would see: (deployer, owner, index, salt).
+        const [deployer, owner, index, salt] = (args ?? []) as [string, string, bigint, string];
+        const hit = CAST_VECTORS.find(
+          (v) =>
+            deployer.toLowerCase() === MINTER.toLowerCase() &&
+            owner.toLowerCase() === OWNER.toLowerCase() &&
+            index === v.index &&
+            salt.toLowerCase() === zeroHash
+        );
+        if (!hit) throw zero();
+        return hit.clone;
+      }
       throw zero();
     },
   };
@@ -198,6 +230,56 @@ export async function runAccountGateTests(): Promise<SurfaceTestResult[]> {
     noWallet = e;
   }
   add('client cloneBlox refuses without a wallet client', noWallet instanceof Error);
+
+  // --- SPEC-2026-0138 deterministic mint: selectors, salt formula, predict ---
+  add(
+    'cloneBloxDeterministic selector is (address,address,address,uint256,uint256,bytes32)',
+    BASIC_FACTORY_SELECTORS.CLONE_BLOX_DETERMINISTIC === '0x38c1cb58'
+  );
+  add(
+    'predictClone selector is (address,address,uint256,bytes32)',
+    BASIC_FACTORY_SELECTORS.PREDICT_CLONE === '0x21d268a3'
+  );
+  for (const v of CAST_VECTORS) {
+    const inputs = { deployer: MINTER, initialOwner: OWNER, index: v.index };
+    add(`create2Salt matches cast (index ${v.index})`, BasicFactory.create2Salt(inputs) === v.salt);
+    add(
+      `computeCloneAddress matches cast (index ${v.index})`,
+      BasicFactory.computeCloneAddress(FACTORY, IMPLEMENTATION, inputs) === v.clone,
+      BasicFactory.computeCloneAddress(FACTORY, IMPLEMENTATION, inputs)
+    );
+    add(
+      `client predictClone reads the factory with salt defaulting to 0x0 (index ${v.index})`,
+      (await wrapper.predictClone(inputs)) === v.clone
+    );
+  }
+  const base = { deployer: MINTER, initialOwner: OWNER, index: 0n };
+  const at = (i: typeof base & { salt?: Hex }) => BasicFactory.computeCloneAddress(FACTORY, IMPLEMENTATION, i);
+  add(
+    'explicit zero salt equals the default',
+    at({ ...base, salt: zeroHash }) === at(base)
+  );
+  add(
+    'minter, owner, index and salt each move the address',
+    new Set([
+      at(base),
+      at({ ...base, deployer: OWNER }),
+      at({ ...base, initialOwner: MINTER }),
+      at({ ...base, index: 1n }),
+      at({ ...base, salt: `0x${'00'.repeat(31)}01` as Hex }),
+    ]).size === 5
+  );
+  let noWalletDet: unknown = null;
+  try {
+    await wrapper.cloneBloxDeterministic(
+      { initialOwner: OWNER, broadcaster: OWNER, recovery: OWNER, timeLockPeriodSec: 86_400n, index: 0n },
+      { from: MINTER }
+    );
+  } catch (e) {
+    noWalletDet = e;
+  }
+  add('client cloneBloxDeterministic refuses without a wallet client', noWalletDet instanceof Error);
+  add('isAccountBlox(factory) is still false', (await isAccountBlox(client, FACTORY)) === false);
 
   return results;
 }
