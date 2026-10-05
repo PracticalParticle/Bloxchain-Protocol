@@ -32,6 +32,11 @@ import "../helpers/MockContracts.sol";
  *      - a repeat reverts `ItemAlreadyExists`; a failed initialize leaves no code, no lineage,
  *        and does not burn the address;
  *      - both mints stay under the EIP-7825 cap.
+ *      SPEC-2026-0142 self-owner mint (AC1-AC5):
+ *      - both mints revert `RestrictedOwner(caller, owner)` unless the caller is the owner;
+ *      - a rejected mint leaves no code and no lineage, and does not burn the address;
+ *      - broadcaster and recovery may still be helper wallets;
+ *      - the salt formula is unchanged; every successful mint has caller == owner.
  */
 contract BasicFactoryTest is Test {
     /// @dev EIP-7825 per-transaction gas cap enforced by public networks (2^24).
@@ -73,7 +78,9 @@ contract BasicFactoryTest is Test {
         factory = new BasicFactory(address(accountImpl));
     }
 
+    /// @dev Self-owner mint (SPEC-2026-0142): the owner sends it.
     function _clone(address initialOwner) internal returns (address) {
+        vm.prank(initialOwner);
         return factory.cloneBlox(initialOwner, broadcaster, recovery, ACCOUNT_TIMELOCK);
     }
 
@@ -127,7 +134,7 @@ contract BasicFactoryTest is Test {
     // ============ mint: always the pinned implementation ============
 
     function test_CloneBlox_MintsThePinnedBasicAccount() public {
-        vm.prank(stranger); // anyone may mint
+        vm.prank(alice); // anyone may mint, for themselves
         address cloneAddress = factory.cloneBlox(alice, broadcaster, recovery, ACCOUNT_TIMELOCK);
 
         assertTrue(factory.isClone(cloneAddress), "isClone");
@@ -183,20 +190,24 @@ contract BasicFactoryTest is Test {
     }
 
     function test_CloneBlox_RevertsForZeroRoles() public {
+        vm.startPrank(alice);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBlox(address(0), broadcaster, recovery, ACCOUNT_TIMELOCK);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBlox(alice, address(0), recovery, ACCOUNT_TIMELOCK);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBlox(alice, broadcaster, address(0), ACCOUNT_TIMELOCK);
+        vm.stopPrank();
     }
 
     /// @dev The clone enforces the BasicAccount bounds; a failed initialize reverts the whole mint.
     function test_CloneBlox_RevertsOutsideBasicAccountBounds() public {
+        vm.startPrank(alice);
         vm.expectRevert(SharedValidation.OperationFailed.selector);
         factory.cloneBlox(alice, broadcaster, recovery, 1 days - 1);
         vm.expectRevert(SharedValidation.OperationFailed.selector);
         factory.cloneBlox(alice, broadcaster, recovery, 90 days + 1);
+        vm.stopPrank();
         address predicted = vm.computeCreateAddress(address(factory), vm.getNonce(address(factory)));
         assertFalse(factory.isClone(predicted), "failed mint leaves no lineage");
     }
@@ -215,13 +226,13 @@ contract BasicFactoryTest is Test {
 
     /// @dev AC1: the mint lands on the prediction, emits `BloxCloned` and records lineage.
     function test_Deterministic_MintLandsOnPrediction() public {
-        address predicted = factory.predictClone(stranger, alice, 0, bytes32(0));
+        address predicted = factory.predictClone(alice, alice, 0, bytes32(0));
         assertEq(predicted.code.length, 0, "nothing there yet");
         assertFalse(factory.isClone(predicted), "not minted yet");
 
         vm.expectEmit(true, true, true, true, address(factory));
         emit BloxCloned(address(accountImpl), predicted, alice);
-        address c = _cloneDet(stranger, alice, 0, bytes32(0));
+        address c = _cloneDet(alice, alice, 0, bytes32(0));
 
         assertEq(c, predicted, "mint lands on the prediction");
         assertTrue(factory.isClone(c), "isClone");
@@ -234,7 +245,7 @@ contract BasicFactoryTest is Test {
         assertEq(account.getTimeLockPeriodSec(), ACCOUNT_TIMELOCK, "timelock");
     }
 
-    /// @dev AC1: with any valid roles and timelock, the mint equals the prediction.
+    /// @dev AC1: with any self-owner caller and valid roles and timelock, the mint equals the prediction.
     function testFuzz_Deterministic_PredictEqualsMint(
         address caller,
         address bc,
@@ -243,28 +254,28 @@ contract BasicFactoryTest is Test {
         uint256 index,
         bytes32 salt
     ) public {
-        vm.assume(bc != address(0) && rec != address(0));
+        vm.assume(caller != address(0) && bc != address(0) && rec != address(0));
         timelock = bound(timelock, 1 days, 90 days);
-        address predicted = factory.predictClone(caller, alice, index, salt);
+        address predicted = factory.predictClone(caller, caller, index, salt);
         vm.prank(caller);
-        assertEq(factory.cloneBloxDeterministic(alice, bc, rec, timelock, index, salt), predicted, "predict == mint");
+        assertEq(factory.cloneBloxDeterministic(caller, bc, rec, timelock, index, salt), predicted, "predict == mint");
         assertTrue(factory.isClone(predicted), "lineage");
     }
 
     /// @dev AC2: broadcaster, recovery and timelock alone do not move the address, on the write path either.
     function test_Deterministic_RolesAndTimelockDoNotChangeAddress() public {
-        address predicted = factory.predictClone(stranger, alice, 3, SALT);
+        address predicted = factory.predictClone(alice, alice, 3, SALT);
         address other = address(0x07E4);
         uint256 fresh = vm.snapshotState();
 
         address[3] memory landed;
-        vm.prank(stranger);
+        vm.prank(alice);
         landed[0] = factory.cloneBloxDeterministic(alice, other, recovery, ACCOUNT_TIMELOCK, 3, SALT);
         vm.revertToState(fresh);
-        vm.prank(stranger);
+        vm.prank(alice);
         landed[1] = factory.cloneBloxDeterministic(alice, broadcaster, other, ACCOUNT_TIMELOCK, 3, SALT);
         vm.revertToState(fresh);
-        vm.prank(stranger);
+        vm.prank(alice);
         landed[2] = factory.cloneBloxDeterministic(alice, broadcaster, recovery, 90 days, 3, SALT);
 
         assertEq(landed[0], predicted, "broadcaster is not an address input");
@@ -290,27 +301,33 @@ contract BasicFactoryTest is Test {
         );
     }
 
-    /// @dev AC3 / Q8: the minter is the key; the same owner minted by another caller lands elsewhere,
-    ///      so a third party cannot take the address first.
+    /// @dev AC3 / Q8: the minter is the key, and only the owner may mint (SPEC-2026-0142). Another
+    ///      caller cannot mint for the owner at all, and its own mint lands elsewhere, so a third
+    ///      party cannot take the owner's address first.
     function test_Deterministic_OtherCallerCannotTakeAddress() public {
-        address target = factory.predictClone(stranger, alice, 0, bytes32(0));
-        address bobClone = _cloneDet(bob, alice, 0, bytes32(0));
-        assertTrue(bobClone != target, "same args from another caller land elsewhere");
-        assertEq(target.code.length, 0, "the minter's address is still free");
-        assertEq(_cloneDet(stranger, alice, 0, bytes32(0)), target, "the minter still gets it");
+        address target = factory.predictClone(alice, alice, 0, bytes32(0));
+
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, bob, alice));
+        factory.cloneBloxDeterministic(alice, broadcaster, recovery, ACCOUNT_TIMELOCK, 0, bytes32(0));
+
+        address bobClone = _cloneDet(bob, bob, 0, bytes32(0));
+        assertTrue(bobClone != target, "another caller's own mint lands elsewhere");
+        assertEq(target.code.length, 0, "the owner's address is still free");
+        assertEq(_cloneDet(alice, alice, 0, bytes32(0)), target, "the owner still gets it");
     }
 
     /// @dev AC4: chain id is not an input, for the view or the write path.
     function test_Deterministic_ChainIdDoesNotChangeAddress() public {
         uint256 original = block.chainid;
-        address predicted = factory.predictClone(stranger, alice, 0, SALT);
+        address predicted = factory.predictClone(alice, alice, 0, SALT);
         uint256 fresh = vm.snapshotState();
-        address onOriginal = _cloneDet(stranger, alice, 0, SALT);
+        address onOriginal = _cloneDet(alice, alice, 0, SALT);
 
         vm.revertToState(fresh);
         vm.chainId(original + 8453);
-        assertEq(factory.predictClone(stranger, alice, 0, SALT), predicted, "view after chain switch");
-        assertEq(_cloneDet(stranger, alice, 0, SALT), onOriginal, "write path after chain switch");
+        assertEq(factory.predictClone(alice, alice, 0, SALT), predicted, "view after chain switch");
+        assertEq(_cloneDet(alice, alice, 0, SALT), onOriginal, "write path after chain switch");
         assertEq(onOriginal, predicted, "both equal the prediction");
     }
 
@@ -323,69 +340,136 @@ contract BasicFactoryTest is Test {
 
     /// @dev AC5: a repeat on this chain reverts with `ItemAlreadyExists(address)`.
     function test_Deterministic_RepeatReverts() public {
-        address first = _cloneDet(stranger, alice, 0, SALT);
-        vm.prank(stranger);
+        address first = _cloneDet(alice, alice, 0, SALT);
+        vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ItemAlreadyExists.selector, first));
         factory.cloneBloxDeterministic(alice, broadcaster, recovery, ACCOUNT_TIMELOCK, 0, SALT);
 
         // Different roles do not dodge it: the address is the same.
-        vm.prank(stranger);
+        vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.ItemAlreadyExists.selector, first));
         factory.cloneBloxDeterministic(alice, bob, bob, 2 days, 0, SALT);
 
         // The next index is free.
-        assertTrue(_cloneDet(stranger, alice, 1, SALT) != first, "next index mints");
+        assertTrue(_cloneDet(alice, alice, 1, SALT) != first, "next index mints");
     }
 
     /// @dev AC5: a failed initialize leaves no code and no lineage, and the address is not burned:
     ///      the same caller, owner, index and salt with a valid timelock land on it afterwards.
     function test_Deterministic_FailedInitializeLeavesNothingAndDoesNotBurnAddress() public {
-        address predicted = factory.predictClone(stranger, alice, 0, SALT);
+        address predicted = factory.predictClone(alice, alice, 0, SALT);
         uint256[3] memory bad = [uint256(0), 1 days - 1, 90 days + 1];
         for (uint256 i = 0; i < bad.length; i++) {
-            vm.prank(stranger);
+            vm.prank(alice);
             vm.expectRevert(SharedValidation.OperationFailed.selector);
             factory.cloneBloxDeterministic(alice, broadcaster, recovery, bad[i], 0, SALT);
             assertFalse(factory.isClone(predicted), "no lineage for a failed mint");
             assertEq(predicted.code.length, 0, "no proxy left behind");
         }
-        assertEq(_cloneDet(stranger, alice, 0, SALT), predicted, "address still free after failed attempts");
+        assertEq(_cloneDet(alice, alice, 0, SALT), predicted, "address still free after failed attempts");
     }
 
     function test_Deterministic_RevertsForZeroRoles() public {
+        vm.startPrank(alice);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBloxDeterministic(address(0), broadcaster, recovery, ACCOUNT_TIMELOCK, 0, SALT);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBloxDeterministic(alice, address(0), recovery, ACCOUNT_TIMELOCK, 0, SALT);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(0)));
         factory.cloneBloxDeterministic(alice, broadcaster, address(0), ACCOUNT_TIMELOCK, 0, SALT);
+        vm.stopPrank();
     }
 
     /// @dev AC6: both paths coexist; `isClone` is true for both and the nonce path is unchanged.
     function test_Deterministic_CoexistsWithNoncePath() public {
         address nonceNext = vm.computeCreateAddress(address(factory), vm.getNonce(address(factory)));
         address n1 = _clone(alice);
-        address d1 = _cloneDet(stranger, alice, 0, bytes32(0));
+        address d1 = _cloneDet(alice, alice, 0, bytes32(0));
         address n2 = _clone(alice);
 
         assertEq(n1, nonceNext, "nonce path still CREATE");
         assertTrue(n1 != n2 && n1 != d1 && n2 != d1, "distinct clones");
         assertTrue(factory.isClone(n1) && factory.isClone(d1) && factory.isClone(n2), "isClone on both paths");
-        assertEq(d1, factory.predictClone(stranger, alice, 0, bytes32(0)), "deterministic unaffected by nonce mints");
+        assertEq(d1, factory.predictClone(alice, alice, 0, bytes32(0)), "deterministic unaffected by nonce mints");
     }
 
     /// @dev AC7: a deterministic clone may forward; a same-address-shaped outsider may not.
     function test_Deterministic_CloneForwardsAndNonCloneCannot() public {
-        address c = _cloneDet(stranger, alice, 0, SALT);
+        address c = _cloneDet(alice, alice, 0, SALT);
         vm.expectEmit(true, true, true, true, address(factory));
         emit CloneEventForwarded(c, 7, bytes4(0x12345678), EngineBlox.TxStatus.COMPLETED, alice, c, bytes32("op"), bytes32(0));
         vm.prank(c);
         factory.forwardTxEvent(7, bytes4(0x12345678), EngineBlox.TxStatus.COMPLETED, alice, c, bytes32("op"), bytes32(0));
 
-        address unminted = factory.predictClone(stranger, alice, 1, SALT);
+        address unminted = factory.predictClone(alice, alice, 1, SALT);
         vm.prank(unminted);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.NoPermission.selector, unminted));
         factory.forwardTxEvent(1, bytes4(0), EngineBlox.TxStatus.PENDING, stranger, stranger, bytes32(0), bytes32(0));
+    }
+
+    // ============ self-owner mint (SPEC-2026-0142) ============
+
+    /// @dev AC1: the nonce mint reverts when the caller is not the owner, and leaves no lineage.
+    function test_SelfOwner_CloneBloxRevertsForThirdPartyOwner() public {
+        address next = vm.computeCreateAddress(address(factory), vm.getNonce(address(factory)));
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, stranger, alice));
+        factory.cloneBlox(alice, broadcaster, recovery, ACCOUNT_TIMELOCK);
+        assertEq(next.code.length, 0, "nothing deployed");
+        assertFalse(factory.isClone(next), "no lineage");
+        assertEq(vm.computeCreateAddress(address(factory), vm.getNonce(address(factory))), next, "nonce not spent");
+    }
+
+    /// @dev AC2: the deterministic mint reverts the same way, and the predicted address stays free.
+    function test_SelfOwner_DeterministicRevertsForThirdPartyOwner() public {
+        address theirs = factory.predictClone(stranger, alice, 0, SALT);
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, stranger, alice));
+        factory.cloneBloxDeterministic(alice, broadcaster, recovery, ACCOUNT_TIMELOCK, 0, SALT);
+        assertEq(theirs.code.length, 0, "nothing deployed");
+        assertFalse(factory.isClone(theirs), "no lineage");
+    }
+
+    /// @dev AC1/AC2: the minter cannot dodge the rule by naming itself in a helper role.
+    function test_SelfOwner_MinterAsHelperRoleStillReverts() public {
+        vm.startPrank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, stranger, alice));
+        factory.cloneBlox(alice, stranger, stranger, ACCOUNT_TIMELOCK);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, stranger, alice));
+        factory.cloneBloxDeterministic(alice, stranger, stranger, ACCOUNT_TIMELOCK, 0, SALT);
+        vm.stopPrank();
+    }
+
+    function testFuzz_SelfOwner_BothMintsRejectAnyOtherCaller(address caller, address owner_) public {
+        vm.assume(owner_ != address(0) && caller != owner_);
+        vm.startPrank(caller);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, caller, owner_));
+        factory.cloneBlox(owner_, broadcaster, recovery, ACCOUNT_TIMELOCK);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.RestrictedOwner.selector, caller, owner_));
+        factory.cloneBloxDeterministic(owner_, broadcaster, recovery, ACCOUNT_TIMELOCK, 0, SALT);
+        vm.stopPrank();
+    }
+
+    /// @dev AC3: both self-owner paths succeed with helper broadcaster and recovery, and are `isClone`.
+    function test_SelfOwner_BothPathsSucceedWithHelperRoles() public {
+        address[2] memory minted = [_clone(alice), _cloneDet(alice, alice, 0, SALT)];
+        for (uint256 i = 0; i < minted.length; i++) {
+            assertTrue(factory.isClone(minted[i]), "isClone");
+            BasicAccount account = BasicAccount(payable(minted[i]));
+            assertEq(account.owner(), alice, "owner is the minter");
+            assertEq(account.getBroadcasters()[0], broadcaster, "helper broadcaster");
+            assertEq(account.getRecovery(), recovery, "helper recovery");
+        }
+    }
+
+    /// @dev AC4: for deployer == owner the salt formula is unchanged, recomputed without the factory.
+    function test_SelfOwner_SaltFormulaUnchangedForSelfMint() public {
+        bytes32 create2Salt = keccak256(abi.encode(alice, alice, uint256(2), SALT));
+        address expected = vm.computeCreate2Address(
+            create2Salt, keccak256(_minimalProxyInitCode(address(accountImpl))), address(factory)
+        );
+        assertEq(factory.predictClone(alice, alice, 2, SALT), expected, "predict");
+        assertEq(_cloneDet(alice, alice, 2, SALT), expected, "mint");
     }
 
     // ============ event forwarding ============
@@ -488,12 +572,14 @@ contract BasicFactoryTest is Test {
         uint256 fresh = vm.snapshotState();
 
         _coolAll();
+        vm.prank(alice);
         uint256 before = gasleft();
         factory.cloneBlox(alice, broadcaster, recovery, ACCOUNT_TIMELOCK);
         uint256 nonceGas = before - gasleft();
 
         vm.revertToState(fresh);
         _coolAll();
+        vm.prank(alice);
         before = gasleft();
         factory.cloneBloxDeterministic(alice, broadcaster, recovery, ACCOUNT_TIMELOCK, 0, bytes32(0));
         uint256 deterministicGas = before - gasleft();

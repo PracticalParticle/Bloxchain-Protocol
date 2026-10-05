@@ -30,12 +30,17 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  * It is **not** an account: no owner, no roles, no timelock, no catalog. A new official
  * account means a new factory, so this wrapper has nothing to govern.
  *
- * - **Mint:** permissionless, no implementation argument. {@link cloneBlox} (nonce, a new
- *   address every call) and {@link cloneBloxDeterministic} (CREATE2, SPEC-2026-0138) both send
- *   at the EIP-7825 cap (`16777216`), like CopyBlox.
+ * - **Mint:** permissionless **for your own account**, no implementation argument.
+ *   {@link cloneBlox} (nonce, a new address every call) and {@link cloneBloxDeterministic}
+ *   (CREATE2, SPEC-2026-0138) both send at the EIP-7825 cap (`16777216`), like CopyBlox.
+ * - **Self-owner (SPEC-2026-0142):** the sender must be the owner, so `options.from` must equal
+ *   `params.initialOwner`; otherwise the factory reverts `RestrictedOwner(caller, owner)`. The
+ *   wrapper checks this before any RPC call and throws. Broadcaster and recovery may still be
+ *   helper wallets. Minting for another owner is not available on this factory.
  * - **Predict:** {@link predictClone} reads the deterministic address from the factory;
  *   {@link BasicFactory.computeCloneAddress} derives it offline. The address binds the
- *   **minter** (the sender), the owner, an `index` and a `salt`, and nothing else: the
+ *   **minter** (the sender), the owner, an `index` and a `salt`, and nothing else (for a mint
+ *   that can succeed, minter and owner are the same account): the
  *   broadcaster, recovery and timelock are not inputs, so they can differ per chain unless
  *   you pass the same values. A relayer or a different wallet gets a different address.
  *   Default convention: `salt = 0x00…00`, `index = 0n, 1n, 2n, …`.
@@ -78,7 +83,7 @@ export interface BasicDeterministicCloneParams extends BasicCloneParams {
 
 /** Inputs to the deterministic address, mirroring `predictClone(deployer, initialOwner, index, salt)`. */
 export interface BasicCloneAddressInputs {
-  /** The account that sends the mint (`msg.sender`). */
+  /** The account that sends the mint (`msg.sender`). Must equal `initialOwner` for a mint that can succeed. */
   deployer: Address;
   initialOwner: Address;
   index: bigint;
@@ -113,10 +118,13 @@ export class BasicFactory {
    * Sends `gas` at the EIP-7825 per-transaction cap (`16777216`) by default, never a bare
    * estimate. Pass `options.gas` only to override deliberately.
    *
-   * @param params Roles and timelock the clone is initialized with
-   * @param options Transaction options; `from` is the sender that pays for the clone
+   * @param params Roles and timelock the clone is initialized with; `initialOwner` must be `options.from`
+   * @param options Transaction options; `from` is the sender that pays for the clone and becomes its owner
+   * @throws Error before any RPC call when `options.from` is not `params.initialOwner`
+   *   (the factory would revert `RestrictedOwner(caller, owner)`)
    */
   async cloneBlox(params: BasicCloneParams, options: TransactionOptions): Promise<TransactionResult> {
+    BasicFactory.assertSelfOwner('cloneBlox', params.initialOwner, options.from);
     return this.sendMint(
       'cloneBlox',
       [params.initialOwner, params.broadcaster, params.recovery, params.timeLockPeriodSec],
@@ -127,16 +135,20 @@ export class BasicFactory {
   /**
    * Clone the pinned implementation at a deterministic address (CREATE2) and initialize it.
    *
-   * The clone lands on `predictClone(options.from, initialOwner, index, salt)`. A repeat on the
-   * same chain reverts `ItemAlreadyExists`. Same gas rule as {@link cloneBlox}: `16777216`.
+   * The clone lands on `predictClone(options.from, initialOwner, index, salt)`, where
+   * `options.from` must equal `initialOwner`. A repeat on the same chain reverts
+   * `ItemAlreadyExists`. Same gas rule as {@link cloneBlox}: `16777216`.
    *
-   * @param params Roles, timelock, `index` and optional `salt` (default `bytes32(0)`)
-   * @param options Transaction options; `from` is the minter, and it is part of the address
+   * @param params Roles, timelock, `index` and optional `salt` (default `bytes32(0)`); `initialOwner` must be `options.from`
+   * @param options Transaction options; `from` is the minter and owner, and it is part of the address
+   * @throws Error before any RPC call when `options.from` is not `params.initialOwner`
+   *   (the factory would revert `RestrictedOwner(caller, owner)`)
    */
   async cloneBloxDeterministic(
     params: BasicDeterministicCloneParams,
     options: TransactionOptions
   ): Promise<TransactionResult> {
+    BasicFactory.assertSelfOwner('cloneBloxDeterministic', params.initialOwner, options.from);
     return this.sendMint(
       'cloneBloxDeterministic',
       [
@@ -149,6 +161,23 @@ export class BasicFactory {
       ],
       options
     );
+  }
+
+  /**
+   * SPEC-2026-0142: the factory reverts `RestrictedOwner(caller, owner)` unless the sender is the
+   * owner. Fail here, with that reason, instead of after a simulation or a sent transaction.
+   */
+  private static assertSelfOwner(
+    functionName: 'cloneBlox' | 'cloneBloxDeterministic',
+    initialOwner: Address,
+    from: Address
+  ): void {
+    if (initialOwner.toLowerCase() !== from.toLowerCase()) {
+      throw new Error(
+        `BasicFactory.${functionName}: the sender must be the initial owner (from ${from}, initialOwner ${initialOwner}); ` +
+          'this factory reverts RestrictedOwner for any other owner'
+      );
+    }
   }
 
   private async sendMint(
@@ -237,7 +266,8 @@ export class BasicFactory {
   /**
    * The address {@link cloneBloxDeterministic} mints when `deployer` sends it with these inputs.
    *
-   * Read from the factory. It does not say whether the address is already minted; use
+   * For a mint that can succeed, `deployer` must equal `initialOwner` (SPEC-2026-0142); any
+   * other pair predicts an address the factory will never mint. Read from the factory. It does not say whether the address is already minted; use
    * {@link isClone}. The same inputs give the same address on another chain only when the
    * factory and its pinned implementation sit at the same addresses there.
    */

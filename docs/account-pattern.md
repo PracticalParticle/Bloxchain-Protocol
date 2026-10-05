@@ -137,17 +137,24 @@ depends on it at runtime.
 |---|---|---|
 | Account | `AccountBlox`, 1-second timelock floor | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked |
 | Factory | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor |
-| Mint | Permissionless, nonce (`CREATE`) | Permissionless: nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` |
+| Mint | Permissionless, nonce (`CREATE`), for any owner | Permissionless **self-owner** mint: the sender must be `initialOwner` (SPEC-2026-0142). Nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` |
 | Governance on the factory | None | None: no owner, roles, timelock or whitelist. A new official account means a new factory |
 
 Both factories send the clone with gas limit `16777216` (the EIP-7825 cap); see
 [Getting Started, gas](./getting-started.md#4-gas-the-clone-sits-just-under-a-hard-protocol-cap).
-Measured for the pinned pair: `cloneBlox` 16,139,633 gas, `cloneBloxDeterministic`
-16,142,830 gas, factory runtime 1,929 bytes.
+Measured for the pinned pair: `cloneBlox` 16,137,707 gas, `cloneBloxDeterministic`
+16,140,930 gas, factory runtime 1,960 bytes.
+
+**Official pattern: self-owner mint.** `BasicFactory` reverts `RestrictedOwner(caller, owner)`
+on both mints unless `initialOwner == msg.sender`: you mint your own account, and you may still
+name helper wallets as broadcaster and recovery. Minting for another owner (a relayer or a
+sponsor naming a third party as owner) stays possible with other factories such as CopyBlox, but
+is out of scope for this pin; it is a social-engineering surface the official path closes.
 
 The deterministic address (SPEC-2026-0138) is `CREATE2` over
-`keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. The
-cross-chain key is the **minter**, not the owner alone: the same minter, owner, index and salt
+`keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. Since
+the minter must be the owner, use the owner as `deployer` in `predictClone`. The
+cross-chain key is the **minter** (= owner): the same minter, owner, index and salt
 give the same address on every network where the factory and implementation share addresses.
 Broadcaster, recovery and timelock are not hashed, so they may differ across chains unless the
 minter passes the same values. Default: `salt = bytes32(0)`, `index = 0, 1, 2, …`. See
