@@ -30,11 +30,21 @@ import "../core/lib/utils/SharedValidation.sol";
  * - `cloneBloxDeterministic` (`CREATE2`): the address is fixed by the minter, the owner, an
  *   `index` and a user `salt`. `predictClone` returns it before the mint.
  *
- * Both are permissionless and follow the CopyBlox sequence: EIP-1167 clone, record the clone,
+ * Both are permissionless **for the caller's own account** and follow the CopyBlox sequence:
+ * self-owner check, EIP-1167 clone, record the clone,
  * `initialize(address,address,address,uint256,address)` in the same transaction with this
  * factory as the clone's event forwarder, then `BloxCloned`. A failed initialize reverts the
  * whole mint, code and lineage. The only lineage record is whether this factory minted that
  * address, by either path.
+ *
+ * ## Self-owner mint (SPEC-2026-0142)
+ *
+ * Both mints revert `RestrictedOwner(msg.sender, initialOwner)` unless
+ * `initialOwner == msg.sender`. Anyone may mint, but only for themselves: this pin cannot
+ * name a third party as owner while the minter keeps a helper role. Broadcaster and recovery
+ * stay caller-chosen and may be other wallets. Minting for another owner is a valid pattern
+ * for other factories; it is not available on this one. Relayed or sponsored mints therefore
+ * need the owner to be the sending account (for example a smart account that sends the call).
  *
  * ## Deterministic address (SPEC-2026-0138)
  *
@@ -44,13 +54,15 @@ import "../core/lib/utils/SharedValidation.sol";
  * only), no `block.chainid`, no factory address (the factory is already the `CREATE2`
  * deployer), and no version tag. A different formula needs a different factory.
  *
- * The cross-chain key is the **minter**, not the owner alone. The same minter repeating the
- * same owner, index and salt gets the same clone address on every chain where this factory
- * and its pinned implementation sit at the same addresses (this contract does not arrange
- * that). A relayer, a different wallet or a per-chain smart-account address derives a
- * different address. The broadcaster, recovery and timelock at that address may differ per
- * chain unless the minter passes the same values. Default convention: `salt = bytes32(0)`
- * and `index = 0, 1, 2, ...` per minter and owner.
+ * The cross-chain key is the **minter**. Because a successful mint needs
+ * `msg.sender == initialOwner` (SPEC-2026-0142), the minter and the owner are the same account,
+ * so in practice the address is owner-keyed; the formula still hashes both. The same owner
+ * repeating the same index and salt gets the same clone address on every chain where this
+ * factory and its pinned implementation sit at the same addresses (this contract does not
+ * arrange that). A relayer or a different wallet cannot mint for that owner, and a per-chain
+ * smart-account owner derives a different address. The broadcaster, recovery and timelock at
+ * that address may differ per chain unless the minter passes the same values. Default
+ * convention: `salt = bytes32(0)` and `index = 0, 1, 2, ...` per owner.
  *
  * ## Lineage claim (what `isClone` means)
  *
@@ -142,12 +154,13 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
 
     /**
      * @notice Clone the pinned implementation and initialize it with caller-provided values.
-     * @param initialOwner The initial owner address for the clone
-     * @param broadcaster The broadcaster address for the clone
-     * @param recovery The recovery address for the clone
+     * @param initialOwner The initial owner address for the clone; must be `msg.sender`
+     * @param broadcaster The broadcaster address for the clone (may be a helper wallet)
+     * @param recovery The recovery address for the clone (may be a helper wallet)
      * @param timeLockPeriodSec The timelock period in seconds (`BasicAccount` accepts 1 day to 90 days)
      * @return cloneAddress The address of the new clone
-     * @dev Nonce path (`CREATE`): each call yields a new address. Registration happens before
+     * @dev Reverts `RestrictedOwner(msg.sender, initialOwner)` unless the caller is the owner.
+     *      Nonce path (`CREATE`): each call yields a new address. Registration happens before
      *      initialize so the clone can forward events during its own initialize; a failed
      *      initialize reverts the registration. Send with gas limit `16777216`.
      */
@@ -164,15 +177,16 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
 
     /**
      * @notice Clone the pinned implementation at a deterministic address and initialize it.
-     * @param initialOwner The initial owner address for the clone (part of the address)
-     * @param broadcaster The broadcaster address for the clone (not part of the address)
-     * @param recovery The recovery address for the clone (not part of the address)
+     * @param initialOwner The initial owner address for the clone (part of the address); must be `msg.sender`
+     * @param broadcaster The broadcaster address for the clone (not part of the address; may be a helper)
+     * @param recovery The recovery address for the clone (not part of the address; may be a helper)
      * @param timeLockPeriodSec The timelock period in seconds (not part of the address;
      *        `BasicAccount` accepts 1 day to 90 days)
      * @param index Caller-chosen slot, so one minter and owner can hold many clones (default 0, 1, 2, ...)
      * @param salt Caller-chosen salt (default `bytes32(0)`)
      * @return cloneAddress The new clone; equals `predictClone(msg.sender, initialOwner, index, salt)`
-     * @dev `CREATE2` path. The address binds `msg.sender`, so a different sender (relayer, other
+     * @dev `CREATE2` path. Reverts `RestrictedOwner(msg.sender, initialOwner)` unless the caller
+     *      is the owner. The address binds `msg.sender`, so a different sender (relayer, other
      *      wallet) derives a different address. Reverts `ItemAlreadyExists` when the address
      *      already holds code (a repeat on this chain). A failed initialize reverts the code and
      *      the lineage, so the address stays free. Send with gas limit `16777216`.
@@ -210,7 +224,10 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
      * @param initialOwner The initial owner the mint will pass
      * @param index The index the mint will pass
      * @param salt The salt the mint will pass
-     * @dev Broadcaster, recovery and timelock do not affect the address. Independent of
+     * @dev For a mint that can succeed, `deployer` must equal `initialOwner` (SPEC-2026-0142);
+     *      any other pair predicts an address the write path will never mint, because the mint
+     *      reverts `RestrictedOwner`. The view still takes both so the salt formula is unchanged.
+     *      Broadcaster, recovery and timelock do not affect the address. Independent of
      *      `block.chainid`; matches another chain only when this factory and the pinned
      *      implementation sit at the same addresses there. Does not say whether the address is
      *      already minted; check `isClone`.
@@ -265,10 +282,12 @@ contract BasicFactory is ERC165, ReentrancyGuardTransient, IEventForwarder {
         return keccak256(abi.encode(minter, initialOwner, index, salt));
     }
 
-    function _validateRoles(address initialOwner, address broadcaster, address recovery) private pure {
+    /// @dev Non-zero roles, then the self-owner rule (SPEC-2026-0142): the caller must be the owner.
+    function _validateRoles(address initialOwner, address broadcaster, address recovery) private view {
         SharedValidation.validateNotZeroAddress(initialOwner);
         SharedValidation.validateNotZeroAddress(broadcaster);
         SharedValidation.validateNotZeroAddress(recovery);
+        if (initialOwner != msg.sender) revert SharedValidation.RestrictedOwner(msg.sender, initialOwner);
     }
 
     /// @dev Record lineage, then initialize with this factory as forwarder. Any failure reverts the mint.
