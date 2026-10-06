@@ -218,7 +218,12 @@ export function getOfficialAddress(
   contractName: string
 ): Address {
   const row = network.contracts?.[contractName];
-  if (!row || !row.address || !isAddress(row.address)) {
+  if (
+    !row ||
+    !row.address ||
+    !isAddress(row.address) ||
+    row.status === 'pending-declaration'
+  ) {
     throw new OfficialContractNotDeclaredError(network.network, contractName);
   }
   return getAddress(row.address);

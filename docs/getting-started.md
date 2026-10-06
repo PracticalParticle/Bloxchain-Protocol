@@ -174,6 +174,7 @@ is pinned to and runs `initialize` on it **in the same transaction**, so there i
 uninitialized account at a public address. A failed `initialize` reverts the mint.
 
 ```typescript
+import type { Address } from 'viem';
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 import {
   BasicFactory,
@@ -184,7 +185,11 @@ import {
 
 const network = resolveOfficialNetwork(official, chainId);
 assertNetworkIsOfficial(network);
-const { factory: factoryAddress } = getOfficialBasicMint(network); // throws until declared
+
+// No network declares BasicFactory yet — pass the factory you deployed.
+const factoryAddress = process.env.BASIC_FACTORY_ADDRESS as Address;
+// When a network declares the official mint, prefer the lookup instead:
+// const { factory: factoryAddress } = getOfficialBasicMint(network);
 
 const factory = new BasicFactory(publicClient, ownerWallet, factoryAddress, chain);
 

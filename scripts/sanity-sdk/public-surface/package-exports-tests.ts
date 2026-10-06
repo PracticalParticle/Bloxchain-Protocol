@@ -352,6 +352,28 @@ async function runOfficialMintSurfaceTests(
       )
     ) === 'OfficialContractNotDeclaredError'
   );
+  add(
+    'getOfficialBasicMint throws on pending-declaration even when address is set',
+    throwsName(() =>
+      root.getOfficialBasicMint(
+        network({
+          BasicFactory: { address: FACTORY, kind: 'factory', status: 'pending-declaration' },
+          BasicAccount: { address: IMPL, kind: 'template' },
+        })
+      )
+    ) === 'OfficialContractNotDeclaredError'
+  );
+  add(
+    'getOfficialAddress throws on pending-declaration even when address is set',
+    throwsName(() =>
+      root.getOfficialAddress(
+        network({
+          BasicFactory: { address: FACTORY, kind: 'factory', status: 'pending-declaration' },
+        }),
+        'BasicFactory'
+      )
+    ) === 'OfficialContractNotDeclaredError'
+  );
   try {
     const got = root.getOfficialBasicMint(
       network({
