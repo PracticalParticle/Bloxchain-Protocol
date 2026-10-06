@@ -176,21 +176,71 @@ const executionParams = await runtimeRBAC.roleConfigBatchExecutionParams(definit
 
 | Specifier | Contents |
 |-----------|----------|
-| `@bloxchain/sdk` | Contract wrappers, meta-tx helpers, EIP-712 constants, error and inner-status utilities |
-| `@bloxchain/sdk/abi` | Typed ABI barrel — `copyBloxAbi`, `accountBloxAbi`, `erc20Abi`, …, plus `ABIS` and `ALL_ERROR_ABI` |
-| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (`@bloxchain/sdk/abi/CopyBlox`) |
+| `@bloxchain/sdk` | Contract wrappers (including the official `BasicFactory`), meta-tx helpers, EIP-712 constants, error and inner-status utilities |
+| `@bloxchain/sdk/abi` | Typed ABI barrel — `basicFactoryAbi`, `basicAccountAbi`, `erc20Abi`, …, plus `ABIS` and `ALL_ERROR_ABI` |
+| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (`@bloxchain/sdk/abi/BasicFactory`) |
 | `@bloxchain/sdk/abi/<Name>.abi.json` | The raw JSON file, for tools that want it |
 
 ```typescript
-import { copyBloxAbi } from '@bloxchain/sdk/abi/CopyBlox';
+import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory';
 import { ABIS, ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
 ```
 
-`<Name>` is any of: `AccountBlox`, `BareBlox`, `BaseStateMachine`, `CopyBlox`,
+`<Name>` is any of: `AccountBlox`, `BareBlox`, `BaseStateMachine`, `BasicAccount`, `BasicFactory`, `CopyBlox`,
 `EngineBlox`, `ERC20`, `GuardController`, `GuardControllerDefinitions`,
 `IDefinition`, `RoleBlox`, `RuntimeRBAC`, `RuntimeRBACDefinitions`, `SecureBlox`,
 `SecureOwnable`, `SecureOwnableDefinitions`. Each module also exports
-`<name>ErrorAbi` and `<name>EventAbi` filters.
+`<name>ErrorAbi` and `<name>EventAbi` filters. `BasicFactory` and `BasicAccount` are the
+official mint pair; `CopyBlox` and `AccountBlox` are the legacy / example pair.
+
+## 🏭 **Factories: official `BasicFactory`, legacy `CopyBlox`**
+
+The official mint is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140). `CopyBlox` is a
+legacy / example factory: still exported, marked `@deprecated`, not the official path.
+
+### **BasicFactory** (official)
+
+```typescript
+new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, factoryAddress: Address, chain: Chain)
+```
+
+| Method | Purpose |
+|--------|---------|
+| `cloneBlox(params: BasicCloneParams, options)` | Nonce mint of the pinned `BasicAccount`; `options.from` must equal `params.initialOwner` (SPEC-2026-0142) |
+| `cloneBloxDeterministic(params: BasicDeterministicCloneParams, options)` | `CREATE2` mint at `predictClone(from, initialOwner, index, salt)`; same self-owner rule |
+| `predictClone(inputs: BasicCloneAddressInputs)` | Deterministic address, read from the factory |
+| `BasicFactory.computeCloneAddress(factory, implementation, inputs)` / `BasicFactory.create2Salt(inputs)` | Offline twins, no RPC |
+| `cloneAddressFromReceipt(receipt)` | The clone address from `BloxCloned`, or `null` |
+| `implementation()` / `isClone(address)` | The pin, and lineage of this factory only |
+
+Both mints throw before any RPC call when `options.from !== params.initialOwner`, and send
+`gas = 16777216` unless `options.gas` overrides it. **Known limitation (M-1):** the mint fits
+the EIP-7825 cap only as a **direct EOA call** (about 16.67M needed against 2^24); contract
+callers (smart-contract wallets, ERC-4337, forwarders, multicalls) are unsupported on
+cap-enforcing networks until relief such as Glamsterdam is live. See
+[Getting Started](./getting-started.md#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1).
+
+Operate the `BasicAccount` clone with `SecureOwnable`, `RuntimeRBAC` and `GuardController`
+pointed at the clone address; its ABI is `basicAccountAbi`.
+
+### **Official addresses**
+
+| Export | Purpose |
+|--------|---------|
+| `getOfficialBasicMint(network)` | `{ factory, implementation }` from the `BasicFactory` / `BasicAccount` rows. Throws `OfficialContractNotDeclaredError` when either is missing or pending; never falls back to CopyBlox |
+| `OFFICIAL_MINT_CONTRACTS` | `{ factory: 'BasicFactory', implementation: 'BasicAccount' }` |
+| `LEGACY_MINT_CONTRACTS` | `{ factory: 'CopyBlox', template: 'AccountBlox' }` |
+| `getOfficialAddress(network, name)` | Any one declared row; throws rather than returning null |
+
+No network declares `BasicFactory` / `BasicAccount` yet, so `getOfficialBasicMint` throws on
+every network today; pass a factory address you deployed until a declaration lands.
+
+### **CopyBlox** (legacy / example, deprecated)
+
+`CopyBlox` (`cloneBlox({ template, initialOwner, ... })`, `clonesOf(owner)`,
+`cloneAddressFromReceipt`) wraps the open example factory declared on historical Sepolia. It
+stays exported so existing integrators keep working; new integrations should use
+`BasicFactory`.
 
 ## 🔑 **Reading permissioned views (`readAs`)**
 
@@ -296,6 +346,10 @@ cap. This bites on configuration batches, not single calls: split a batch that
 estimates near the cap rather than having it rejected outright. The `gasLimit` in
 `TxParams` is a cap the guard forwards to the inner call, not a price — but it still
 counts toward the outer transaction's limit.
+
+For the account mint, gas **used** (~16.14M) is not the limit a sender needs (~16.67M,
+because of 63/64 forwarding inside `initialize`). Under the cap only a direct EOA call to
+`BasicFactory` fits; see the M-1 note under [Factories](#-factories-official-basicfactory-legacy-copyblox).
 
 ## 🧭 **Configuration Helpers**
 

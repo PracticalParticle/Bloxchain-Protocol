@@ -88,6 +88,9 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 
 | Export | Purpose |
 |--------|---------|
+| `BasicFactory`, `BASIC_FACTORY_SELECTORS` | **Official mint** (BasicFactory → BasicAccount): `cloneBlox`, `cloneBloxDeterministic`, `predictClone`, `computeCloneAddress`, `isClone`, `implementation` |
+| `getOfficialBasicMint`, `OFFICIAL_MINT_CONTRACTS` | Declared `BasicFactory` / `BasicAccount` addresses from `official-deployed-addresses.json`; throws until a network declares them (no fallback) |
+| `CopyBlox` (**deprecated**), `LEGACY_MINT_CONTRACTS` | Legacy / example open factory on historical Sepolia. Still exported; not the official path |
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
 | `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
@@ -102,7 +105,7 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 | `assertInnerSuccess`, `readInnerOutcomes`, `waitForTransactionAndAssertInner`, `ENGINE_BLOX_EVENTS_ABI` | A mined transaction is not a successful one — read the inner `TxStatus` back |
 | `BaseStateMachine.setReadSender()` / `readAs` argument | Query role-gated views from a wallet-less client instead of being refused `NoPermission(0x0)` |
 | `@bloxchain/sdk/abi` | Typed barrel: every shipped ABI, plus `ABIS` and `ALL_ERROR_ABI` |
-| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (e.g. `@bloxchain/sdk/abi/CopyBlox`) |
+| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (e.g. `@bloxchain/sdk/abi/BasicFactory`, `@bloxchain/sdk/abi/BasicAccount`) |
 | `@bloxchain/sdk/abi/<Name>.abi.json` | The raw ABI JSON, for tools that want the file |
 
 ## Quick Start
@@ -146,6 +149,42 @@ const definitions = new Definitions(
   chain
 );
 ```
+
+## Minting an account (official path)
+
+The official mint is **`BasicFactory` → `BasicAccount`**. `CopyBlox` is a deprecated
+legacy / example factory: it is still exported for historical Sepolia integrators, but new
+code should not use it.
+
+```typescript
+import { BasicFactory, SecureOwnable, RuntimeRBAC, GuardController } from '@bloxchain/sdk';
+
+// No network declares BasicFactory yet: getOfficialBasicMint(network) throws until one does.
+// Until then, pass the BasicFactory address you deployed. Never substitute the CopyBlox row.
+const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
+
+// The sender must be the owner (SPEC-2026-0142); the client refuses a mismatch before any RPC.
+const inputs = { deployer: owner, initialOwner: owner, index: 0n };
+const predicted = await factory.predictClone(inputs);
+const tx = await factory.cloneBloxDeterministic(
+  { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
+  { from: owner }, // sent with gas 16777216 by default
+);
+
+// A BasicAccount clone is an Account-pattern blox: bind the existing wrappers to it.
+const secureOwnable = new SecureOwnable(publicClient, walletClient, predicted, chain);
+const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, predicted, chain);
+const guardController = new GuardController(publicClient, walletClient, predicted, chain);
+```
+
+Known limits, documented in [Getting started](../../docs/getting-started.md#-provisioning-an-account-from-npm-alone):
+
+- **M-1, gas:** a mint uses ~16.14M gas but needs ~16.67M *available*; under the EIP-7825
+  cap (2^24) only a **direct EOA** call fits (~108k headroom). Smart-contract wallets, ERC-4337,
+  forwarders and multicalls are unsupported on cap-enforcing networks. Glamsterdam is expected
+  to relieve this where live; it is not fixed until then.
+- **I-1, networks:** Cancun-level EVM, with `EngineBlox`, the definition libraries,
+  `BasicAccount` and `BasicFactory` at the same addresses on every network.
 
 ## SecureOwnable Usage
 

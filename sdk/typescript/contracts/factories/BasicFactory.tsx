@@ -23,7 +23,10 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
 
 /**
  * @title BasicFactory
- * @notice Thin TypeScript wrapper for the canonical pinned factory.
+ * @notice Thin TypeScript wrapper for the **official** factory: BasicFactory → BasicAccount.
+ *
+ * SPEC-2026-0140. This is the official mint path for `@bloxchain/sdk`. `CopyBlox` is the
+ * legacy / example open factory and is deprecated as an official path.
  *
  * SPEC-2026-0130 (pinned follow-up). `BasicFactory` clones exactly one implementation, fixed
  * in its constructor (a `BasicAccount`), and initializes the clone in the same transaction.
@@ -32,7 +35,14 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  *
  * - **Mint:** permissionless **for your own account**, no implementation argument.
  *   {@link cloneBlox} (nonce, a new address every call) and {@link cloneBloxDeterministic}
- *   (CREATE2, SPEC-2026-0138) both send at the EIP-7825 cap (`16777216`), like CopyBlox.
+ *   (CREATE2, SPEC-2026-0138) both send at the EIP-7825 cap (`16777216`).
+ * - **Gas, known limitation (M-1):** a mint *uses* about 16.14M gas but needs about 16.67M
+ *   *available*, because `initialize` only receives 63/64 of the gas at each nested call. Under
+ *   the EIP-7825 cap (Osaka) that leaves about 108k of limit headroom, so only a **direct EOA**
+ *   call fits. A contract caller in front of the factory (Safe or another smart-contract wallet,
+ *   ERC-4337, a forwarder, a multicall) needs more than `2^24` and fails on cap-enforcing
+ *   networks. Never size the send from gas used. Glamsterdam is expected to relieve this where
+ *   it is live; it is not fixed until then.
  * - **Self-owner (SPEC-2026-0142):** the sender must be the owner, so `options.from` must equal
  *   `params.initialOwner`; otherwise the factory reverts `RestrictedOwner(caller, owner)`. The
  *   wrapper checks this before any RPC call and throws. Broadcaster and recovery may still be
@@ -47,9 +57,16 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  * - **Pin:** {@link implementation} reads the one address every mint clones.
  * - **Lineage:** {@link isClone} means "minted by this factory". It does not mean every copy
  *   of the implementation on the chain came from this factory.
+ * - **The clone:** a `BasicAccount` is an Account-pattern blox. Operate it with the existing
+ *   `SecureOwnable`, `RuntimeRBAC` and `GuardController` wrappers pointed at the clone address
+ *   (ABI: `basicAccountAbi` from `@bloxchain/sdk/abi`); there is no separate account client.
+ * - **Networks (I-1):** Cancun-level EVM (transient storage, `MCOPY`). `EngineBlox`, the
+ *   definition libraries `BasicAccount` links, `BasicAccount` and `BasicFactory` must sit at the
+ *   same addresses on every network, or predicted addresses differ.
  *
  * The account gate rejects the factory address because it has no `owner()`. No official
- * `BasicFactory` deployment is declared; pass the address you deployed.
+ * `BasicFactory` deployment is declared yet: `getOfficialAddress(network, 'BasicFactory')` throws
+ * until one is. Pass the address you deployed, and never substitute the CopyBlox row.
  */
 
 /** Selectors on the pinned factory. */
