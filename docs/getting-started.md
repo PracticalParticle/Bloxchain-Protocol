@@ -240,6 +240,21 @@ const guardController = new GuardController(publicClient, walletClient, account,
 the timelock is bounded to 1 day through 90 days, and the implementation's own initializer is
 locked so the pinned implementation cannot be claimed.
 
+**Owner-signed meta-transactions use ECDSA only.** On-chain verification is `ecrecover` of a
+65-byte signature (see [Meta-Transactions](./meta-transactions.md)). A contract can still be
+`owner()` and operate the account with **direct** calls (`msg.sender` is the contract). It
+cannot satisfy those owner-signed meta-tx flows via ERC-1271. If you need the owner-signs /
+broadcaster-submits path, the owner (and any meta-tx signer) must be an address that recovers
+as itself — typically an EOA. A separate recovery EOA can still move ownership.
+
+**Do not pay a fresh clone with `transfer` or `send`.** The clone is an EIP-1167 proxy: receiving
+ETH `DELEGATECALL`s the implementation. A cold implementation access costs more than the 2,300-gas
+stipend, so `address.transfer` / `send` fail until the implementation is warm. Use
+`call{value: amount}("")` with enough gas (or an access list / a touch of the
+implementation earlier in the **same** transaction — a prior transaction does not
+leave the implementation warm). The ETH is not taken; the paying call reverts or
+returns false.
+
 ### 3. Finding the accounts an owner already has
 
 An owner can hold **more than one** account. `BasicFactory` has no on-chain `clonesOf` index:

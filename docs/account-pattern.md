@@ -34,12 +34,13 @@ Concrete implementations (for example `AccountBlox`) inherit from `Account` and 
   - Non‑protected roles and function permissions are configured via `RuntimeRBAC` role config batches.
   - Execution of arbitrary calls (including ERC‑20, application contracts, etc.) is mediated by `GuardController`:
     - Time‑locked request / approve / cancel flows.
-    - Meta‑transaction based approvals (owner signs, broadcaster executes).
+    - Meta‑transaction based approvals (owner signs with ECDSA / `ecrecover`, broadcaster executes; not ERC-1271).
     - Strict per‑function **target whitelists**.
 
 - **ETH Handling**
   - `receive()` accepts plain ETH and emits `EthReceived(sender, value)`.
   - `fallback()` always reverts – all non‑ETH‑transfer calls must go through known selectors coordinated by the state machine.
+  - **Clones:** do not use Solidity `transfer` / `send` to a freshly minted EIP-1167 account while the implementation is cold; use `call` with enough gas.
 
 ---
 
