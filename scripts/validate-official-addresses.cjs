@@ -1,5 +1,5 @@
 // validate-official-addresses.cjs
-// Executable schema for official-deployed-addresses.json (SPEC-2026-0118 R2).
+// Executable schema for official-deployed-addresses.json (SPEC-2026-0118 R2, SPEC-2026-0137).
 //
 //   node scripts/validate-official-addresses.cjs            # validate the file
 //   node scripts/validate-official-addresses.cjs --network sepolia
@@ -7,25 +7,31 @@
 //
 // --require-official <network> additionally fails when that network still has pending
 // rows, which is what a release check wants before telling integrators to use it.
+//
+// Required rows depend on the network's posture (scripts/lib/official-catalog.cjs): a CreateX
+// catalog network must declare the libraries + BasicAccount + BasicFactory, each with a
+// CreateX salt and init code hash that reproduce its address offline; a legacy network
+// declares the libraries + AccountBlox + CopyBlox. Legacy rows kept on a catalog network
+// must be "deprecated".
 
 const fs = require('fs');
 const path = require('path');
+const {
+  CREATEX,
+  LEGACY_LIBRARY_PREFIX,
+  LIBRARIES,
+  POSTURES,
+  createXSaltError,
+  isBytes32,
+  postureOf,
+  predictCreateXAddress,
+} = require('./lib/official-catalog.cjs');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const FILE = path.join(ROOT_DIR, 'official-deployed-addresses.json');
 const LAB_FILE = 'deployed-addresses.json';
 
 const EXPECTED_FORMAT = 'bloxchain-official-addresses/1';
-
-/** Every official network must carry a row for each of these. */
-const REQUIRED_CONTRACTS = [
-  'EngineBlox',
-  'SecureOwnableDefinitions',
-  'RuntimeRBACDefinitions',
-  'GuardControllerDefinitions',
-  'AccountBlox',
-  'CopyBlox',
-];
 
 const KINDS = new Set(['library', 'definition-library', 'template', 'factory']);
 const STATUSES = new Set(['official', 'pending-declaration', 'deprecated']);
@@ -65,6 +71,9 @@ function validateContract(networkName, contractName, row) {
   if (!KINDS.has(row.kind)) {
     error(where, `kind must be one of ${[...KINDS].join(', ')} (got ${JSON.stringify(row.kind)})`);
   }
+  if (row.status !== undefined && !STATUSES.has(row.status)) {
+    error(where, `status must be one of ${[...STATUSES].join(', ')} (got ${JSON.stringify(row.status)})`);
+  }
 
   const pending = row.status === 'pending-declaration' || row.address === null;
 
@@ -93,8 +102,8 @@ function validateContract(networkName, contractName, row) {
     error(where, 'artifact must be a path string when present');
   }
 
-  if (contractName === 'CopyBlox') {
-    if (!row.supports || typeof row.supports.clonesOf !== 'boolean') {
+  if (contractName === 'CopyBlox' || contractName === 'BasicFactory') {
+    if (contractName === 'CopyBlox' && (!row.supports || typeof row.supports.clonesOf !== 'boolean')) {
       error(
         where,
         'a factory row must declare supports.clonesOf (false for factories deployed before the owner index, so consumers fall back to BloxCloned logs)'
@@ -112,7 +121,7 @@ function validateContract(networkName, contractName, row) {
       if (!isPositiveSafeInteger(cloneBloxObserved)) {
         error(
           where,
-          `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)}). Fresh CopyBlox promotions leave this field null — populate it from a real transaction receipt before re-running validation.`
+          `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)}). Fresh factory promotions leave this field null — populate it from a real transaction receipt before re-running validation.`
         );
       } else if (isPositiveSafeInteger(maxTxGas) && !(cloneBloxObserved < maxTxGas)) {
         error(
@@ -134,12 +143,83 @@ function validateContract(networkName, contractName, row) {
   return { declared: true };
 }
 
+/**
+ * CreateX catalog rules: the CreateX pins, a permissioned no-chainid salt per row, an
+ * address that reproduces from deployer + salt + init code hash, the official mint wiring,
+ * and every legacy row on the network marked deprecated.
+ */
+function validateCatalog(networkName, network) {
+  const where = `networks.${networkName}.catalog`;
+  const catalog = network.catalog;
+
+  if (catalog.createx !== CREATEX.address) {
+    error(where, `createx must be ${CREATEX.address} (got ${JSON.stringify(catalog.createx)})`);
+  }
+  if (catalog.createxRuntimeCodeHash !== CREATEX.runtimeCodeHash) {
+    error(where, `createxRuntimeCodeHash must be the CreateX pin ${CREATEX.runtimeCodeHash}`);
+  }
+  if (!isAddress(catalog.deployer)) {
+    error(where, `deployer must be an address (got ${JSON.stringify(catalog.deployer)})`);
+    return;
+  }
+
+  const contracts = network.contracts;
+  for (const name of POSTURES.createx.required) {
+    const row = contracts[name];
+    if (!row || !isAddress(row.address)) continue;
+    const rowWhere = `networks.${networkName}.contracts.${name}`;
+    if (!row.createx || typeof row.createx !== 'object') {
+      error(rowWhere, 'a CreateX catalog row must record createx.salt and createx.initCodeHash');
+      continue;
+    }
+    const saltError = createXSaltError(row.createx.salt, catalog.deployer);
+    if (saltError) {
+      error(rowWhere, `createx.${saltError}`);
+      continue;
+    }
+    if (!isBytes32(row.createx.initCodeHash)) {
+      error(rowWhere, 'createx.initCodeHash must be 32 bytes');
+      continue;
+    }
+    const predicted = predictCreateXAddress({
+      deployer: catalog.deployer,
+      salt: row.createx.salt,
+      initCodeHash: row.createx.initCodeHash,
+    });
+    if (predicted !== row.address.toLowerCase()) {
+      error(rowWhere, `address ${row.address} does not reproduce from deployer + salt + initCodeHash (${predicted})`);
+    }
+    if (row.status === 'deprecated') {
+      error(rowWhere, 'the official mint row of a catalog network cannot be deprecated');
+    }
+  }
+
+  const factory = contracts.BasicFactory;
+  if (factory && factory.address && factory.cloneTarget !== 'BasicAccount') {
+    error(`networks.${networkName}.contracts.BasicFactory`, 'cloneTarget must be BasicAccount');
+  }
+
+  const legacyNames = [
+    ...POSTURES.createx.legacy,
+    ...LIBRARIES.map((lib) => `${LEGACY_LIBRARY_PREFIX}${lib}`),
+  ];
+  for (const name of legacyNames) {
+    const row = contracts[name];
+    if (row && row.status !== 'deprecated') {
+      error(
+        `networks.${networkName}.contracts.${name}`,
+        'a legacy row on a CreateX catalog network must have "status": "deprecated" (legacy developer path, not the Platform default)'
+      );
+    }
+  }
+}
+
 function validateNetwork(networkName, network, seenChainIds) {
   const where = `networks.${networkName}`;
 
   if (!network || typeof network !== 'object') {
     error(where, 'must be an object');
-    return { pending: [] };
+    return { pending: [], required: [] };
   }
 
   if (!Number.isInteger(network.chainId) || network.chainId <= 0) {
@@ -167,13 +247,18 @@ function validateNetwork(networkName, network, seenChainIds) {
     error(where, 'an official network must record declaredIn (where a human declared it)');
   }
 
-  if (!network.contracts || typeof network.contracts !== 'object') {
-    error(where, 'contracts must be an object');
-    return { pending: [] };
+  if (network.catalog !== undefined && postureOf(network) !== 'createx') {
+    error(where, `catalog.rail must be "createx" when catalog is present (got ${JSON.stringify(network.catalog && network.catalog.rail)})`);
   }
 
+  if (!network.contracts || typeof network.contracts !== 'object') {
+    error(where, 'contracts must be an object');
+    return { pending: [], required: [] };
+  }
+
+  const required = POSTURES[postureOf(network)].required;
   const pending = [];
-  for (const contractName of REQUIRED_CONTRACTS) {
+  for (const contractName of required) {
     if (!(contractName in network.contracts)) {
       error(where, `missing required contract row: ${contractName}`);
       pending.push(contractName);
@@ -184,12 +269,25 @@ function validateNetwork(networkName, network, seenChainIds) {
   }
 
   for (const contractName of Object.keys(network.contracts)) {
-    if (!REQUIRED_CONTRACTS.includes(contractName)) {
+    if (!required.includes(contractName)) {
       validateContract(networkName, contractName, network.contracts[contractName]);
     }
   }
 
-  return { pending };
+  // A template's linked libraries must name rows on the same network, so retiring a
+  // library to Legacy<Name> cannot leave the legacy template pointing at nothing.
+  for (const [contractName, row] of Object.entries(network.contracts)) {
+    if (!row || !Array.isArray(row.linkedLibraries)) continue;
+    for (const lib of row.linkedLibraries) {
+      if (!network.contracts[lib]) {
+        error(`${where}.contracts.${contractName}`, `linkedLibraries names ${lib}, which has no row on this network`);
+      }
+    }
+  }
+
+  if (postureOf(network) === 'createx') validateCatalog(networkName, network);
+
+  return { pending, required };
 }
 
 function main() {
@@ -220,15 +318,14 @@ function main() {
   const onlyNetwork = argValue('--network');
   const requireOfficial = argValue('--require-official');
   const seenChainIds = new Map();
-  const pendingByNetwork = {};
+  const results = {};
 
   for (const [networkName, network] of Object.entries(data.networks)) {
     if (onlyNetwork && networkName !== onlyNetwork) continue;
-    const { pending } = validateNetwork(networkName, network, seenChainIds);
-    pendingByNetwork[networkName] = pending;
+    results[networkName] = validateNetwork(networkName, network, seenChainIds);
   }
 
-  if (onlyNetwork && !(onlyNetwork in pendingByNetwork)) {
+  if (onlyNetwork && !(onlyNetwork in results)) {
     console.error(`❌ network ${onlyNetwork} is not in ${path.basename(FILE)}`);
     process.exit(1);
   }
@@ -244,22 +341,22 @@ function main() {
       );
     } else if (network.status !== 'official') {
       error(`networks.${requireOfficial}`, `status is ${network.status}, expected official`);
-    } else if ((pendingByNetwork[requireOfficial] ?? []).length > 0) {
+    } else if ((results[requireOfficial]?.pending ?? []).length > 0) {
       error(
         `networks.${requireOfficial}`,
-        `still has pending rows: ${pendingByNetwork[requireOfficial].join(', ')}`
+        `still has pending rows: ${results[requireOfficial].pending.join(', ')}`
       );
     }
   }
 
-  for (const [networkName, pending] of Object.entries(pendingByNetwork)) {
+  for (const [networkName, { pending, required }] of Object.entries(results)) {
     const network = data.networks[networkName];
-    const label = `${networkName} (chain ${network && network.chainId})`;
+    const label = `${networkName} (chain ${network && network.chainId}, ${postureOf(network)})`;
     if (pending.length === 0) {
-      console.log(`✅ ${label}: all ${REQUIRED_CONTRACTS.length} required contracts declared`);
+      console.log(`✅ ${label}: all ${required.length} required contracts declared`);
     } else {
       console.log(
-        `⏳ ${label}: ${REQUIRED_CONTRACTS.length - pending.length}/${REQUIRED_CONTRACTS.length} declared, pending: ${pending.join(', ')}`
+        `⏳ ${label}: ${required.length - pending.length}/${required.length} declared, pending: ${pending.join(', ')}`
       );
     }
   }

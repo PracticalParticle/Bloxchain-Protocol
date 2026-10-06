@@ -154,19 +154,26 @@ check('at least one official network', declared.length > 0, declared.map(([k, n]
 for (const [name, network] of declared) {
   const address = (contract) => network.contracts?.[contract]?.address ?? null;
   const isAddress = (value) => typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
-  check(\`\${name}: factory address\`, isAddress(address('CopyBlox')), address('CopyBlox'));
-  check(\`\${name}: account template address\`, isAddress(address('AccountBlox')), address('AccountBlox'));
+  // SPEC-2026-0137: a CreateX catalog network's official mint is BasicFactory -> BasicAccount;
+  // a legacy network's is CopyBlox -> AccountBlox.
+  const catalog = network.catalog?.rail === 'createx';
+  const factoryName = catalog ? 'BasicFactory' : 'CopyBlox';
+  const templateName = catalog ? 'BasicAccount' : 'AccountBlox';
+  check(\`\${name}: factory address (\${factoryName})\`, isAddress(address(factoryName)), address(factoryName));
+  check(\`\${name}: account template address (\${templateName})\`, isAddress(address(templateName)), address(templateName));
   check(
     \`\${name}: definition library addresses\`,
     ['SecureOwnableDefinitions', 'RuntimeRBACDefinitions', 'GuardControllerDefinitions'].every((c) => isAddress(address(c)))
   );
-  check(
-    \`\${name}: factory declares whether it has the owner index\`,
-    typeof network.contracts?.CopyBlox?.supports?.clonesOf === 'boolean',
-    \`clonesOf=\${network.contracts?.CopyBlox?.supports?.clonesOf}\`
-  );
+  if (!catalog) {
+    check(
+      \`\${name}: factory declares whether it has the owner index\`,
+      typeof network.contracts?.CopyBlox?.supports?.clonesOf === 'boolean',
+      \`clonesOf=\${network.contracts?.CopyBlox?.supports?.clonesOf}\`
+    );
+  }
   // R4: the gas envelope travels with the address, so a consumer never has to guess it.
-  const gas = network.contracts?.CopyBlox?.gas ?? {};
+  const gas = network.contracts?.[factoryName]?.gas ?? {};
   check(\`\${name}: clone gas fits the per-tx cap\`, typeof gas.maxTxGas === 'number' && Number.isFinite(gas.cloneBloxObserved) && gas.cloneBloxObserved < gas.maxTxGas, \`\${gas.cloneBloxObserved} < \${gas.maxTxGas}\`);
 }
 

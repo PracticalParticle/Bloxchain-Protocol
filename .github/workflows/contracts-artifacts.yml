@@ -27,6 +27,7 @@ on:
       - 'scripts/build-artifacts.cjs'
       - 'scripts/validate-official-addresses.cjs'
       - 'scripts/promote-official-addresses.cjs'
+      - 'scripts/lib/official-catalog.cjs'
       - 'scripts/verify-package-consumption.mjs'
       - 'official-deployed-addresses.json'
       - 'foundry.toml'

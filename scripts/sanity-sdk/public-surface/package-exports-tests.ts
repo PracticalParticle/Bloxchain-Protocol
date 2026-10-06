@@ -288,9 +288,13 @@ async function runOfficialMintSurfaceTests(
   const entrySource = fs.readFileSync(path.join(SDK_ROOT, 'index.tsx'), 'utf8');
   add('index does not call CopyBlox the sanctioned factory', !/sanctioned/i.test(entrySource));
 
-  // Fail closed on the shipped address file: no network declares BasicFactory yet.
+  // The shipped address file: Sepolia returns exactly its declared BasicFactory / BasicAccount
+  // rows once the CreateX catalog is declared there (SPEC-2026-0137), and fails closed before.
   const official = JSON.parse(fs.readFileSync(OFFICIAL_ADDRESSES, 'utf8'));
-  const copyBloxRow: string | undefined = official.networks?.sepolia?.contracts?.CopyBlox?.address;
+  const sepoliaRows = official.networks?.sepolia?.contracts ?? {};
+  const copyBloxRow: string | undefined = sepoliaRows.CopyBlox?.address;
+  const isDeclared = (row: any) => Boolean(row?.address) && row?.status !== 'pending-declaration';
+  const sepoliaDeclared = isDeclared(sepoliaRows.BasicFactory) && isDeclared(sepoliaRows.BasicAccount);
   const throwsName = (fn: () => unknown): string | null => {
     try {
       fn();
@@ -306,11 +310,20 @@ async function runOfficialMintSurfaceTests(
     const got = root.getOfficialBasicMint(sepolia);
     leaked = `${got?.factory} / ${got?.implementation}`;
   });
-  add(
-    'getOfficialBasicMint(sepolia) throws OfficialContractNotDeclaredError (no invented address)',
-    sepoliaError === 'OfficialContractNotDeclaredError',
-    sepoliaError ?? `returned ${leaked}`
-  );
+  if (sepoliaDeclared) {
+    const want = `${sepoliaRows.BasicFactory.address} / ${sepoliaRows.BasicAccount.address}`.toLowerCase();
+    add(
+      'getOfficialBasicMint(sepolia) returns the declared BasicFactory / BasicAccount rows',
+      sepoliaError === null && String(leaked).toLowerCase() === want,
+      sepoliaError ?? `returned ${leaked}, declared ${want}`
+    );
+  } else {
+    add(
+      'getOfficialBasicMint(sepolia) throws OfficialContractNotDeclaredError (no invented address)',
+      sepoliaError === 'OfficialContractNotDeclaredError',
+      sepoliaError ?? `returned ${leaked}`
+    );
+  }
   add(
     'getOfficialBasicMint never falls back to the CopyBlox row',
     leaked === null || (copyBloxRow !== undefined && !String(leaked).toLowerCase().includes(copyBloxRow.toLowerCase()))
