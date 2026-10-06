@@ -250,8 +250,10 @@ as itself — typically an EOA. A separate recovery EOA can still move ownership
 **Do not pay a fresh clone with `transfer` or `send`.** The clone is an EIP-1167 proxy: receiving
 ETH `DELEGATECALL`s the implementation. A cold implementation access costs more than the 2,300-gas
 stipend, so `address.transfer` / `send` fail until the implementation is warm. Use
-`call{value: amount}("")` with enough gas (or an access list / a prior touch of the
-implementation). The ETH is not taken; the paying call reverts or returns false.
+`call{value: amount}("")` with enough gas (or an access list / a touch of the
+implementation earlier in the **same** transaction — a prior transaction does not
+leave the implementation warm). The ETH is not taken; the paying call reverts or
+returns false.
 
 ### 3. Finding the accounts an owner already has
 
