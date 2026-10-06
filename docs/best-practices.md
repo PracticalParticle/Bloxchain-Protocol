@@ -681,7 +681,7 @@ app.get('/health', async (req, res) => {
 
 Account and other **initializer‑based** contracts must have storage wired **once** on the instance users interact with (the proxy or minimal proxy), in the **correct** order for your inheritance chain.
 
-**Prefer a factory** that performs **create + `initialize`** atomically so a failed init never leaves an uninitialized live address. The Solidity reference is **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`): clone via EIP‑1167, then `initialize(address,address,address,uint256,address)`; revert if the call fails.
+**Prefer a factory** that performs **create + `initialize`** atomically so a failed init never leaves an uninitialized live address. For accounts, the official factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount`: clone via EIP‑1167, then `initialize`; revert if the call fails. For your own blox types, the legacy / example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is the open-factory reference: clone, then `initialize(address,address,address,uint256,address)`.
 
 **If you deploy proxies manually:**
 

@@ -27,7 +27,7 @@ Concrete implementations (for example `AccountBlox`) inherit from `Account` and 
       - Secure ownership operations (`SecureOwnableDefinitions`)
       - Runtime role configuration (`RuntimeRBACDefinitions`)
       - Guarded execution and whitelists (`GuardControllerDefinitions`)
-  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. Reference implementation: **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) — validates `IBaseStateMachine`, clones, calls `initialize`, reverts on failure. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
+  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. The official factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount` — vets the pin once, clones, calls `initialize`, reverts on failure. The legacy / example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) shows the same pattern as an open factory for any `IBaseStateMachine`. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
 
 - **Security Model**
   - Protected roles (`OWNER_ROLE`, `BROADCASTER_ROLE`, `RECOVERY_ROLE`) are controlled only by `SecureOwnable`.
@@ -76,8 +76,8 @@ const walletClient = createWalletClient({
   transport: http(rpcUrl),
 });
 
-// 2) Use a deployed Account-based contract (e.g. AccountBlox)
-const accountAddress = '0x...' as `0x${string}`; // from deployed-addresses.json
+// 2) Use an account you own, e.g. a BasicAccount clone minted by the official BasicFactory
+const accountAddress = '0x...' as `0x${string}`; // your clone; gate it with assertOwnedAccount first
 
 const secureOwnable = new SecureOwnable(publicClient, walletClient, accountAddress, sepolia);
 const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, accountAddress, sepolia);
@@ -116,40 +116,58 @@ looks complete, while `getActiveRolePermissions` shows no role actually *holding
 action on that selector. Whitelisting a token and stopping there reverts
 `NoPermission(caller)`. **A supported action is not a granted action, and a whitelist is
 not a permission.** The full recipe is in
-[Getting Started, three locks](./getting-started.md#5-the-three-locks).
+[Getting Started, three locks](./getting-started.md#7-the-three-locks).
 
-### Creating one: the clone factory
+### Creating one: the official factory
 
-The sanctioned way to create an account is a **CopyBlox-shaped clone factory**:
-`cloneBlox` deploys an EIP-1167 minimal proxy of an account template and calls
-`initialize` on it in the **same transaction**, so no uninitialized account is ever live
-at a public address. The factory also indexes clones by their initial owner
-(`clonesOf(owner)`), because an owner can hold several accounts and picking the most
-recent one strands the others.
+The official way to create an account is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140).
+`cloneBlox` (or the deterministic `cloneBloxDeterministic`) deploys an EIP-1167 minimal proxy
+of the one `BasicAccount` the factory is pinned to and calls `initialize` on it in the **same
+transaction**, so no uninitialized account is ever live at a public address. In the SDK, use
+the `BasicFactory` client; operate the clone with the `SecureOwnable` / `RuntimeRBAC` /
+`GuardController` wrappers above (there is no separate account client).
 
-The factory is an *example application* of the protocol that is supported as the public
-provisioning surface. It is deliberately **not** in `contracts/core`, and an account never
-depends on it at runtime.
+The factory is deliberately **not** in `contracts/core`, and an account never depends on it at
+runtime. No network declares the official pair yet: `getOfficialBasicMint(network)` throws
+until one does, and never falls back to CopyBlox.
 
-### Two pipelines
+The legacy / example **CopyBlox** factory (historical Sepolia developer pipeline) is
+**deprecated as an official path**. Its SDK client stays exported for existing integrators.
 
-| | Developer pipeline (declared on Sepolia) | Canonical source (SPEC-2026-0130) |
+### Official and legacy pipelines
+
+| | Official (SPEC-2026-0130 / 0140) | Legacy / example (declared on Sepolia) |
 |---|---|---|
-| Account | `AccountBlox`, 1-second timelock floor | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked |
-| Factory | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor |
-| Mint | Permissionless, nonce (`CREATE`), for any owner | Permissionless **self-owner** mint: the sender must be `initialOwner` (SPEC-2026-0142). Nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` |
-| Governance on the factory | None | None: no owner, roles, timelock or whitelist. A new official account means a new factory |
+| Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox`, 1-second timelock floor |
+| Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox |
+| Mint | Permissionless **self-owner** mint: the sender must be `initialOwner` (SPEC-2026-0142), as a **direct EOA call** (M-1). Nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` | Permissionless, nonce (`CREATE`), for any owner |
+| Finding the accounts of an owner | `predictClone` over `index = 0, 1, 2, …` + `isClone`, or `BloxCloned` logs | `clonesOf(owner)` (log fallback on older deployments) |
+| Governance on the factory | None: no owner, roles, timelock or whitelist. A new official account means a new factory | None |
 
-Both factories send the clone with gas limit `16777216` (the EIP-7825 cap); see
-[Getting Started, gas](./getting-started.md#4-gas-the-clone-sits-just-under-a-hard-protocol-cap).
-Measured for the pinned pair: `cloneBlox` 16,137,707 gas, `cloneBloxDeterministic`
-16,140,930 gas, factory runtime 1,960 bytes.
+Both factories send the clone with gas limit `16777216` (the EIP-7825 cap). Measured for the
+official pair: `cloneBlox` 16,137,707 gas used, `cloneBloxDeterministic` 16,140,930 gas used,
+factory runtime 1,960 bytes.
+
+**Known limitation: gas (M-1).** Gas *used* is not the limit a sender needs. `initialize`
+receives only 63/64 of the gas at each nested call, so a mint must be sent with about 16.67M
+available. Under the EIP-7825 cap (Osaka) only a **direct EOA call** to `BasicFactory` fits
+(about 108k of headroom). A Safe or other smart-contract wallet, an ERC-4337 account, a
+forwarder or a multicall in front of the factory needs more than `2^24` and is **unsupported**
+on cap-enforcing networks. Relief is expected where Glamsterdam is live; it is not fixed until
+then. See
+[Getting Started, known limitation](./getting-started.md#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1).
+
+**Network requirements (I-1).** A Cancun-level EVM, and `EngineBlox`, the three definition
+libraries, `BasicAccount` and `BasicFactory` at the same addresses on every network; otherwise
+predicted addresses differ per chain. See
+[Getting Started, network requirements](./getting-started.md#6-network-requirements-for-the-official-stack-i-1).
 
 **Official pattern: self-owner mint.** `BasicFactory` reverts `RestrictedOwner(caller, owner)`
 on both mints unless `initialOwner == msg.sender`: you mint your own account, and you may still
 name helper wallets as broadcaster and recovery. Minting for another owner (a relayer or a
-sponsor naming a third party as owner) stays possible with other factories such as CopyBlox, but
-is out of scope for this pin; it is a social-engineering surface the official path closes.
+sponsor naming a third party as owner) stays possible with other factories such as the legacy
+CopyBlox, but is out of scope for the official pin; it is a social-engineering surface the
+official path closes.
 
 The deterministic address (SPEC-2026-0138) is `CREATE2` over
 `keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. Since
@@ -160,20 +178,20 @@ Broadcaster, recovery and timelock are not hashed, so they may differ across cha
 minter passes the same values. Default: `salt = bytes32(0)`, `index = 0, 1, 2, …`. See
 [Getting Started, deterministic mint](./getting-started.md#deterministic-mint-same-address-on-every-matched-network).
 
-The lineage check for the canonical pipeline is `BasicFactory.isClone(address)`: the address
+The lineage check for the official pipeline is `BasicFactory.isClone(address)`: the address
 was minted by **that** factory, by either path. A clone at the same address on another chain
 is a claim about that chain's factory; check `isClone` there. It is not a property of the bytecode, and other deployment
-paths for the same implementation remain possible. The canonical pair is source only:
-nothing is declared in `official-deployed-addresses.json`, and the Nethermind core audit does
-not cover it. See
-[Getting Started, two pipelines](./getting-started.md#7-two-pipelines-developer-and-canonical).
+paths for the same implementation remain possible. The official pair is not yet declared:
+nothing is in `official-deployed-addresses.json`, and the Nethermind core audit does not cover
+it (it had an internal light assure, SPEC-2026-0139, which is not an audit opinion). See
+[Getting Started, official and legacy pipelines](./getting-started.md#9-official-and-legacy-pipelines).
 
 ### Recognising one: the shape gate
 
 An account and a factory are both `BaseStateMachine`s, so ERC-165 `IBaseStateMachine` does
 **not** distinguish them. Gate on all four of:
 
-| Check | An account | CopyBlox | BasicFactory |
+| Check | An account | CopyBlox (legacy) | BasicFactory |
 |---|---|---|---|
 | `getCode` non-empty | yes | yes | yes |
 | `owner()` answers | yes | **reverts** while uninitialized | **no such function** |

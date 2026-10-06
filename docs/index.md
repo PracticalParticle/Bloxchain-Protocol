@@ -40,6 +40,7 @@ Welcome to the Bloxchain TypeScript SDK documentation index. This page links to 
 - **Understand npm vs on-chain version** → [Versioning & releases](./VERSIONING.md)
 - **Get started quickly** → [Getting Started](./getting-started.md)
 - **Integrate from outside this repo** → [Integrator Checklist](./integrator-checklist.md)
+- **Mint an account (official `BasicFactory` → `BasicAccount`)** → [Provisioning an account](./getting-started.md#-provisioning-an-account-from-npm-alone)
 - **Deploy or clone an Account / initializer contract safely** → [Deployment and initialization](./getting-started.md#deployment-and-initialization)
 - **Understand the on-chain architecture** → [Bloxchain Architecture](./bloxchain-architecture.md)
 - **See how contracts relate** → [Core Contract Graph](./core-contract-graph.md)
