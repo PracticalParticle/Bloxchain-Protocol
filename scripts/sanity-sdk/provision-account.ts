@@ -1,6 +1,10 @@
 /**
  * provision-account.ts — the reference provisioner (SPEC-2026-0118 R5 + R6).
  *
+ * Still mints through declared Sepolia CopyBlox. Do not switch this script to
+ * `getOfficialBasicMint` until SPEC-2026-0137 CreateX declare lands — today that
+ * helper throws `OfficialContractNotDeclaredError` on every network.
+ *
  * Takes an owner from nothing to a governed account that can make its first guarded
  * transfer, using only what `@bloxchain/contracts` and `@bloxchain/sdk` publish:
  * the official addresses file, the clone factory, and the SDK wrappers.

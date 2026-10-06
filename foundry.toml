@@ -39,3 +39,10 @@ fail_on_revert = false
 # Run `forge lint` separately when you want lint feedback.
 [lint]
 lint_on_build = false
+
+# SPEC-2026-0137 CreateX catalog recipe. Same-address waves compile here, not under
+# [profile.default] (Osaka + ipfs metadata). `bytecode_hash = "none"` is a catalog lock:
+# metadata (CRLF vs LF, remappings) must not enter the init code.
+[profile.createx-catalog]
+evm_version = "cancun"
+bytecode_hash = "none"

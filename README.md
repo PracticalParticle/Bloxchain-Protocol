@@ -231,6 +231,12 @@ npm run validate:official-addresses -- --require-official sepolia
 
 ### Official Sepolia addresses
 
+The table is the **currently declared** CopyBlox stack. After SPEC-2026-0137 CreateX
+declare, `EngineBlox` (and the three definition libs) in the official file are the new
+catalog addresses; the CopyBlox-era libraries stay under `Legacy*` keys. Do not copy
+predicted catalog addresses here until `promote --declare`. Integrators should read
+`getOfficialBasicMint` once Basic* is declared.
+
 Machine-readable, and published with `@bloxchain/contracts`:
 **[`official-deployed-addresses.json`](./official-deployed-addresses.json)**. Read it with
 the SDK rather than transcribing the table below:

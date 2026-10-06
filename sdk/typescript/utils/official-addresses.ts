@@ -20,7 +20,9 @@ import { Address, getAddress, isAddress } from 'viem';
  * No network declares `BasicFactory` / `BasicAccount` yet, so today that call throws
  * {@link OfficialContractNotDeclaredError} everywhere. That is the intended behavior: the
  * helpers never invent an address and never fall back to the legacy `CopyBlox` row. Until a
- * declaration lands, pass the `BasicFactory` address you deployed yourself.
+ * declaration lands, pass the `BasicFactory` address you deployed yourself. After a CreateX
+ * declare, `EngineBlox` (and the three definition libs) are the catalog addresses; the
+ * CopyBlox-era libraries remain under `LegacyEngineBlox` / `Legacy*` keys.
  *
  * Do not confuse this with `deployed-addresses.json`, which the deployment scripts write
  * for whatever network they were pointed at, including local and lab chains. That file is

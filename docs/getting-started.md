@@ -158,7 +158,9 @@ wallet that sends the mint itself** and pays for it (a direct EOA call: see
 > `OfficialContractNotDeclaredError` until a release owner declares them, and there is no
 > fallback: until then, pass the `BasicFactory` address you deployed yourself. Never
 > substitute the CopyBlox row. Sepolia's only declared factory is the **legacy** CopyBlox
-> ([§10](#10-legacy-copyblox-on-sepolia-developer--example)).
+> ([§10](#10-legacy-copyblox-on-sepolia-developer--example)). After CreateX declare
+> (SPEC-2026-0137), `getOfficialBasicMint` is the official mint; `EngineBlox` in the
+> official file is the catalog library, and CopyBlox-era libraries live under `Legacy*`.
 
 Working reference for the locks and idempotency rules below:
 **`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`). It is idempotent and
