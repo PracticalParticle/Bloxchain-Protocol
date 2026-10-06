@@ -7,11 +7,17 @@ import CopyBloxAbi from '../../abi/CopyBlox.abi.json' with { type: 'json' };
 
 /**
  * @title CopyBlox
- * @notice TypeScript wrapper for the sanctioned clone factory.
+ * @notice TypeScript wrapper for the **legacy / example** open clone factory.
+ *
+ * **Deprecated as the official path (SPEC-2026-0140).** The official mint is
+ * `BasicFactory` → `BasicAccount` (see `contracts/factories/BasicFactory`). CopyBlox is
+ * the MIT example under `contracts/examples/applications/CopyBlox/` and the historical Sepolia
+ * developer factory; this wrapper stays exported so existing Sepolia integrators keep working.
+ * Removing it is a later, breaking change, made only after downstream consumers migrate.
  *
  * SPEC-2026-0118 R3/R4. `cloneBlox` deploys an EIP-1167 minimal proxy of an account
- * template and initializes it in **one** transaction, which is the supported way to get a
- * governed account from the published packages alone.
+ * template and initializes it in **one** transaction. Unlike `BasicFactory`, it clones any
+ * template the caller names and mints for any owner.
  *
  * Two things this wrapper exists to get right:
  *
@@ -30,6 +36,7 @@ const BLOX_CLONED_EVENT = parseAbiItem(
   'event BloxCloned(address indexed original, address indexed clone, address indexed initialOwner, uint256 cloneNumber)'
 );
 
+/** @deprecated Parameters for the legacy CopyBlox mint. Official mints use `BasicCloneParams`. */
 export interface CloneAccountParams {
   /** Template to clone, e.g. the official `AccountBlox` address for this network. */
   template: Address;
@@ -43,6 +50,7 @@ export interface CloneAccountParams {
   timeLockPeriodSec: bigint;
 }
 
+/** @deprecated Log-scan options for the legacy CopyBlox `clonesOf` fallback. */
 export interface CloneLogScanOptions {
   /**
    * Block to scan `BloxCloned` from. Default `'earliest'`, which many public RPC
@@ -54,6 +62,7 @@ export interface CloneLogScanOptions {
   toBlock?: bigint | 'latest';
 }
 
+/** @deprecated Result of the legacy CopyBlox `clonesOf`. */
 export interface CloneListResult {
   /** Clones created for the owner, in creation order. */
   clones: Address[];
@@ -62,7 +71,11 @@ export interface CloneListResult {
 }
 
 /**
- * TypeScript wrapper for the CopyBlox-shaped clone factory.
+ * TypeScript wrapper for the CopyBlox-shaped clone factory (legacy / example).
+ *
+ * @deprecated Not the official mint path (SPEC-2026-0140). Use `BasicFactory`
+ *   (`cloneBlox` / `cloneBloxDeterministic` + `predictClone`), which mints a `BasicAccount`
+ *   for the sender. Kept for historical Sepolia CopyBlox deployments and the example app.
  */
 export class CopyBlox extends BaseStateMachine {
   constructor(

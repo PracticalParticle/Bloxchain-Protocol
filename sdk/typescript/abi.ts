@@ -1,13 +1,16 @@
 /**
- * Typed ABI barrel for consumers (`import { copyBloxAbi } from '@bloxchain/sdk/abi'`).
+ * Typed ABI barrel for consumers (`import { basicFactoryAbi } from '@bloxchain/sdk/abi'`).
  *
  * Every ABI the package ships is reachable three ways, all equivalent:
  *
  * | Style | Example |
  * |-------|---------|
- * | Barrel (recommended) | `import { copyBloxAbi } from '@bloxchain/sdk/abi'` |
- * | Per-contract subpath | `import { copyBloxAbi } from '@bloxchain/sdk/abi/CopyBlox'` |
- * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/CopyBlox.abi.json' with { type: 'json' }` |
+ * | Barrel (recommended) | `import { basicFactoryAbi } from '@bloxchain/sdk/abi'` |
+ * | Per-contract subpath | `import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory'` |
+ * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/BasicFactory.abi.json' with { type: 'json' }` |
+ *
+ * Official mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `copyBloxAbi` / `accountBloxAbi`
+ * remain for the legacy / example CopyBlox pipeline.
  *
  * Prefer the barrel or the per-contract subpath: both are plain ES modules, so
  * they work under every bundler and Node resolver without JSON import

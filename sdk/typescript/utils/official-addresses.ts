@@ -10,11 +10,17 @@ import { Address, getAddress, isAddress } from 'viem';
  *
  * ```ts
  * import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
- * import { resolveOfficialNetwork } from '@bloxchain/sdk';
+ * import { resolveOfficialNetwork, getOfficialBasicMint } from '@bloxchain/sdk';
  *
- * const sepolia = resolveOfficialNetwork(official, 11155111);
- * const factory = sepolia.contracts.CopyBlox.address;
+ * const network = resolveOfficialNetwork(official, chainId);
+ * // Official mint (SPEC-2026-0140): BasicFactory → BasicAccount. Throws until declared.
+ * const { factory, implementation } = getOfficialBasicMint(network);
  * ```
+ *
+ * No network declares `BasicFactory` / `BasicAccount` yet, so today that call throws
+ * {@link OfficialContractNotDeclaredError} everywhere. That is the intended behavior: the
+ * helpers never invent an address and never fall back to the legacy `CopyBlox` row. Until a
+ * declaration lands, pass the `BasicFactory` address you deployed yourself.
  *
  * Do not confuse this with `deployed-addresses.json`, which the deployment scripts write
  * for whatever network they were pointed at, including local and lab chains. That file is
@@ -81,6 +87,33 @@ export interface ResolvedOfficialNetwork extends OfficialNetwork {
 }
 
 export const OFFICIAL_ADDRESSES_FORMAT = 'bloxchain-official-addresses/1';
+
+/**
+ * Contract keys for the official mint (SPEC-2026-0140): `BasicFactory` clones `BasicAccount`.
+ * Prefer these keys. A network that lacks them has no official mint declared.
+ */
+export const OFFICIAL_MINT_CONTRACTS = {
+  factory: 'BasicFactory',
+  implementation: 'BasicAccount',
+} as const;
+
+/**
+ * Contract keys for the legacy / example pipeline: the open `CopyBlox` factory and the
+ * `AccountBlox` template, declared on historical Sepolia. Never a fallback for
+ * {@link OFFICIAL_MINT_CONTRACTS}.
+ */
+export const LEGACY_MINT_CONTRACTS = {
+  factory: 'CopyBlox',
+  template: 'AccountBlox',
+} as const;
+
+/** Declared addresses of the official mint on one network. */
+export interface OfficialBasicMint {
+  /** `BasicFactory`: pass to the SDK `BasicFactory` client. */
+  factory: Address;
+  /** `BasicAccount`: the implementation the factory is pinned to (compare with `implementation()`). */
+  implementation: Address;
+}
 
 export class OfficialNetworkNotFoundError extends Error {
   constructor(lookup: string | number, available: string[]) {
@@ -177,7 +210,7 @@ export function assertNetworkIsOfficial(network: ResolvedOfficialNetwork): void 
  * that in provisioning flows.
  *
  * @param network Network from {@link resolveOfficialNetwork}
- * @param contractName Contract key, e.g. `'CopyBlox'`
+ * @param contractName Contract key, e.g. `'BasicFactory'` (official) or `'CopyBlox'` (legacy)
  * @throws {OfficialContractNotDeclaredError} when the row is missing or pending
  */
 export function getOfficialAddress(
@@ -192,6 +225,24 @@ export function getOfficialAddress(
 }
 
 /**
+ * The official mint on a network: the declared `BasicFactory` and `BasicAccount` addresses.
+ *
+ * Fails closed. Both rows must be declared; a missing or pending row throws, and there is no
+ * fallback to the legacy `CopyBlox` / `AccountBlox` rows, which mint a different account
+ * with different rules. Like {@link getOfficialAddress}, this does not check the network's
+ * own status; call {@link assertNetworkIsOfficial} first in provisioning flows.
+ *
+ * @param network Network from {@link resolveOfficialNetwork}
+ * @throws {OfficialContractNotDeclaredError} when `BasicFactory` or `BasicAccount` is not declared
+ */
+export function getOfficialBasicMint(network: ResolvedOfficialNetwork): OfficialBasicMint {
+  return {
+    factory: getOfficialAddress(network, OFFICIAL_MINT_CONTRACTS.factory),
+    implementation: getOfficialAddress(network, OFFICIAL_MINT_CONTRACTS.implementation),
+  };
+}
+
+/**
  * Contract rows on a network that are still waiting on a declaration.
  *
  * @param network Network from {@link resolveOfficialNetwork}
@@ -203,14 +254,15 @@ export function pendingOfficialContracts(network: ResolvedOfficialNetwork): stri
 }
 
 /**
- * Whether a factory deployment carries the on-chain owner index, according to the file.
+ * Whether a legacy CopyBlox factory deployment carries the on-chain owner index, according
+ * to the file. `BasicFactory` has no `clonesOf`; this is for the deprecated `CopyBlox` path.
  *
  * Factories deployed before the index exist on official networks, and for those an
  * owner's accounts must come from `BloxCloned` logs. The SDK factory wrapper falls back
  * on its own; this lets a caller decide up front (for example, to require a `fromBlock`).
  *
  * @param network Network from {@link resolveOfficialNetwork}
- * @param contractName Factory key, defaults to `'CopyBlox'`
+ * @param contractName Factory key, defaults to the legacy `'CopyBlox'`
  */
 export function factorySupportsClonesOf(
   network: ResolvedOfficialNetwork,
