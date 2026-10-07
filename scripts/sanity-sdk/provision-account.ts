@@ -75,6 +75,8 @@ import { EngineBlox } from '../../sdk/typescript/lib/EngineBlox.tsx';
 import {
   inspectAccountBlox,
   assertOwnedAccount,
+  AccountNotOwnedError,
+  NotAnAccountError,
 } from '../../sdk/typescript/utils/account-gate.ts';
 import {
   resolveOfficialNetwork,
@@ -131,6 +133,8 @@ const ROLE_BATCH_GAS = GAS_ENVELOPE.roleConfigBatch;
 
 /** How far predictClone+isClone walks when discovering owned accounts (inclusive of gaps). */
 const DISCOVERY_INDEX_LIMIT = 256n;
+/** Parallel RPC budget for the discovery scan (predictClone + isClone per index). */
+const DISCOVERY_CONCURRENCY = 16;
 
 interface Options {
   chain: string | null;
@@ -340,18 +344,32 @@ async function resolveAccount(
     options.index !== null && options.index >= DISCOVERY_INDEX_LIMIT
       ? options.index + 1n
       : DISCOVERY_INDEX_LIMIT;
-  for (let index = 0n; index < scanLimit; index++) {
-    const predicted = await factory.predictClone({
-      deployer: ownerAddress,
-      initialOwner: ownerAddress,
-      index,
-    });
-    if (!(await factory.isClone(predicted))) continue;
-    try {
-      const owned = await assertOwnedAccount(client, predicted, ownerAddress);
-      clones.push({ address: owned, index });
-    } catch {
-      // Clone exists but is not owned by this key — skip so we never configure it.
+  const indexes: bigint[] = [];
+  for (let index = 0n; index < scanLimit; index++) indexes.push(index);
+  for (let start = 0; start < indexes.length; start += DISCOVERY_CONCURRENCY) {
+    const batch = indexes.slice(start, start + DISCOVERY_CONCURRENCY);
+    const batchHits = await Promise.all(
+      batch.map(async (index) => {
+        const predicted = await factory.predictClone({
+          deployer: ownerAddress,
+          initialOwner: ownerAddress,
+          index,
+        });
+        if (!(await factory.isClone(predicted))) return null;
+        try {
+          const owned = await assertOwnedAccount(client, predicted, ownerAddress);
+          return { address: owned, index };
+        } catch (err) {
+          // Skip only the ownership/shape gate failures; surface RPC and other faults.
+          if (err instanceof AccountNotOwnedError || err instanceof NotAnAccountError) {
+            return null;
+          }
+          throw err;
+        }
+      })
+    );
+    for (const hit of batchHits) {
+      if (hit) clones.push(hit);
     }
   }
   record(

@@ -201,8 +201,10 @@ function validateCatalog(data) {
   return { pending };
 }
 
-function validateNetworkV2(networkName, network, catalogId, seenChainIds) {
+function validateNetworkV2(networkName, network, catalogId, catalogContracts, seenChainIds) {
   const where = `networks.${networkName}`;
+  const catalogRows =
+    catalogContracts && typeof catalogContracts === 'object' ? catalogContracts : {};
 
   if (!network || typeof network !== 'object') {
     error(where, 'must be an object');
@@ -261,11 +263,25 @@ function validateNetworkV2(networkName, network, catalogId, seenChainIds) {
   }
 
   if (network.gas && typeof network.gas === 'object') {
+    const knownKeys = new Set([
+      ...Object.keys(catalogRows),
+      ...Object.keys(network.developerTools ?? {}),
+      ...Object.keys(network.legacy ?? {}),
+      ...Object.keys(network.contracts ?? {}),
+    ]);
     for (const [name, overlay] of Object.entries(network.gas)) {
+      if (!knownKeys.has(name)) {
+        error(
+          `${where}.gas.${name}`,
+          'unknown contract key; must match catalog.contracts, developerTools, legacy, or network.contracts'
+        );
+        continue;
+      }
       if (!overlay || typeof overlay !== 'object') {
         error(`${where}.gas.${name}`, 'must be an object');
         continue;
       }
+      // Known non-factory keys are allowed; validateFactoryGas still checks the shape.
       validateFactoryGas(`${where}.gas.${name}`, { gas: overlay }, name);
     }
   }
@@ -375,9 +391,19 @@ function main() {
     catalogPending = result.pending;
     const catalogId = data.catalog && data.catalog.id;
 
+    const catalogContracts =
+      data.catalog && data.catalog.contracts && typeof data.catalog.contracts === 'object'
+        ? data.catalog.contracts
+        : {};
     for (const [networkName, network] of Object.entries(data.networks)) {
       if (onlyNetwork && networkName !== onlyNetwork) continue;
-      const { pending } = validateNetworkV2(networkName, network, catalogId, seenChainIds);
+      const { pending } = validateNetworkV2(
+        networkName,
+        network,
+        catalogId,
+        catalogContracts,
+        seenChainIds
+      );
       pendingByNetwork[networkName] = pending;
     }
   } else {
