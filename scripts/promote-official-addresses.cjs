@@ -197,11 +197,18 @@ function main() {
   target.catalog = CATALOG_ID;
   if (!existing) {
     changes.push(`networks.${networkName}: add chain ${chainId}`);
-  } else if (existing.status !== 'official') {
-    target.status = 'official';
-    target.declaredIn = declaredIn;
-    target.mirroredAt = new Date().toISOString().slice(0, 10);
-    changes.push(`networks.${networkName}: status -> official`);
+  } else {
+    if (existing.status !== 'official') {
+      target.status = 'official';
+      target.declaredIn = declaredIn;
+      target.mirroredAt = new Date().toISOString().slice(0, 10);
+      changes.push(`networks.${networkName}: status -> official`);
+    }
+    if (existing.catalog !== CATALOG_ID) {
+      changes.push(
+        `networks.${networkName}: catalog ${JSON.stringify(existing.catalog)} -> ${CATALOG_ID}`
+      );
+    }
   }
 
   // Strip any accidental per-network copies of catalog contracts.

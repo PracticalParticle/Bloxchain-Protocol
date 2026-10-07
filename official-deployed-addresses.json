@@ -209,7 +209,15 @@
       "explorer": "https://polygonscan.com",
       "declaredIn": "README.md#official-createx-catalog",
       "mirroredAt": "2026-10-08",
-      "notes": "CreateX same-address catalog. DET mint measured ~17.88M gasUsed — raise send gas above the catalog default when needed."
+      "notes": "CreateX same-address catalog. DET mint measured ~17.88M gasUsed — raise send gas above the catalog default when needed.",
+      "gas": {
+        "BasicFactory": {
+          "cloneBloxObserved": 17882179,
+          "sendWithGasLimit": 20000000,
+          "maxTxGas": 20000000,
+          "notes": "Polygon PoS DET mint measured ~17.88M; send above the EIP-7825 L1 catalog default (2^24)."
+        }
+      }
     },
     "bsc": {
       "chainId": 56,

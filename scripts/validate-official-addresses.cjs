@@ -76,10 +76,15 @@ function validateFactoryGas(where, row, contractName) {
   if (!isPositiveSafeInteger(maxTxGas)) {
     error(where, `gas.maxTxGas must be a positive safe integer (got ${JSON.stringify(maxTxGas)})`);
   }
-  if (!isPositiveSafeInteger(cloneBloxObserved)) {
+  if (cloneBloxObserved === null || cloneBloxObserved === undefined) {
+    warn(
+      where,
+      'gas.cloneBloxObserved is null — fill from a real receipt after first mint (promoter seeds null)'
+    );
+  } else if (!isPositiveSafeInteger(cloneBloxObserved)) {
     error(
       where,
-      `gas.cloneBloxObserved must be a positive safe integer (got ${JSON.stringify(cloneBloxObserved)}). Fresh promotions leave this field null — populate it from a real transaction receipt before re-running validation.`
+      `gas.cloneBloxObserved must be a positive safe integer or null (got ${JSON.stringify(cloneBloxObserved)})`
     );
   } else if (isPositiveSafeInteger(maxTxGas) && !(cloneBloxObserved < maxTxGas)) {
     // Polygon DET can exceed 2^24 on that chain; warn rather than fail when observed >= max.
@@ -105,7 +110,7 @@ function validateFactoryGas(where, row, contractName) {
   }
 }
 
-function validateContract(where, contractName, row, { requireCopyBloxSupports = false } = {}) {
+function validateContract(where, contractName, row) {
   if (!row || typeof row !== 'object') {
     error(where, 'must be an object');
     return { declared: false };
@@ -142,7 +147,7 @@ function validateContract(where, contractName, row, { requireCopyBloxSupports = 
     error(where, 'artifact must be a path string when present');
   }
 
-  if (contractName === 'CopyBlox' || (requireCopyBloxSupports && row.kind === 'factory' && contractName === 'CopyBlox')) {
+  if (contractName === 'CopyBlox') {
     if (!row.supports || typeof row.supports.clonesOf !== 'boolean') {
       error(
         where,
@@ -251,7 +256,17 @@ function validateNetworkV2(networkName, network, catalogId, seenChainIds) {
       warn(where, 'legacy key is deprecated; rename to developerTools (official developer toolkit)');
     }
     for (const [name, row] of Object.entries(tools)) {
-      validateContract(`${where}.${toolsKey}.${name}`, name, row, { requireCopyBloxSupports: true });
+      validateContract(`${where}.${toolsKey}.${name}`, name, row);
+    }
+  }
+
+  if (network.gas && typeof network.gas === 'object') {
+    for (const [name, overlay] of Object.entries(network.gas)) {
+      if (!overlay || typeof overlay !== 'object') {
+        error(`${where}.gas.${name}`, 'must be an object');
+        continue;
+      }
+      validateFactoryGas(`${where}.gas.${name}`, { gas: overlay }, name);
     }
   }
 
@@ -305,8 +320,7 @@ function validateNetworkV1(networkName, network, seenChainIds) {
     const { declared } = validateContract(
       `${where}.contracts.${contractName}`,
       contractName,
-      network.contracts[contractName],
-      { requireCopyBloxSupports: true }
+      network.contracts[contractName]
     );
     if (!declared) pending.push(contractName);
   }

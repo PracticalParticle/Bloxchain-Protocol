@@ -320,6 +320,30 @@ async function runOfficialMintSurfaceTests(
       sepoliaMint?.implementation?.toLowerCase() === catalogImpl.toLowerCase(),
     sepoliaError ?? `${sepoliaMint?.factory} / ${sepoliaMint?.implementation}`
   );
+
+  const { _format: _omitFormat, ...officialWithoutFormat } = official;
+  const sepoliaNoFormat = root.resolveOfficialNetwork(officialWithoutFormat, 11155111);
+  add(
+    'resolveOfficialNetwork merges catalog rows when _format is omitted',
+    throwsName(() => root.getOfficialBasicMint(sepoliaNoFormat)) === null &&
+      sepoliaNoFormat.contracts?.BasicFactory?.address?.toLowerCase() === catalogFactory?.toLowerCase(),
+    String(sepoliaNoFormat.contracts?.BasicFactory?.address)
+  );
+
+  const polygon = root.resolveOfficialNetwork(official, 137);
+  const catalogSend = official.catalog?.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  const polygonSend = polygon.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  add(
+    'resolveOfficialNetwork applies Polygon BasicFactory gas overlay',
+    polygonSend === 20_000_000 && catalogSend === 16_777_216,
+    `polygon=${polygonSend} catalog=${catalogSend}`
+  );
+  const base = root.resolveOfficialNetwork(official, 8453);
+  add(
+    'other networks keep the shared catalog sendWithGasLimit',
+    base.contracts?.BasicFactory?.gas?.sendWithGasLimit === catalogSend,
+    String(base.contracts?.BasicFactory?.gas?.sendWithGasLimit)
+  );
   add(
     'getOfficialBasicMint never falls back to the developer-toolkit CopyBlox row',
     !copyBloxRow ||

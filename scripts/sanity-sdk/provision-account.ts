@@ -39,7 +39,8 @@
  *   --chain <name|id>     network key or chain id in official-deployed-addresses.json
  *   --rpc <url>           RPC URL (default: .env RPC_URL or REMOTE_*)
  *   --account 0x...       provision this existing account (runs the shape gate first)
- *   --clone               clone a new account when the owner has none
+ *   --index <n>           deterministic clone index (required to mint, or to pick among several)
+ *   --clone               clone a new account when the owner has none at --index
  *   --token 0x...         ERC-20 to whitelist for governed transfers
  *   --role-set-version n  expected role set version (default: ROLE_SET_VERSION below)
  *   --force-role-sync     re-apply grants as REMOVE + ADD even when they look current
@@ -128,10 +129,14 @@ const ROLE_BATCH_GAS = GAS_ENVELOPE.roleConfigBatch;
 
 // ============ CLI ============
 
+/** How far predictClone+isClone walks when discovering owned accounts (inclusive of gaps). */
+const DISCOVERY_INDEX_LIMIT = 256n;
+
 interface Options {
   chain: string | null;
   rpc: string | null;
   account: Address | null;
+  index: bigint | null;
   clone: boolean;
   token: Address | null;
   roleSetVersion: number;
@@ -146,11 +151,20 @@ function parseOptions(argv: string[]): Options {
     return i === -1 ? null : argv[i + 1] ?? null;
   };
   const versionArg = value('--role-set-version');
+  const indexArg = value('--index');
+  let index: bigint | null = null;
+  if (indexArg !== null) {
+    if (!/^\d+$/.test(indexArg)) {
+      throw new Error(`--index must be a non-negative integer (got ${JSON.stringify(indexArg)})`);
+    }
+    index = BigInt(indexArg);
+  }
 
   return {
     chain: value('--chain') ?? process.env.PROVISION_CHAIN ?? null,
     rpc: value('--rpc'),
     account: (value('--account') as Address | null) ?? null,
+    index,
     clone: argv.includes('--clone'),
     token: ((value('--token') ?? process.env.TOKEN_ADDRESS ?? null) as Address | null),
     roleSetVersion: versionArg ? Number(versionArg) : ROLE_SET_VERSION,
@@ -158,6 +172,14 @@ function parseOptions(argv: string[]): Options {
     dryRun: argv.includes('--dry-run'),
     offline: argv.includes('--offline'),
   };
+}
+
+function cloneSendGasLimit(network: ResolvedOfficialNetwork): bigint {
+  const declared = network.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  if (typeof declared === 'number' && Number.isSafeInteger(declared) && declared > 0) {
+    return BigInt(declared);
+  }
+  return GAS_ENVELOPE.cloneSendGasLimit;
 }
 
 function rpcUrlFromEnv(): string | null {
@@ -310,20 +332,26 @@ async function resolveAccount(
       : `${factoryAddress} rejected as expected (${factoryInspection.rejection})`
   );
 
-  // Platform convention: consecutive deterministic indexes, salt 0. Walk until the first gap
-  // after a hit (or a few empty slots if none yet). Nonce-only mints are not discovered here —
-  // pass --account for those.
-  const clones: Address[] = [];
-  for (let index = 0n; index < 32n; index++) {
+  // Platform convention: consecutive deterministic indexes, salt 0. Scan the supported
+  // range without stopping on empty slots. Only keep clones still owned by this owner (same
+  // gate as --account). Nonce-only mints are not discovered here — pass --account for those.
+  const clones: { address: Address; index: bigint }[] = [];
+  const scanLimit =
+    options.index !== null && options.index >= DISCOVERY_INDEX_LIMIT
+      ? options.index + 1n
+      : DISCOVERY_INDEX_LIMIT;
+  for (let index = 0n; index < scanLimit; index++) {
     const predicted = await factory.predictClone({
       deployer: ownerAddress,
       initialOwner: ownerAddress,
       index,
     });
-    if (await factory.isClone(predicted)) {
-      clones.push(predicted);
-    } else if (clones.length > 0 || index >= 3n) {
-      break;
+    if (!(await factory.isClone(predicted))) continue;
+    try {
+      const owned = await assertOwnedAccount(client, predicted, ownerAddress);
+      clones.push({ address: owned, index });
+    } catch {
+      // Clone exists but is not owned by this key — skip so we never configure it.
     }
   }
   record(
@@ -331,12 +359,44 @@ async function resolveAccount(
     'existing accounts',
     'satisfied',
     clones.length === 0
-      ? `no deterministic accounts for ${ownerAddress} via predictClone+isClone`
-      : `${clones.length} account(s) for ${ownerAddress} via predictClone+isClone: ${clones.join(', ')}`
+      ? `no owned deterministic accounts for ${ownerAddress} via predictClone+isClone (scanned 0..${scanLimit - 1n})`
+      : `${clones.length} owned account(s) for ${ownerAddress}: ${clones
+          .map((c) => `${c.address}[index=${c.index}]`)
+          .join(', ')}`
   );
 
-  if (clones.length > 0) {
-    return clones[clones.length - 1]!;
+  if (options.index !== null) {
+    const atIndex = clones.find((c) => c.index === options.index);
+    if (atIndex) {
+      record(1, 'account gate', 'satisfied', `${atIndex.address} at --index ${options.index}`);
+      return atIndex.address;
+    }
+    const predicted = await factory.predictClone({
+      deployer: ownerAddress,
+      initialOwner: ownerAddress,
+      index: options.index,
+    });
+    if (await factory.isClone(predicted)) {
+      record(
+        1,
+        'clone',
+        'blocked',
+        `${predicted} exists at --index ${options.index} but is not owned by ${ownerAddress}`
+      );
+      return null;
+    }
+  } else if (clones.length === 1) {
+    return clones[0]!.address;
+  } else if (clones.length > 1) {
+    record(
+      1,
+      'clone',
+      'blocked',
+      `multiple owned accounts; pass --account <addr> or --index <n> to select one (${clones
+        .map((c) => `${c.address}[index=${c.index}]`)
+        .join(', ')})`
+    );
+    return null;
   }
 
   if (!options.clone) {
@@ -344,7 +404,17 @@ async function resolveAccount(
       1,
       'clone',
       'skipped',
-      `${ownerAddress} has no account. Re-run with --clone to mint one (~${GAS_ENVELOPE.cloneOfAccountBlox} gas).`
+      `${ownerAddress} has no owned account. Re-run with --clone --index <n> to mint one (~${GAS_ENVELOPE.cloneOfAccountBlox} gas).`
+    );
+    return null;
+  }
+
+  if (options.index === null) {
+    record(
+      1,
+      'clone',
+      'blocked',
+      'minting requires an explicit --index <n> (discovery will not default to index 0)'
     );
     return null;
   }
@@ -359,7 +429,8 @@ async function resolveAccount(
     return null;
   }
 
-  const nextIndex = 0n;
+  const nextIndex = options.index;
+  const sendGas = cloneSendGasLimit(network);
   const cloneParams = {
     initialOwner: ownerAddress,
     broadcaster: broadcasterAddress,
@@ -373,15 +444,17 @@ async function resolveAccount(
       1,
       'clone',
       'to-apply',
-      `would mint BasicAccount (${implementation}) via ${factoryAddress} for ${ownerAddress} with gas ${GAS_ENVELOPE.cloneSendGasLimit} (cap ${MAX_TX_GAS})`
+      `would mint BasicAccount (${implementation}) via ${factoryAddress} for ${ownerAddress} at index ${nextIndex} with gas ${sendGas}`
     );
     return null;
   }
 
-  console.log(`\n   minting BasicAccount via ${factoryAddress} for ${ownerAddress}...`);
+  console.log(
+    `\n   minting BasicAccount via ${factoryAddress} for ${ownerAddress} at index ${nextIndex}...`
+  );
   const result = await factory.cloneBloxDeterministic(cloneParams, {
     from: ownerAddress,
-    gas: GAS_ENVELOPE.cloneSendGasLimit,
+    gas: sendGas,
     // The clone payload defeats estimation on public nodes; simulation still proves it
     // is revert-free, which is all it can prove.
     simulationMode: 'warn-only',
@@ -801,11 +874,12 @@ async function main(): Promise<void> {
 
   section('Gas envelope');
   console.log(`clone, observed:        ${GAS_ENVELOPE.cloneOfAccountBlox}`);
-  console.log(`clone, sent with limit: ${GAS_ENVELOPE.cloneSendGasLimit}`);
+  const sendGas = cloneSendGasLimit(network);
+  console.log(`clone, sent with limit: ${sendGas}`);
   console.log(`floor (fail below):     ${GAS_ENVELOPE.cloneGasFloor}`);
   console.log(`EIP-7825 per-tx cap:    ${MAX_TX_GAS}`);
   console.log(
-    `head-room:              ${MAX_TX_GAS - GAS_ENVELOPE.cloneOfAccountBlox} gas. Send the limit, not an estimate.`
+    `head-room:              ${sendGas - GAS_ENVELOPE.cloneOfAccountBlox} gas. Send the limit, not an estimate.`
   );
 
   if (options.offline) {

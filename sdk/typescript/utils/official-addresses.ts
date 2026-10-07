@@ -86,6 +86,12 @@ export interface OfficialNetwork {
    * draft files during migration.
    */
   legacy?: Record<string, OfficialContract>;
+  /**
+   * Optional per-contract gas overlays for this network (e.g. Polygon `BasicFactory`
+   * send limit above the shared catalog default). Merged onto catalog rows by
+   * {@link resolveOfficialNetwork}.
+   */
+  gas?: Record<string, OfficialGasNotes>;
 }
 
 export interface OfficialCatalog {
@@ -187,15 +193,35 @@ export class NetworkNotOfficialError extends Error {
   }
 }
 
+function applyNetworkGasOverlays(
+  merged: Record<string, OfficialContract>,
+  overlays: Record<string, OfficialGasNotes> | undefined
+): void {
+  if (!overlays) return;
+  for (const [name, overlay] of Object.entries(overlays)) {
+    const base = merged[name];
+    if (!base) continue;
+    merged[name] = {
+      ...base,
+      gas: { ...(base.gas ?? {}), ...overlay },
+    };
+  }
+}
+
 function mergeNetworkContracts(
   file: OfficialAddressesFile,
   data: OfficialNetwork
 ): Record<string, OfficialContract> {
   const merged: Record<string, OfficialContract> = {};
+  const catalogId = data.catalog ?? file.catalog?.id;
+  const hasMatchingCatalog =
+    !!file.catalog && !!catalogId && file.catalog.id === catalogId;
 
-  if (file._format === OFFICIAL_ADDRESSES_FORMAT) {
-    const catalogId = data.catalog ?? file.catalog?.id;
-    if (file.catalog && catalogId && file.catalog.id === catalogId) {
+  // Catalog merge when a catalog is present, even if `_format` is omitted (fixtures /
+  // hand-built files). Preserve contracts-only handling for format `/1` and files
+  // without a catalog.
+  if (hasMatchingCatalog || file._format === OFFICIAL_ADDRESSES_FORMAT) {
+    if (hasMatchingCatalog && file.catalog) {
       Object.assign(merged, file.catalog.contracts);
     }
     const tools = data.developerTools ?? data.legacy;
@@ -207,6 +233,7 @@ function mergeNetworkContracts(
         if (!(name in merged)) merged[name] = row;
       }
     }
+    applyNetworkGasOverlays(merged, data.gas);
     return merged;
   }
 
