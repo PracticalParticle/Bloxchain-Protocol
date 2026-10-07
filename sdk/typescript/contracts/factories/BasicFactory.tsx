@@ -25,8 +25,8 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  * @title BasicFactory
  * @notice Thin TypeScript wrapper for the **official** factory: BasicFactory → BasicAccount.
  *
- * SPEC-2026-0140. This is the official mint path for `@bloxchain/sdk`. `CopyBlox` is the
- * legacy / example open factory and is deprecated as an official path.
+ * SPEC-2026-0140. This is the official Platform mint path for `@bloxchain/sdk`.
+ * Sepolia CopyBlox / AccountBlox are an official developer toolkit outside this package.
  *
  * SPEC-2026-0130 (pinned follow-up). `BasicFactory` clones exactly one implementation, fixed
  * in its constructor (a `BasicAccount`), and initializes the clone in the same transaction.
@@ -64,9 +64,9 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  *   definition libraries `BasicAccount` links, `BasicAccount` and `BasicFactory` must sit at the
  *   same addresses on every network, or predicted addresses differ.
  *
- * The account gate rejects the factory address because it has no `owner()`. No official
- * `BasicFactory` deployment is declared yet: `getOfficialAddress(network, 'BasicFactory')` throws
- * until one is. Pass the address you deployed, and never substitute the CopyBlox row.
+ * The account gate rejects the factory address because it has no `owner()`. Prefer
+ * `getOfficialBasicMint(network)` from the shared CreateX catalog in
+ * `official-deployed-addresses.json`. Never substitute the Sepolia developer-toolkit CopyBlox row.
  */
 
 /** Selectors on the pinned factory. */

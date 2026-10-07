@@ -105,6 +105,21 @@ if (fs.existsSync(componentsSrc)) {
   console.log('⏭️  No components directory; skipping\n');
 }
 
+// Step 2d: Copy Platform mint sources (BasicAccount / BasicFactory)
+for (const folder of ['account', 'factory']) {
+  const src = path.join(sourceContractsDir, folder);
+  const dest = path.join(contractsDir, folder);
+  if (!fs.existsSync(src)) {
+    console.log(`⏭️  No contracts/${folder}; skipping\n`);
+    continue;
+  }
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+  copyDir(src, dest, []);
+  console.log(`✅ ${folder} copied\n`);
+}
+
 // Step 3: Copy abi directory
 console.log('📋 Step 3: Copying ABIs...');
 if (!fs.existsSync(sourceAbiDir)) {
@@ -166,10 +181,14 @@ console.log('✅ Package ready for publishing!\n');
  */
 function collectPackagedContractNames() {
   const names = new Set();
+  const accountSrc = path.join(sourceContractsDir, 'account');
+  const factorySrc = path.join(sourceContractsDir, 'factory');
   const dirs = [
     coreSrc,
     fs.existsSync(standardsSrc) ? standardsSrc : null,
-    fs.existsSync(componentsSrc) ? componentsSrc : null
+    fs.existsSync(componentsSrc) ? componentsSrc : null,
+    fs.existsSync(accountSrc) ? accountSrc : null,
+    fs.existsSync(factorySrc) ? factorySrc : null,
   ].filter(Boolean);
 
   function walk(dir, excludeDirs = []) {

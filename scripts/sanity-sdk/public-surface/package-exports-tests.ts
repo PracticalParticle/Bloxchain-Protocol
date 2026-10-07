@@ -111,23 +111,23 @@ export async function runPackageExportTests(): Promise<SurfaceTestResult[]> {
   const importAsConsumer = (specifier: string) => probe.load(specifier);
 
   try {
-    // AC1 — the per-contract subpath an integrator reaches for first.
+    // AC1 — the per-contract subpath an integrator reaches for first (Platform mint).
     try {
-      const mod = await importAsConsumer('@bloxchain/sdk/abi/CopyBlox');
-      const abi = mod.copyBloxAbi as Array<{ type?: string; name?: string }>;
+      const mod = await importAsConsumer('@bloxchain/sdk/abi/BasicFactory');
+      const abi = mod.basicFactoryAbi as Array<{ type?: string; name?: string }>;
       const hasCloneBlox = abi.some((i) => i.type === 'function' && i.name === 'cloneBlox');
       add(
-        "import '@bloxchain/sdk/abi/CopyBlox' resolves",
+        "import '@bloxchain/sdk/abi/BasicFactory' resolves",
         Array.isArray(abi) && abi.length > 0,
         `${abi.length} ABI entries`
       );
-      add('CopyBlox ABI exposes cloneBlox (the fragment Branch Zero transcribed)', hasCloneBlox);
+      add('BasicFactory ABI exposes cloneBlox', hasCloneBlox);
     } catch (e: any) {
-      add("import '@bloxchain/sdk/abi/CopyBlox' resolves", false, e?.message ?? String(e));
+      add("import '@bloxchain/sdk/abi/BasicFactory' resolves", false, e?.message ?? String(e));
     }
 
-    // The other two names R1 calls out by name.
     for (const [specifier, named] of [
+      ['@bloxchain/sdk/abi/BasicAccount', 'basicAccountAbi'],
       ['@bloxchain/sdk/abi/AccountBlox', 'accountBloxAbi'],
       ['@bloxchain/sdk/abi/ERC20', 'erc20MinimalAbi'],
     ] as const) {
@@ -147,13 +147,13 @@ export async function runPackageExportTests(): Promise<SurfaceTestResult[]> {
       const wanted = [
         'BasicFactory',
         'BasicAccount',
-        'CopyBlox',
         'AccountBlox',
         'ERC20',
         'GuardController',
         'RuntimeRBAC',
         'SecureOwnable',
       ];
+      add('barrel ABIS does not include CopyBlox (developer toolkit is outside the SDK)', !names.includes('CopyBlox'));
       const missing = wanted.filter((n) => !names.includes(n));
       add(
         "barrel '@bloxchain/sdk/abi' exposes ABIS",
@@ -169,16 +169,16 @@ export async function runPackageExportTests(): Promise<SurfaceTestResult[]> {
       add("barrel '@bloxchain/sdk/abi' exposes ABIS", false, e?.message ?? String(e));
     }
 
-    // Raw JSON subpath — the literal form the retrospective reported as blocked.
+    // Raw JSON subpath for the Platform factory.
     try {
-      const json = await probe.loadJson('@bloxchain/sdk/abi/CopyBlox.abi.json');
+      const json = await probe.loadJson('@bloxchain/sdk/abi/BasicFactory.abi.json');
       add(
-        "import '@bloxchain/sdk/abi/CopyBlox.abi.json' resolves",
+        "import '@bloxchain/sdk/abi/BasicFactory.abi.json' resolves",
         Array.isArray(json) && json.length > 0,
         `${json.length} entries`
       );
     } catch (e: any) {
-      add("import '@bloxchain/sdk/abi/CopyBlox.abi.json' resolves", false, e?.message ?? String(e));
+      add("import '@bloxchain/sdk/abi/BasicFactory.abi.json' resolves", false, e?.message ?? String(e));
     }
 
     // R2 — the EIP-712 constants must be reachable from the package root.
@@ -216,12 +216,8 @@ export async function runPackageExportTests(): Promise<SurfaceTestResult[]> {
 type AddResult = (name: string, passed: boolean, detail?: string) => void;
 
 /**
- * SPEC-2026-0140 — the official mint is BasicFactory → BasicAccount; CopyBlox is legacy.
- *
- * Through the published exports map: the official client and both official ABIs resolve,
- * CopyBlox is still importable but carries `@deprecated` (soft-deprecate, no removal), and
- * the address helper fails closed instead of inventing a BasicFactory address or falling
- * back to the CopyBlox row.
+ * SPEC-2026-0140 / 0137 revise — Platform mint is BasicFactory → BasicAccount.
+ * CopyBlox is an official developer toolkit on Sepolia but is not part of the SDK surface.
  */
 async function runOfficialMintSurfaceTests(
   importAsConsumer: (specifier: string) => Promise<any>,
@@ -266,8 +262,8 @@ async function runOfficialMintSurfaceTests(
 
   add('package root exports BasicFactory (official client)', typeof root.BasicFactory === 'function');
   add(
-    'package root still exports CopyBlox (soft-deprecated, not removed)',
-    typeof root.CopyBlox === 'function'
+    'package root does not export CopyBlox (developer toolkit is outside the SDK)',
+    root.CopyBlox === undefined
   );
   add(
     'OFFICIAL_MINT_CONTRACTS names BasicFactory → BasicAccount',
@@ -276,21 +272,25 @@ async function runOfficialMintSurfaceTests(
     JSON.stringify(root.OFFICIAL_MINT_CONTRACTS)
   );
   add(
-    'LEGACY_MINT_CONTRACTS names CopyBlox / AccountBlox',
-    root.LEGACY_MINT_CONTRACTS?.factory === 'CopyBlox' && root.LEGACY_MINT_CONTRACTS?.template === 'AccountBlox',
-    JSON.stringify(root.LEGACY_MINT_CONTRACTS)
+    'DEVELOPER_TOOL_CONTRACTS names CopyBlox / AccountBlox (address-book keys only)',
+    root.DEVELOPER_TOOL_CONTRACTS?.factory === 'CopyBlox' &&
+      root.DEVELOPER_TOOL_CONTRACTS?.template === 'AccountBlox',
+    JSON.stringify(root.DEVELOPER_TOOL_CONTRACTS)
   );
-
-  // Published typings: CopyBlox is marked deprecated, and the entry no longer calls it sanctioned.
-  const copyBloxDts = path.join(SDK_ROOT, 'dist', 'contracts', 'factories', 'CopyBlox.d.ts');
-  const dts = fs.existsSync(copyBloxDts) ? fs.readFileSync(copyBloxDts, 'utf8') : '';
-  add('CopyBlox typings carry @deprecated', /@deprecated/.test(dts));
+  add(
+    'LEGACY_MINT_CONTRACTS is removed from the package root',
+    root.LEGACY_MINT_CONTRACTS === undefined
+  );
   const entrySource = fs.readFileSync(path.join(SDK_ROOT, 'index.tsx'), 'utf8');
-  add('index does not call CopyBlox the sanctioned factory', !/sanctioned/i.test(entrySource));
+  add('index does not export a CopyBlox client', !/export \{ default as CopyBlox/.test(entrySource));
 
-  // Fail closed on the shipped address file: no network declares BasicFactory yet.
+  // Shipped address file (format /2): CreateX catalog + Sepolia developerTools.
   const official = JSON.parse(fs.readFileSync(OFFICIAL_ADDRESSES, 'utf8'));
-  const copyBloxRow: string | undefined = official.networks?.sepolia?.contracts?.CopyBlox?.address;
+  const copyBloxRow: string | undefined =
+    official.networks?.sepolia?.developerTools?.CopyBlox?.address ??
+    official.networks?.sepolia?.legacy?.CopyBlox?.address;
+  const catalogFactory: string | undefined = official.catalog?.contracts?.BasicFactory?.address;
+  const catalogImpl: string | undefined = official.catalog?.contracts?.BasicAccount?.address;
   const throwsName = (fn: () => unknown): string | null => {
     try {
       fn();
@@ -300,21 +300,62 @@ async function runOfficialMintSurfaceTests(
     }
   };
 
+  add(
+    'official address file format is bloxchain-official-addresses/2',
+    official._format === root.OFFICIAL_ADDRESSES_FORMAT,
+    String(official._format)
+  );
+
   const sepolia = root.resolveOfficialNetwork(official, 11155111);
-  let leaked: string | null = null;
+  let sepoliaMint: { factory?: string; implementation?: string } | null = null;
   const sepoliaError = throwsName(() => {
-    const got = root.getOfficialBasicMint(sepolia);
-    leaked = `${got?.factory} / ${got?.implementation}`;
+    sepoliaMint = root.getOfficialBasicMint(sepolia);
   });
   add(
-    'getOfficialBasicMint(sepolia) throws OfficialContractNotDeclaredError (no invented address)',
-    sepoliaError === 'OfficialContractNotDeclaredError',
-    sepoliaError ?? `returned ${leaked}`
+    'getOfficialBasicMint(sepolia) returns the shared CreateX BasicFactory / BasicAccount',
+    sepoliaError === null &&
+      !!catalogFactory &&
+      !!catalogImpl &&
+      sepoliaMint?.factory?.toLowerCase() === catalogFactory.toLowerCase() &&
+      sepoliaMint?.implementation?.toLowerCase() === catalogImpl.toLowerCase(),
+    sepoliaError ?? `${sepoliaMint?.factory} / ${sepoliaMint?.implementation}`
+  );
+
+  const { _format: _omitFormat, ...officialWithoutFormat } = official;
+  const sepoliaNoFormat = root.resolveOfficialNetwork(officialWithoutFormat, 11155111);
+  add(
+    'resolveOfficialNetwork merges catalog rows when _format is omitted',
+    throwsName(() => root.getOfficialBasicMint(sepoliaNoFormat)) === null &&
+      sepoliaNoFormat.contracts?.BasicFactory?.address?.toLowerCase() === catalogFactory?.toLowerCase(),
+    String(sepoliaNoFormat.contracts?.BasicFactory?.address)
+  );
+
+  const polygon = root.resolveOfficialNetwork(official, 137);
+  const catalogSend = official.catalog?.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  const polygonSend = polygon.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  add(
+    'resolveOfficialNetwork applies Polygon BasicFactory gas overlay',
+    polygonSend === 20_000_000 && catalogSend === 16_777_216,
+    `polygon=${polygonSend} catalog=${catalogSend}`
+  );
+  const base = root.resolveOfficialNetwork(official, 8453);
+  add(
+    'other networks keep the shared catalog sendWithGasLimit',
+    base.contracts?.BasicFactory?.gas?.sendWithGasLimit === catalogSend,
+    String(base.contracts?.BasicFactory?.gas?.sendWithGasLimit)
   );
   add(
-    'getOfficialBasicMint never falls back to the CopyBlox row',
-    leaked === null || (copyBloxRow !== undefined && !String(leaked).toLowerCase().includes(copyBloxRow.toLowerCase()))
+    'getOfficialBasicMint never falls back to the developer-toolkit CopyBlox row',
+    !copyBloxRow ||
+      (sepoliaMint?.factory !== undefined &&
+        sepoliaMint.factory.toLowerCase() !== copyBloxRow.toLowerCase())
   );
+  if (copyBloxRow) {
+    add(
+      'Sepolia developer-toolkit CopyBlox remains readable via getOfficialAddress',
+      throwsName(() => root.getOfficialAddress(sepolia, 'CopyBlox')) === null
+    );
+  }
 
   const FACTORY = '0x00000000000000000000000000000000000000f1';
   const IMPL = '0x00000000000000000000000000000000000000b1';
@@ -326,19 +367,22 @@ async function runOfficialMintSurfaceTests(
       },
       31337
     );
-  const legacyOnly = {
+  const developerToolsOnly = {
     CopyBlox: { address: '0x00000000000000000000000000000000000000c0', kind: 'factory' },
     AccountBlox: { address: '0x00000000000000000000000000000000000000a0', kind: 'template' },
   };
 
   add(
-    'getOfficialBasicMint throws on a network with only legacy rows',
-    throwsName(() => root.getOfficialBasicMint(network(legacyOnly))) === 'OfficialContractNotDeclaredError'
+    'getOfficialBasicMint throws on a network with only developer-toolkit rows',
+    throwsName(() => root.getOfficialBasicMint(network(developerToolsOnly))) ===
+      'OfficialContractNotDeclaredError'
   );
   add(
     'getOfficialBasicMint throws when BasicAccount is missing',
     throwsName(() =>
-      root.getOfficialBasicMint(network({ ...legacyOnly, BasicFactory: { address: FACTORY, kind: 'factory' } }))
+      root.getOfficialBasicMint(
+        network({ ...developerToolsOnly, BasicFactory: { address: FACTORY, kind: 'factory' } })
+      )
     ) === 'OfficialContractNotDeclaredError'
   );
   add(
@@ -377,7 +421,7 @@ async function runOfficialMintSurfaceTests(
   try {
     const got = root.getOfficialBasicMint(
       network({
-        ...legacyOnly,
+        ...developerToolsOnly,
         BasicFactory: { address: FACTORY, kind: 'factory' },
         BasicAccount: { address: IMPL, kind: 'template' },
       })

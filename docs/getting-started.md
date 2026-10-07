@@ -28,10 +28,11 @@ declares the official factory. You do not need to clone or compile this reposito
 | Package | What you get |
 |---------|--------------|
 | `@bloxchain/sdk` | Typed wrappers (including the official `BasicFactory` client), every ABI (`BasicFactory`, `BasicAccount`, …), encoders, meta-transaction signing, the account shape gate |
-| `@bloxchain/contracts` | `artifacts/*.json` (ABI **and** bytecode, link references, compiler settings) for the libraries and the legacy `AccountBlox` / `CopyBlox` pair, `official-deployed-addresses.json`, Solidity sources |
+| `@bloxchain/contracts` | `artifacts/*.json` (ABI **and** bytecode, link references, compiler settings) for the libraries and the Sepolia developer-toolkit `AccountBlox` / `CopyBlox` pair, `official-deployed-addresses.json`, Solidity sources |
 
-The **official mint is `BasicFactory` → `BasicAccount`**; `CopyBlox` is a legacy / example
-factory. See [Provisioning an account](#-provisioning-an-account-from-npm-alone).
+The **official Platform mint is `BasicFactory` → `BasicAccount`**. Sepolia `CopyBlox` /
+`AccountBlox` are an official developer toolkit outside `@bloxchain/sdk`. See
+[Provisioning an account](#-provisioning-an-account-from-npm-alone).
 
 ```typescript
 // Official mint ABIs ship with the SDK
@@ -85,8 +86,8 @@ const walletClient = createWalletClient({
 
 Point the wrappers at an account you own: a `BasicAccount` clone minted through the official
 `BasicFactory` (see [Provisioning an account](#-provisioning-an-account-from-npm-alone)), or a
-legacy `AccountBlox` clone on Sepolia. Gate the address with `assertOwnedAccount` first. Never
-operate a template or implementation address as an account.
+developer-toolkit `AccountBlox` clone on Sepolia. Gate the address with `assertOwnedAccount`
+first. Never operate a template or implementation address as an account.
 
 ```typescript
 import { assertOwnedAccount } from '@bloxchain/sdk';
@@ -153,19 +154,17 @@ The official mint is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140). It 
 wallet that sends the mint itself** and pays for it (a direct EOA call: see
 [Known limitation: gas](#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1)).
 
-> **Declaration status.** No network declares `BasicFactory` or `BasicAccount` in
-> `official-deployed-addresses.json` yet. `getOfficialBasicMint(network)` throws
-> `OfficialContractNotDeclaredError` until a release owner declares them, and there is no
-> fallback: until then, pass the `BasicFactory` address you deployed yourself. Never
-> substitute the CopyBlox row. Sepolia's only declared factory is the **legacy** CopyBlox
-> ([§10](#10-legacy-copyblox-on-sepolia-developer--example)).
+> **Declaration status.** The CreateX catalog (`bloxchain-official-addresses/2`) declares one
+> shared `BasicFactory` / `BasicAccount` address book for every supported network listed in
+> [`official-deployed-addresses.json`](../official-deployed-addresses.json). Use
+> `getOfficialBasicMint(network)`. Never substitute the Sepolia developer-toolkit CopyBlox row
+> ([§10](#10-developer-toolkit-copyblox--accountblox-on-sepolia)).
 
 Working reference for the locks and idempotency rules below:
 **`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`). It is idempotent and
 safe to re-run; `--offline` validates configuration without a chain and `--dry-run` checks every
-lock against a chain without sending anything. It still mints through the legacy Sepolia
-CopyBlox, because that is the only factory any network declares today; the three locks and the
-idempotency rules apply unchanged to a `BasicAccount` clone.
+lock against a chain without sending anything. Prefer `getOfficialBasicMint` for new mints; the
+three locks and the idempotency rules apply unchanged to a `BasicAccount` clone.
 
 ### 1. The official factory: BasicFactory → BasicAccount
 
@@ -186,10 +185,7 @@ import {
 const network = resolveOfficialNetwork(official, chainId);
 assertNetworkIsOfficial(network);
 
-// No network declares BasicFactory yet — pass the factory you deployed.
-const factoryAddress = process.env.BASIC_FACTORY_ADDRESS as Address;
-// When a network declares the official mint, prefer the lookup instead:
-// const { factory: factoryAddress } = getOfficialBasicMint(network);
+const { factory: factoryAddress } = getOfficialBasicMint(network);
 
 const factory = new BasicFactory(publicClient, ownerWallet, factoryAddress, chain);
 
@@ -236,7 +232,7 @@ const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, account, chain);
 const guardController = new GuardController(publicClient, walletClient, account, chain);
 ```
 
-`BasicAccount` differs from the legacy `AccountBlox` template in its rules, not its surface:
+`BasicAccount` differs from the developer-toolkit `AccountBlox` template in its rules, not its surface:
 the timelock is bounded to 1 day through 90 days, and the implementation's own initializer is
 locked so the pinned implementation cannot be claimed.
 
@@ -267,8 +263,8 @@ An owner can hold **more than one** account. `BasicFactory` has no on-chain `clo
   because public providers refuse wide ranges.
 
 Taking "the latest `BloxCloned` log" strands every earlier account the owner holds, including
-ones with balances or pending time-locked transfers. (The legacy CopyBlox wrapper's
-`clonesOf(owner)` is described in [§10](#10-legacy-copyblox-on-sepolia-developer--example).)
+ones with balances or pending time-locked transfers. (Developer-toolkit CopyBlox may expose
+`clonesOf(owner)` — see [§10](#10-developer-toolkit-copyblox--accountblox-on-sepolia).)
 
 ### 4. The shape gate: never adopt an address unchecked
 
@@ -291,7 +287,7 @@ every part earns its place. Measured against four real contracts:
 | An account clone | 20,853 B | the owner | `true` | `true` | `true` |
 | An EOA | none | reverts | reverts | reverts | reverts |
 | A plain ERC-20 | 2,771 B | reverts | reverts | `false` | `false` |
-| **The legacy CopyBlox factory** | 11,684 B | reverts | `false` | **`true`** | **`false`** |
+| **Developer-toolkit CopyBlox** | 11,684 B | reverts | `false` | **`true`** | **`false`** |
 
 CopyBlox answers `IBaseStateMachine` because it **is** one. A gate built on that check
 alone loads that factory as if it were an account. `BasicFactory` is not a state machine: it
@@ -421,21 +417,20 @@ rather than to apply:
   wall clock and the latest block, or the deadline is already past when the transaction
   mines while `eth_call` still passes.
 
-### 9. Official and legacy pipelines
+### 9. Official Platform and developer-toolkit pipelines
 
-The protocol repo carries two account + factory pairs. The **official** pair is
-`BasicAccount` + `BasicFactory`; no network declares it yet. The **legacy / example** pair is the
-only one declared on any network (historical Sepolia).
+The protocol repo carries two account + factory pairs. Both are official; they serve different
+jobs:
 
-| | Official (SPEC-2026-0130 / 0140) | Legacy / example (declared on Sepolia) |
+| | Platform (SPEC-2026-0130 / 0140) | Developer toolkit (declared on Sepolia) |
 |---|---|---|
 | Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox` (`contracts/examples/templates/`), 1-second timelock floor |
 | Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor | `CopyBlox` (`contracts/examples/applications/`), the open factory: clones any `IBaseStateMachine` |
-| SDK client | `BasicFactory` (official) | `CopyBlox` (**deprecated**, still exported) |
+| SDK / wiring | `BasicFactory` in `@bloxchain/sdk` | Addresses under `networks.sepolia.developerTools`; wire via `@bloxchain/contracts` artifacts (no CopyBlox client in the SDK) |
 | Who may mint | Anyone, **for themselves only**: the sender must be `initialOwner` (SPEC-2026-0142), as a direct EOA call (M-1) | Anyone, for any owner |
-| What may be minted | Only the blox pinned at construction (`BasicAccount` for the official account) | Any blox the caller names |
+| What may be minted | Only the blox pinned at construction (`BasicAccount` for the Platform account) | Any blox the caller names |
 | How the address is chosen | Nonce `cloneBlox`, **or** deterministic `cloneBloxDeterministic` (`CREATE2`, SPEC-2026-0138) with `predictClone` | Nonce (`CREATE`): a new address every call |
-| Governance on the factory | None: no owner, no roles, no timelock, no whitelist. A new official account means a new factory | None |
+| Governance on the factory | None: no owner, no roles, no timelock, no whitelist. A new Platform account means a new factory | None |
 | License | MPL-2.0 | MIT examples |
 
 `BasicFactory.cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` clones
@@ -516,52 +511,37 @@ minted **by that factory**. It does not mean every copy of `BasicAccount` on the
 from it: anyone can deploy or clone the same implementation by another path (including
 `CopyBlox`). Check `isClone` on the factory address you trust.
 
-**Status.** Official in the SDK and these docs, not yet declared on any network: there is no
-`BasicAccount` or `BasicFactory` row in `official-deployed-addresses.json`, and
-`@bloxchain/contracts` does not yet publish compiled artifacts for them (the SDK ships their
-ABIs). The Nethermind core audit (NM_0828) does not cover these two contracts; they had an
-internal light assure (SPEC-2026-0139), which is not an audit opinion.
+**Status.** The CreateX catalog declares `BasicAccount` / `BasicFactory` on every supported
+network in `official-deployed-addresses.json` (format `/2`). The SDK ships their ABIs; Platform
+mints use `getOfficialBasicMint`. The Nethermind core audit (NM_0828) does not cover these two
+contracts; they had an internal light assure (SPEC-2026-0139), which is not an audit opinion.
 
-### 10. Legacy: CopyBlox on Sepolia (developer / example)
+### 10. Developer toolkit: CopyBlox + AccountBlox on Sepolia
 
-`CopyBlox` is the MIT example factory (`contracts/examples/applications/CopyBlox/`) and the
-historical Sepolia developer pipeline. It is **deprecated as an official path**: the SDK still
-exports the `CopyBlox` client so existing Sepolia integrators keep working, but new integrations
-should use `BasicFactory`. It clones any template for any owner, so it carries none of the
-official pin's guarantees.
+`CopyBlox` and `AccountBlox` are an **official developer toolkit** on Sepolia — same product
+family, different job from the Platform CreateX mint:
+
+- **AccountBlox** — Account-pattern template with a **1-second** time-lock floor (fast loops).
+- **CopyBlox** — open factory that clones any `IBaseStateMachine` for any owner (not pinned).
+
+They are **not** exported from `@bloxchain/sdk`. Resolve addresses from
+`networks.sepolia.developerTools` and wire with `@bloxchain/contracts` artifacts + viem.
 
 ```typescript
-import { CopyBlox, resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+import copyBloxArtifact from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
 
-// Legacy / example only. Not the official mint.
+// Developer toolkit — not the Platform mint.
 const network = resolveOfficialNetwork(official, 11155111);
-const factory = new CopyBlox(
-  publicClient,
-  broadcasterWallet,
-  getOfficialAddress(network, 'CopyBlox'),
-  sepolia,
-);
-
-const result = await factory.cloneBlox(
-  {
-    template: getOfficialAddress(network, 'AccountBlox'),
-    initialOwner: ownerAddress,
-    broadcaster: broadcasterAddress,
-    recovery: recoveryAddress,
-    timeLockPeriodSec: 3600n,
-  },
-  { from: broadcasterAddress },
-);
-
-const { clones, source } = await factory.clonesOf(ownerAddress);
-// source: 'on-chain-index' when the factory carries clonesOf,
-//         'bloxcloned-logs'  when it predates it (the wrapper falls back automatically)
+const copyBlox = getOfficialAddress(network, 'CopyBlox');
+const accountBlox = getOfficialAddress(network, 'AccountBlox');
+// Use copyBloxArtifact.abi with viem getContract / writeContract against those addresses.
 ```
 
 `official-deployed-addresses.json` records which CopyBlox deployments carry the on-chain owner
-index (`contracts.CopyBlox.supports.clonesOf`; the Sepolia one does not). The legacy clone of
-`AccountBlox` used ~16.18M gas on Sepolia; send it at the cap like the official mint.
+index (`supports.clonesOf`; the Sepolia one does not). An AccountBlox clone via CopyBlox used
+~16.18M gas on Sepolia; send it at the EIP-7825 cap like a Platform mint.
 
 ---
 
@@ -652,7 +632,7 @@ To avoid “forgot to call `initialize`” or wrong ordering when spinning up ma
 - **`Clones.clone`** (EIP‑1167, or `cloneDeterministic` for the CREATE2 mint) then **`call`s** `initialize` on the new clone.
 - If initialization **reverts**, the whole transaction **reverts**—you do not end up with a live, uninitialized clone from that path.
 
-For your **own** blox types, the legacy / example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is a reference for an open factory that clones any `IBaseStateMachine` and initializes it atomically. Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`).
+For your **own** blox types, the developer-toolkit **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is a reference for an open factory that clones any `IBaseStateMachine` and initializes it atomically. Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`).
 
 ### **2. Proxy deploy runbook (atomic `initialize`)**
 

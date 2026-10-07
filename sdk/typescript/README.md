@@ -89,8 +89,8 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 | Export | Purpose |
 |--------|---------|
 | `BasicFactory`, `BASIC_FACTORY_SELECTORS` | **Official mint** (BasicFactory → BasicAccount): `cloneBlox`, `cloneBloxDeterministic`, `predictClone`, `computeCloneAddress`, `isClone`, `implementation` |
-| `getOfficialBasicMint`, `OFFICIAL_MINT_CONTRACTS` | Declared `BasicFactory` / `BasicAccount` addresses from `official-deployed-addresses.json`; throws until a network declares them (no fallback) |
-| `CopyBlox` (**deprecated**), `LEGACY_MINT_CONTRACTS` | Legacy / example open factory on historical Sepolia. Still exported; not the official path |
+| `getOfficialBasicMint`, `OFFICIAL_MINT_CONTRACTS` | Shared CreateX catalog `BasicFactory` / `BasicAccount` from `official-deployed-addresses.json`; throws if missing or pending (no CopyBlox fallback) |
+| `DEVELOPER_TOOL_CONTRACTS` | Address-book keys for Sepolia CopyBlox / AccountBlox (developer toolkit). No CopyBlox client in this package |
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
 | `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
@@ -152,15 +152,25 @@ const definitions = new Definitions(
 
 ## Minting an account (official path)
 
-The official mint is **`BasicFactory` → `BasicAccount`**. `CopyBlox` is a deprecated
-legacy / example factory: it is still exported for historical Sepolia integrators, but new
-code should not use it.
+The official Platform mint is **`BasicFactory` → `BasicAccount`**. Sepolia **CopyBlox** /
+**AccountBlox** remain an official developer toolkit (open factory + 1s floor) but are
+**not** part of this SDK — use `@bloxchain/contracts` artifacts if you need them.
 
 ```typescript
-import { BasicFactory, SecureOwnable, RuntimeRBAC, GuardController } from '@bloxchain/sdk';
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import {
+  BasicFactory,
+  SecureOwnable,
+  RuntimeRBAC,
+  GuardController,
+  resolveOfficialNetwork,
+  getOfficialBasicMint,
+} from '@bloxchain/sdk';
 
-// No network declares BasicFactory yet: getOfficialBasicMint(network) throws until one does.
-// Until then, pass the BasicFactory address you deployed. Never substitute the CopyBlox row.
+// Shared CreateX catalog — same BasicFactory address on every declared network.
+// Never substitute the Sepolia developer-toolkit CopyBlox row.
+const network = resolveOfficialNetwork(official, chain.id);
+const { factory: factoryAddress } = getOfficialBasicMint(network);
 const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
 
 // The sender must be the owner (SPEC-2026-0142); the client refuses a mismatch before any RPC.
