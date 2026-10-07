@@ -7,26 +7,19 @@ export { default as SecureOwnable } from './contracts/core/SecureOwnable.js';
 export { default as RuntimeRBAC } from './contracts/core/RuntimeRBAC.js';
 export { default as GuardController } from './contracts/core/GuardController.js';
 
-// Official mint (SPEC-2026-0140): BasicFactory → BasicAccount. Nonce `cloneBlox`, deterministic
-// `cloneBloxDeterministic` + `predictClone` (SPEC-2026-0138); sender == initialOwner (SPEC-2026-0142);
-// direct-EOA mint only under the EIP-7825 cap (M-1). Operate the BasicAccount clone with the
-// SecureOwnable / RuntimeRBAC / GuardController wrappers. No network declares an address yet:
-// getOfficialBasicMint throws until one does.
+// Official Platform mint (SPEC-2026-0140 / 0137): BasicFactory → BasicAccount.
+// Nonce `cloneBlox`, deterministic `cloneBloxDeterministic` + `predictClone` (SPEC-2026-0138);
+// sender == initialOwner (SPEC-2026-0142); direct-EOA mint only under the EIP-7825 cap (M-1).
+// Operate the BasicAccount clone with the SecureOwnable / RuntimeRBAC / GuardController wrappers.
+// getOfficialBasicMint reads the shared CreateX catalog (format /2).
+// Developer toolkit (CopyBlox / AccountBlox) is official but not exported here — use
+// @bloxchain/contracts artifacts on Sepolia developerTools addresses.
 export { default as BasicFactory, BASIC_FACTORY_SELECTORS } from './contracts/factories/BasicFactory.js';
 export type {
   BasicCloneParams,
   BasicDeterministicCloneParams,
   BasicCloneAddressInputs,
 } from './contracts/factories/BasicFactory.js';
-
-// Legacy / example (deprecated as an official path, SPEC-2026-0140): the open CopyBlox factory,
-// historical Sepolia developer pipeline (SPEC-2026-0118). Kept exported; removal is a later breaking change.
-export { default as CopyBlox } from './contracts/factories/CopyBlox.js';
-export type {
-  CloneAccountParams,
-  CloneLogScanOptions,
-  CloneListResult
-} from './contracts/factories/CopyBlox.js';
 
 export { Definitions } from './lib/Definition.js';
 export { EngineBlox } from './lib/EngineBlox.js';
@@ -195,7 +188,7 @@ export {
   getOfficialAddress,
   getOfficialBasicMint,
   OFFICIAL_MINT_CONTRACTS,
-  LEGACY_MINT_CONTRACTS,
+  DEVELOPER_TOOL_CONTRACTS,
   pendingOfficialContracts,
   factorySupportsClonesOf,
   OfficialNetworkNotFoundError,

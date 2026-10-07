@@ -9,8 +9,9 @@
  * | Per-contract subpath | `import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory'` |
  * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/BasicFactory.abi.json' with { type: 'json' }` |
  *
- * Official mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `copyBloxAbi` / `accountBloxAbi`
- * remain for the legacy / example CopyBlox pipeline.
+ * Official Platform mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `accountBloxAbi`
+ * remains for the account shape gate. CopyBlox is not part of the SDK surface — use
+ * `@bloxchain/contracts` artifacts for the Sepolia developer toolkit.
  *
  * Prefer the barrel or the per-contract subpath: both are plain ES modules, so
  * they work under every bundler and Node resolver without JSON import
@@ -37,7 +38,6 @@ export {
   baseStateMachineErrorAbi,
   baseStateMachineEventAbi,
 } from './abis/BaseStateMachine.js';
-export { copyBloxAbi, copyBloxErrorAbi, copyBloxEventAbi } from './abis/CopyBlox.js';
 export { engineBloxAbi, engineBloxErrorAbi, engineBloxEventAbi } from './abis/EngineBlox.js';
 export {
   guardControllerAbi,
@@ -75,7 +75,6 @@ import { bareBloxAbi } from './abis/BareBlox.js';
 import { basicAccountAbi } from './abis/BasicAccount.js';
 import { basicFactoryAbi } from './abis/BasicFactory.js';
 import { baseStateMachineAbi } from './abis/BaseStateMachine.js';
-import { copyBloxAbi } from './abis/CopyBlox.js';
 import { engineBloxAbi } from './abis/EngineBlox.js';
 import { guardControllerAbi } from './abis/GuardController.js';
 import { guardControllerDefinitionsAbi } from './abis/GuardControllerDefinitions.js';
@@ -105,7 +104,6 @@ export const ABIS = {
   BasicAccount: basicAccountAbi,
   BasicFactory: basicFactoryAbi,
   BaseStateMachine: baseStateMachineAbi,
-  CopyBlox: copyBloxAbi,
   EngineBlox: engineBloxAbi,
   ERC20: erc20Abi,
   GuardController: guardControllerAbi,

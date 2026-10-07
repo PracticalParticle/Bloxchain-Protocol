@@ -27,7 +27,7 @@ Concrete implementations (for example `AccountBlox`) inherit from `Account` and 
       - Secure ownership operations (`SecureOwnableDefinitions`)
       - Runtime role configuration (`RuntimeRBACDefinitions`)
       - Guarded execution and whitelists (`GuardControllerDefinitions`)
-  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. The official factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount` — vets the pin once, clones, calls `initialize`, reverts on failure. The legacy / example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) shows the same pattern as an open factory for any `IBaseStateMachine`. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
+  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. The Platform factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount` — vets the pin once, clones, calls `initialize`, reverts on failure. The developer-toolkit **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) shows the same pattern as an open factory for any `IBaseStateMachine`. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
 
 - **Security Model**
   - Protected roles (`OWNER_ROLE`, `BROADCASTER_ROLE`, `RECOVERY_ROLE`) are controlled only by `SecureOwnable`.
@@ -129,21 +129,23 @@ the `BasicFactory` client; operate the clone with the `SecureOwnable` / `Runtime
 `GuardController` wrappers above (there is no separate account client).
 
 The factory is deliberately **not** in `contracts/core`, and an account never depends on it at
-runtime. No network declares the official pair yet: `getOfficialBasicMint(network)` throws
-until one does, and never falls back to CopyBlox.
+runtime. The CreateX catalog declares the Platform pair in `official-deployed-addresses.json`:
+`getOfficialBasicMint(network)` returns those addresses on every supported network, and never
+falls back to CopyBlox.
 
-The legacy / example **CopyBlox** factory (historical Sepolia developer pipeline) is
-**deprecated as an official path**. Its SDK client stays exported for existing integrators.
+The developer-toolkit **CopyBlox** / **AccountBlox** pair (Sepolia) is official for fast
+experimentation and open cloning. It is **not** part of `@bloxchain/sdk` — wire via
+`@bloxchain/contracts` artifacts on `networks.sepolia.developerTools` addresses.
 
-### Official and legacy pipelines
+### Official Platform and developer-toolkit pipelines
 
-| | Official (SPEC-2026-0130 / 0140) | Legacy / example (declared on Sepolia) |
+| | Platform (SPEC-2026-0130 / 0140) | Developer toolkit (declared on Sepolia) |
 |---|---|---|
 | Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox`, 1-second timelock floor |
 | Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones the one `BasicAccount` fixed in its constructor | `CopyBlox`, the open factory: a bare `BaseStateMachine` that clones any blox |
 | Mint | Permissionless **self-owner** mint: the sender must be `initialOwner` (SPEC-2026-0142), as a **direct EOA call** (M-1). Nonce `cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)`, or deterministic `cloneBloxDeterministic(..., index, salt)` (`CREATE2`) with `predictClone(deployer, initialOwner, index, salt)` | Permissionless, nonce (`CREATE`), for any owner |
 | Finding the accounts of an owner | `predictClone` over `index = 0, 1, 2, …` + `isClone`, or `BloxCloned` logs | `clonesOf(owner)` (log fallback on older deployments) |
-| Governance on the factory | None: no owner, roles, timelock or whitelist. A new official account means a new factory | None |
+| Governance on the factory | None: no owner, roles, timelock or whitelist. A new Platform account means a new factory | None |
 
 Both factories send the clone with gas limit `16777216` (the EIP-7825 cap). Measured for the
 official pair: `cloneBlox` 16,137,707 gas used, `cloneBloxDeterministic` 16,140,930 gas used,
@@ -166,9 +168,9 @@ predicted addresses differ per chain. See
 **Official pattern: self-owner mint.** `BasicFactory` reverts `RestrictedOwner(caller, owner)`
 on both mints unless `initialOwner == msg.sender`: you mint your own account, and you may still
 name helper wallets as broadcaster and recovery. Minting for another owner (a relayer or a
-sponsor naming a third party as owner) stays possible with other factories such as the legacy
-CopyBlox, but is out of scope for the official pin; it is a social-engineering surface the
-official path closes.
+sponsor naming a third party as owner) stays possible with other factories such as the
+developer-toolkit CopyBlox, but is out of scope for the Platform pin; it is a social-engineering
+surface the Platform path closes.
 
 The deterministic address (SPEC-2026-0138) is `CREATE2` over
 `keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. Since
@@ -182,17 +184,17 @@ minter passes the same values. Default: `salt = bytes32(0)`, `index = 0, 1, 2, �
 The lineage check for the official pipeline is `BasicFactory.isClone(address)`: the address
 was minted by **that** factory, by either path. A clone at the same address on another chain
 is a claim about that chain's factory; check `isClone` there. It is not a property of the bytecode, and other deployment
-paths for the same implementation remain possible. The official pair is not yet declared:
-nothing is in `official-deployed-addresses.json`, and the Nethermind core audit does not cover
-it (it had an internal light assure, SPEC-2026-0139, which is not an audit opinion). See
-[Getting Started, official and legacy pipelines](./getting-started.md#9-official-and-legacy-pipelines).
+paths for the same implementation remain possible. The CreateX catalog declares the Platform pair in `official-deployed-addresses.json`. The
+Nethermind core audit does not cover it (it had an internal light assure, SPEC-2026-0139, which
+is not an audit opinion). See
+[Getting Started, Platform and developer-toolkit pipelines](./getting-started.md#9-official-platform-and-developer-toolkit-pipelines).
 
 ### Recognising one: the shape gate
 
 An account and a factory are both `BaseStateMachine`s, so ERC-165 `IBaseStateMachine` does
 **not** distinguish them. Gate on all four of:
 
-| Check | An account | CopyBlox (legacy) | BasicFactory |
+| Check | An account | CopyBlox (developer toolkit) | BasicFactory |
 |---|---|---|---|
 | `getCode` non-empty | yes | yes | yes |
 | `owner()` answers | yes | **reverts** while uninitialized | **no such function** |

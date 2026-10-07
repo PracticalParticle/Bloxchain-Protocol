@@ -122,8 +122,9 @@ try {
   fs.writeFileSync(
     path.join(workDir, 'check.mjs'),
     `// A fresh integrator: no protocol repo, no solc, no compile step.
-import factory from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
-import template from '@bloxchain/contracts/artifacts/AccountBlox' with { type: 'json' };
+import factory from '@bloxchain/contracts/artifacts/BasicFactory.json' with { type: 'json' };
+import template from '@bloxchain/contracts/artifacts/BasicAccount' with { type: 'json' };
+import copyBlox from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
 import manifest from '@bloxchain/contracts/artifacts/manifest.json' with { type: 'json' };
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 
@@ -135,40 +136,44 @@ const check = (label, condition, detail) =>
 const bytes = (hex) => (hex.length - 2) / 2;
 const linkedLibraries = (artifact) =>
   Object.values(artifact.linkReferences ?? {}).flatMap((libs) => Object.keys(libs));
+const isAddress = (value) => typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
 
-// R1: artifacts reachable through the exports map, with bytecode, not just ABI.
-check('factory ABI resolves', Array.isArray(factory.abi) && factory.abi.length > 0, \`\${factory.abi.length} entries\`);
-check('factory exposes cloneBlox', factory.abi.some((e) => e.name === 'cloneBlox'));
-check('factory exposes clonesOf', factory.abi.some((e) => e.name === 'clonesOf'));
-check('factory bytecode resolves', factory.bytecode.startsWith('0x') && bytes(factory.bytecode) > 1000, \`\${bytes(factory.bytecode)} B\`);
-check('factory records its library links', linkedLibraries(factory).length > 0, linkedLibraries(factory).join(', '));
-check('extensionless subpath resolves', template.contractName === 'AccountBlox');
-check('template bytecode resolves', template.bytecode.startsWith('0x'), \`\${bytes(template.bytecode)} B\`);
-check('template records 4 library links', linkedLibraries(template).length === 4, linkedLibraries(template).join(', '));
-check('manifest records a sha256 per artifact', /^[0-9a-f]{64}$/.test(manifest.contracts.CopyBlox.sha256));
+// R1: Platform mint artifacts reachable through the exports map, with bytecode.
+check('BasicFactory ABI resolves', Array.isArray(factory.abi) && factory.abi.length > 0, \`\${factory.abi.length} entries\`);
+check('BasicFactory exposes cloneBlox', factory.abi.some((e) => e.name === 'cloneBlox'));
+check('BasicFactory exposes cloneBloxDeterministic', factory.abi.some((e) => e.name === 'cloneBloxDeterministic'));
+check('BasicFactory bytecode resolves', factory.bytecode.startsWith('0x') && bytes(factory.bytecode) > 100, \`\${bytes(factory.bytecode)} B\`);
+check('extensionless BasicAccount subpath resolves', template.contractName === 'BasicAccount');
+check('BasicAccount bytecode resolves', template.bytecode.startsWith('0x'), \`\${bytes(template.bytecode)} B\`);
+check('BasicAccount records 4 library links', linkedLibraries(template).length === 4, linkedLibraries(template).join(', '));
+check('manifest records BasicFactory sha256', /^[0-9a-f]{64}$/.test(manifest.contracts.BasicFactory?.sha256));
 check('manifest records the compiler', typeof manifest.compiler.solc === 'string', \`\${manifest.compiler.solc}, viaIR=\${manifest.compiler.viaIR}, optimizer=\${manifest.compiler.runs}\`);
+// Developer toolkit artifacts still ship (outside @bloxchain/sdk).
+check('CopyBlox developer-toolkit artifact resolves', Array.isArray(copyBlox.abi) && copyBlox.bytecode.startsWith('0x'));
 
-// R2: official addresses, with the definition libraries and the factory.
+// R2: format /2 shared catalog + network list.
+check('official addresses format /2', official._format === 'bloxchain-official-addresses/2');
+const catalog = official.catalog?.contracts ?? {};
+check('catalog BasicFactory address', isAddress(catalog.BasicFactory?.address), catalog.BasicFactory?.address);
+check('catalog BasicAccount address', isAddress(catalog.BasicAccount?.address), catalog.BasicAccount?.address);
+check(
+  'catalog definition library addresses',
+  ['SecureOwnableDefinitions', 'RuntimeRBACDefinitions', 'GuardControllerDefinitions'].every((c) => isAddress(catalog[c]?.address))
+);
+const gas = catalog.BasicFactory?.gas ?? {};
+check(
+  'catalog clone gas envelope',
+  typeof gas.maxTxGas === 'number' && Number.isFinite(gas.cloneBloxObserved) && gas.cloneBloxObserved <= gas.maxTxGas,
+  \`\${gas.cloneBloxObserved} <= \${gas.maxTxGas}\`
+);
 const declared = Object.entries(official.networks).filter(([, n]) => n.status === 'official');
 check('at least one official network', declared.length > 0, declared.map(([k, n]) => \`\${k} (\${n.chainId})\`).join(', '));
 for (const [name, network] of declared) {
-  const address = (contract) => network.contracts?.[contract]?.address ?? null;
-  const isAddress = (value) => typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
-  check(\`\${name}: factory address\`, isAddress(address('CopyBlox')), address('CopyBlox'));
-  check(\`\${name}: account template address\`, isAddress(address('AccountBlox')), address('AccountBlox'));
-  check(
-    \`\${name}: definition library addresses\`,
-    ['SecureOwnableDefinitions', 'RuntimeRBACDefinitions', 'GuardControllerDefinitions'].every((c) => isAddress(address(c)))
-  );
-  check(
-    \`\${name}: factory declares whether it has the owner index\`,
-    typeof network.contracts?.CopyBlox?.supports?.clonesOf === 'boolean',
-    \`clonesOf=\${network.contracts?.CopyBlox?.supports?.clonesOf}\`
-  );
-  // R4: the gas envelope travels with the address, so a consumer never has to guess it.
-  const gas = network.contracts?.CopyBlox?.gas ?? {};
-  check(\`\${name}: clone gas fits the per-tx cap\`, typeof gas.maxTxGas === 'number' && Number.isFinite(gas.cloneBloxObserved) && gas.cloneBloxObserved < gas.maxTxGas, \`\${gas.cloneBloxObserved} < \${gas.maxTxGas}\`);
+  check(\`\${name}: references createx catalog\`, network.catalog === official.catalog?.id, network.catalog);
 }
+const sepoliaTools = official.networks?.sepolia?.developerTools ?? official.networks?.sepolia?.legacy;
+check('Sepolia developerTools CopyBlox', isAddress(sepoliaTools?.CopyBlox?.address), sepoliaTools?.CopyBlox?.address);
+check('Sepolia developerTools AccountBlox', isAddress(sepoliaTools?.AccountBlox?.address), sepoliaTools?.AccountBlox?.address);
 
 // No lab or local chain may reach npm through this file.
 const localChains = Object.entries(official.networks).filter(([, n]) => [1337, 31337].includes(n.chainId));

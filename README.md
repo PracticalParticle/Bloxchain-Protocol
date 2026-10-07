@@ -10,13 +10,13 @@
 
 Build on-chain security and authorization rules into vaults, tokens, payments, and governed accounts.
 
-[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0) [![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol) [![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk) [![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml) [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app) [![Sepolia](https://img.shields.io/badge/Sepolia-Official_deployments-purple.svg)](https://sepolia.etherscan.io/)
+[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-blue.svg)](https://opensource.org/licenses/MPL-2.0) [![Audited by Nethermind](./docs/assets/badge-audit-nethermind.svg)](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PracticalParticle/Bloxchain-Protocol/badge)](https://scorecard.dev/viewer/?uri=github.com/PracticalParticle/Bloxchain-Protocol) [![npm](https://img.shields.io/npm/v/@bloxchain/sdk.svg)](https://www.npmjs.com/package/@bloxchain/sdk) [![CI](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg)](https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml) [![Docs](https://img.shields.io/badge/docs-bloxchain.app-yellow)](https://docs.bloxchain.app) [![CreateX catalog](https://img.shields.io/badge/CreateX-15_networks_same_addresses-purple.svg)](#official-createx-catalog)
 
 **Install:** `npm install @bloxchain/sdk viem` (TypeScript) · `npm install @bloxchain/contracts` (Solidity) · [choose a path](#quick-start)
 
 > [!IMPORTANT]
 > **Audited core:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) ([policy](./contracts/core/AUDIT.md)). Example apps under `contracts/examples/` are **out of scope**.  
-> **Official deployments:** **Sepolia** today; **Ethereum mainnet official deployments coming soon**. Audit does not imply mainnet is live.  
+> **Official deployments:** CreateX same-address catalog on the [supported networks](#official-createx-catalog) below (including Ethereum mainnet and Sepolia). Audit does not change product maturity.  
 > **Security:** [SECURITY.md](./SECURITY.md) · Optional hosted Console: [bloxchain.app](https://bloxchain.app) (alpha, testnet-first) — [docs](https://docs.bloxchain.app).
 
 ## Why Bloxchain
@@ -166,7 +166,7 @@ Extend patterns under [`contracts/examples/`](./contracts/examples/). Pin exact 
 An open-source framework so teams run blockchain operations through auditable on-chain rules — roles, waiting periods, and controlled external calls — instead of ad-hoc signing.
 
 **Can we use this on mainnet today?**  
-Official Protocol deployments are on **Sepolia** today. **Ethereum mainnet official deployments are coming soon.** Completing an audit does not mean mainnet is live.
+Yes — the official CreateX catalog is declared on Ethereum mainnet and the other [supported networks](#official-createx-catalog). Product surfaces remain alpha / testnet-first; completing an audit does not change that posture.
 
 **What is bloxchain.app?**  
 An optional hosted Console to operate governed accounts in the browser (alpha, testnet-first). Same on-chain rules as self-hosted integrations — [docs.bloxchain.app](https://docs.bloxchain.app).
@@ -198,59 +198,105 @@ No public PRs — audited core is maintained by Particle CS. See [CONTRIBUTING.m
 
 ## Deployments
 
-<details id="sepolia--deployed-addresses">
-<summary><strong>Sepolia &amp; deployed addresses</strong></summary>
+<details id="official-createx-catalog" open>
+<summary><strong>Official CreateX catalog (shared addresses)</strong></summary>
 
-### Try on Sepolia
+The official Platform mint is **`BasicFactory` → `BasicAccount`**. CreateX salts and
+`bytecodeHash none` make the six infrastructure addresses **identical on every supported
+network** below. Machine-readable SoT (ships with `@bloxchain/contracts`):
+**[`official-deployed-addresses.json`](./official-deployed-addresses.json)** (format
+`bloxchain-official-addresses/2`).
+
+```typescript
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialBasicMint } from '@bloxchain/sdk';
+
+const network = resolveOfficialNetwork(official, chainId); // e.g. 1 or 11155111
+const { factory, implementation } = getOfficialBasicMint(network);
+```
+
+### Shared catalog addresses
+
+Same on every network in the table that follows. Explorer links use Sepolia as a
+readable example; substitute the network explorer from the supported-networks list.
+
+| Contract | Address |
+|----------|---------|
+| EngineBlox | [`0xb1fde79830ee7f748022922d07b3f19042ee6526`](https://sepolia.etherscan.io/address/0xb1fde79830ee7f748022922d07b3f19042ee6526) |
+| SecureOwnableDefinitions | [`0xeb6ca70bb64d1f87bb708460868c9b19f6987ed6`](https://sepolia.etherscan.io/address/0xeb6ca70bb64d1f87bb708460868c9b19f6987ed6) |
+| RuntimeRBACDefinitions | [`0x55ff61c065025e4a521532f1366981805230f988`](https://sepolia.etherscan.io/address/0x55ff61c065025e4a521532f1366981805230f988) |
+| GuardControllerDefinitions | [`0x8e8f6c8a11161214fdf04c702981bcd8b78f2fe0`](https://sepolia.etherscan.io/address/0x8e8f6c8a11161214fdf04c702981bcd8b78f2fe0) |
+| BasicAccount | [`0x234c0a76399456832a74fb29de3c78d13c22e182`](https://sepolia.etherscan.io/address/0x234c0a76399456832a74fb29de3c78d13c22e182) |
+| BasicFactory | [`0x6b6e4fb86ab52728d983d1a316ad9d8b48513215`](https://sepolia.etherscan.io/address/0x6b6e4fb86ab52728d983d1a316ad9d8b48513215) |
+
+CreateX factory (called, never vendored): [`0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed`](https://github.com/pcaversaccio/createx).
+
+### Supported networks
+
+| Network | Chain ID | Explorer |
+|---------|---------:|----------|
+| Ethereum | 1 | [etherscan.io](https://etherscan.io) |
+| Sepolia | 11155111 | [sepolia.etherscan.io](https://sepolia.etherscan.io) |
+| Base | 8453 | [basescan.org](https://basescan.org) |
+| Base Sepolia | 84532 | [sepolia.basescan.org](https://sepolia.basescan.org) |
+| Optimism | 10 | [optimistic.etherscan.io](https://optimistic.etherscan.io) |
+| Optimism Sepolia | 11155420 | [sepolia-optimism.etherscan.io](https://sepolia-optimism.etherscan.io) |
+| Arbitrum One | 42161 | [arbiscan.io](https://arbiscan.io) |
+| Arbitrum Sepolia | 421614 | [sepolia.arbiscan.io](https://sepolia.arbiscan.io) |
+| Polygon PoS | 137 | [polygonscan.com](https://polygonscan.com) |
+| BNB Smart Chain | 56 | [bscscan.com](https://bscscan.com) |
+| Avalanche C-Chain | 43114 | [snowtrace.io](https://snowtrace.io) |
+| Arc | 5042 | [mainnet.arcscan.app](https://mainnet.arcscan.app) |
+| Arc Testnet | 5042002 | [testnet.arcscan.app](https://testnet.arcscan.app) |
+| Robinhood | 4663 | [explorer.chain.robinhood.com](https://explorer.chain.robinhood.com) |
+| Robinhood Testnet | 46630 | [explorer.testnet.chain.robinhood.com](https://explorer.testnet.chain.robinhood.com) |
+
+Not yet in this catalog (faucet-deferred): Polygon Amoy, Avalanche Fuji, BNB Testnet.
+Tron / TVM is out of scope for CreateX same-address.
+
+### Official developer toolkit (Sepolia)
+
+**AccountBlox** / **CopyBlox** are an official developer experiment path on Sepolia — same
+product family, different job from the Platform CreateX mint:
+
+- **AccountBlox** — Account-pattern template with a **1-second** time-lock floor (fast loops). Platform `BasicAccount` uses a **1-day** floor.
+- **CopyBlox** — open factory that can clone any standard `IBaseStateMachine` blox, not only AccountBlox. Platform `BasicFactory` is pinned to BasicAccount only.
+
+Addresses live under `networks.sepolia.developerTools` in the JSON file. Wire them with
+`@bloxchain/contracts` artifacts and viem — they are **not** exported from `@bloxchain/sdk`.
+
+| Contract | Address |
+|----------|---------|
+| AccountBlox (developer) | [`0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0`](https://sepolia.etherscan.io/address/0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0) |
+| CopyBlox (developer) | [`0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7`](https://sepolia.etherscan.io/address/0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7) |
+
+### Lab / undeclared deploys
+
+Addresses written by deploy scripts go to **`deployed-addresses.json`** (git-ignored, any
+network including lab, never published). Promote into the official file only with an
+explicit human `--declare`:
+
+```bash
+npm run promote:official-addresses -- --network <name> --chain-id <id>
+npm run promote:official-addresses -- --network <name> --chain-id <id> --declare
+npm run validate:official-addresses -- --require-official <name>
+```
+
+The promoter refuses a network whose CreateX addresses differ from the shared catalog.
+
+<details id="sepolia--deployed-addresses">
+<summary><strong>Try on Sepolia (create-wallet)</strong></summary>
 
 ```bash
 npm run create-wallet
 ```
 
-Interactive: choose network, **AccountBlox** or custom blox, set owner / broadcaster / recovery and time-lock. Uses `.env.deployment` and prints the clone address.
+Interactive: choose network, set owner / broadcaster / recovery and time-lock. Uses
+`.env.deployment` and prints the clone address.
 
-Non-interactive: `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js`
+Non-interactive developer-toolkit path: `CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js`
 
-### Deployment
-
-1. Copy `env.deployment.example` to `.env.deployment` — set `DEPLOY_RPC_URL`, `DEPLOY_PRIVATE_KEY`; Sepolia: `DEPLOY_CHAIN_ID=11155111`.
-2. **Foundation:** `npm run deploy:hardhat:foundation`
-3. **Example (CopyBlox):** `npx hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia`
-
-Addresses are written to **`deployed-addresses.json`** (git-ignored, any network the
-scripts were pointed at, never published).
-
-Once a deployment is declared official by a release owner, promote it into the published
-file and validate it:
-
-```bash
-npm run promote:official-addresses -- --network sepolia   # prints the diff, writes nothing
-npm run promote:official-addresses -- --network sepolia --declare
-npm run validate:official-addresses -- --require-official sepolia
-```
-
-### Official Sepolia addresses
-
-Machine-readable, and published with `@bloxchain/contracts`:
-**[`official-deployed-addresses.json`](./official-deployed-addresses.json)**. Read it with
-the SDK rather than transcribing the table below:
-
-```typescript
-import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
-import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
-
-const sepolia = resolveOfficialNetwork(official, 11155111);
-const factory = getOfficialAddress(sepolia, 'CopyBlox');
-```
-
-| Contract | Address |
-|----------|---------|
-| EngineBlox | [`0x726d78c9683a96d66196d2b8350923e8ca0d8597`](https://sepolia.etherscan.io/address/0x726d78c9683a96d66196d2b8350923e8ca0d8597) |
-| SecureOwnableDefinitions | [`0xcb8834e55c2c7b012e5643de98a1bf5fda22191c`](https://sepolia.etherscan.io/address/0xcb8834e55c2c7b012e5643de98a1bf5fda22191c) |
-| RuntimeRBACDefinitions | [`0x27c103b2b1a1e7dc345aeff766aa3656b4825653`](https://sepolia.etherscan.io/address/0x27c103b2b1a1e7dc345aeff766aa3656b4825653) |
-| GuardControllerDefinitions | [`0x6ce6f314fa35d34782f2743db4d0c1f824639938`](https://sepolia.etherscan.io/address/0x6ce6f314fa35d34782f2743db4d0c1f824639938) |
-| AccountBlox | [`0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0`](https://sepolia.etherscan.io/address/0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0) |
-| CopyBlox (example) | [`0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7`](https://sepolia.etherscan.io/address/0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7) |
+</details>
 
 </details>
 

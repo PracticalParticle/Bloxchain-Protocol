@@ -186,19 +186,20 @@ import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory';
 import { ABIS, ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
 ```
 
-`<Name>` is any of: `AccountBlox`, `BareBlox`, `BaseStateMachine`, `BasicAccount`, `BasicFactory`, `CopyBlox`,
+`<Name>` is any of: `AccountBlox`, `BareBlox`, `BaseStateMachine`, `BasicAccount`, `BasicFactory`,
 `EngineBlox`, `ERC20`, `GuardController`, `GuardControllerDefinitions`,
 `IDefinition`, `RoleBlox`, `RuntimeRBAC`, `RuntimeRBACDefinitions`, `SecureBlox`,
 `SecureOwnable`, `SecureOwnableDefinitions`. Each module also exports
 `<name>ErrorAbi` and `<name>EventAbi` filters. `BasicFactory` and `BasicAccount` are the
-official mint pair; `CopyBlox` and `AccountBlox` are the legacy / example pair.
+Platform mint pair. Sepolia `CopyBlox` / `AccountBlox` are an official developer toolkit —
+addresses and `@bloxchain/contracts` artifacts only; no CopyBlox client in this package.
 
-## 🏭 **Factories: official `BasicFactory`, legacy `CopyBlox`**
+## 🏭 **Factories: Platform `BasicFactory` (developer-toolkit CopyBlox outside SDK)**
 
-The official mint is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140). `CopyBlox` is a
-legacy / example factory: still exported, marked `@deprecated`, not the official path.
+The Platform mint is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140). Sepolia `CopyBlox` /
+`AccountBlox` remain an official developer toolkit but are **not** exported from `@bloxchain/sdk`.
 
-### **BasicFactory** (official)
+### **BasicFactory** (Platform)
 
 ```typescript
 new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, factoryAddress: Address, chain: Chain)
@@ -227,20 +228,14 @@ pointed at the clone address; its ABI is `basicAccountAbi`.
 
 | Export | Purpose |
 |--------|---------|
-| `getOfficialBasicMint(network)` | `{ factory, implementation }` from the `BasicFactory` / `BasicAccount` rows. Throws `OfficialContractNotDeclaredError` when either is missing or pending; never falls back to CopyBlox |
+| `getOfficialBasicMint(network)` | `{ factory, implementation }` from the shared CreateX catalog. Throws `OfficialContractNotDeclaredError` when either is missing or pending; never falls back to CopyBlox |
 | `OFFICIAL_MINT_CONTRACTS` | `{ factory: 'BasicFactory', implementation: 'BasicAccount' }` |
-| `LEGACY_MINT_CONTRACTS` | `{ factory: 'CopyBlox', template: 'AccountBlox' }` |
-| `getOfficialAddress(network, name)` | Any one declared row; throws rather than returning null |
+| `DEVELOPER_TOOL_CONTRACTS` | `{ factory: 'CopyBlox', template: 'AccountBlox' }` (address-book keys only) |
+| `getOfficialAddress(network, name)` | Any one declared row (catalog or `developerTools`); throws rather than returning null |
 
-No network declares `BasicFactory` / `BasicAccount` yet, so `getOfficialBasicMint` throws on
-every network today; pass a factory address you deployed until a declaration lands.
-
-### **CopyBlox** (legacy / example, deprecated)
-
-`CopyBlox` (`cloneBlox({ template, initialOwner, ... })`, `clonesOf(owner)`,
-`cloneAddressFromReceipt`) wraps the open example factory declared on historical Sepolia. It
-stays exported so existing integrators keep working; new integrations should use
-`BasicFactory`.
+`getOfficialBasicMint` reads the shared CreateX catalog on every declared network. For Sepolia
+developer-toolkit rows use `getOfficialAddress(network, 'CopyBlox')` / `'AccountBlox'` and
+`@bloxchain/contracts` artifacts — there is no CopyBlox client in this package.
 
 ## 🔑 **Reading permissioned views (`readAs`)**
 
@@ -349,7 +344,7 @@ counts toward the outer transaction's limit.
 
 For the account mint, gas **used** (~16.14M) is not the limit a sender needs (~16.67M,
 because of 63/64 forwarding inside `initialize`). Under the cap only a direct EOA call to
-`BasicFactory` fits; see the M-1 note under [Factories](#-factories-official-basicfactory-legacy-copyblox).
+`BasicFactory` fits; see the M-1 note under [Factories](#-factories-platform-basicfactory-developer-toolkit-copyblox-outside-sdk).
 
 ## 🧭 **Configuration Helpers**
 
