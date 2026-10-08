@@ -1,13 +1,17 @@
 /**
- * Typed ABI barrel for consumers (`import { copyBloxAbi } from '@bloxchain/sdk/abi'`).
+ * Typed ABI barrel for consumers (`import { basicFactoryAbi } from '@bloxchain/sdk/abi'`).
  *
  * Every ABI the package ships is reachable three ways, all equivalent:
  *
  * | Style | Example |
  * |-------|---------|
- * | Barrel (recommended) | `import { copyBloxAbi } from '@bloxchain/sdk/abi'` |
- * | Per-contract subpath | `import { copyBloxAbi } from '@bloxchain/sdk/abi/CopyBlox'` |
- * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/CopyBlox.abi.json' with { type: 'json' }` |
+ * | Barrel (recommended) | `import { basicFactoryAbi } from '@bloxchain/sdk/abi'` |
+ * | Per-contract subpath | `import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory'` |
+ * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/BasicFactory.abi.json' with { type: 'json' }` |
+ *
+ * Official mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `accountBloxAbi`
+ * remains for the account shape gate. CopyBlox is not part of the SDK surface. Use
+ * `@bloxchain/contracts` artifacts for the Sepolia experiment.
  *
  * Prefer the barrel or the per-contract subpath: both are plain ES modules, so
  * they work under every bundler and Node resolver without JSON import
@@ -27,12 +31,13 @@ export {
   accountBloxEventAbi,
 } from './abis/AccountBlox.js';
 export { bareBloxAbi, bareBloxErrorAbi, bareBloxEventAbi } from './abis/BareBlox.js';
+export { basicAccountAbi, basicAccountErrorAbi, basicAccountEventAbi } from './abis/BasicAccount.js';
+export { basicFactoryAbi, basicFactoryErrorAbi, basicFactoryEventAbi } from './abis/BasicFactory.js';
 export {
   baseStateMachineAbi,
   baseStateMachineErrorAbi,
   baseStateMachineEventAbi,
 } from './abis/BaseStateMachine.js';
-export { copyBloxAbi, copyBloxErrorAbi, copyBloxEventAbi } from './abis/CopyBlox.js';
 export { engineBloxAbi, engineBloxErrorAbi, engineBloxEventAbi } from './abis/EngineBlox.js';
 export {
   guardControllerAbi,
@@ -67,8 +72,9 @@ export { erc20Abi, erc20MinimalAbi, erc20EventAbi } from './abis/ERC20.js';
 
 import { accountBloxAbi } from './abis/AccountBlox.js';
 import { bareBloxAbi } from './abis/BareBlox.js';
+import { basicAccountAbi } from './abis/BasicAccount.js';
+import { basicFactoryAbi } from './abis/BasicFactory.js';
 import { baseStateMachineAbi } from './abis/BaseStateMachine.js';
-import { copyBloxAbi } from './abis/CopyBlox.js';
 import { engineBloxAbi } from './abis/EngineBlox.js';
 import { guardControllerAbi } from './abis/GuardController.js';
 import { guardControllerDefinitionsAbi } from './abis/GuardControllerDefinitions.js';
@@ -95,8 +101,9 @@ import { erc20Abi } from './abis/ERC20.js';
 export const ABIS = {
   AccountBlox: accountBloxAbi,
   BareBlox: bareBloxAbi,
+  BasicAccount: basicAccountAbi,
+  BasicFactory: basicFactoryAbi,
   BaseStateMachine: baseStateMachineAbi,
-  CopyBlox: copyBloxAbi,
   EngineBlox: engineBloxAbi,
   ERC20: erc20Abi,
   GuardController: guardControllerAbi,

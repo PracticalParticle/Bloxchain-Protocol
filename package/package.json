@@ -4,6 +4,8 @@
   "description": "Library engine for building enterprise grade decentralized permissioned applications",
   "files": [
     "core",
+    "account",
+    "factory",
     "abi",
     "artifacts",
     "standards",
@@ -21,6 +23,8 @@
     "./abi/*.json": "./abi/*.json",
     "./abi/*": "./abi/*.json",
     "./core/*": "./core/*",
+    "./account/*": "./account/*",
+    "./factory/*": "./factory/*",
     "./standards/*": "./standards/*",
     "./components/*": "./components/*",
     "./*": "./*"

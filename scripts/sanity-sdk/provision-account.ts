@@ -39,7 +39,8 @@
  *   --chain <name|id>     network key or chain id in official-deployed-addresses.json
  *   --rpc <url>           RPC URL (default: .env RPC_URL or REMOTE_*)
  *   --account 0x...       provision this existing account (runs the shape gate first)
- *   --clone               clone a new account when the owner has none
+ *   --index <n>           deterministic clone index (required to mint, or to pick among several)
+ *   --clone               clone a new account when the owner has none at --index
  *   --token 0x...         ERC-20 to whitelist for governed transfers
  *   --role-set-version n  expected role set version (default: ROLE_SET_VERSION below)
  *   --force-role-sync     re-apply grants as REMOVE + ADD even when they look current
@@ -62,7 +63,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import officialAddresses from '../../official-deployed-addresses.json';
 import engineBloxAbiJson from '../../sdk/typescript/abi/EngineBlox.abi.json' with { type: 'json' };
 
-import { CopyBlox } from '../../sdk/typescript/contracts/factories/CopyBlox.tsx';
+import BasicFactory from '../../sdk/typescript/contracts/factories/BasicFactory.tsx';
 import { GuardController } from '../../sdk/typescript/contracts/core/GuardController.tsx';
 import { RuntimeRBAC } from '../../sdk/typescript/contracts/core/RuntimeRBAC.tsx';
 import { SecureOwnable } from '../../sdk/typescript/contracts/core/SecureOwnable.tsx';
@@ -74,13 +75,16 @@ import { EngineBlox } from '../../sdk/typescript/lib/EngineBlox.tsx';
 import {
   inspectAccountBlox,
   assertOwnedAccount,
+  AccountNotOwnedError,
+  NotAnAccountError,
 } from '../../sdk/typescript/utils/account-gate.ts';
 import {
   resolveOfficialNetwork,
   assertNetworkIsOfficial,
   getOfficialAddress,
+  getOfficialBasicMint,
+  basicFactorySendGasLimit,
   pendingOfficialContracts,
-  factorySupportsClonesOf,
   type OfficialAddressesFile,
   type ResolvedOfficialNetwork,
 } from '../../sdk/typescript/utils/official-addresses.ts';
@@ -119,7 +123,8 @@ const ENGINE_BLOX_ABI = engineBloxAbiJson as Abi;
  */
 const ROLE_SET_VERSION = 1;
 
-const DEFAULT_TIMELOCK_SEC = 3600n;
+/** BasicAccount floor is 1 day (SPEC-2026-0130). */
+const DEFAULT_TIMELOCK_SEC = 86_400n;
 const META_TX_TTL_SEC = 3600;
 /** Explicit gas for the config batches: these payloads defeat eth_estimateGas on public nodes. */
 const GUARD_BATCH_GAS = GAS_ENVELOPE.guardConfigBatch;
@@ -127,10 +132,16 @@ const ROLE_BATCH_GAS = GAS_ENVELOPE.roleConfigBatch;
 
 // ============ CLI ============
 
+/** How far computeCloneAddress+isClone walks when discovering owned accounts (inclusive of gaps). */
+const DISCOVERY_INDEX_LIMIT = 256n;
+/** Parallel RPC budget for the discovery scan (isClone per index, after one implementation() read). */
+const DISCOVERY_CONCURRENCY = 16;
+
 interface Options {
   chain: string | null;
   rpc: string | null;
   account: Address | null;
+  index: bigint | null;
   clone: boolean;
   token: Address | null;
   roleSetVersion: number;
@@ -145,11 +156,20 @@ function parseOptions(argv: string[]): Options {
     return i === -1 ? null : argv[i + 1] ?? null;
   };
   const versionArg = value('--role-set-version');
+  const indexArg = value('--index');
+  let index: bigint | null = null;
+  if (indexArg !== null) {
+    if (!/^\d+$/.test(indexArg)) {
+      throw new Error(`--index must be a non-negative integer (got ${JSON.stringify(indexArg)})`);
+    }
+    index = BigInt(indexArg);
+  }
 
   return {
     chain: value('--chain') ?? process.env.PROVISION_CHAIN ?? null,
     rpc: value('--rpc'),
     account: (value('--account') as Address | null) ?? null,
+    index,
     clone: argv.includes('--clone'),
     token: ((value('--token') ?? process.env.TOKEN_ADDRESS ?? null) as Address | null),
     roleSetVersion: versionArg ? Number(versionArg) : ROLE_SET_VERSION,
@@ -295,11 +315,20 @@ async function resolveAccount(
     return gated;
   }
 
-  const factoryAddress = getOfficialAddress(network, 'CopyBlox');
-  const cloneWallet = broadcasterWallet ?? ownerWallet;
-  const cloneFrom =
-    (cloneWallet?.account?.address as Address | undefined) ?? broadcasterAddress;
-  const factory = new CopyBlox(client, cloneWallet, factoryAddress, chain);
+  const { factory: factoryAddress, implementation } = getOfficialBasicMint(network);
+  const factory = new BasicFactory(
+    client,
+    ownerWallet,
+    factoryAddress,
+    chain,
+    basicFactorySendGasLimit(network)
+  );
+  const pinned = await factory.implementation();
+  if (pinned.toLowerCase() !== implementation.toLowerCase()) {
+    throw new Error(
+      `BasicFactory.implementation() is ${pinned}; official BasicAccount is ${implementation}`
+    );
+  }
 
   // The factory must never read as an account; if it did, the gate below is worthless.
   const factoryInspection = await inspectAccountBlox(client, factoryAddress);
@@ -312,20 +341,85 @@ async function resolveAccount(
       : `${factoryAddress} rejected as expected (${factoryInspection.rejection})`
   );
 
-  const { clones, source } = await factory.clonesOf(ownerAddress);
+  // Platform convention: consecutive deterministic indexes, salt 0. Scan the supported
+  // range without stopping on empty slots. Only keep clones still owned by this owner (same
+  // gate as --account). Nonce-only mints are not discovered here — pass --account for those.
+  const clones: { address: Address; index: bigint }[] = [];
+  const scanLimit =
+    options.index !== null && options.index >= DISCOVERY_INDEX_LIMIT
+      ? options.index + 1n
+      : DISCOVERY_INDEX_LIMIT;
+  const indexes: bigint[] = [];
+  for (let index = 0n; index < scanLimit; index++) indexes.push(index);
+  for (let start = 0; start < indexes.length; start += DISCOVERY_CONCURRENCY) {
+    const batch = indexes.slice(start, start + DISCOVERY_CONCURRENCY);
+    const batchHits = await Promise.all(
+      batch.map(async (index) => {
+        const predicted = BasicFactory.computeCloneAddress(factoryAddress, pinned, {
+          deployer: ownerAddress,
+          initialOwner: ownerAddress,
+          index,
+        });
+        if (!(await factory.isClone(predicted))) return null;
+        try {
+          const owned = await assertOwnedAccount(client, predicted, ownerAddress);
+          return { address: owned, index };
+        } catch (err) {
+          // Skip only the ownership/shape gate failures; surface RPC and other faults.
+          if (err instanceof AccountNotOwnedError || err instanceof NotAnAccountError) {
+            return null;
+          }
+          throw err;
+        }
+      })
+    );
+    for (const hit of batchHits) {
+      if (hit) clones.push(hit);
+    }
+  }
   record(
     1,
     'existing accounts',
     'satisfied',
     clones.length === 0
-      ? `no accounts for ${ownerAddress} (via ${source})`
-      : `${clones.length} account(s) for ${ownerAddress} via ${source}: ${clones.join(', ')}`
+      ? `no owned deterministic accounts for ${ownerAddress} via computeCloneAddress+isClone (scanned 0..${scanLimit - 1n})`
+      : `${clones.length} owned account(s) for ${ownerAddress}: ${clones
+          .map((c) => `${c.address}[index=${c.index}]`)
+          .join(', ')}`
   );
 
-  if (clones.length > 0) {
-    // Newest last: creation order. Deliberately reported in full, because adopting only
-    // the latest is how earlier accounts get stranded.
-    return clones[clones.length - 1]!;
+  if (options.index !== null) {
+    const atIndex = clones.find((c) => c.index === options.index);
+    if (atIndex) {
+      record(1, 'account gate', 'satisfied', `${atIndex.address} at --index ${options.index}`);
+      return atIndex.address;
+    }
+    const predicted = BasicFactory.computeCloneAddress(factoryAddress, pinned, {
+      deployer: ownerAddress,
+      initialOwner: ownerAddress,
+      index: options.index,
+    });
+    if (await factory.isClone(predicted)) {
+      record(
+        1,
+        'clone',
+        'blocked',
+        `${predicted} exists at --index ${options.index} but is not owned by ${ownerAddress}`
+      );
+      return null;
+    }
+  } else if (clones.length === 1) {
+    return clones[0]!.address;
+  } else if (clones.length > 1) {
+    record(
+      1,
+      'clone',
+      'blocked',
+      `multiple owned accounts; pass --account <addr> or --index <n> to select one (${clones
+        .map((c) => `${c.address}[index=${c.index}]`)
+        .join(', ')})`
+    );
+    return null;
   }
 
   if (!options.clone) {
@@ -333,18 +427,39 @@ async function resolveAccount(
       1,
       'clone',
       'skipped',
-      `${ownerAddress} has no account. Re-run with --clone to create one (~${GAS_ENVELOPE.cloneOfAccountBlox} gas).`
+      `${ownerAddress} has no owned account. Re-run with --clone --index <n> to mint one (~${GAS_ENVELOPE.cloneOfAccountBlox} gas).`
     );
     return null;
   }
 
-  const template = getOfficialAddress(network, 'AccountBlox');
+  if (options.index === null) {
+    record(
+      1,
+      'clone',
+      'blocked',
+      'minting requires an explicit --index <n> (discovery will not default to index 0)'
+    );
+    return null;
+  }
+
+  if (!ownerWallet) {
+    record(
+      1,
+      'clone',
+      'blocked',
+      'BasicFactory self-owner mint requires OWNER_PRIVATE_KEY (sender must be initialOwner)'
+    );
+    return null;
+  }
+
+  const nextIndex = options.index;
+  const sendGas = basicFactorySendGasLimit(network);
   const cloneParams = {
-    template,
     initialOwner: ownerAddress,
     broadcaster: broadcasterAddress,
     recovery: recoveryAddress,
     timeLockPeriodSec: DEFAULT_TIMELOCK_SEC,
+    index: nextIndex,
   };
 
   if (options.dryRun) {
@@ -352,15 +467,17 @@ async function resolveAccount(
       1,
       'clone',
       'to-apply',
-      `would clone ${template} for ${ownerAddress} with gas ${GAS_ENVELOPE.cloneSendGasLimit} (cap ${MAX_TX_GAS})`
+      `would mint BasicAccount (${implementation}) via ${factoryAddress} for ${ownerAddress} at index ${nextIndex} with gas ${sendGas}`
     );
     return null;
   }
 
-  console.log(`\n   cloning ${template} for ${ownerAddress}...`);
-  const result = await factory.cloneBlox(cloneParams, {
-    from: cloneFrom,
-    gas: GAS_ENVELOPE.cloneSendGasLimit,
+  console.log(
+    `\n   minting BasicAccount via ${factoryAddress} for ${ownerAddress} at index ${nextIndex}...`
+  );
+  const result = await factory.cloneBloxDeterministic(cloneParams, {
+    from: ownerAddress,
+    gas: sendGas,
     // The clone payload defeats estimation on public nodes; simulation still proves it
     // is revert-free, which is all it can prove.
     simulationMode: 'warn-only',
@@ -769,23 +886,23 @@ async function main(): Promise<void> {
   const network = resolveOfficialNetwork(file, chainLookup);
   assertNetworkIsOfficial(network);
   const pending = pendingOfficialContracts(network);
+  const mint = getOfficialBasicMint(network);
   console.log(`network: ${network.network} (chain ${network.chainId}, ${network.status})`);
-  console.log(`factory: ${network.contracts.CopyBlox?.address}`);
-  console.log(`template: ${network.contracts.AccountBlox?.address}`);
-  console.log(
-    `owner index on factory: ${factorySupportsClonesOf(network) ? 'yes (clonesOf)' : 'no (BloxCloned log scan)'}`
-  );
+  console.log(`factory: ${mint.factory}`);
+  console.log(`implementation: ${mint.implementation}`);
+  console.log(`finding accounts: computeCloneAddress + isClone (BasicFactory has no clonesOf)`);
   if (pending.length > 0) {
     console.log(`⚠️  pending declaration on this network: ${pending.join(', ')}`);
   }
 
   section('Gas envelope');
   console.log(`clone, observed:        ${GAS_ENVELOPE.cloneOfAccountBlox}`);
-  console.log(`clone, sent with limit: ${GAS_ENVELOPE.cloneSendGasLimit}`);
+  const sendGas = basicFactorySendGasLimit(network);
+  console.log(`clone, sent with limit: ${sendGas}`);
   console.log(`floor (fail below):     ${GAS_ENVELOPE.cloneGasFloor}`);
   console.log(`EIP-7825 per-tx cap:    ${MAX_TX_GAS}`);
   console.log(
-    `head-room:              ${MAX_TX_GAS - GAS_ENVELOPE.cloneOfAccountBlox} gas. Send the limit, not an estimate.`
+    `head-room:              ${sendGas - GAS_ENVELOPE.cloneOfAccountBlox} gas. Send the limit, not an estimate.`
   );
 
   if (options.offline) {

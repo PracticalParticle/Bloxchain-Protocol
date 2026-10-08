@@ -516,22 +516,23 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
       await new Promise((r) => setTimeout(r, 800));
 
       // Batch B: BROADCASTER_ROLE can execute approve/cancel meta-tx only (3-step flow).
-      // Apply in two separate batches so that if handler permissions already exist (ItemAlreadyExists),
-      // the execution-selector permission (mint) still gets applied. A single batch would revert entirely
-      // on the first duplicate and never apply the mint permission required by _validateExecutionAndHandlerPermissions.
+      // Apply mint and handler grants separately so an already-applied handler grant
+      // does not roll back the mint execution-selector grant.
+      // Each handler schema accepts only its own execute action. Putting both
+      // EXECUTE_META_APPROVE and EXECUTE_META_CANCEL on either selector reverts NotSupported.
       const batchBroadcasterHandlers = [
         await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: broadcasterHash,
           functionPermission: this.createFunctionPermission(
             this.APPROVE_TIMELOCK_EXECUTION_META_SELECTOR,
-            broadcasterApproveCancelActions,
+            [TxAction.EXECUTE_META_APPROVE],
           ),
         }),
         await this.encodeRoleConfigAction(RoleConfigActionType.ADD_FUNCTION_TO_ROLE, {
           roleHash: broadcasterHash,
           functionPermission: this.createFunctionPermission(
             this.CANCEL_TIMELOCK_EXECUTION_META_SELECTOR,
-            broadcasterApproveCancelActions,
+            [TxAction.EXECUTE_META_CANCEL],
           ),
         }),
       ];
@@ -551,10 +552,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         await this.executeRoleConfigBatch(batchBroadcasterMint, ownerWalletName, broadcasterWalletName);
         console.log('  ✅ Broadcaster mint (execution selector) permissions applied');
       } catch (batchError: any) {
-        if (this.isResourceAlreadyExistsRevert(batchError) || this.isNotSupportedRevert(batchError)) {
-          console.log(
-            '  ⏭️  Broadcaster mint permissions already present or NotSupported by schema (ResourceAlreadyExists/ItemAlreadyExists/NotSupported)'
-          );
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Broadcaster mint permissions already present (ResourceAlreadyExists/ItemAlreadyExists)');
         } else {
           throw batchError;
         }
@@ -564,10 +563,8 @@ export class Erc20MintControllerSdkTests extends BaseGuardControllerTest {
         await this.executeRoleConfigBatch(batchBroadcasterHandlers, ownerWalletName, broadcasterWalletName);
         console.log('  ✅ Broadcaster handler (approve/cancel meta-tx) permissions applied');
       } catch (batchError: any) {
-        if (this.isResourceAlreadyExistsRevert(batchError) || this.isNotSupportedRevert(batchError)) {
-          console.log(
-            '  ⏭️  Broadcaster handler permissions already present or NotSupported by schema (ResourceAlreadyExists/ItemAlreadyExists/NotSupported)'
-          );
+        if (this.isResourceAlreadyExistsRevert(batchError)) {
+          console.log('  ⏭️  Broadcaster handler permissions already present (ResourceAlreadyExists/ItemAlreadyExists)');
         } else {
           throw batchError;
         }

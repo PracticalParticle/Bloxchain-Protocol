@@ -2,18 +2,18 @@
 
 ## Supported Versions
 
-**⚠️ IMPORTANT: Bloxchain Protocol is not yet live on Ethereum mainnet.** Testnet validation continues; **mainnet deployment is planned soon.**
+Official BasicFactory and BasicAccount addresses are published for the supported networks in [`official-deployed-addresses.json`](official-deployed-addresses.json), including Ethereum mainnet. The Nethermind audit covers `contracts/core/` only.
 
 We actively maintain security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 1.0.x   | :white_check_mark: | Pre-mainnet; core audited by Nethermind (see below) |
+| 1.0.x   | :white_check_mark: | Core audited by Nethermind (see below) |
 | < 1.0   | :x:                | End of life |
 
 **Core smart contracts (`contracts/core/`):** Independently audited by **Nethermind** ([audit index](audits/README.md), [report PDF](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf), [core policy](contracts/core/AUDIT.md)). The audit applies to the commit recorded in [audits/nethermind/README.md](audits/nethermind/README.md) (see the report PDF for the exact SHA). Later changes to core are outside that report until a re-audit or addendum.
 
-Examples, community contracts, and application code under `contracts/examples/` and `contracts/community/` are **not** covered by that engagement.
+Examples and application code under `contracts/examples/` are **not** covered by that engagement.
 
 ## Reporting a Vulnerability
 
@@ -101,9 +101,8 @@ Our State Abstraction framework implements multiple layers of security:
 
 | Item | Status |
 |------|--------|
-| **Mainnet** | Not live yet; deployment planned soon |
-| **Development** | Testing and validation on testnets (e.g. Sepolia) |
-| **Bug bounty** | Program details to be announced around mainnet launch |
+| **Mainnet** | Published in the official catalog, including Ethereum mainnet |
+| **Development** | Testnets in the same catalog, including Sepolia |
 
 ### Completed reviews
 
@@ -111,23 +110,6 @@ Our State Abstraction framework implements multiple layers of security:
 - **Internal security review:** Ongoing with releases
 - **Code review:** Human GitHub Approve on protected-branch merges (including Release Please); see [CONTRIBUTING.md — Branch protection](CONTRIBUTING.md#branch-protection-maintainers)
 - **Supply-chain posture:** OpenSSF Scorecard workflow on `main` ([`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml)); Foundry fuzz/invariant suites under `test/foundry/` (Scorecard’s Fuzzing check does not detect Foundry — local/CI fuzz remains the source of truth)
-
-## Bug Bounty Program
-
-We are developing a bug bounty program for security researchers. Details will be announced in coordination with **mainnet deployment**.
-
-### Scope
-- Smart contract vulnerabilities in **audited core** (`contracts/core/`) at the published commit
-- Protocol design flaws
-- Implementation bugs
-- Cryptographic weaknesses
-
-### Out of Scope
-- Social engineering attacks
-- Physical security issues
-- Issues in third-party dependencies
-- Issues in experimental features
-- Example and community contracts unless explicitly listed in a future program scope
 
 ## Security Updates
 

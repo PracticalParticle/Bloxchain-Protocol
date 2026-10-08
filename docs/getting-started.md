@@ -22,18 +22,23 @@ npm install @bloxchain/contracts @bloxchain/sdk viem
 yarn add @bloxchain/contracts @bloxchain/sdk viem
 ```
 
-Those two packages are enough to **create** an account as well as operate one. You do not
-need to clone or compile this repository:
+Those two packages are enough to operate an account, and to **create** one on a network that
+declares the official factory. You do not need to clone or compile this repository:
 
 | Package | What you get |
 |---------|--------------|
-| `@bloxchain/sdk` | Typed wrappers, encoders, meta-transaction signing, the account shape gate |
-| `@bloxchain/contracts` | `artifacts/*.json` (ABI **and** bytecode, link references, compiler settings), `official-deployed-addresses.json`, Solidity sources |
+| `@bloxchain/sdk` | Typed wrappers (including the official `BasicFactory` client), every ABI (`BasicFactory`, `BasicAccount`, …), encoders, meta-transaction signing, the account shape gate |
+| `@bloxchain/contracts` | `artifacts/*.json` (ABI **and** bytecode, link references, compiler settings) for the libraries and the Sepolia experimental `AccountBlox` / `CopyBlox` pair, `official-deployed-addresses.json`, Solidity sources |
+
+The **official mint is `BasicFactory` → `BasicAccount`**. Sepolia `CopyBlox` /
+`AccountBlox` are an experimental path outside `@bloxchain/sdk`. See
+[Provisioning an account](#-provisioning-an-account-from-npm-alone).
 
 ```typescript
+// Official mint ABIs ship with the SDK
+import { basicFactoryAbi, basicAccountAbi } from '@bloxchain/sdk/abi';
 // Compiled artifacts, no solc in your build
-import factory from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
-import template from '@bloxchain/contracts/artifacts/AccountBlox.json' with { type: 'json' };
+import engine from '@bloxchain/contracts/artifacts/EngineBlox.json' with { type: 'json' };
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 ```
 
@@ -79,17 +84,16 @@ const walletClient = createWalletClient({
 
 ### 3. **Connect to an Account-Based Contract**
 
-Resolve a deployed Account implementation (for example the official Sepolia `AccountBlox`
-template) from `official-deployed-addresses.json`, which ships with `@bloxchain/contracts`.
-Do not use the git-ignored lab file `deployed-addresses.json` for public setup.
+Point the wrappers at an account you own: a `BasicAccount` clone minted through the official
+`BasicFactory` (see [Provisioning an account](#-provisioning-an-account-from-npm-alone)), or a
+experimental `AccountBlox` clone on Sepolia. Gate the address with `assertOwnedAccount`
+first. Never operate a template or implementation address as an account.
 
 ```typescript
-import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
-import { resolveOfficialNetwork, getOfficialAddress, assertNetworkIsOfficial } from '@bloxchain/sdk';
+import { assertOwnedAccount } from '@bloxchain/sdk';
 
-const network = resolveOfficialNetwork(official, 11155111);
-assertNetworkIsOfficial(network);
-const accountAddress = getOfficialAddress(network, 'AccountBlox');
+const accountAddress = '0x...'; // your clone
+await assertOwnedAccount(publicClient, accountAddress, account.address);
 
 // All three wrappers point to the SAME address
 const secureOwnable = new SecureOwnable(publicClient, walletClient, accountAddress, sepolia);
@@ -97,8 +101,9 @@ const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, accountAddress, 
 const guardController = new GuardController(publicClient, walletClient, accountAddress, sepolia);
 ```
 
-To operate a clone you created (not the template), pass that clone's address instead of
-`getOfficialAddress(network, 'AccountBlox')`, and gate it with `assertOwnedAccount` first.
+Resolve published addresses (libraries, and the official factory once declared) from
+`official-deployed-addresses.json`, which ships with `@bloxchain/contracts`. Do not use the
+git-ignored lab file `deployed-addresses.json` for public setup.
 
 ### Definition library addresses (public testnets)
 
@@ -144,65 +149,131 @@ Pass either source's addresses to SDK helpers such as
 
 ## 🏗 **Provisioning an account from npm alone**
 
-This is the supported public path: `npm i @bloxchain/contracts @bloxchain/sdk`, an RPC
-URL, a **broadcaster wallet** (with its `broadcasterAddress`), and enough funds for the
-clone transaction are required to create a governed account on an official network.
-Packages and RPC alone are not sufficient.
+The official mint is **`BasicFactory` → `BasicAccount`**. It needs
+`@bloxchain/sdk`, an RPC URL, the `BasicFactory` address for the network, and an **owner
+wallet that sends the mint itself** and pays for it (a direct EOA call: see
+[Known limitation: gas](#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1)).
 
-Working reference: **`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`).
-It is idempotent and safe to re-run; `--offline` validates configuration without a chain
-and `--dry-run` checks every lock against a chain without sending anything.
+> **Declaration status.** The CreateX catalog (`bloxchain-official-addresses/2`) declares one
+> shared `BasicFactory` / `BasicAccount` address book for every supported network listed in
+> [`official-deployed-addresses.json`](../official-deployed-addresses.json). Use
+> `getOfficialBasicMint(network)`. Leave the Sepolia experimental CopyBlox row for experiments
+> ([§10](#10-experimental-copyblox--accountblox-on-sepolia)).
 
-### 1. The sanctioned factory
+Working reference for the locks and idempotency rules below:
+**`scripts/sanity-sdk/provision-account.ts`** (`npm run provision:account`). It is idempotent and
+safe to re-run; `--offline` validates configuration without a chain and `--dry-run` checks every
+lock against a chain without sending anything. Prefer `getOfficialBasicMint` for new mints; the
+three locks and the idempotency rules apply unchanged to a `BasicAccount` clone.
 
-Provisioning goes through a **CopyBlox-shaped clone factory**. `cloneBlox` creates an
-EIP-1167 minimal proxy of the account template and runs `initialize` on it **in the same
-transaction**, so there is never a live, uninitialized account at a public address.
+### 1. The official factory: BasicFactory → BasicAccount
+
+`BasicFactory.cloneBlox` creates an EIP-1167 minimal proxy of the one `BasicAccount` the factory
+is pinned to and runs `initialize` on it **in the same transaction**, so there is never a live,
+uninitialized account at a public address. A failed `initialize` reverts the mint.
 
 ```typescript
-import { CopyBlox, resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+import type { Address } from 'viem';
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import {
+  BasicFactory,
+  resolveOfficialNetwork,
+  assertNetworkIsOfficial,
+  getOfficialBasicMint,
+  basicFactorySendGasLimit,
+} from '@bloxchain/sdk';
 
-const network = resolveOfficialNetwork(official, 11155111);
-const factory = new CopyBlox(
+const network = resolveOfficialNetwork(official, chainId);
+assertNetworkIsOfficial(network);
+
+const { factory: factoryAddress } = getOfficialBasicMint(network);
+
+const factory = new BasicFactory(
   publicClient,
-  broadcasterWallet,
-  getOfficialAddress(network, 'CopyBlox'),
-  sepolia,
+  ownerWallet,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
 );
 
 const result = await factory.cloneBlox(
   {
-    template: getOfficialAddress(network, 'AccountBlox'),
     initialOwner: ownerAddress,
     broadcaster: broadcasterAddress,
     recovery: recoveryAddress,
-    timeLockPeriodSec: 3600n,
+    timeLockPeriodSec: 86_400n, // BasicAccount: 1 day to 90 days
   },
-  { from: broadcasterAddress },
+  { from: ownerAddress }, // must be initialOwner; gas defaults to basicFactorySendGasLimit(network)
 );
 
 const receipt = await result.wait();
 const account = factory.cloneAddressFromReceipt(receipt);
 ```
 
-### 2. Finding the accounts an owner already has
+For an address you can compute before minting, use `cloneBloxDeterministic` with `predictClone`
+([§9](#deterministic-mint-same-address-on-every-matched-network)).
 
-An owner can hold **more than one** account. Ask for all of them:
+**Official pattern: self-owner mint.** Both mints revert
+`RestrictedOwner(caller, owner)` unless `initialOwner == msg.sender`. The wallet that sends the
+mint becomes the owner; broadcaster and recovery may still be other (helper) wallets. Minting an
+account *for someone else* is a legitimate pattern, but it is out of scope for this pin: a
+mint that names a third-party owner while the minter keeps a helper role is a social-engineering
+surface the official factory closes. A relayer or sponsor cannot mint for you here. The SDK
+wrapper refuses a mismatched `options.from` / `initialOwner` before any RPC call.
+
+### 2. Operating the BasicAccount clone
+
+A `BasicAccount` clone is an Account-pattern blox (`SecureOwnable` + `RuntimeRBAC` +
+`GuardController` behind one address). Operate it with the same SDK wrappers as any account,
+pointed at the clone. There is no separate `BasicAccount` client; the ABI ships as
+`basicAccountAbi` (`@bloxchain/sdk/abi` or `@bloxchain/sdk/abi/BasicAccount`).
 
 ```typescript
-const { clones, source } = await factory.clonesOf(ownerAddress);
-// source: 'on-chain-index' when the factory carries clonesOf,
-//         'bloxcloned-logs'  when it predates it (the wrapper falls back automatically)
+import { SecureOwnable, RuntimeRBAC, GuardController, assertOwnedAccount } from '@bloxchain/sdk';
+
+await assertOwnedAccount(publicClient, account, ownerAddress); // shape gate + owner
+if (!(await factory.isClone(account))) throw new Error('not minted by this factory');
+
+const secureOwnable = new SecureOwnable(publicClient, walletClient, account, chain);
+const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, account, chain);
+const guardController = new GuardController(publicClient, walletClient, account, chain);
 ```
 
-Taking "the latest `BloxCloned` log" strands every earlier account the owner holds,
-including ones with balances or pending time-locked transfers. Newer factories answer
-`clonesOf(owner)` on-chain; `official-deployed-addresses.json` records which deployments
-have it (`contracts.CopyBlox.supports.clonesOf`). For a log scan, pass the factory's
-deployment block as `fromBlock`, because public providers refuse wide ranges.
+`BasicAccount` differs from the experimental `AccountBlox` template in its rules, not its surface:
+the timelock is bounded to 1 day through 90 days, and the implementation's own initializer is
+locked so the pinned implementation cannot be claimed.
 
-### 3. The shape gate: never adopt an address unchecked
+**Owner-signed meta-transactions use ECDSA only.** On-chain verification is `ecrecover` of a
+65-byte signature (see [Meta-Transactions](./meta-transactions.md)). A contract can still be
+`owner()` and operate the account with **direct** calls (`msg.sender` is the contract). It
+cannot satisfy those owner-signed meta-tx flows via ERC-1271. If you need the owner-signs /
+broadcaster-submits path, the owner (and any meta-tx signer) must be an address that recovers
+as itself — typically an EOA. A separate recovery EOA can still move ownership.
+
+**Do not pay a fresh clone with `transfer` or `send`.** The clone is an EIP-1167 proxy: receiving
+ETH `DELEGATECALL`s the implementation. A cold implementation access costs more than the 2,300-gas
+stipend, so `address.transfer` / `send` fail until the implementation is warm. Use
+`call{value: amount}("")` with enough gas (or an access list / a touch of the
+implementation earlier in the **same** transaction — a prior transaction does not
+leave the implementation warm). The ETH is not taken; the paying call reverts or
+returns false.
+
+### 3. Finding the accounts an owner already has
+
+An owner can hold **more than one** account. `BasicFactory` has no on-chain `clonesOf` index:
+
+- **Deterministic mints.** Walk `predictClone({ deployer: owner, initialOwner: owner, index })`
+  for `index = 0n, 1n, 2n, …` and keep the addresses where `isClone` is true. This finds every
+  account minted under the default convention (consecutive indexes, zero salt).
+- **Nonce mints, or certainty.** Scan the factory's `BloxCloned(original, clone, initialOwner)`
+  logs filtered on the `initialOwner` topic. Pass the factory's deployment block as `fromBlock`,
+  because public providers refuse wide ranges.
+
+Taking "the latest `BloxCloned` log" strands every earlier account the owner holds, including
+ones with balances or pending time-locked transfers. (Experimental CopyBlox may expose
+`clonesOf(owner)` — see [§10](#10-experimental-copyblox--accountblox-on-sepolia).)
+
+### 4. The shape gate: never adopt an address unchecked
 
 Before you point a session, a signing policy or a user's passbook at an address, check
 that it is actually an account **and** that the caller owns it:
@@ -223,27 +294,49 @@ every part earns its place. Measured against four real contracts:
 | An account clone | 20,853 B | the owner | `true` | `true` | `true` |
 | An EOA | none | reverts | reverts | reverts | reverts |
 | A plain ERC-20 | 2,771 B | reverts | reverts | `false` | `false` |
-| **The factory itself** | 11,684 B | reverts | `false` | **`true`** | **`false`** |
+| **Experimental CopyBlox** | 11,684 B | reverts | `false` | **`true`** | **`false`** |
 
-The factory answers `IBaseStateMachine` because it **is** one. A gate built on that check
-alone loads the factory as if it were an account.
+CopyBlox answers `IBaseStateMachine` because it **is** one. A gate built on that check
+alone loads that factory as if it were an account. `BasicFactory` is not a state machine: it
+answers ERC-165 `IEventForwarder`, has no `owner()`, and never answers `ISecureOwnable`, so the
+gate rejects it at the owner check.
 
-### 4. Gas: the clone sits just under a hard protocol cap
+### 5. Known limitation: the mint fits the cap only as a direct EOA call (M-1)
 
 ```text
-clone + initialize (AccountBlox)   ~16,236,000 gas measured
-EIP-7825 per-transaction cap        16,777,216 (2^24)
-head-room                             ~540,000 gas
+                                           gas used    gas limit the sender needs
+BasicFactory mint, direct EOA call          ~16.14M     ~16.67M   fits, ~108k headroom
+  ... one contract frame in front               -       ~16.94M   over the cap
+  ... ERC-4337 (two frames)                     -       ~17.21M   over the cap
+EIP-7825 per-transaction cap (Osaka)                   16,777,216 (2^24)
 ```
 
-On networks where **EIP-7825** is active, a single transaction may not ask for more than
-`2^24` gas, whatever the block gas limit is. A 60 M block still rejects a 20 M
-transaction with `transaction gas limit too high (cap: 16777216, tx: 20000000)`.
-Chains that have not activated EIP-7825 follow their own transaction gas limit instead.
+`initialize` on a new `BasicAccount` is large, and at every nested call it receives only 63/64
+of the remaining gas (EIP-150). So a mint that **uses** about 16.14M must be **sent** with about
+16.67M available. On networks where EIP-7825 is active (Osaka), a single transaction may not
+ask for more than `2^24`:
 
-Practical rules, in order of importance (where EIP-7825 applies):
+- **Supported:** the owner's **EOA calls `BasicFactory` directly**, with a gas limit of
+  `16777216` (the SDK default). About 108k of limit headroom remains.
+- **Unsupported on cap-enforcing networks:** any contract between the owner and the factory,
+  such as a Safe or another smart-contract wallet, an ERC-4337 account, a meta-transaction
+  forwarder or a multicall/batching contract. Each frame holds back more gas, the required limit
+  goes over `2^24`, and the transaction fails with a generic out-of-gas error rather than a named
+  revert.
+- **Do not size the send from gas used.** The ~16.14M figure (and the "~636k headroom" it
+  implies) is correct as gas *used*, not as the limit a sender needs.
+- **A network whose block or per-transaction gas limit is below about 16.7M** cannot mint even
+  directly.
+- **Expected relief: Glamsterdam.** The limitation is expected to ease on networks where the
+  Glamsterdam upgrade is live. It is **not fixed** until then; treat EOA-direct as the only
+  supported mint on every cap-enforcing network.
 
-1. **Send an explicit gas limit at the cap**, not an estimate. The SDK wrapper does this by
+The factory and implementation have no settings, so changing this means a new implementation
+or factory. This is a known limitation of the BasicAccount + BasicFactory stack (M-1).
+
+General gas rules for the mint, in order of importance (where EIP-7825 applies):
+
+1. **Send an explicit gas limit at the cap**, not an estimate. The SDK wrappers do this by
    default (`GAS_ENVELOPE.cloneSendGasLimit`). On networks without EIP-7825, use that
    network's effective transaction gas limit instead of assuming `2^24`.
 2. **Fail loudly below the floor.** An estimate well under ~15 M means the estimator never
@@ -253,13 +346,31 @@ Practical rules, in order of importance (where EIP-7825 applies):
 3. **Simulation does not size gas.** `simulationMode` proves the call is revert-free and
    nothing more.
 4. **A lab chain that has not implemented EIP-7825 will accept more**, which is how this
-   passes locally and fails on Sepolia.
+   passes locally and fails on Sepolia. A lab run also hides M-1: a contract caller that
+   works there fails on a cap-enforcing network.
 
 ```typescript
 import { MAX_TX_GAS, GAS_ENVELOPE, assertUnderMaxTxGas } from '@bloxchain/sdk';
 ```
 
-### 5. The three locks
+### 6. Network requirements for the official stack (I-1)
+
+Before `BasicAccount` / `BasicFactory` can be declared on a network, it must meet these
+minimums:
+
+- **Cancun-level EVM.** Both contracts use transient storage (EIP-1153) and `MCOPY`
+  (EIP-5656). A pre-Cancun chain cannot run them.
+- **Same addresses everywhere.** `BasicAccount` links `EngineBlox` and the three definition
+  libraries (`SecureOwnableDefinitions`, `RuntimeRBACDefinitions`,
+  `GuardControllerDefinitions`) as external libraries, so its bytecode, and therefore its
+  deterministic address, depends on where those libraries live. `BasicFactory` is pinned to
+  that `BasicAccount`, and every predicted clone address depends on both. Deploy the libraries,
+  `BasicAccount` and `BasicFactory` at the **same addresses on every network** (CreateX), or
+  `predictClone` gives a different address per chain.
+- **Standard CREATE2 and EIP-1167 semantics**, which address prediction assumes.
+- **A per-transaction gas limit of at least about 16.7M** (see M-1 above).
+
+### 7. The three locks
 
 A fresh account is a **vault**: it exists, it is owned, and it will refuse everything.
 Three things must be true before the first `requestAndApproveExecution` succeeds.
@@ -292,7 +403,7 @@ selector must name **that selector itself** or the batch reverts
 Configuring the guard and role sides is covered in
 [Guard Controller](./guard-controller.md) and [Runtime RBAC](./runtime-rbac.md).
 
-### 6. Keep provisioning idempotent
+### 8. Keep provisioning idempotent
 
 Provisioning gets run more than once against the same account, so write it to converge
 rather than to apply:
@@ -311,6 +422,142 @@ rather than to apply:
   `block.timestamp`. On a chain that mines on demand, also correct for the drift between
   wall clock and the latest block, or the deadline is already past when the transaction
   mines while `eth_call` still passes.
+
+### 9. Official mint and the Sepolia experiment
+
+Integrators mint with **BasicFactory → BasicAccount**. Sepolia also carries an experimental
+**CopyBlox → AccountBlox** pair for people trying the account pattern with a 1-second time-lock.
+That pair is outside the audited core and outside `@bloxchain/sdk`.
+
+| | Official mint | Experimental (Sepolia only) |
+|---|---|---|
+| Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox` (`contracts/examples/templates/`), 1-second timelock floor |
+| Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor | `CopyBlox` (`contracts/examples/applications/`), an open factory: clones any `IBaseStateMachine` |
+| SDK / wiring | `BasicFactory` in `@bloxchain/sdk` | Addresses under `networks.sepolia.developerTools`; wire via `@bloxchain/contracts` artifacts (no CopyBlox client in the SDK) |
+| Who may mint | Anyone, **for themselves only**: the sender must be `initialOwner`, as a direct EOA call (M-1) | Anyone, for any owner |
+| What may be minted | Only the blox pinned at construction (`BasicAccount`) | Any blox the caller names |
+| How the address is chosen | New address each call (`cloneBlox`), or a deterministic address (`cloneBloxDeterministic`, `CREATE2`) with `predictClone` | New address each call (`CREATE`) |
+| Governance on the factory | None: no owner, no roles, no timelock, no whitelist. Another account is another mint from the same factory | None |
+| License | MPL-2.0 | MIT examples |
+
+`BasicFactory.cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` clones
+`implementation()` and runs `initialize` on the clone in the same transaction (clone, register,
+initialize, `BloxCloned`); a failed initialize reverts the mint. **Send either mint with an
+explicit gas limit.** The catalog default is `16777216` (the EIP-7825 cap). A network may
+raise `BasicFactory.gas.sendWithGasLimit` above that. `basicFactorySendGasLimit(network)`
+returns the configured limit, and the SDK wrapper uses it when you pass that value at
+construction. `options.gas` still overrides it. Without a constructor limit the wrapper
+falls back to `16777216`.
+
+```text
+BasicFactory.cloneBlox (BasicAccount)               16,137,707 gas used (Foundry, execution, cold, sent by the owner)
+BasicFactory.cloneBloxDeterministic (BasicAccount)  16,140,930 gas used (same state; +3,223)
+gas limit a direct EOA sender needs                ~16,670,000 (63/64 forwarding; see M-1)
+EIP-7825 per-transaction cap                        16,777,216 (2^24)
+BasicFactory runtime size                               1,960 bytes (EIP-170 limit 24,576)
+BasicFactory creation                                 431,467 gas
+```
+
+`test/foundry/unit/BasicFactory.t.sol` (`test_BothMints_FitUnderEip7825Cap`) logs the gas-used
+figures. They are gas *used*: the headroom that matters is between the required limit and the
+cap (~108k), not between gas used and the cap.
+
+#### Deterministic mint: same address on every matched network
+
+`cloneBloxDeterministic(initialOwner, broadcaster, recovery, timeLockPeriodSec, index, salt)`
+mints at a `CREATE2` address you can compute first with
+`predictClone(deployer, initialOwner, index, salt)`. The salt is exactly:
+
+```text
+create2Salt = keccak256(abi.encode(minter, initialOwner, index, salt))
+clone       = CREATE2(factory, create2Salt, EIP-1167(implementation))
+```
+
+`minter` is `msg.sender` on the mint (`deployer` on the view). Nothing else is hashed: not the
+broadcaster, recovery or timelock, not the chain id, not the factory address, no version tag.
+Because a mint only succeeds when `msg.sender == initialOwner`, pass the owner
+as `deployer` too: any other `deployer` predicts an address this factory will never mint. The
+formula itself is unchanged and still hashes both.
+
+What that promises, and what it does not:
+
+- **The key is the minter, and the minter is the owner.** The same address needs the same
+  minter (= owner), `index` and `salt`, on a network where the factory and its pinned
+  implementation sit at the same addresses (I-1). Mint from a chain-stable EOA. A relayer or a
+  different wallet cannot mint for you at all.
+- **Roles and timelock can differ per chain.** They are `initialize` arguments, not address
+  inputs. Two clones at the same address on two chains have the same broadcaster, recovery and
+  timelock only if the minter passed the same values on both.
+- **A repeat on the same chain reverts** `ItemAlreadyExists(address)`. A failed `initialize`
+  reverts the whole mint and leaves the address free.
+- **Default convention:** `salt = bytes32(0)` and `index = 0, 1, 2, …` per owner.
+  Use a non-zero salt only when you need a second, independent address space.
+
+```typescript
+import { BasicFactory, basicFactorySendGasLimit } from '@bloxchain/sdk';
+
+const factory = new BasicFactory(
+  publicClient,
+  walletClient,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
+const inputs = { deployer: owner, initialOwner: owner, index: 0n }; // self-owner; salt defaults to 0x00…00
+
+const predicted = await factory.predictClone(inputs); // or BasicFactory.computeCloneAddress(factoryAddress, implementation, inputs)
+const tx = await factory.cloneBloxDeterministic(
+  { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
+  { from: owner }, // must be initialOwner, sent directly by that EOA; options.gas overrides the network send limit
+);
+```
+
+The factory vets the pin **once, in its constructor**: the implementation must answer ERC-165
+`IBaseStateMachine`. A failed call or a false answer reverts the deployment, including an
+address without code. `AccountBlox`, `CopyBlox`, and `BasicAccount` all pass, because each is
+a blox. This is not a bytecode proof. Neither mint repeats the check. The clone's own
+`initialize` still enforces that pin's rules, so a `BasicAccount` clone keeps the 1-day to
+90-day timelock. The factory is not an account: it answers ERC-165
+`IEventForwarder`, has no `owner()`, and never answers `ISecureOwnable`, so the shape gate
+rejects it at the owner check ([§4](#4-the-shape-gate-never-adopt-an-address-unchecked)). Only
+its own clones may call `forwardTxEvent`.
+
+**Lineage, not bytecode.** `isClone(address)` on a `BasicFactory` means that address was
+minted **by that factory**. It does not mean every copy of `BasicAccount` on the chain came
+from it: anyone can deploy or clone the same implementation by another path (including
+`CopyBlox`). Check `isClone` on the factory address you trust.
+
+**Status.** The CreateX catalog declares `BasicAccount` / `BasicFactory` on every supported
+network in `official-deployed-addresses.json` (format `/2`). The SDK ships their ABIs. Read the
+pair with `getOfficialBasicMint`. The Nethermind core audit (NM_0828) covers `contracts/core/`.
+`BasicAccount` and `BasicFactory` sit outside that report.
+
+### 10. Experimental: CopyBlox + AccountBlox on Sepolia
+
+`CopyBlox` and `AccountBlox` are example contracts for experimentation on Sepolia:
+
+- **AccountBlox** — Account-pattern template with a **1-second** time-lock floor.
+- **CopyBlox** — open factory that clones any `IBaseStateMachine` for any owner (not pinned).
+
+**BasicAccount** uses a 1-day floor. **BasicFactory** clones BasicAccount only. These examples
+are **not** exported from `@bloxchain/sdk`. Resolve addresses from
+`networks.sepolia.developerTools` and wire with `@bloxchain/contracts` artifacts + viem.
+`npm run create-account` offers this path when `CREATE_ACCOUNT_EXPERIMENTAL=1` and the network is Sepolia. The guided menu does not.
+
+```typescript
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
+import copyBloxArtifact from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
+
+const network = resolveOfficialNetwork(official, 11155111);
+const copyBlox = getOfficialAddress(network, 'CopyBlox');
+const accountBlox = getOfficialAddress(network, 'AccountBlox');
+// Use copyBloxArtifact.abi with viem getContract / writeContract against those addresses.
+```
+
+`official-deployed-addresses.json` records which CopyBlox deployments carry the on-chain owner
+index (`supports.clonesOf`; the Sepolia one does not). An AccountBlox clone via CopyBlox used
+~16.18M gas on Sepolia; send it with gas limit `16777216`.
 
 ---
 
@@ -395,13 +642,13 @@ Account‑style contracts use OpenZeppelin **Initializable** semantics: there is
 
 ### **1. Recommended: factory / cloner pattern**
 
-To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. A **CopyBlox-shaped** clone factory is the sanctioned public provisioning path: see [Provisioning an account from npm alone](#-provisioning-an-account-from-npm-alone) for the supported flow, and `contracts/examples/applications/CopyBlox/CopyBlox.sol` for the contract:
+To avoid “forgot to call `initialize`” or wrong ordering when spinning up many instances, prefer a **factory** that creates the proxy and calls `initialize` **in the same transaction**. The official account factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount`: see [Provisioning an account from npm alone](#-provisioning-an-account-from-npm-alone) for the supported flow. It:
 
-- Validates the implementation implements **`IBaseStateMachine`**.
-- **`Clones.clone`** (EIP‑1167) then **`call`s** `initialize(address,address,address,uint256,address)` on the new clone.
+- Validates the pinned implementation implements **`IBaseStateMachine`**, once, in its constructor.
+- **`Clones.clone`** (EIP‑1167, or `cloneDeterministic` for the CREATE2 mint) then **`call`s** `initialize` on the new clone.
 - If initialization **reverts**, the whole transaction **reverts**—you do not end up with a live, uninitialized clone from that path.
 
-Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`).
+For your **own** blox types, the example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is a reference for an open factory that clones any `IBaseStateMachine` and initializes it atomically. Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`). The published CopyBlox address is the Sepolia experiment in [§10](#10-experimental-copyblox--accountblox-on-sepolia).
 
 ### **2. Proxy deploy runbook (atomic `initialize`)**
 
@@ -455,7 +702,7 @@ For protocol maintainers only:
 2. Deploy the internal test stack: `npm run deploy:remote-evm:test`
 3. Run Foundry: `npm run test:foundry`; optional SDK sanity: `npm run test:sanity-sdk:core`
 
-Integrators should use **public testnets** (e.g. sepolia) and addresses from `deployed-addresses.json` with the SDK — not hard-coded role or wallet profiles from sanity tooling.
+Integrators should use **public testnets** (e.g. sepolia) and addresses from `official-deployed-addresses.json` with the SDK — not `deployed-addresses.json`, and not hard-coded role or wallet profiles from sanity tooling.
 
 ---
 

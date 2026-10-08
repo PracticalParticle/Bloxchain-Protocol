@@ -773,15 +773,10 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
       this.getTxOptions(broadcasterWallet.address, { gas: 10_000_000n })
     );
 
-    // Mirror guard config batch assertions: ensure TxStatus is COMPLETED (5), not FAILED (6).
-    try {
-      const receipt = await result.wait();
-      await this.assertRoleConfigBatchSucceeded(receipt, 'Mint role config batch');
-    } catch (e: any) {
-      console.error(`❌ Role config batch failed for mint roles: ${e?.message ?? e}`);
-      throw e;
-    }
-
+    // TxStatus COMPLETED (5) continues. TxStatus FAILED (6) throws, and the caller
+    // decides whether that revert is the expected result.
+    const receipt = await result.wait();
+    await this.assertRoleConfigBatchSucceeded(receipt, 'Role config batch');
     return result;
   }
 
@@ -911,25 +906,6 @@ export abstract class BaseGuardControllerTest extends BaseSDKTest {
     if (selector) {
       const name = this.getErrorName(selector);
       if (name === 'ResourceAlreadyExists' || name === 'ItemAlreadyExists') return true;
-    }
-    return false;
-  }
-
-  /**
-   * Detect if a thrown error is a contract revert with NotSupported.
-   * Used where role-config batches may legitimately hit a schema/permission ceiling but we still
-   * want the final on-chain permission assertions to be the source of truth.
-   */
-  protected isNotSupportedRevert(error: any): boolean {
-    if (!error) return false;
-    const msg = (error.shortMessage ?? error.message ?? error.cause?.shortMessage ?? error.cause?.message ?? '').toString();
-    if (/NotSupported/i.test(msg)) return true;
-    const data = error.data ?? error.cause?.data;
-    if (data?.errorName === 'NotSupported') return true;
-    const selector = this.decodeErrorSelector(data?.data ?? data);
-    if (selector) {
-      const name = this.getErrorName(selector);
-      if (name === 'NotSupported') return true;
     }
     return false;
   }

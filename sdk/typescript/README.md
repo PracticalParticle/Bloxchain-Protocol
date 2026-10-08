@@ -7,7 +7,7 @@
 
 A comprehensive TypeScript SDK for interacting with the Bloxchain Protocol smart contracts, providing type-safe interfaces for secure multi-phase operations, dynamic role-based access control, and state abstraction.
 
-The SDK mirrors the Nethermind-audited core protocol (`contracts/core/`). Pre-mainnet today; mainnet coming soon. Pin an exact package version and review release notes before upgrading.
+The SDK mirrors the Nethermind-audited core protocol (`contracts/core/`). Pin an exact package version and review release notes before upgrading.
 
 ## Requirements
 
@@ -88,6 +88,9 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 
 | Export | Purpose |
 |--------|---------|
+| `BasicFactory`, `BASIC_FACTORY_SELECTORS` | **Official mint** (BasicFactory → BasicAccount): `cloneBlox`, `cloneBloxDeterministic`, `predictClone`, `computeCloneAddress`, `isClone`, `implementation` |
+| `getOfficialBasicMint`, `OFFICIAL_MINT_CONTRACTS` | Shared CreateX catalog `BasicFactory` / `BasicAccount` from `official-deployed-addresses.json`; throws if missing or pending (no CopyBlox fallback) |
+| `DEVELOPER_TOOL_CONTRACTS` | Address-book keys for the Sepolia experimental CopyBlox / AccountBlox pair. No CopyBlox client in this package |
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
 | `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
@@ -102,7 +105,7 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 | `assertInnerSuccess`, `readInnerOutcomes`, `waitForTransactionAndAssertInner`, `ENGINE_BLOX_EVENTS_ABI` | A mined transaction is not a successful one — read the inner `TxStatus` back |
 | `BaseStateMachine.setReadSender()` / `readAs` argument | Query role-gated views from a wallet-less client instead of being refused `NoPermission(0x0)` |
 | `@bloxchain/sdk/abi` | Typed barrel: every shipped ABI, plus `ABIS` and `ALL_ERROR_ABI` |
-| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (e.g. `@bloxchain/sdk/abi/CopyBlox`) |
+| `@bloxchain/sdk/abi/<Name>` | One contract's ABI as an ES module (e.g. `@bloxchain/sdk/abi/BasicFactory`, `@bloxchain/sdk/abi/BasicAccount`) |
 | `@bloxchain/sdk/abi/<Name>.abi.json` | The raw ABI JSON, for tools that want the file |
 
 ## Quick Start
@@ -146,6 +149,59 @@ const definitions = new Definitions(
   chain
 );
 ```
+
+## Minting an account (official path)
+
+The official mint is **`BasicFactory` → `BasicAccount`**. Sepolia **CopyBlox** /
+**AccountBlox** are an experimental pair (open factory, 1-second floor) and are
+**not** part of this SDK. Use `@bloxchain/contracts` artifacts if you need them.
+
+```typescript
+import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
+import {
+  BasicFactory,
+  SecureOwnable,
+  RuntimeRBAC,
+  GuardController,
+  resolveOfficialNetwork,
+  getOfficialBasicMint,
+  basicFactorySendGasLimit,
+} from '@bloxchain/sdk';
+
+// Shared CreateX catalog — same BasicFactory address on every declared network.
+// The official pair. The Sepolia CopyBlox row is the experiment.
+const network = resolveOfficialNetwork(official, chain.id);
+const { factory: factoryAddress } = getOfficialBasicMint(network);
+const factory = new BasicFactory(
+  publicClient,
+  walletClient,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
+
+// The sender must be the owner. The client refuses a mismatch before any RPC.
+const inputs = { deployer: owner, initialOwner: owner, index: 0n };
+const predicted = await factory.predictClone(inputs);
+const tx = await factory.cloneBloxDeterministic(
+  { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
+  { from: owner }, // gas: network sendWithGasLimit, else 16777216; options.gas overrides
+);
+
+// A BasicAccount clone is an Account-pattern blox: bind the existing wrappers to it.
+const secureOwnable = new SecureOwnable(publicClient, walletClient, predicted, chain);
+const runtimeRBAC = new RuntimeRBAC(publicClient, walletClient, predicted, chain);
+const guardController = new GuardController(publicClient, walletClient, predicted, chain);
+```
+
+Known limits, documented in [Getting started](../../docs/getting-started.md#-provisioning-an-account-from-npm-alone):
+
+- **M-1, gas:** a mint uses ~16.14M gas but needs ~16.67M *available*; under the EIP-7825
+  cap (2^24) only a **direct EOA** call fits (~108k headroom). Smart-contract wallets, ERC-4337,
+  forwarders and multicalls are unsupported on cap-enforcing networks. Glamsterdam is expected
+  to relieve this where live; it is not fixed until then.
+- **I-1, networks:** Cancun-level EVM, with `EngineBlox`, the definition libraries,
+  `BasicAccount` and `BasicFactory` at the same addresses on every network.
 
 ## SecureOwnable Usage
 
@@ -391,7 +447,7 @@ This package follows [Semantic Versioning](https://semver.org/). Stable releases
 ## Security
 
 - **Vulnerability reporting**: Do not open public GitHub issues for security vulnerabilities. See the [Security Policy](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/SECURITY.md) for reporting instructions (e.g. security@particlecs.com).
-- **Audit status**: The SDK mirrors the audited **core** protocol (`contracts/core/`), not a separate Solidity audit. Nethermind report: [audits/nethermind](https://github.com/PracticalParticle/Bloxchain-Protocol/tree/main/audits/nethermind) ([PDF](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)). Pre-mainnet; mainnet coming soon. Pin package versions and follow your own operational review before production use.
+- **Audit status**: The SDK mirrors the audited **core** protocol (`contracts/core/`), not a separate Solidity audit. Nethermind report: [audits/nethermind](https://github.com/PracticalParticle/Bloxchain-Protocol/tree/main/audits/nethermind) ([PDF](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf)). Pin package versions and follow your own operational review before production use.
 
 ## Support and links
 

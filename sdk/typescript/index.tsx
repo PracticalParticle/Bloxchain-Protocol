@@ -7,13 +7,20 @@ export { default as SecureOwnable } from './contracts/core/SecureOwnable.js';
 export { default as RuntimeRBAC } from './contracts/core/RuntimeRBAC.js';
 export { default as GuardController } from './contracts/core/GuardController.js';
 
-// Provisioning: the sanctioned clone factory (SPEC-2026-0118)
-export { default as CopyBlox } from './contracts/factories/CopyBlox.js';
+// Official mint: BasicFactory → BasicAccount.
+// New address: `cloneBlox`. Deterministic address: `cloneBloxDeterministic` + `predictClone`.
+// sender == initialOwner. Direct-EOA mint only under the EIP-7825 cap (M-1).
+// Operate the BasicAccount clone with the SecureOwnable / RuntimeRBAC / GuardController wrappers.
+// getOfficialBasicMint reads the shared CreateX catalog (format /2).
+// Sepolia CopyBlox / AccountBlox are an experiment and are not exported here.
+// Use @bloxchain/contracts artifacts on networks.sepolia.developerTools.
+export { default as BasicFactory, BASIC_FACTORY_SELECTORS } from './contracts/factories/BasicFactory.js';
 export type {
-  CloneAccountParams,
-  CloneLogScanOptions,
-  CloneListResult
-} from './contracts/factories/CopyBlox.js';
+  BasicCloneParams,
+  BasicDeterministicCloneParams,
+  BasicCloneAddressInputs,
+} from './contracts/factories/BasicFactory.js';
+
 export { Definitions } from './lib/Definition.js';
 export { EngineBlox } from './lib/EngineBlox.js';
 export {
@@ -161,7 +168,7 @@ export {
 } from './utils/account-gate.js';
 export type { AccountBloxInspection, AccountBloxRejection } from './utils/account-gate.js';
 
-// Gas envelope and the EIP-7825 per-transaction cap (SPEC-2026-0118 R4)
+// Gas envelope and the EIP-7825 per-transaction cap (SPEC-2026-0118 R4; M-1 limitation, SPEC-2026-0140)
 export {
   MAX_TX_GAS,
   GAS_ENVELOPE,
@@ -179,6 +186,10 @@ export {
   resolveOfficialNetwork,
   assertNetworkIsOfficial,
   getOfficialAddress,
+  getOfficialBasicMint,
+  basicFactorySendGasLimit,
+  OFFICIAL_MINT_CONTRACTS,
+  DEVELOPER_TOOL_CONTRACTS,
   pendingOfficialContracts,
   factorySupportsClonesOf,
   OfficialNetworkNotFoundError,
@@ -193,6 +204,7 @@ export type {
   OfficialContractKind,
   OfficialGasNotes,
   OfficialStatus,
+  OfficialBasicMint,
 } from './utils/official-addresses.js';
 
 // Re-export commonly used types from viem

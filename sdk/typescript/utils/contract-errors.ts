@@ -1010,7 +1010,7 @@ export const ERROR_SIGNATURES: Record<string, {
   '0xb06ebf3d': {
     name: 'FailedDeployment',
     params: [],
-    userMessage: () => 'FailedDeployment: Contract deployment failed (CopyBlox clone creation)'
+    userMessage: () => 'FailedDeployment: Contract deployment failed (factory clone creation)'
   }
 }
 

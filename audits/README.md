@@ -11,7 +11,6 @@ Third-party and published security reviews for Bloxchain Protocol.
 ## Not covered by the Nethermind engagement
 
 - [`contracts/examples/`](../contracts/examples/) — per-file licenses; not core MPL assurance
-- [`contracts/community/`](../contracts/community/) — community-maintained; not maintainer-audited
 - [`contracts/components/`](../contracts/components/) — official components; outside NM_0828 scope unless a future report states otherwise
 - TypeScript SDK, deployment scripts, and example applications
 

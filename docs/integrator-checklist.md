@@ -16,8 +16,8 @@ The package ships every contract ABI, and all of them are importable.
 
 ```ts
 // Per-contract subpath — a plain ES module, no import attributes needed
-import { copyBloxAbi } from '@bloxchain/sdk/abi/CopyBlox';
-import { accountBloxAbi } from '@bloxchain/sdk/abi/AccountBlox';
+import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory'; // official mint
+import { basicAccountAbi } from '@bloxchain/sdk/abi/BasicAccount'; // official account
 import { erc20MinimalAbi } from '@bloxchain/sdk/abi/ERC20';
 
 // Or the typed barrel, when you want several at once
@@ -25,7 +25,7 @@ import { ABIS, ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
 const abi = ABIS.GuardController;
 
 // Or the raw JSON, when a tool insists on the file
-import copyBlox from '@bloxchain/sdk/abi/CopyBlox.abi.json' with { type: 'json' };
+import basicFactory from '@bloxchain/sdk/abi/BasicFactory.abi.json' with { type: 'json' };
 ```
 
 `ABIS` is keyed by contract name — the same names as the `@bloxchain/sdk/abi/<Name>`
@@ -313,6 +313,13 @@ it — a transaction over the cap is rejected outright rather than mined and fai
 Remember also that the `gasLimit` you put in `TxParams` is a **cap the guard
 forwards** to the inner call, not a price: over-provisioning it costs nothing
 directly, but it counts toward the outer transaction's limit.
+
+**Minting an account is the exception that sits right at the cap (M-1).** The official
+`BasicFactory` mint *uses* ~16.14M but needs ~16.67M *available* (63/64 forwarding inside
+`initialize`), so under the cap only a **direct EOA call** fits. Do not route the mint through
+a Safe, an ERC-4337 account, a forwarder or a multicall on a cap-enforcing network, and do not
+derive the limit from gas used: send `16777216`, which the SDK `BasicFactory` does by default.
+See [Getting Started](./getting-started.md#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1).
 
 ---
 

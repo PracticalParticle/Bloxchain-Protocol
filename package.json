@@ -29,7 +29,7 @@
     "deploy:hardhat:foundation": "hardhat run scripts/deployment/deploy-foundation-libraries.js --network sepolia",
     "deploy:hardhat:copyblox": "hardhat run scripts/deployment/deploy-example-copyblox.js --network sepolia",
     "deploy:remote-evm:test": "node scripts/deployment/deploy-remote-evm-test.cjs",
-    "create-wallet": "node scripts/deployment/create-wallet-copyblox.js",
+    "create-account": "node scripts/deployment/create-account.js",
     "create-erc20": "node scripts/deployment/create-erc20-token.js",
     "test:sanity": "node scripts/sanity/run-all-tests.cjs",
     "test:sanity:core": "node scripts/sanity/run-all-tests.cjs --core",
@@ -75,14 +75,14 @@
     "@openzeppelin/contracts-upgradeable": "5.6.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "21.2.2",
-    "@commitlint/config-conventional": "21.2.2",
-    "@types/node": "26.4.0",
-    "dotenv": "17.4.2",
-    "hardhat": "3.15.0",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@types/node": "26.6.3",
+    "dotenv": "18.0.5",
+    "hardhat": "3.18.1",
     "husky": "9.1.7",
     "release-please": "17.11.2",
     "typescript": "7.0.2",
-    "viem": "2.56.0"
+    "viem": "2.57.2"
   }
 }

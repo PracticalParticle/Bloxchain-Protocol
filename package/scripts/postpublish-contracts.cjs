@@ -10,6 +10,8 @@ const copiedAbiDir = path.join(contractsDir, 'abi');
 const copiedStandardsDir = path.join(contractsDir, 'standards');
 const copiedComponentsDir = path.join(contractsDir, 'components');
 const copiedCoreDir = path.join(contractsDir, 'core');
+const copiedAccountDir = path.join(contractsDir, 'account');
+const copiedFactoryDir = path.join(contractsDir, 'factory');
 const copiedArtifactsDir = path.join(contractsDir, 'artifacts');
 const copiedOfficialAddresses = path.join(contractsDir, 'official-deployed-addresses.json');
 
@@ -38,6 +40,16 @@ if (fs.existsSync(copiedComponentsDir)) {
 if (fs.existsSync(copiedCoreDir)) {
   fs.rmSync(copiedCoreDir, { recursive: true, force: true });
   console.log('✅ Removed copied core directory');
+}
+
+if (fs.existsSync(copiedAccountDir)) {
+  fs.rmSync(copiedAccountDir, { recursive: true, force: true });
+  console.log('✅ Removed copied account directory');
+}
+
+if (fs.existsSync(copiedFactoryDir)) {
+  fs.rmSync(copiedFactoryDir, { recursive: true, force: true });
+  console.log('✅ Removed copied factory directory');
 }
 
 if (fs.existsSync(copiedArtifactsDir)) {

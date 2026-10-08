@@ -9,14 +9,13 @@ The Bloxchain **core protocol** in this directory is the audited source of truth
 | **Auditor** | [Nethermind](https://nethermind.io/) |
 | **Report** | [NM_0828](../../audits/nethermind/README.md) — PDF: [`Nethermind-Bloxchain-Core-NM_0828.pdf`](../../audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) |
 | **Scope** | All Solidity in `contracts/core/` (see [engagement scope](../../audits/nethermind/README.md#scope-in-repo-paths)) |
-| **Network** | Official deployments on **Ethereum Sepolia** today; **Ethereum mainnet official deployments coming soon**. A completed core audit does not by itself mean official mainnet deployments are live. |
+| **Network** | Official catalog deployments, including Ethereum mainnet, are listed in [`official-deployed-addresses.json`](../../official-deployed-addresses.json). This audit covers `contracts/core/` and does not cover BasicAccount, BasicFactory, or every deployed bytecode. |
 
 Record the **audited git commit** from the report on the [Nethermind engagement page](../../audits/nethermind/README.md) when maintaining this documentation. Any change to files under `contracts/core/` after that commit is outside the published report until a new audit or addendum.
 
 ## What this audit does not cover
 
 - [`contracts/examples/`](../../contracts/examples/) — sample apps and templates (separate licenses)
-- [`contracts/community/`](../../contracts/community/) — not audited by maintainers
 - [`contracts/components/`](../../contracts/components/) — outside NM_0828 unless a future report says otherwise
 - [`contracts/standards/`](../../contracts/standards/)
 - TypeScript SDK ([`sdk/typescript/`](../../sdk/typescript/)) — mirrors core; not a separate Solidity audit

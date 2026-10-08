@@ -62,6 +62,8 @@ deployed-addresses.json
 # Copied by package/scripts/prepublish-contracts.cjs for @bloxchain/contracts
 package/abi/
 package/core/
+package/account/
+package/factory/
 package/standards/
 package/components/
 package/official-deployed-addresses.json

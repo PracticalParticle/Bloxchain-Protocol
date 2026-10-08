@@ -1,10 +1,9 @@
 // promote-official-addresses.cjs
-// Fill process for official-deployed-addresses.json (SPEC-2026-0118 R2).
+// Fill process for official-deployed-addresses.json (SPEC-2026-0118 R2 / SPEC-2026-0137).
 //
-// Copies addresses out of the deployment scripts' output (deployed-addresses.json, which
-// is git-ignored and may point at any chain, including local and lab ones) into the
-// published official file. It refuses to write unless a human passes --declare, because
-// "official" is a release decision, not a side effect of running a deploy script.
+// Format /2: the CreateX six-pack lives once under catalog.contracts. Promoting a network
+// either (a) seeds the shared catalog from deployed-addresses.json on first declare, or
+// (b) asserts the source addresses match the catalog and adds the network row.
 //
 //   node scripts/promote-official-addresses.cjs --network sepolia --chain-id 11155111
 //       ... prints the diff it would apply, writes nothing
@@ -19,6 +18,7 @@
 //   --explorer <url>      explorer base url for a new network
 //   --from <path>         source file (default deployed-addresses.json)
 //   --note "<text>"       note recorded on the network
+//   --declared-in <ref>   set declaredIn (default README.md#official-createx-catalog)
 
 const fs = require('fs');
 const path = require('path');
@@ -26,13 +26,16 @@ const path = require('path');
 const ROOT_DIR = path.join(__dirname, '..');
 const OFFICIAL_FILE = path.join(ROOT_DIR, 'official-deployed-addresses.json');
 
-const PROMOTABLE = {
+const FORMAT_V2 = 'bloxchain-official-addresses/2';
+const CATALOG_ID = 'createx-v1';
+
+const CATALOG_PROMOTABLE = {
   EngineBlox: { kind: 'library', linkTime: true },
   SecureOwnableDefinitions: { kind: 'definition-library', linkTime: true },
   RuntimeRBACDefinitions: { kind: 'definition-library', linkTime: true },
   GuardControllerDefinitions: { kind: 'definition-library', linkTime: true },
-  AccountBlox: { kind: 'template' },
-  CopyBlox: { kind: 'factory' },
+  BasicAccount: { kind: 'template' },
+  BasicFactory: { kind: 'factory' },
 };
 
 const LOCAL_CHAINS = new Set([1337, 31337]);
@@ -51,6 +54,20 @@ function isAddress(value) {
   return typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
 }
 
+function readSourceAddresses(sourceNetwork) {
+  const out = {};
+  for (const [contractName, meta] of Object.entries(CATALOG_PROMOTABLE)) {
+    const entry = sourceNetwork[contractName];
+    const address = entry && (typeof entry === 'string' ? entry : entry.address);
+    if (!address) continue;
+    if (!isAddress(address)) {
+      fail(`${contractName}: ${JSON.stringify(address)} is not an address`);
+    }
+    out[contractName] = { address: address.toLowerCase(), meta };
+  }
+  return out;
+}
+
 function main() {
   const networkName = argValue('--network');
   const declare = process.argv.includes('--declare');
@@ -58,11 +75,12 @@ function main() {
   const chainIdArg = argValue('--chain-id');
   const explorer = argValue('--explorer');
   const note = argValue('--note');
+  const declaredIn = argValue('--declared-in', 'README.md#official-createx-catalog');
 
   if (!networkName) fail('--network <name> is required');
   if (!fs.existsSync(sourcePath)) {
     fail(
-      `source file not found: ${path.relative(ROOT_DIR, sourcePath)}. Deploy first (npm run deploy:hardhat:foundation, then the factory), or pass --from <path>.`
+      `source file not found: ${path.relative(ROOT_DIR, sourcePath)}. Deploy the CreateX catalog first, or pass --from <path>.`
     );
   }
 
@@ -75,8 +93,13 @@ function main() {
   }
 
   const official = JSON.parse(fs.readFileSync(OFFICIAL_FILE, 'utf8'));
-  const existing = official.networks[networkName];
+  if (official._format !== FORMAT_V2) {
+    fail(
+      `${path.basename(OFFICIAL_FILE)} is ${JSON.stringify(official._format)}; this promoter writes ${FORMAT_V2} only. Migrate the file first.`
+    );
+  }
 
+  const existing = official.networks[networkName];
   let chainId;
   if (existing) {
     if (chainIdArg !== null && Number(chainIdArg) !== existing.chainId) {
@@ -97,108 +120,138 @@ function main() {
     );
   }
 
-  const target = existing ?? {
-    chainId,
-    status: 'pending-declaration',
-    explorer: explorer ?? null,
-    declaredIn: null,
-    contracts: {},
-  };
-  if (explorer) target.explorer = explorer;
-  if (note) target.notes = note;
-
-  const changes = [];
-  for (const [contractName, meta] of Object.entries(PROMOTABLE)) {
-    const entry = sourceNetwork[contractName];
-    const address = entry && (typeof entry === 'string' ? entry : entry.address);
-    if (!address) continue;
-    if (!isAddress(address)) {
-      fail(`${networkName}.${contractName}: ${JSON.stringify(address)} is not an address`);
-    }
-
-    const normalized = address.toLowerCase();
-    const current = target.contracts[contractName];
-    const currentAddress = current && current.address ? current.address.toLowerCase() : null;
-    if (currentAddress === normalized) continue;
-
-    target.contracts[contractName] = {
-      ...(current ?? {}),
-      address: normalized,
-      kind: meta.kind,
-      artifact: `artifacts/${contractName}.json`,
-      ...(meta.linkTime ? { linkTime: true } : {}),
-    };
-    delete target.contracts[contractName].status;
-
-    if (contractName === 'CopyBlox' && !target.contracts[contractName].supports) {
-      // A freshly deployed factory carries the owner index; an older one does not. The
-      // deploy script cannot know, so record the honest default for a new deployment and
-      // make the human confirm it.
-      target.contracts[contractName].supports = { clonesOf: true };
-      target.contracts[contractName].cloneTarget = 'AccountBlox';
-      target.contracts[contractName].gas = {
-        cloneBloxObserved: null,
-        sendWithGasLimit: 16777216,
-        maxTxGas: 16777216,
-        notes:
-          'Fill cloneBloxObserved from a real receipt on this network. Public networks cap a single transaction at 2^24 (EIP-7825).',
-      };
-    }
-
-    changes.push(
-      `${contractName}: ${currentAddress ? `${currentAddress} -> ${normalized}` : normalized}`
+  const sourceAddrs = readSourceAddresses(sourceNetwork);
+  const missingCatalog = Object.keys(CATALOG_PROMOTABLE).filter((name) => !sourceAddrs[name]);
+  if (missingCatalog.length > 0) {
+    fail(
+      `${networkName} is missing ${missingCatalog.join(', ')} in ${path.basename(sourcePath)}. ` +
+        `Every catalog contract must be present before the network is added: ${Object.keys(CATALOG_PROMOTABLE).join(', ')}.`
     );
   }
 
-  // An existing network with nothing to change is done. A *missing* network with no
-  // promotable source addresses is not a match — fall through so --declare can still
-  // create the network row with pending-declaration contract stubs.
+  if (!official.catalog) {
+    official.catalog = {
+      id: CATALOG_ID,
+      label: 'CreateX same-address catalog v1',
+      spec: 'SPEC-2026-0137',
+      notes: 'Official Platform mint is BasicFactory → BasicAccount.',
+      contracts: {},
+    };
+  }
+  if (official.catalog.id !== CATALOG_ID) {
+    fail(`catalog.id must be ${CATALOG_ID} (got ${JSON.stringify(official.catalog.id)})`);
+  }
+
+  const changes = [];
+  const catalogContracts = official.catalog.contracts ?? (official.catalog.contracts = {});
+
+  // Seed or verify shared catalog.
+  for (const [name, { address, meta }] of Object.entries(sourceAddrs)) {
+    const current = catalogContracts[name];
+    const currentAddress = current && current.address ? current.address.toLowerCase() : null;
+    if (!currentAddress) {
+      catalogContracts[name] = {
+        address,
+        kind: meta.kind,
+        artifact: `artifacts/${name}.json`,
+        ...(meta.linkTime ? { linkTime: true } : {}),
+      };
+      if (name === 'BasicAccount') {
+        catalogContracts[name].initializersDisabled = true;
+        catalogContracts[name].linkedLibraries = [
+          'EngineBlox',
+          'SecureOwnableDefinitions',
+          'RuntimeRBACDefinitions',
+          'GuardControllerDefinitions',
+        ];
+      }
+      if (name === 'BasicFactory') {
+        catalogContracts[name].cloneTarget = 'BasicAccount';
+        catalogContracts[name].gas = {
+          cloneBloxObserved: null,
+          sendWithGasLimit: 16777216,
+          maxTxGas: 16777216,
+          notes:
+            'Fill cloneBloxObserved from a real receipt. Public networks cap a single transaction at 2^24 (EIP-7825) where applicable.',
+        };
+      }
+      changes.push(`catalog.${name}: ${address}`);
+    } else if (currentAddress !== address) {
+      fail(
+        `same-address gate failed: ${name} on ${networkName} is ${address} but catalog has ${currentAddress}. CreateX catalog must match across networks.`
+      );
+    }
+  }
+
+  const target = existing ?? {
+    chainId,
+    status: 'official',
+    catalog: CATALOG_ID,
+    explorer: explorer ?? null,
+    declaredIn: declaredIn,
+    mirroredAt: new Date().toISOString().slice(0, 10),
+    notes: note ?? 'CreateX same-address catalog.',
+  };
+  if (explorer) target.explorer = explorer;
+  if (note) target.notes = note;
+  target.catalog = CATALOG_ID;
+  if (!existing) {
+    changes.push(`networks.${networkName}: add chain ${chainId}`);
+  } else {
+    if (existing.status !== 'official') {
+      target.status = 'official';
+      target.declaredIn = declaredIn;
+      target.mirroredAt = new Date().toISOString().slice(0, 10);
+      changes.push(`networks.${networkName}: status -> official`);
+    }
+    if (existing.catalog !== CATALOG_ID) {
+      changes.push(
+        `networks.${networkName}: catalog ${JSON.stringify(existing.catalog)} -> ${CATALOG_ID}`
+      );
+    }
+  }
+
+  // Strip any accidental per-network copies of catalog contracts.
+  if (target.contracts) {
+    for (const name of Object.keys(CATALOG_PROMOTABLE)) {
+      if (target.contracts[name]) {
+        delete target.contracts[name];
+        changes.push(`networks.${networkName}.contracts.${name}: removed (lives in catalog)`);
+      }
+    }
+    if (Object.keys(target.contracts).length === 0) delete target.contracts;
+  }
+
   if (changes.length === 0 && existing) {
-    console.log(`✅ nothing to promote: ${networkName} already matches ${path.basename(sourcePath)}`);
+    console.log(`✅ nothing to promote: ${networkName} already matches catalog + network row`);
     return;
   }
 
   console.log(`\n${networkName} (chain ${chainId}) from ${path.relative(ROOT_DIR, sourcePath)}:`);
-  if (changes.length === 0) {
-    console.log(
-      `   ⚠️ network is missing from the official file and ${path.basename(sourcePath)} has no promotable addresses`
-    );
-  } else {
-    for (const change of changes) console.log(`   ${change}`);
-  }
+  for (const change of changes) console.log(`   ${change}`);
 
-  // Contracts this network has not deployed yet get an explicit pending row rather than
-  // no row at all, so the file stays valid and the gap is visible instead of implied.
-  const stillPending = Object.keys(PROMOTABLE).filter(
-    (name) => !target.contracts[name] || !target.contracts[name].address
+  const stillPending = Object.keys(CATALOG_PROMOTABLE).filter(
+    (name) => !catalogContracts[name] || !catalogContracts[name].address
   );
-  for (const name of stillPending) {
-    target.contracts[name] = {
-      ...(target.contracts[name] ?? {}),
-      address: null,
-      kind: PROMOTABLE[name].kind,
-      status: 'pending-declaration',
-    };
-  }
   if (stillPending.length > 0) {
-    console.log(`\n⏳ still pending after this promotion: ${stillPending.join(', ')}`);
+    console.log(`\n⏳ catalog still pending after this promotion: ${stillPending.join(', ')}`);
   }
 
   if (!declare) {
     console.log(
-      '\n🔒 Nothing written. "Official" is a human release decision: verify every address on the explorer, then re-run with --declare.'
+      '\n🔒 Nothing written. "Official" is a human release decision: verify every address on the explorer / Sourcify, then re-run with --declare.'
     );
     return;
   }
 
   official.networks[networkName] = target;
   official.updated = new Date().toISOString().slice(0, 10);
+  official._format = FORMAT_V2;
   fs.writeFileSync(OFFICIAL_FILE, `${JSON.stringify(official, null, 2)}\n`);
 
   console.log(`\n✅ ${path.basename(OFFICIAL_FILE)} updated.`);
-  console.log('   Next: set status/declaredIn if this is a new network, then run');
-  console.log(`   npm run validate:official-addresses -- --require-official ${networkName}`);
-  console.log('   and mirror the table into README.md and the public documentation.');
+  console.log('   Next: npm run validate:official-addresses -- --require-official ' + networkName);
+  console.log('   and keep README.md#official-createx-catalog in sync (one address table + network list).');
 }
 
 main();

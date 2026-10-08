@@ -27,6 +27,9 @@ import { INTERFACE_IDS } from './interface-ids.js';
  * The factory answers `IBaseStateMachine` because it is one, so a gate built on that
  * check alone adopts the factory as an account. `owner()` + `initialized()` + ERC-165
  * `ISecureOwnable` is the sharp edge.
+ *
+ * SPEC-2026-0130. The canonical pinned factory (`BasicFactory`) is not an account: it has
+ * no `owner()`, so the gate stops it at `no-owner`.
  */
 
 /** Why an address failed the gate. */
@@ -133,7 +136,7 @@ const SUPPORTS_INTERFACE_ABI = [
  * {@link isAccountBlox} when a boolean is enough.
  *
  * The checks run in cost order and stop at the first failure, so a bad address costs one
- * `eth_getCode` rather than four calls.
+ * `eth_getCode` rather than five calls.
  *
  * @param client Public client on the network the address is supposed to live on
  * @param address Address to inspect
@@ -206,8 +209,9 @@ export async function inspectAccountBlox(
 
 /**
  * True when the address is a governed account (an initialized `AccountBlox`-shaped
- * contract), false for an EOA, an unrelated contract, an uninitialized deployment, or
- * the clone factory.
+ * contract, including a `BasicAccount` clone), false for an EOA, an unrelated contract, an
+ * uninitialized deployment, the official `BasicFactory`, or the experimental CopyBlox factory (no
+ * `owner()`).
  *
  * @param client Public client on the network the address is supposed to live on
  * @param address Address to check

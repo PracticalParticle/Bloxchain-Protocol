@@ -19,6 +19,7 @@ import { runEip712ExportTests } from './eip712-export-tests.ts';
 import { runErrorUnwrapTests } from './error-unwrap-tests.ts';
 import { runInnerStatusTests } from './inner-status-tests.ts';
 import { runReaderAndDeadlineTests } from './reader-deadline-tests.ts';
+import { runAccountGateTests } from './account-gate-tests.ts';
 import type { SurfaceTestResult } from './package-exports-tests.ts';
 
 type Suite = { key: string; title: string; run: () => Promise<SurfaceTestResult[]> };
@@ -29,6 +30,7 @@ const SUITES: Suite[] = [
   { key: 'reader', title: 'R3 / R6 — read sender and absolute deadline', run: runReaderAndDeadlineTests },
   { key: 'errors', title: 'R4 / R5 — error unwrap and signer classification', run: runErrorUnwrapTests },
   { key: 'inner', title: 'R7 — inner transaction status', run: runInnerStatusTests },
+  { key: 'gate', title: 'SPEC-2026-0130 R7 — account gate rejects the canonical factory', run: runAccountGateTests },
 ];
 
 function printUsage(): void {

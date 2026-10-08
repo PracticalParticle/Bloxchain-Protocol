@@ -7,6 +7,16 @@ import { PublicClient } from 'viem';
  * the `AccountBlox` template is close enough to the public per-transaction cap that the
  * difference between "estimate" and "cap" is the difference between an account and a
  * half-made one.
+ *
+ * **Official mint, known limitation (M-1, SPEC-2026-0139 / 0140).** `BasicFactory` →
+ * `BasicAccount` *uses* about 16.14M gas but must be *sent* with about 16.67M available,
+ * because `initialize` receives only 63/64 of the gas at each nested call (EIP-150). Under the
+ * {@link MAX_TX_GAS} cap (EIP-7825, Osaka) that is about 108k of limit headroom, which only a **direct EOA** call
+ * to the factory has. One contract frame in front of it (Safe or another smart-contract wallet,
+ * a forwarder, a multicall) needs about 16.94M, and ERC-4337 about 17.21M: over the cap, so
+ * those callers are unsupported on cap-enforcing networks. Never derive a send limit from gas
+ * used. Glamsterdam is expected to relieve this on networks where it is live; until then it is
+ * not fixed.
  */
 
 /**
@@ -23,15 +33,15 @@ export const MAX_TX_GAS = 16_777_216n;
 /**
  * Measured gas envelope for obtaining a governed account.
  *
- * `cloneOfAccountBlox` is the observed `gasUsed` for `CopyBlox.cloneBlox` against the
- * `AccountBlox` template on Sepolia. It leaves roughly 590 k of head-room under
- * {@link MAX_TX_GAS}, so treat the clone as a fixed-cost operation with a thin margin
- * rather than something to pad by a percentage.
+ * `cloneOfAccountBlox` is the observed `gasUsed` for the experimental `CopyBlox.cloneBlox` against
+ * the `AccountBlox` template on Sepolia. Gas used is not the limit a sender needs (see M-1
+ * above), so treat the clone as a fixed-cost operation sent at `cloneSendGasLimit`,
+ * never as something to pad by a percentage from an estimate.
  */
 export const GAS_ENVELOPE = {
-  /** Observed `gasUsed` for a clone + initialize in one transaction. */
+  /** Observed `gasUsed` for an experimental CopyBlox clone + initialize (AccountBlox). Gas used, not a send limit. */
   cloneOfAccountBlox: 16_183_550n,
-  /** Send a clone with this explicit limit: the cap itself, not an estimate. */
+  /** Send a clone (either factory) with this explicit limit: the cap itself, not an estimate. */
   cloneSendGasLimit: MAX_TX_GAS,
   /**
    * Fail loudly below this. An estimate under the floor means the estimator did not
@@ -130,7 +140,7 @@ export function assertCloneGasEstimate(
   estimate: bigint,
   options: { floor?: bigint; label?: string; cap?: bigint } = {}
 ): void {
-  const label = options.label ?? 'CopyBlox.cloneBlox';
+  const label = options.label ?? 'cloneBlox';
   const cap = options.cap ?? MAX_TX_GAS;
   if (options.floor !== undefined) {
     assertGasEnvelope(estimate, options.floor, label, cap);
