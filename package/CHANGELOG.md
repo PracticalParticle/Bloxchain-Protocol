@@ -5,6 +5,19 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.1.0...contracts-v1.2.0) (2026-10-08)
+
+
+### Features
+
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([78a9ce2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/78a9ce2ab8510f318b376f49244d52cdb3b2f986))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([c45d761](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c45d761ae983607e0b38a946b55d0c503a928f78))
+
+
+### Bug Fixes
+
+* describe disabled initializers and honor per-network mint gas ([e19ab17](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e19ab17273d46a81be5b00a69a727d9073141090))
+
 ## [1.1.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.0.0...contracts-v1.1.0) (2026-09-16)
 
 
