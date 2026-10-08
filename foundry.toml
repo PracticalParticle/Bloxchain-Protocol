@@ -41,7 +41,7 @@ fail_on_revert = false
 lint_on_build = false
 
 # Same-address CreateX catalog. Compile with FOUNDRY_PROFILE=createx-catalog.
-# [profile.default] is Osaka and keeps bytecode metadata. Metadata must not enter this init code.
+# [profile.default] is Osaka and appends a metadata hash. That hash must not enter this init code.
 # These knobs are the ones that produced the published catalog addresses.
 [profile.createx-catalog]
 solc = "0.8.35"
