@@ -6,10 +6,14 @@
  *   - Initialization: initialOwner, broadcaster, recovery, timeLockPeriodSec
  * Then calls CopyBlox.cloneBlox(...) and prints the new clone address.
  *
+ * Lab helper. The supported integrator command is `npm run create-account`
+ * (scripts/deployment/create-account.js), which mints through BasicFactory.
+ * This file still clones through a CopyBlox address recorded in deployed-addresses.json.
+ *
  * Usage (from repo root):
  *   node scripts/deployment/create-wallet-copyblox.js
- *   npm run create-wallet
- * Non-interactive (defaults): CREATE_WALLET_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js
+ * Non-interactive (defaults): CREATE_ACCOUNT_USE_DEFAULTS=1 node scripts/deployment/create-wallet-copyblox.js
+ * CREATE_WALLET_USE_DEFAULTS is still accepted.
  * Ensure .env.deployment has DEPLOY_RPC_URL, DEPLOY_PRIVATE_KEY, and optionally DEPLOY_NETWORK_NAME.
  */
 
@@ -46,7 +50,11 @@ function isAddress(s) {
 }
 
 async function main() {
-  const useDefaults = process.env.CREATE_WALLET_USE_DEFAULTS === "1" || process.env.CREATE_WALLET_USE_DEFAULTS === "true";
+  const useDefaults =
+    process.env.CREATE_ACCOUNT_USE_DEFAULTS === "1" ||
+    process.env.CREATE_ACCOUNT_USE_DEFAULTS === "true" ||
+    process.env.CREATE_WALLET_USE_DEFAULTS === "1" ||
+    process.env.CREATE_WALLET_USE_DEFAULTS === "true";
   const rl = useDefaults ? null : createInterface({ input: process.stdin, output: process.stdout });
 
   const ask = async (prompt, defaultValue) => (rl ? question(rl, prompt, defaultValue) : Promise.resolve(defaultValue));
@@ -125,7 +133,7 @@ async function main() {
   const publicClient = createPublicClient({ chain, transport: http(rpc) });
   const deployerAddr = deployerAccount.address;
 
-  if (useDefaults) console.log("Using defaults (CREATE_WALLET_USE_DEFAULTS): owner=broadcaster=recovery=deployer, timeLock=1");
+  if (useDefaults) console.log("Using defaults (CREATE_ACCOUNT_USE_DEFAULTS): owner=broadcaster=recovery=deployer, timeLock=1");
   console.log("\nInitialization parameters (press Enter to use default):");
   const initialOwner = await ask("Initial owner address", deployerAddr);
   const broadcaster = await ask("Broadcaster address", deployerAddr);

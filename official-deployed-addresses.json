@@ -6,7 +6,7 @@
     "whatQualifies": "Deployed from the CreateX same-address rail (SPEC-2026-0137), verified (explorer and/or Sourcify), and intended for outside integrators. Local, lab and throwaway deployments never qualify. Faucet-deferred testnets stay out until catalogued.",
     "howToAdd": "Deploy and verify the CreateX catalog on the new chain (addresses must match catalog.contracts). Then: node scripts/promote-official-addresses.cjs --network <name> --chain-id <id> --declare. The script refuses to write without --declare and refuses a network whose addresses differ from the shared catalog. Validate with: npm run validate:official-addresses",
     "sharedCatalog": "catalog.contracts is the Platform CreateX address book (BasicFactory → BasicAccount). Do not paste those six addresses under every network. Network rows point at the catalog id.",
-    "developerTools": "Optional per-network developerTools overlay holds official developer experiment addresses (Sepolia AccountBlox / CopyBlox). Same product family, different job: open factory + 1-second AccountBlox floor for fast loops. Not the Platform mint. Not deprecated.",
+    "developerTools": "Optional per-network developerTools overlay holds the Sepolia experiment (AccountBlox / CopyBlox): an open factory and a 1-second AccountBlox floor. The integrator mint is BasicFactory → BasicAccount.",
     "pendingRows": "A contract that is not yet declared is listed with \"address\": null and \"status\": \"pending-declaration\". Addresses are never guessed."
   },
   "updated": "2026-10-08",
@@ -20,7 +20,7 @@
     "label": "CreateX same-address catalog v1",
     "spec": "SPEC-2026-0137",
     "deployer": "0xa8088ad31bcd1459d12ae6355119d3f4bf37d751",
-    "notes": "Official Platform mint is BasicFactory → BasicAccount. Addresses are the same on every network listed under networks that references this catalog.",
+    "notes": "The integrator mint is BasicFactory → BasicAccount. Addresses are the same on every network listed under networks that references this catalog.",
     "contracts": {
       "EngineBlox": {
         "address": "0xb1fde79830ee7f748022922d07b3f19042ee6526",
@@ -74,7 +74,7 @@
           "maxTxGas": 16777216,
           "notes": "Typical gasUsed for cloneBloxDeterministic (salt 0, first free index) on CreateX-matched L2s and Ethereum is ~16.16M. Send with an explicit gas limit at the EIP-7825 per-tx cap (2^24) on capped networks; never rely on a bare estimate. Some L2s (e.g. Polygon PoS) measured ~17.88M — raise the send limit above the observed use on that chain."
         },
-        "notes": "Official public provisioning path (SPEC-2026-0137 / 0140): cloneBlox and cloneBloxDeterministic deploy and initialize a BasicAccount. Official Platform mint sets initialOwner = msg.sender (self-owner). Deterministic clones share an address across catalog networks only for the same minter, owner, index and salt."
+        "notes": "cloneBlox (new address each call) and cloneBloxDeterministic (predictable address) deploy and initialize a BasicAccount. The caller must be initialOwner. Deterministic clones share an address across catalog networks only for the same minter, owner, index and salt."
       }
     }
   },
@@ -86,7 +86,7 @@
       "explorer": "https://sepolia.etherscan.io",
       "declaredIn": "README.md#official-createx-catalog",
       "mirroredAt": "2026-10-08",
-      "notes": "CreateX baseline testnet. Platform mint = BasicFactory → BasicAccount. Sepolia also declares the official developer toolkit (AccountBlox / CopyBlox) under developerTools.",
+      "notes": "CreateX baseline testnet. Integrator mint = BasicFactory → BasicAccount. Sepolia also lists the experimental AccountBlox / CopyBlox pair under developerTools.",
       "developerTools": {
         "AccountBlox": {
           "address": "0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0",
@@ -100,7 +100,7 @@
             "RuntimeRBACDefinitions",
             "GuardControllerDefinitions"
           ],
-          "notes": "Official developer template (contracts/examples). Time-lock floor is 1 second — useful for fast experimentation. Not the Platform CreateX mint (BasicAccount floor is 1 day). Linked libraries on this row are the historical Sepolia foundation addresses, not the CreateX catalog."
+          "notes": "Experimental template (contracts/examples), Sepolia only. Time-lock floor is 1 second. BasicAccount floor is 1 day. Linked libraries on this row are the historical Sepolia foundation addresses, not the CreateX catalog."
         },
         "CopyBlox": {
           "address": "0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7",
@@ -117,7 +117,7 @@
             "maxTxGas": 16777216,
             "notes": "Observed gasUsed for cloneBlox against AccountBlox on Sepolia. Public networks cap a single transaction at 2^24 = 16,777,216 (EIP-7825)."
           },
-          "notes": "Official developer factory (contracts/examples). Open factory: can clone any standard IBaseStateMachine blox, not only AccountBlox. Not the Platform CreateX mint (BasicFactory is pinned to BasicAccount). Predates the owner-indexed clone list; enumerate from BloxCloned logs. Wire via @bloxchain/contracts artifacts + viem — not exported from @bloxchain/sdk."
+          "notes": "Experimental factory (contracts/examples), Sepolia only. Open factory: can clone any standard IBaseStateMachine blox, including AccountBlox. BasicFactory is pinned to BasicAccount. Predates the owner-indexed clone list; enumerate from BloxCloned logs. Wire via @bloxchain/contracts artifacts + viem. Not exported from @bloxchain/sdk."
         }
       }
     },
@@ -173,7 +173,7 @@
       "explorer": "https://etherscan.io",
       "declaredIn": "README.md#official-createx-catalog",
       "mirroredAt": "2026-10-08",
-      "notes": "Ethereum mainnet CreateX catalog. Alpha · Testnet · Local-first product posture still applies at the Platform layer."
+      "notes": "Ethereum mainnet CreateX catalog."
     },
     "base": {
       "chainId": 8453,

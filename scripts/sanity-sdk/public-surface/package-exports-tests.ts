@@ -287,8 +287,7 @@ async function runOfficialMintSurfaceTests(
   // Shipped address file (format /2): CreateX catalog + Sepolia developerTools.
   const official = JSON.parse(fs.readFileSync(OFFICIAL_ADDRESSES, 'utf8'));
   const copyBloxRow: string | undefined =
-    official.networks?.sepolia?.developerTools?.CopyBlox?.address ??
-    official.networks?.sepolia?.legacy?.CopyBlox?.address;
+    official.networks?.sepolia?.developerTools?.CopyBlox?.address;
   const catalogFactory: string | undefined = official.catalog?.contracts?.BasicFactory?.address;
   const catalogImpl: string | undefined = official.catalog?.contracts?.BasicAccount?.address;
   const throwsName = (fn: () => unknown): string | null => {

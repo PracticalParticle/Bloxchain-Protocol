@@ -90,7 +90,7 @@ From the protocol repo, run `npm run release:prepare` before publish (includes S
 |--------|---------|
 | `BasicFactory`, `BASIC_FACTORY_SELECTORS` | **Official mint** (BasicFactory → BasicAccount): `cloneBlox`, `cloneBloxDeterministic`, `predictClone`, `computeCloneAddress`, `isClone`, `implementation` |
 | `getOfficialBasicMint`, `OFFICIAL_MINT_CONTRACTS` | Shared CreateX catalog `BasicFactory` / `BasicAccount` from `official-deployed-addresses.json`; throws if missing or pending (no CopyBlox fallback) |
-| `DEVELOPER_TOOL_CONTRACTS` | Address-book keys for Sepolia CopyBlox / AccountBlox (developer toolkit). No CopyBlox client in this package |
+| `DEVELOPER_TOOL_CONTRACTS` | Address-book keys for the Sepolia experimental CopyBlox / AccountBlox pair. No CopyBlox client in this package |
 | `SECURITY_FUNCTION_SELECTORS` | SecureOwnable function selectors (`FUNCTION_SELECTORS` in Solidity definitions) |
 | `RUNTIME_RBAC_FUNCTION_SELECTORS` / `GUARD_CONTROLLER_FUNCTION_SELECTORS` | Batch, timelock, payment, and execute selectors (see `types/meta-tx-signatures.ts`) |
 | `ENGINE_BLOX_META_TRANSACTION_PARAM` / `ENGINE_BLOX_META_TX_PARAMS` / `metaTxHandlerSignature` | Canonical MetaTransaction tuple strings and selector builders (aligned with `EngineBlox.sol`) |
@@ -152,9 +152,9 @@ const definitions = new Definitions(
 
 ## Minting an account (official path)
 
-The official Platform mint is **`BasicFactory` → `BasicAccount`**. Sepolia **CopyBlox** /
-**AccountBlox** remain an official developer toolkit (open factory + 1s floor) but are
-**not** part of this SDK — use `@bloxchain/contracts` artifacts if you need them.
+The official mint is **`BasicFactory` → `BasicAccount`**. Sepolia **CopyBlox** /
+**AccountBlox** are an experimental pair (open factory, 1-second floor) and are
+**not** part of this SDK. Use `@bloxchain/contracts` artifacts if you need them.
 
 ```typescript
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
@@ -168,12 +168,12 @@ import {
 } from '@bloxchain/sdk';
 
 // Shared CreateX catalog — same BasicFactory address on every declared network.
-// Never substitute the Sepolia developer-toolkit CopyBlox row.
+// The official pair. The Sepolia CopyBlox row is the experiment.
 const network = resolveOfficialNetwork(official, chain.id);
 const { factory: factoryAddress } = getOfficialBasicMint(network);
 const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
 
-// The sender must be the owner (SPEC-2026-0142); the client refuses a mismatch before any RPC.
+// The sender must be the owner. The client refuses a mismatch before any RPC.
 const inputs = { deployer: owner, initialOwner: owner, index: 0n };
 const predicted = await factory.predictClone(inputs);
 const tx = await factory.cloneBloxDeterministic(

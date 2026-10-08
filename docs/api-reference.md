@@ -191,15 +191,15 @@ import { ABIS, ALL_ERROR_ABI } from '@bloxchain/sdk/abi';
 `IDefinition`, `RoleBlox`, `RuntimeRBAC`, `RuntimeRBACDefinitions`, `SecureBlox`,
 `SecureOwnable`, `SecureOwnableDefinitions`. Each module also exports
 `<name>ErrorAbi` and `<name>EventAbi` filters. `BasicFactory` and `BasicAccount` are the
-Platform mint pair. Sepolia `CopyBlox` / `AccountBlox` are an official developer toolkit —
+official mint pair. Sepolia `CopyBlox` / `AccountBlox` are an experimental path —
 addresses and `@bloxchain/contracts` artifacts only; no CopyBlox client in this package.
 
-## 🏭 **Factories: Platform `BasicFactory` (developer-toolkit CopyBlox outside SDK)**
+## 🏭 **Factories: BasicFactory**
 
-The Platform mint is **`BasicFactory` → `BasicAccount`** (SPEC-2026-0140). Sepolia `CopyBlox` /
-`AccountBlox` remain an official developer toolkit but are **not** exported from `@bloxchain/sdk`.
+The official mint is **`BasicFactory` → `BasicAccount`**. Sepolia `CopyBlox` /
+`AccountBlox` are an experimental path and are **not** exported from `@bloxchain/sdk`.
 
-### **BasicFactory** (Platform)
+### **BasicFactory**
 
 ```typescript
 new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, factoryAddress: Address, chain: Chain)
@@ -207,7 +207,7 @@ new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, f
 
 | Method | Purpose |
 |--------|---------|
-| `cloneBlox(params: BasicCloneParams, options)` | Nonce mint of the pinned `BasicAccount`; `options.from` must equal `params.initialOwner` (SPEC-2026-0142) |
+| `cloneBlox(params: BasicCloneParams, options)` | New address each call. Mints the pinned `BasicAccount`. `options.from` must equal `params.initialOwner` |
 | `cloneBloxDeterministic(params: BasicDeterministicCloneParams, options)` | `CREATE2` mint at `predictClone(from, initialOwner, index, salt)`; same self-owner rule |
 | `predictClone(inputs: BasicCloneAddressInputs)` | Deterministic address, read from the factory |
 | `BasicFactory.computeCloneAddress(factory, implementation, inputs)` / `BasicFactory.create2Salt(inputs)` | Offline twins, no RPC |
@@ -233,8 +233,8 @@ pointed at the clone address; its ABI is `basicAccountAbi`.
 | `DEVELOPER_TOOL_CONTRACTS` | `{ factory: 'CopyBlox', template: 'AccountBlox' }` (address-book keys only) |
 | `getOfficialAddress(network, name)` | Any one declared row (catalog or `developerTools`); throws rather than returning null |
 
-`getOfficialBasicMint` reads the shared CreateX catalog on every declared network. For Sepolia
-developer-toolkit rows use `getOfficialAddress(network, 'CopyBlox')` / `'AccountBlox'` and
+`getOfficialBasicMint` reads the shared CreateX catalog on every declared network. For the Sepolia
+experimental rows use `getOfficialAddress(network, 'CopyBlox')` / `'AccountBlox'` and
 `@bloxchain/contracts` artifacts — there is no CopyBlox client in this package.
 
 ## 🔑 **Reading permissioned views (`readAs`)**
@@ -344,7 +344,7 @@ counts toward the outer transaction's limit.
 
 For the account mint, gas **used** (~16.14M) is not the limit a sender needs (~16.67M,
 because of 63/64 forwarding inside `initialize`). Under the cap only a direct EOA call to
-`BasicFactory` fits; see the M-1 note under [Factories](#-factories-platform-basicfactory-developer-toolkit-copyblox-outside-sdk).
+`BasicFactory` fits; see the M-1 note under [Factories](#-factories-basicfactory).
 
 ## 🧭 **Configuration Helpers**
 

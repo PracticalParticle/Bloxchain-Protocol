@@ -7,13 +7,13 @@ export { default as SecureOwnable } from './contracts/core/SecureOwnable.js';
 export { default as RuntimeRBAC } from './contracts/core/RuntimeRBAC.js';
 export { default as GuardController } from './contracts/core/GuardController.js';
 
-// Official Platform mint (SPEC-2026-0140 / 0137): BasicFactory → BasicAccount.
-// Nonce `cloneBlox`, deterministic `cloneBloxDeterministic` + `predictClone` (SPEC-2026-0138);
-// sender == initialOwner (SPEC-2026-0142); direct-EOA mint only under the EIP-7825 cap (M-1).
+// Official mint: BasicFactory → BasicAccount.
+// New address: `cloneBlox`. Deterministic address: `cloneBloxDeterministic` + `predictClone`.
+// sender == initialOwner. Direct-EOA mint only under the EIP-7825 cap (M-1).
 // Operate the BasicAccount clone with the SecureOwnable / RuntimeRBAC / GuardController wrappers.
 // getOfficialBasicMint reads the shared CreateX catalog (format /2).
-// Developer toolkit (CopyBlox / AccountBlox) is official but not exported here — use
-// @bloxchain/contracts artifacts on Sepolia developerTools addresses.
+// Sepolia CopyBlox / AccountBlox are an experiment and are not exported here.
+// Use @bloxchain/contracts artifacts on networks.sepolia.developerTools.
 export { default as BasicFactory, BASIC_FACTORY_SELECTORS } from './contracts/factories/BasicFactory.js';
 export type {
   BasicCloneParams,
