@@ -145,6 +145,21 @@ function validateContract(where, contractName, row) {
     validateFactoryGas(where, row, contractName);
   }
 
+  if (contractName === 'BasicAccount') {
+    if (row.initializersDisabled !== true) {
+      error(
+        where,
+        'BasicAccount must set initializersDisabled: true (the constructor calls _disableInitializers; on-chain initialized() stays false)'
+      );
+    }
+    if (row.initialized === true) {
+      error(
+        where,
+        'BasicAccount must not set initialized: true; that flag means initialize() has run'
+      );
+    }
+  }
+
   if (contractName === 'BasicFactory') {
     validateFactoryGas(where, row, contractName);
   }

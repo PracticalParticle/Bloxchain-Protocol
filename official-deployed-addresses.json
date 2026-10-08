@@ -54,14 +54,14 @@
         "address": "0x234c0a76399456832a74fb29de3c78d13c22e182",
         "kind": "template",
         "artifact": "artifacts/BasicAccount.json",
-        "initialized": true,
+        "initializersDisabled": true,
         "linkedLibraries": [
           "EngineBlox",
           "SecureOwnableDefinitions",
           "RuntimeRBACDefinitions",
           "GuardControllerDefinitions"
         ],
-        "notes": "Clone source for the official factory. Already initialized so the implementation cannot be claimed; Clones.copy runtime code, not storage. Do not operate this address as an account. Time-lock bounds: 1–90 days."
+        "notes": "Clone source for the official factory. The constructor disables initializers, so this implementation cannot be initialized or claimed. On-chain initialized() stays false. Clones copy runtime code, not storage. Do not operate this address as an account. Time-lock bounds: 1–90 days."
       },
       "BasicFactory": {
         "address": "0x6b6e4fb86ab52728d983d1a316ad9d8b48513215",

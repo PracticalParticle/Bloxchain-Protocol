@@ -482,7 +482,7 @@ The contract implements EIP-712 with:
 
 ### **Signature Verification Flow**
 1. Contract generates the EIP-712 digest (`message`) using its own implementation.
-2. The client signs that digest **without** an extra EIP-191 wrapper: e.g. Viem `signMessage({ message: { raw: message } })`, SDK `signMetaTransactionWithWallet` (typed data matching the contract), or `sign({ hash })` for local keys.
+2. The client signs that digest **without** an extra EIP-191 wrapper: SDK `signMetaTransactionWithWallet` (typed data matching the contract), or `sign({ hash })` for local keys. Viem `signMessage` adds the EIP-191 prefix, including when `message` is `{ raw: digest }`, so it does not sign this digest.
 3. The SDK verifies locally in `createSignedMetaTransactionWithSignature` / `signMetaTransaction` paths before returning.
 4. The contract recovers the signer from the same digest during execution.
 

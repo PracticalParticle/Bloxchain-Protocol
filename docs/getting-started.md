@@ -180,6 +180,7 @@ import {
   resolveOfficialNetwork,
   assertNetworkIsOfficial,
   getOfficialBasicMint,
+  basicFactorySendGasLimit,
 } from '@bloxchain/sdk';
 
 const network = resolveOfficialNetwork(official, chainId);
@@ -187,7 +188,13 @@ assertNetworkIsOfficial(network);
 
 const { factory: factoryAddress } = getOfficialBasicMint(network);
 
-const factory = new BasicFactory(publicClient, ownerWallet, factoryAddress, chain);
+const factory = new BasicFactory(
+  publicClient,
+  ownerWallet,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
 
 const result = await factory.cloneBlox(
   {
@@ -196,7 +203,7 @@ const result = await factory.cloneBlox(
     recovery: recoveryAddress,
     timeLockPeriodSec: 86_400n, // BasicAccount: 1 day to 90 days
   },
-  { from: ownerAddress }, // must be initialOwner; gas defaults to 16777216
+  { from: ownerAddress }, // must be initialOwner; gas defaults to basicFactorySendGasLimit(network)
 );
 
 const receipt = await result.wait();
@@ -436,8 +443,11 @@ That pair is outside the audited core and outside `@bloxchain/sdk`.
 `BasicFactory.cloneBlox(initialOwner, broadcaster, recovery, timeLockPeriodSec)` clones
 `implementation()` and runs `initialize` on the clone in the same transaction (clone, register,
 initialize, `BloxCloned`); a failed initialize reverts the mint. **Send either mint with an
-explicit gas limit of `16777216`** (the EIP-7825 cap). The SDK wrapper `BasicFactory` does this
-by default.
+explicit gas limit.** The catalog default is `16777216` (the EIP-7825 cap). A network may
+raise `BasicFactory.gas.sendWithGasLimit` above that. `basicFactorySendGasLimit(network)`
+returns the configured limit, and the SDK wrapper uses it when you pass that value at
+construction. `options.gas` still overrides it. Without a constructor limit the wrapper
+falls back to `16777216`.
 
 ```text
 BasicFactory.cloneBlox (BasicAccount)               16,137,707 gas used (Foundry, execution, cold, sent by the owner)
@@ -484,15 +494,21 @@ What that promises, and what it does not:
   Use a non-zero salt only when you need a second, independent address space.
 
 ```typescript
-import { BasicFactory } from '@bloxchain/sdk';
+import { BasicFactory, basicFactorySendGasLimit } from '@bloxchain/sdk';
 
-const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
+const factory = new BasicFactory(
+  publicClient,
+  walletClient,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
 const inputs = { deployer: owner, initialOwner: owner, index: 0n }; // self-owner; salt defaults to 0x00…00
 
 const predicted = await factory.predictClone(inputs); // or BasicFactory.computeCloneAddress(factoryAddress, implementation, inputs)
 const tx = await factory.cloneBloxDeterministic(
   { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
-  { from: owner }, // must be initialOwner, sent directly by that EOA; gas defaults to 16777216
+  { from: owner }, // must be initialOwner, sent directly by that EOA; options.gas overrides the network send limit
 );
 ```
 

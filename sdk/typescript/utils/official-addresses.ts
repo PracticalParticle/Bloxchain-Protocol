@@ -1,4 +1,5 @@
 import { Address, getAddress, isAddress } from 'viem';
+import { GAS_ENVELOPE } from './gas.js';
 
 /**
  * Types and resolution for `official-deployed-addresses.json`, the address file that
@@ -52,8 +53,17 @@ export interface OfficialContract {
   linkTime?: boolean;
   /** Libraries a template's bytecode links against. */
   linkedLibraries?: string[];
-  /** True when a template has already been initialized (so it cannot be claimed). */
+  /**
+   * True when a template's `initialize` has already run, so it cannot be claimed.
+   * A clone source whose constructor only calls `_disableInitializers` is not initialized;
+   * that row uses {@link initializersDisabled} and on-chain `initialized()` stays false.
+   */
   initialized?: boolean;
+  /**
+   * True when the implementation constructor disabled initializers (`_disableInitializers`).
+   * The address is a clone source, not a live account.
+   */
+  initializersDisabled?: boolean;
   /** Template a factory clones by default. */
   cloneTarget?: string;
   /** Optional API a deployment may or may not carry. */
@@ -298,6 +308,24 @@ export function getOfficialAddress(
     throw new OfficialContractNotDeclaredError(network.network, contractName);
   }
   return getAddress(row.address);
+}
+
+/**
+ * Gas limit to send a BasicFactory mint with on this network.
+ *
+ * Uses `contracts.BasicFactory.gas.sendWithGasLimit` when that overlay is a positive
+ * safe integer (catalog default, or a per-network raise such as Polygon). Otherwise
+ * falls back to {@link GAS_ENVELOPE.cloneSendGasLimit}. Callers pass the result as
+ * `BasicFactory`'s `sendGasLimit`; `options.gas` on a mint still overrides it.
+ *
+ * @param network Network from {@link resolveOfficialNetwork}
+ */
+export function basicFactorySendGasLimit(network: ResolvedOfficialNetwork): bigint {
+  const declared = network.contracts?.BasicFactory?.gas?.sendWithGasLimit;
+  if (typeof declared === 'number' && Number.isSafeInteger(declared) && declared > 0) {
+    return BigInt(declared);
+  }
+  return GAS_ENVELOPE.cloneSendGasLimit;
 }
 
 /**
