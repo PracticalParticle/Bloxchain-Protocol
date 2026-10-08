@@ -6,7 +6,7 @@
 
 Bloxchain Protocol smart contracts – state abstraction and core components for building on the Bloxchain Protocol.
 
-The core protocol (`contracts/core/`) has been independently audited by **Nethermind**. Report and scope: [audits/nethermind](https://github.com/PracticalParticle/Bloxchain-Protocol/tree/main/audits/nethermind) on GitHub. Pre-mainnet today; mainnet deployment coming soon. Review release notes and pin an exact version before production use.
+The core protocol (`contracts/core/`) has been independently audited by **Nethermind**. Report and scope: [audits/nethermind](https://github.com/PracticalParticle/Bloxchain-Protocol/tree/main/audits/nethermind) on GitHub. Review release notes and pin an exact version before production use.
 
 ## Requirements
 

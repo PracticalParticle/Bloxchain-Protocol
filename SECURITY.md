@@ -2,13 +2,13 @@
 
 ## Supported Versions
 
-**⚠️ IMPORTANT: Bloxchain Protocol is not yet live on Ethereum mainnet.** Testnet validation continues; **mainnet deployment is planned soon.**
+Official BasicFactory and BasicAccount addresses are published for the supported networks in [`official-deployed-addresses.json`](official-deployed-addresses.json), including Ethereum mainnet. The Nethermind audit covers `contracts/core/` only.
 
 We actively maintain security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 1.0.x   | :white_check_mark: | Pre-mainnet; core audited by Nethermind (see below) |
+| 1.0.x   | :white_check_mark: | Core audited by Nethermind (see below) |
 | < 1.0   | :x:                | End of life |
 
 **Core smart contracts (`contracts/core/`):** Independently audited by **Nethermind** ([audit index](audits/README.md), [report PDF](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf), [core policy](contracts/core/AUDIT.md)). The audit applies to the commit recorded in [audits/nethermind/README.md](audits/nethermind/README.md) (see the report PDF for the exact SHA). Later changes to core are outside that report until a re-audit or addendum.
@@ -101,8 +101,8 @@ Our State Abstraction framework implements multiple layers of security:
 
 | Item | Status |
 |------|--------|
-| **Mainnet** | Not live yet; deployment planned soon |
-| **Development** | Testing and validation on testnets (e.g. Sepolia) |
+| **Mainnet** | Published in the official catalog, including Ethereum mainnet |
+| **Development** | Testnets in the same catalog, including Sepolia |
 
 ### Completed reviews
 
