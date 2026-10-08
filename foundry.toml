@@ -41,12 +41,11 @@ fail_on_revert = false
 lint_on_build = false
 
 # Same-address CreateX catalog. Compile with FOUNDRY_PROFILE=createx-catalog.
-# [profile.default] is Osaka and appends a metadata hash. That hash must not enter this init code.
-# These knobs are the ones that produced the published catalog addresses.
+# Osaka, the same EVM target as [profile.default]. The metadata hash must not enter this init code.
 [profile.createx-catalog]
 solc = "0.8.35"
 optimizer = true
 optimizer_runs = 200
 via_ir = true
-evm_version = "cancun"
+evm_version = "osaka"
 bytecode_hash = "none"
