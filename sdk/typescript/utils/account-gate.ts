@@ -210,7 +210,7 @@ export async function inspectAccountBlox(
 /**
  * True when the address is a governed account (an initialized `AccountBlox`-shaped
  * contract, including a `BasicAccount` clone), false for an EOA, an unrelated contract, an
- * uninitialized deployment, the official `BasicFactory`, or the developer-toolkit CopyBlox factory (no
+ * uninitialized deployment, the official `BasicFactory`, or the experimental CopyBlox factory (no
  * `owner()`).
  *
  * @param client Public client on the network the address is supposed to live on

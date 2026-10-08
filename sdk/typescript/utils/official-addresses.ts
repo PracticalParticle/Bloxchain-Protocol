@@ -2,12 +2,12 @@ import { Address, getAddress, isAddress } from 'viem';
 
 /**
  * Types and resolution for `official-deployed-addresses.json`, the address file that
- * ships with `@bloxchain/contracts` (SPEC-2026-0118 R2; CreateX catalog SPEC-2026-0137).
+ * ships with `@bloxchain/contracts`.
  *
- * Format `/2` stores the Platform CreateX six-pack once under `catalog.contracts` and lists
- * supported networks that reference that catalog. Sepolia may also declare an official
- * **developer toolkit** under `networks.<name>.developerTools` (`AccountBlox` / `CopyBlox`):
- * same product family, different job (open factory + 1s AccountBlox floor). Resolvers merge
+ * Format `/2` stores the CreateX six-pack once under `catalog.contracts` and lists
+ * supported networks that reference that catalog. Sepolia may also declare an
+ * experimental pair under `networks.<name>.developerTools` (`AccountBlox` / `CopyBlox`):
+ * open factory and a 1-second AccountBlox floor. Resolvers merge
  * catalog + developerTools into `contracts` so {@link getOfficialAddress} can read either;
  * {@link getOfficialBasicMint} only accepts BasicFactory / BasicAccount.
  *
@@ -72,20 +72,15 @@ export interface OfficialNetwork {
   mirroredAt?: string;
   notes?: string;
   /**
-   * Per-network contract map (format `/1`, or synthesized by
-   * {@link resolveOfficialNetwork} for format `/2`).
+   * Extra per-network rows. Shared catalog rows are filled in by
+   * {@link resolveOfficialNetwork}.
    */
   contracts?: Record<string, OfficialContract>;
   /**
-   * Official developer toolkit overlay (format `/2`), e.g. Sepolia AccountBlox / CopyBlox.
-   * Not the Platform CreateX mint.
+   * Experimental overlay, e.g. Sepolia AccountBlox / CopyBlox.
+   * Not the CreateX mint.
    */
   developerTools?: Record<string, OfficialContract>;
-  /**
-   * @deprecated Use {@link OfficialNetwork.developerTools}. Accepted when reading older
-   * draft files during migration.
-   */
-  legacy?: Record<string, OfficialContract>;
   /**
    * Optional per-contract gas overlays for this network (e.g. Polygon `BasicFactory`
    * send limit above the shared catalog default). Merged onto catalog rows by
@@ -113,7 +108,7 @@ export interface OfficialAddressesFile {
     runtimeCodeHash?: string;
     source?: string;
   };
-  /** Shared CreateX (or future) catalog — format `/2`. */
+  /** Shared CreateX catalog. */
   catalog?: OfficialCatalog;
   networks: Record<string, OfficialNetwork>;
 }
@@ -122,21 +117,16 @@ export interface OfficialAddressesFile {
 export interface ResolvedOfficialNetwork extends OfficialNetwork {
   /** Key this network has in the file, e.g. `sepolia`. */
   network: string;
-  /** Always present after resolve — catalog + developerTools merged for format `/2`. */
+  /** Always present after resolve — catalog and developerTools merged. */
   contracts: Record<string, OfficialContract>;
 }
 
-/** Current published format (shared CreateX catalog). */
+/** Published address-file format (shared CreateX catalog). */
 export const OFFICIAL_ADDRESSES_FORMAT = 'bloxchain-official-addresses/2';
 
-/** Previous per-network format; still accepted by resolvers for fixtures and old pins. */
-export const OFFICIAL_ADDRESSES_FORMAT_V1 = 'bloxchain-official-addresses/1';
-
-const ACCEPTED_FORMATS = new Set([OFFICIAL_ADDRESSES_FORMAT, OFFICIAL_ADDRESSES_FORMAT_V1]);
-
 /**
- * Contract keys for the Platform mint (SPEC-2026-0140): `BasicFactory` clones `BasicAccount`.
- * Prefer these keys. A network that lacks them has no Platform mint declared.
+ * Contract keys for the official mint: `BasicFactory` clones `BasicAccount`.
+ * Prefer these keys. A network that lacks them has no official mint declared.
  */
 export const OFFICIAL_MINT_CONTRACTS = {
   factory: 'BasicFactory',
@@ -144,16 +134,16 @@ export const OFFICIAL_MINT_CONTRACTS = {
 } as const;
 
 /**
- * Contract keys for the official developer toolkit on networks that declare one
- * (today: Sepolia `CopyBlox` / `AccountBlox`). Address-book only — `@bloxchain/sdk` does
- * not export a CopyBlox client; wire via `@bloxchain/contracts` artifacts if needed.
+ * Contract keys for the Sepolia experiment (`CopyBlox` / `AccountBlox`).
+ * Address-book only. `@bloxchain/sdk` does not export a CopyBlox client.
+ * Wire via `@bloxchain/contracts` artifacts if needed.
  */
 export const DEVELOPER_TOOL_CONTRACTS = {
   factory: 'CopyBlox',
   template: 'AccountBlox',
 } as const;
 
-/** Declared addresses of the Platform mint on one network. */
+/** Declared addresses of the official mint on one network. */
 export interface OfficialBasicMint {
   /** `BasicFactory`: pass to the SDK `BasicFactory` client. */
   factory: Address;
@@ -217,27 +207,20 @@ function mergeNetworkContracts(
   const hasMatchingCatalog =
     !!file.catalog && !!catalogId && file.catalog.id === catalogId;
 
-  // Catalog merge when a catalog is present, even if `_format` is omitted (fixtures /
-  // hand-built files). Preserve contracts-only handling for format `/1` and files
-  // without a catalog.
-  if (hasMatchingCatalog || file._format === OFFICIAL_ADDRESSES_FORMAT) {
-    if (hasMatchingCatalog && file.catalog) {
-      Object.assign(merged, file.catalog.contracts);
-    }
-    const tools = data.developerTools ?? data.legacy;
-    if (tools) {
-      Object.assign(merged, tools);
-    }
-    if (data.contracts) {
-      for (const [name, row] of Object.entries(data.contracts)) {
-        if (!(name in merged)) merged[name] = row;
-      }
-    }
-    applyNetworkGasOverlays(merged, data.gas);
-    return merged;
+  // Catalog merge when a catalog is present, including when `_format` is omitted.
+  if (hasMatchingCatalog && file.catalog) {
+    Object.assign(merged, file.catalog.contracts);
   }
-
-  return { ...(data.contracts ?? {}) };
+  if (data.developerTools) {
+    Object.assign(merged, data.developerTools);
+  }
+  if (data.contracts) {
+    for (const [name, row] of Object.entries(data.contracts)) {
+      if (!(name in merged)) merged[name] = row;
+    }
+  }
+  applyNetworkGasOverlays(merged, data.gas);
+  return merged;
 }
 
 /**
@@ -254,10 +237,10 @@ export function resolveOfficialNetwork(
   if (!file || !file.networks) {
     throw new OfficialNetworkNotFoundError(lookup, []);
   }
-  if (file._format && !ACCEPTED_FORMATS.has(file._format)) {
+  if (file._format && file._format !== OFFICIAL_ADDRESSES_FORMAT) {
     throw new Error(
       `Unexpected official address file format ${file._format}; this SDK reads ` +
-        `${OFFICIAL_ADDRESSES_FORMAT} (also accepts ${OFFICIAL_ADDRESSES_FORMAT_V1}).`
+        `${OFFICIAL_ADDRESSES_FORMAT}.`
     );
   }
 
@@ -298,7 +281,7 @@ export function assertNetworkIsOfficial(network: ResolvedOfficialNetwork): void 
  * itself to be `official` — use {@link assertNetworkIsOfficial} for that in provisioning.
  *
  * @param network Network from {@link resolveOfficialNetwork}
- * @param contractName Contract key, e.g. `'BasicFactory'` (Platform) or `'CopyBlox'` (developer toolkit)
+ * @param contractName Contract key, e.g. `'BasicFactory'` (official mint) or `'CopyBlox'` (Sepolia experiment)
  * @throws {OfficialContractNotDeclaredError} when the row is missing or pending
  */
 export function getOfficialAddress(
@@ -318,10 +301,10 @@ export function getOfficialAddress(
 }
 
 /**
- * The Platform mint on a network: the declared `BasicFactory` and `BasicAccount` addresses.
+ * The official mint on a network: the declared `BasicFactory` and `BasicAccount` addresses.
  *
  * Fails closed. Both rows must be declared; a missing or pending row throws, and there is no
- * fallback to the developer toolkit `CopyBlox` / `AccountBlox` rows.
+ * fallback to the experimental `CopyBlox` / `AccountBlox` rows.
  *
  * @param network Network from {@link resolveOfficialNetwork}
  * @throws {OfficialContractNotDeclaredError} when `BasicFactory` or `BasicAccount` is not declared
@@ -345,7 +328,7 @@ export function pendingOfficialContracts(network: ResolvedOfficialNetwork): stri
 }
 
 /**
- * Whether a developer-toolkit CopyBlox factory deployment carries the on-chain owner index.
+ * Whether an experimental CopyBlox factory deployment carries the on-chain owner index.
  *
  * @param network Network from {@link resolveOfficialNetwork}
  * @param contractName Factory key, defaults to `'CopyBlox'`

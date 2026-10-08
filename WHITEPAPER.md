@@ -628,7 +628,7 @@ Nethermind engagement NM_0828 covers the core Solidity scope identified in the
 The audit does not cover:
 
 - examples under `contracts/examples/`;
-- community, component, or standards trees unless a later report says otherwise;
+- component or standards trees unless a later report says otherwise;
 - the TypeScript SDK;
 - integrator contracts or proxy configuration;
 - all bytecode deployed under the Bloxchain name;

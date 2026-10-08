@@ -5,8 +5,7 @@
 //   node scripts/validate-official-addresses.cjs --network sepolia
 //   node scripts/validate-official-addresses.cjs --require-official sepolia
 //
-// Format /2: shared catalog.contracts + networks that reference the catalog id.
-// Format /1: legacy per-network contracts map (accepted for fixtures only when present).
+// Format: shared catalog.contracts + networks that reference the catalog id.
 
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +15,6 @@ const FILE = path.join(ROOT_DIR, 'official-deployed-addresses.json');
 const LAB_FILE = 'deployed-addresses.json';
 
 const EXPECTED_FORMAT = 'bloxchain-official-addresses/2';
-const LEGACY_FORMAT = 'bloxchain-official-addresses/1';
 
 /** Shared CreateX catalog must carry these official mint rows. */
 const CATALOG_REQUIRED = [
@@ -26,16 +24,6 @@ const CATALOG_REQUIRED = [
   'GuardControllerDefinitions',
   'BasicAccount',
   'BasicFactory',
-];
-
-/** Format /1 networks still required the legacy pair. */
-const V1_REQUIRED = [
-  'EngineBlox',
-  'SecureOwnableDefinitions',
-  'RuntimeRBACDefinitions',
-  'GuardControllerDefinitions',
-  'AccountBlox',
-  'CopyBlox',
 ];
 
 const KINDS = new Set(['library', 'definition-library', 'template', 'factory']);
@@ -251,14 +239,14 @@ function validateNetworkV2(networkName, network, catalogId, catalogContracts, se
     }
   }
 
-  const tools = network.developerTools ?? network.legacy;
-  const toolsKey = network.developerTools ? 'developerTools' : 'legacy';
+  if (network.legacy) {
+    error(where, 'legacy is not part of this format; use developerTools');
+  }
+
+  const tools = network.developerTools;
   if (tools && typeof tools === 'object') {
-    if (network.legacy && !network.developerTools) {
-      warn(where, 'legacy key is deprecated; rename to developerTools (official developer toolkit)');
-    }
     for (const [name, row] of Object.entries(tools)) {
-      validateContract(`${where}.${toolsKey}.${name}`, name, row);
+      validateContract(`${where}.developerTools.${name}`, name, row);
     }
   }
 
@@ -266,14 +254,13 @@ function validateNetworkV2(networkName, network, catalogId, catalogContracts, se
     const knownKeys = new Set([
       ...Object.keys(catalogRows),
       ...Object.keys(network.developerTools ?? {}),
-      ...Object.keys(network.legacy ?? {}),
       ...Object.keys(network.contracts ?? {}),
     ]);
     for (const [name, overlay] of Object.entries(network.gas)) {
       if (!knownKeys.has(name)) {
         error(
           `${where}.gas.${name}`,
-          'unknown contract key; must match catalog.contracts, developerTools, legacy, or network.contracts'
+          'unknown contract key; must match catalog.contracts, developerTools, or network.contracts'
         );
         continue;
       }
@@ -287,71 +274,6 @@ function validateNetworkV2(networkName, network, catalogId, catalogContracts, se
   }
 
   return { pending: [] };
-}
-
-function validateNetworkV1(networkName, network, seenChainIds) {
-  const where = `networks.${networkName}`;
-
-  if (!network || typeof network !== 'object') {
-    error(where, 'must be an object');
-    return { pending: [] };
-  }
-
-  if (!Number.isInteger(network.chainId) || network.chainId <= 0) {
-    error(where, `chainId must be a positive integer (got ${JSON.stringify(network.chainId)})`);
-  } else if (seenChainIds.has(network.chainId)) {
-    error(where, `chainId ${network.chainId} is already used by ${seenChainIds.get(network.chainId)}`);
-  } else {
-    seenChainIds.set(network.chainId, networkName);
-  }
-
-  if (network.chainId === 1337 || network.chainId === 31337) {
-    error(where, `chain ${network.chainId} is a local or lab chain and must not appear in this file`);
-  }
-
-  if (!STATUSES.has(network.status)) {
-    error(where, `status must be one of ${[...STATUSES].join(', ')} (got ${JSON.stringify(network.status)})`);
-  }
-
-  if (network.mirroredAt !== undefined && !isIsoDate(network.mirroredAt)) {
-    error(where, 'mirroredAt must be a YYYY-MM-DD date');
-  }
-
-  if (network.status === 'official' && !network.declaredIn) {
-    error(where, 'an official network must record declaredIn (where a human declared it)');
-  }
-
-  if (!network.contracts || typeof network.contracts !== 'object') {
-    error(where, 'contracts must be an object');
-    return { pending: [] };
-  }
-
-  const pending = [];
-  for (const contractName of V1_REQUIRED) {
-    if (!(contractName in network.contracts)) {
-      error(where, `missing required contract row: ${contractName}`);
-      pending.push(contractName);
-      continue;
-    }
-    const { declared } = validateContract(
-      `${where}.contracts.${contractName}`,
-      contractName,
-      network.contracts[contractName]
-    );
-    if (!declared) pending.push(contractName);
-  }
-
-  for (const contractName of Object.keys(network.contracts)) {
-    if (!V1_REQUIRED.includes(contractName)) {
-      validateContract(
-        `${where}.contracts.${contractName}`,
-        contractName,
-        network.contracts[contractName]
-      );
-    }
-  }
-
-  return { pending };
 }
 
 function main() {
@@ -369,7 +291,7 @@ function main() {
   }
 
   const format = data._format;
-  if (format !== EXPECTED_FORMAT && format !== LEGACY_FORMAT) {
+  if (format !== EXPECTED_FORMAT) {
     error('_format', `expected ${EXPECTED_FORMAT} (got ${JSON.stringify(format)})`);
   }
   if (!data.declarationPolicy || typeof data.declarationPolicy !== 'object') {
@@ -404,12 +326,6 @@ function main() {
         catalogContracts,
         seenChainIds
       );
-      pendingByNetwork[networkName] = pending;
-    }
-  } else {
-    for (const [networkName, network] of Object.entries(data.networks)) {
-      if (onlyNetwork && networkName !== onlyNetwork) continue;
-      const { pending } = validateNetworkV1(networkName, network, seenChainIds);
       pendingByNetwork[networkName] = pending;
     }
   }
@@ -452,18 +368,6 @@ function main() {
     for (const networkName of Object.keys(pendingByNetwork)) {
       const network = data.networks[networkName];
       console.log(`   · ${networkName} (chain ${network.chainId})`);
-    }
-  } else {
-    for (const [networkName, pending] of Object.entries(pendingByNetwork)) {
-      const network = data.networks[networkName];
-      const label = `${networkName} (chain ${network && network.chainId})`;
-      if (pending.length === 0) {
-        console.log(`✅ ${label}: all ${V1_REQUIRED.length} required contracts declared`);
-      } else {
-        console.log(
-          `⏳ ${label}: ${V1_REQUIRED.length - pending.length}/${V1_REQUIRED.length} declared, pending: ${pending.join(', ')}`
-        );
-      }
     }
   }
 

@@ -9,9 +9,9 @@
  * | Per-contract subpath | `import { basicFactoryAbi } from '@bloxchain/sdk/abi/BasicFactory'` |
  * | Raw JSON subpath | `import abi from '@bloxchain/sdk/abi/BasicFactory.abi.json' with { type: 'json' }` |
  *
- * Official Platform mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `accountBloxAbi`
- * remains for the account shape gate. CopyBlox is not part of the SDK surface — use
- * `@bloxchain/contracts` artifacts for the Sepolia developer toolkit.
+ * Official mint ABIs: `basicFactoryAbi` and `basicAccountAbi`. `accountBloxAbi`
+ * remains for the account shape gate. CopyBlox is not part of the SDK surface. Use
+ * `@bloxchain/contracts` artifacts for the Sepolia experiment.
  *
  * Prefer the barrel or the per-contract subpath: both are plain ES modules, so
  * they work under every bundler and Node resolver without JSON import

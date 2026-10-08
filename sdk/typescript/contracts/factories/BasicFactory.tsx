@@ -25,17 +25,17 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  * @title BasicFactory
  * @notice Thin TypeScript wrapper for the **official** factory: BasicFactory → BasicAccount.
  *
- * SPEC-2026-0140. This is the official Platform mint path for `@bloxchain/sdk`.
- * Sepolia CopyBlox / AccountBlox are an official developer toolkit outside this package.
+ * This is the official mint path for `@bloxchain/sdk`.
+ * Sepolia CopyBlox / AccountBlox are an experiment outside this package.
  *
- * SPEC-2026-0130 (pinned follow-up). `BasicFactory` clones exactly one implementation, fixed
+ * `BasicFactory` clones exactly one implementation, fixed
  * in its constructor (a `BasicAccount`), and initializes the clone in the same transaction.
- * It is **not** an account: no owner, no roles, no timelock, no catalog. A new official
- * account means a new factory, so this wrapper has nothing to govern.
+ * It is **not** an account: no owner, no roles, no timelock. Another account is another mint
+ * from the same factory, so this wrapper has nothing to govern.
  *
  * - **Mint:** permissionless **for your own account**, no implementation argument.
- *   {@link cloneBlox} (nonce, a new address every call) and {@link cloneBloxDeterministic}
- *   (CREATE2, SPEC-2026-0138) both send at the EIP-7825 cap (`16777216`).
+ *   {@link cloneBlox} (a new address every call) and {@link cloneBloxDeterministic}
+ *   (CREATE2) both send at the EIP-7825 cap (`16777216`).
  * - **Gas, known limitation (M-1):** a mint *uses* about 16.14M gas but needs about 16.67M
  *   *available*, because `initialize` only receives 63/64 of the gas at each nested call. Under
  *   the EIP-7825 cap (Osaka) that leaves about 108k of limit headroom, so only a **direct EOA**
@@ -43,7 +43,7 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  *   ERC-4337, a forwarder, a multicall) needs more than `2^24` and fails on cap-enforcing
  *   networks. Never size the send from gas used. Glamsterdam is expected to relieve this where
  *   it is live; it is not fixed until then.
- * - **Self-owner (SPEC-2026-0142):** the sender must be the owner, so `options.from` must equal
+ * - **Self-owner:** the sender must be the owner, so `options.from` must equal
  *   `params.initialOwner`; otherwise the factory reverts `RestrictedOwner(caller, owner)`. The
  *   wrapper checks this before any RPC call and throws. Broadcaster and recovery may still be
  *   helper wallets. Minting for another owner is not available on this factory.
@@ -66,7 +66,7 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  *
  * The account gate rejects the factory address because it has no `owner()`. Prefer
  * `getOfficialBasicMint(network)` from the shared CreateX catalog in
- * `official-deployed-addresses.json`. Never substitute the Sepolia developer-toolkit CopyBlox row.
+ * `official-deployed-addresses.json`. The Sepolia CopyBlox row is the experiment.
  */
 
 /** Selectors on the pinned factory. */
@@ -181,7 +181,7 @@ export class BasicFactory {
   }
 
   /**
-   * SPEC-2026-0142: the factory reverts `RestrictedOwner(caller, owner)` unless the sender is the
+   * The factory reverts `RestrictedOwner(caller, owner)` unless the sender is the
    * owner. Fail here, with that reason, instead of after a simulation or a sent transaction.
    */
   private static assertSelfOwner(
@@ -283,7 +283,7 @@ export class BasicFactory {
   /**
    * The address {@link cloneBloxDeterministic} mints when `deployer` sends it with these inputs.
    *
-   * For a mint that can succeed, `deployer` must equal `initialOwner` (SPEC-2026-0142); any
+   * For a mint that can succeed, `deployer` must equal `initialOwner`; any
    * other pair predicts an address the factory will never mint. Read from the factory. It does not say whether the address is already minted; use
    * {@link isClone}. The same inputs give the same address on another chain only when the
    * factory and its pinned implementation sit at the same addresses there.

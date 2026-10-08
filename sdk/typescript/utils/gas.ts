@@ -33,13 +33,13 @@ export const MAX_TX_GAS = 16_777_216n;
 /**
  * Measured gas envelope for obtaining a governed account.
  *
- * `cloneOfAccountBlox` is the observed `gasUsed` for the developer-toolkit `CopyBlox.cloneBlox` against
+ * `cloneOfAccountBlox` is the observed `gasUsed` for the experimental `CopyBlox.cloneBlox` against
  * the `AccountBlox` template on Sepolia. Gas used is not the limit a sender needs (see M-1
  * above), so treat the clone as a fixed-cost operation sent at `cloneSendGasLimit`,
  * never as something to pad by a percentage from an estimate.
  */
 export const GAS_ENVELOPE = {
-  /** Observed `gasUsed` for a developer-toolkit CopyBlox clone + initialize (AccountBlox). Gas used, not a send limit. */
+  /** Observed `gasUsed` for an experimental CopyBlox clone + initialize (AccountBlox). Gas used, not a send limit. */
   cloneOfAccountBlox: 16_183_550n,
   /** Send a clone (either factory) with this explicit limit: the cap itself, not an estimate. */
   cloneSendGasLimit: MAX_TX_GAS,
