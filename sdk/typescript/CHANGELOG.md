@@ -5,6 +5,28 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.1.1...sdk-v1.2.0) (2026-10-08)
+
+
+### Features
+
+* add BasicAccount and a pinned BasicFactory ([afd3873](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/afd3873a09612c658b0dc66d846199698b02a996))
+* add BasicAccount and a pinned BasicFactory ([54d950d](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/54d950d5fef8c26422e14026d33ed99b2ec61bdb))
+* **contracts:** require deployer == initialOwner on both BasicFactory mints ([f734d06](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f734d069605f1f80c448f5b7ac3d5d770b545b2c))
+* **factory:** add deterministic CREATE2 mint to BasicFactory ([12086a0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/12086a0c1860d43a6dd4c9f1130b288a171daf47))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([78a9ce2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/78a9ce2ab8510f318b376f49244d52cdb3b2f986))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([c45d761](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c45d761ae983607e0b38a946b55d0c503a928f78))
+* **sdk:** enforce self-owner mint in the BasicFactory client and docs ([9bc0ebf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9bc0ebf03f63c2ff7ed91dbe882d58eea3302a97))
+* **sdk:** make BasicFactory the official mint and deprecate CopyBlox ([e2fe8e2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e2fe8e28b7878463f50da02906048aa9ece400ee))
+
+
+### Bug Fixes
+
+* describe disabled initializers and honor per-network mint gas ([e19ab17](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e19ab17273d46a81be5b00a69a727d9073141090))
+* describe disabled initializers and honor per-network mint gas ([35358f1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/35358f1d6b74412f74d52ee23e1e046fcac3c2d0))
+* **sdk:** apply review fixes for Polygon gas, promote, and discovery ([6e32409](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6e324096ab7c3a9aeba06659c895abc63cb9258a))
+* **sdk:** reject pending-declaration rows with a set address ([e3370bd](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e3370bde31fd2a96f6277512bf340803092b5063))
+
 ## [1.1.1](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.1.0...sdk-v1.1.1) (2026-09-16)
 
 
