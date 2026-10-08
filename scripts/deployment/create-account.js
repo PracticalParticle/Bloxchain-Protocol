@@ -319,8 +319,10 @@ async function main() {
     fail(`The connection is chain ${rpcChainId}. ${networkLabel} is chain ${network.chainId}.`);
   }
 
-  const broadcasterDefault = process.env.BLOX_BROADCASTER_ADDRESS || account.address;
-  const recoveryDefault = process.env.BLOX_RECOVERY_ADDRESS || account.address;
+  const broadcasterEnv = String(process.env.BLOX_BROADCASTER_ADDRESS || "").trim();
+  const recoveryEnv = String(process.env.BLOX_RECOVERY_ADDRESS || "").trim();
+  const broadcasterDefault = isAddress(broadcasterEnv) ? broadcasterEnv : account.address;
+  const recoveryDefault = isAddress(recoveryEnv) ? recoveryEnv : account.address;
   console.log(`\nNetwork: ${networkLabel} (chain ${network.chainId})`);
   console.log(`Owner: ${account.address}`);
 

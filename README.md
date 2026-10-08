@@ -255,7 +255,7 @@ A private chain, or a public chain that is not in the tables above, is outside t
 An open-source framework so teams run blockchain operations through auditable on-chain rules: roles, waiting periods, and controlled external calls.
 
 **Can we deploy a governed account on mainnet?**
-Yes. BasicFactory and BasicAccount share one address on each of the [9 supported networks](#official-createx-catalog), including Ethereum mainnet.
+Yes. BasicFactory and BasicAccount each keep their own address on every one of the [9 supported networks](#official-createx-catalog), including Ethereum mainnet.
 
 **What is bloxchain.app?**
 An optional hosted app for operating governed accounts in the browser. It follows the same on-chain rules as a self-hosted integration. [docs.bloxchain.app](https://docs.bloxchain.app).
