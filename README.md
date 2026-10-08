@@ -146,12 +146,24 @@ A BasicAccount clone is one address. Point `SecureOwnable`, `RuntimeRBAC`, and `
 
 ```typescript
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
-import { BasicFactory, SecureOwnable, resolveOfficialNetwork, getOfficialBasicMint } from '@bloxchain/sdk';
+import {
+  BasicFactory,
+  SecureOwnable,
+  resolveOfficialNetwork,
+  getOfficialBasicMint,
+  basicFactorySendGasLimit,
+} from '@bloxchain/sdk';
 
 const network = resolveOfficialNetwork(official, chainId);
 const { factory: factoryAddress } = getOfficialBasicMint(network);
 
-const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
+const factory = new BasicFactory(
+  publicClient,
+  walletClient,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
 const minted = await factory.cloneBlox(
   {
     initialOwner: ownerAddress,

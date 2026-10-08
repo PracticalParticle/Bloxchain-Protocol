@@ -165,20 +165,27 @@ import {
   GuardController,
   resolveOfficialNetwork,
   getOfficialBasicMint,
+  basicFactorySendGasLimit,
 } from '@bloxchain/sdk';
 
 // Shared CreateX catalog — same BasicFactory address on every declared network.
 // The official pair. The Sepolia CopyBlox row is the experiment.
 const network = resolveOfficialNetwork(official, chain.id);
 const { factory: factoryAddress } = getOfficialBasicMint(network);
-const factory = new BasicFactory(publicClient, walletClient, factoryAddress, chain);
+const factory = new BasicFactory(
+  publicClient,
+  walletClient,
+  factoryAddress,
+  chain,
+  basicFactorySendGasLimit(network)
+);
 
 // The sender must be the owner. The client refuses a mismatch before any RPC.
 const inputs = { deployer: owner, initialOwner: owner, index: 0n };
 const predicted = await factory.predictClone(inputs);
 const tx = await factory.cloneBloxDeterministic(
   { initialOwner: owner, broadcaster, recovery, timeLockPeriodSec: 86_400n, index: 0n },
-  { from: owner }, // sent with gas 16777216 by default
+  { from: owner }, // gas: network sendWithGasLimit, else 16777216; options.gas overrides
 );
 
 // A BasicAccount clone is an Account-pattern blox: bind the existing wrappers to it.

@@ -202,7 +202,7 @@ The official mint is **`BasicFactory` → `BasicAccount`**. Sepolia `CopyBlox` /
 ### **BasicFactory**
 
 ```typescript
-new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, factoryAddress: Address, chain: Chain)
+new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, factoryAddress: Address, chain: Chain, sendGasLimit?: bigint)
 ```
 
 | Method | Purpose |
@@ -214,8 +214,9 @@ new BasicFactory(client: PublicClient, walletClient: WalletClient | undefined, f
 | `cloneAddressFromReceipt(receipt)` | The clone address from `BloxCloned`, or `null` |
 | `implementation()` / `isClone(address)` | The pin, and lineage of this factory only |
 
-Both mints throw before any RPC call when `options.from !== params.initialOwner`, and send
-`gas = 16777216` unless `options.gas` overrides it. **Known limitation (M-1):** the mint fits
+Both mints throw before any RPC call when `options.from !== params.initialOwner`. Gas is
+`options.gas` when set, otherwise the constructor `sendGasLimit` (`basicFactorySendGasLimit(network)`),
+otherwise `16777216`. **Known limitation (M-1):** the mint fits
 the EIP-7825 cap only as a **direct EOA call** (about 16.67M needed against 2^24); contract
 callers (smart-contract wallets, ERC-4337, forwarders, multicalls) are unsupported on
 cap-enforcing networks until relief such as Glamsterdam is live. See
@@ -229,6 +230,7 @@ pointed at the clone address; its ABI is `basicAccountAbi`.
 | Export | Purpose |
 |--------|---------|
 | `getOfficialBasicMint(network)` | `{ factory, implementation }` from the shared CreateX catalog. Throws `OfficialContractNotDeclaredError` when either is missing or pending; never falls back to CopyBlox |
+| `basicFactorySendGasLimit(network)` | `BasicFactory.gas.sendWithGasLimit` for that network, or `16777216` when the row has none. Pass it as the factory's `sendGasLimit` |
 | `OFFICIAL_MINT_CONTRACTS` | `{ factory: 'BasicFactory', implementation: 'BasicAccount' }` |
 | `DEVELOPER_TOOL_CONTRACTS` | `{ factory: 'CopyBlox', template: 'AccountBlox' }` (address-book keys only) |
 | `getOfficialAddress(network, name)` | Any one declared row (catalog or `developerTools`); throws rather than returning null |

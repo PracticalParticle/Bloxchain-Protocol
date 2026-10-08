@@ -187,6 +187,7 @@ export {
   assertNetworkIsOfficial,
   getOfficialAddress,
   getOfficialBasicMint,
+  basicFactorySendGasLimit,
   OFFICIAL_MINT_CONTRACTS,
   DEVELOPER_TOOL_CONTRACTS,
   pendingOfficialContracts,

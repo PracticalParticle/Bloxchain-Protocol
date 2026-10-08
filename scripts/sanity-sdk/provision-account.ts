@@ -83,6 +83,7 @@ import {
   assertNetworkIsOfficial,
   getOfficialAddress,
   getOfficialBasicMint,
+  basicFactorySendGasLimit,
   pendingOfficialContracts,
   type OfficialAddressesFile,
   type ResolvedOfficialNetwork,
@@ -131,9 +132,9 @@ const ROLE_BATCH_GAS = GAS_ENVELOPE.roleConfigBatch;
 
 // ============ CLI ============
 
-/** How far predictClone+isClone walks when discovering owned accounts (inclusive of gaps). */
+/** How far computeCloneAddress+isClone walks when discovering owned accounts (inclusive of gaps). */
 const DISCOVERY_INDEX_LIMIT = 256n;
-/** Parallel RPC budget for the discovery scan (predictClone + isClone per index). */
+/** Parallel RPC budget for the discovery scan (isClone per index, after one implementation() read). */
 const DISCOVERY_CONCURRENCY = 16;
 
 interface Options {
@@ -176,14 +177,6 @@ function parseOptions(argv: string[]): Options {
     dryRun: argv.includes('--dry-run'),
     offline: argv.includes('--offline'),
   };
-}
-
-function cloneSendGasLimit(network: ResolvedOfficialNetwork): bigint {
-  const declared = network.contracts?.BasicFactory?.gas?.sendWithGasLimit;
-  if (typeof declared === 'number' && Number.isSafeInteger(declared) && declared > 0) {
-    return BigInt(declared);
-  }
-  return GAS_ENVELOPE.cloneSendGasLimit;
 }
 
 function rpcUrlFromEnv(): string | null {
@@ -323,7 +316,19 @@ async function resolveAccount(
   }
 
   const { factory: factoryAddress, implementation } = getOfficialBasicMint(network);
-  const factory = new BasicFactory(client, ownerWallet, factoryAddress, chain);
+  const factory = new BasicFactory(
+    client,
+    ownerWallet,
+    factoryAddress,
+    chain,
+    basicFactorySendGasLimit(network)
+  );
+  const pinned = await factory.implementation();
+  if (pinned.toLowerCase() !== implementation.toLowerCase()) {
+    throw new Error(
+      `BasicFactory.implementation() is ${pinned}; official BasicAccount is ${implementation}`
+    );
+  }
 
   // The factory must never read as an account; if it did, the gate below is worthless.
   const factoryInspection = await inspectAccountBlox(client, factoryAddress);
@@ -350,7 +355,7 @@ async function resolveAccount(
     const batch = indexes.slice(start, start + DISCOVERY_CONCURRENCY);
     const batchHits = await Promise.all(
       batch.map(async (index) => {
-        const predicted = await factory.predictClone({
+        const predicted = BasicFactory.computeCloneAddress(factoryAddress, pinned, {
           deployer: ownerAddress,
           initialOwner: ownerAddress,
           index,
@@ -377,7 +382,7 @@ async function resolveAccount(
     'existing accounts',
     'satisfied',
     clones.length === 0
-      ? `no owned deterministic accounts for ${ownerAddress} via predictClone+isClone (scanned 0..${scanLimit - 1n})`
+      ? `no owned deterministic accounts for ${ownerAddress} via computeCloneAddress+isClone (scanned 0..${scanLimit - 1n})`
       : `${clones.length} owned account(s) for ${ownerAddress}: ${clones
           .map((c) => `${c.address}[index=${c.index}]`)
           .join(', ')}`
@@ -389,7 +394,7 @@ async function resolveAccount(
       record(1, 'account gate', 'satisfied', `${atIndex.address} at --index ${options.index}`);
       return atIndex.address;
     }
-    const predicted = await factory.predictClone({
+    const predicted = BasicFactory.computeCloneAddress(factoryAddress, pinned, {
       deployer: ownerAddress,
       initialOwner: ownerAddress,
       index: options.index,
@@ -448,7 +453,7 @@ async function resolveAccount(
   }
 
   const nextIndex = options.index;
-  const sendGas = cloneSendGasLimit(network);
+  const sendGas = basicFactorySendGasLimit(network);
   const cloneParams = {
     initialOwner: ownerAddress,
     broadcaster: broadcasterAddress,
@@ -885,14 +890,14 @@ async function main(): Promise<void> {
   console.log(`network: ${network.network} (chain ${network.chainId}, ${network.status})`);
   console.log(`factory: ${mint.factory}`);
   console.log(`implementation: ${mint.implementation}`);
-  console.log(`finding accounts: predictClone + isClone (BasicFactory has no clonesOf)`);
+  console.log(`finding accounts: computeCloneAddress + isClone (BasicFactory has no clonesOf)`);
   if (pending.length > 0) {
     console.log(`⚠️  pending declaration on this network: ${pending.join(', ')}`);
   }
 
   section('Gas envelope');
   console.log(`clone, observed:        ${GAS_ENVELOPE.cloneOfAccountBlox}`);
-  const sendGas = cloneSendGasLimit(network);
+  const sendGas = basicFactorySendGasLimit(network);
   console.log(`clone, sent with limit: ${sendGas}`);
   console.log(`floor (fail below):     ${GAS_ENVELOPE.cloneGasFloor}`);
   console.log(`EIP-7825 per-tx cap:    ${MAX_TX_GAS}`);

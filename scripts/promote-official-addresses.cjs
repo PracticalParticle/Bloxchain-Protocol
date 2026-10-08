@@ -121,10 +121,11 @@ function main() {
   }
 
   const sourceAddrs = readSourceAddresses(sourceNetwork);
-  const sourceNames = Object.keys(sourceAddrs);
-  if (sourceNames.length === 0) {
+  const missingCatalog = Object.keys(CATALOG_PROMOTABLE).filter((name) => !sourceAddrs[name]);
+  if (missingCatalog.length > 0) {
     fail(
-      `${networkName} has none of ${Object.keys(CATALOG_PROMOTABLE).join(', ')} in ${path.basename(sourcePath)}`
+      `${networkName} is missing ${missingCatalog.join(', ')} in ${path.basename(sourcePath)}. ` +
+        `Every catalog contract must be present before the network is added: ${Object.keys(CATALOG_PROMOTABLE).join(', ')}.`
     );
   }
 
@@ -156,14 +157,13 @@ function main() {
         ...(meta.linkTime ? { linkTime: true } : {}),
       };
       if (name === 'BasicAccount') {
-        catalogContracts[name].initialized = true;
+        catalogContracts[name].initializersDisabled = true;
         catalogContracts[name].linkedLibraries = [
           'EngineBlox',
           'SecureOwnableDefinitions',
           'RuntimeRBACDefinitions',
           'GuardControllerDefinitions',
         ];
-        catalogContracts[name].cloneTarget = undefined;
       }
       if (name === 'BasicFactory') {
         catalogContracts[name].cloneTarget = 'BasicAccount';

@@ -35,7 +35,9 @@ import BasicFactoryAbi from '../../abi/BasicFactory.abi.json' with { type: 'json
  *
  * - **Mint:** permissionless **for your own account**, no implementation argument.
  *   {@link cloneBlox} (a new address every call) and {@link cloneBloxDeterministic}
- *   (CREATE2) both send at the EIP-7825 cap (`16777216`).
+ *   (CREATE2) send with `options.gas` when the caller sets it, otherwise the
+ *   `sendGasLimit` passed at construction (`basicFactorySendGasLimit(network)`),
+ *   otherwise the EIP-7825 cap (`16777216`).
  * - **Gas, known limitation (M-1):** a mint *uses* about 16.14M gas but needs about 16.67M
  *   *available*, because `initialize` only receives 63/64 of the gas at each nested call. Under
  *   the EIP-7825 cap (Osaka) that leaves about 108k of limit headroom, so only a **direct EOA**
@@ -115,13 +117,25 @@ const BLOX_CLONED_TOPIC = keccak256(toBytes('BloxCloned(address,address,address)
  */
 export class BasicFactory {
   protected readonly abi: Abi = BasicFactoryAbi as Abi;
+  private readonly defaultSendGasLimit: bigint;
 
+  /**
+   * @param sendGasLimit Network mint limit from `basicFactorySendGasLimit`. Omitted
+   *   values fall back to {@link GAS_ENVELOPE.cloneSendGasLimit}. `options.gas` on a
+   *   mint still wins.
+   */
   constructor(
     protected readonly client: PublicClient,
     protected readonly walletClient: WalletClient | undefined,
     protected readonly contractAddress: Address,
-    protected readonly chain: Chain
-  ) {}
+    protected readonly chain: Chain,
+    sendGasLimit?: bigint
+  ) {
+    if (sendGasLimit !== undefined && sendGasLimit <= 0n) {
+      throw new Error('BasicFactory sendGasLimit must be a positive gas limit');
+    }
+    this.defaultSendGasLimit = sendGasLimit ?? GAS_ENVELOPE.cloneSendGasLimit;
+  }
 
   get address(): Address {
     return this.contractAddress;
@@ -132,8 +146,8 @@ export class BasicFactory {
   /**
    * Clone the pinned implementation and initialize it in one transaction (nonce path).
    *
-   * Sends `gas` at the EIP-7825 per-transaction cap (`16777216`) by default, never a bare
-   * estimate. Pass `options.gas` only to override deliberately.
+   * Sends `options.gas` when set, otherwise the constructor `sendGasLimit`, otherwise
+   * the EIP-7825 per-transaction cap (`16777216`). Never a bare estimate.
    *
    * @param params Roles and timelock the clone is initialized with; `initialOwner` must be `options.from`
    * @param options Transaction options; `from` is the sender that pays for the clone and becomes its owner
@@ -154,7 +168,7 @@ export class BasicFactory {
    *
    * The clone lands on `predictClone(options.from, initialOwner, index, salt)`, where
    * `options.from` must equal `initialOwner`. A repeat on the same chain reverts
-   * `ItemAlreadyExists`. Same gas rule as {@link cloneBlox}: `16777216`.
+   * `ItemAlreadyExists`. Same gas rule as {@link cloneBlox}.
    *
    * @param params Roles, timelock, `index` and optional `salt` (default `bytes32(0)`); `initialOwner` must be `options.from`
    * @param options Transaction options; `from` is the minter and owner, and it is part of the address
@@ -229,7 +243,8 @@ export class BasicFactory {
         }
       }
 
-      request.gas = options.gas !== undefined ? BigInt(String(options.gas)) : GAS_ENVELOPE.cloneSendGasLimit;
+      request.gas =
+        options.gas !== undefined ? BigInt(String(options.gas)) : this.defaultSendGasLimit;
       if (options.gasPrice !== undefined && options.gasPrice !== '') {
         const maxFee = BigInt(String(options.gasPrice));
         const oneGwei = parseGwei('1');
