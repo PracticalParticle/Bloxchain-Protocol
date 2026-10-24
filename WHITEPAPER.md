@@ -34,8 +34,8 @@ authoritative integration documentation.
 > - The published audit scope is Solidity under [`contracts/core/`](./contracts/core/).
 >   Examples, the TypeScript SDK, integrator contracts, proxies, and specific deployments
 >   are outside that scope.
-> - Official BasicFactory and BasicAccount deployments are published for the supported
->   networks, including Ethereum mainnet. See the [protocol README](./README.md#official-createx-catalog).
+> - Official BasicFactory and BasicAccount deployments are published for 10 live networks
+>   and 6 testnets, including Ethereum mainnet. See the [protocol README](./README.md#official-createx-catalog).
 
 ---
 
@@ -636,7 +636,7 @@ The audit does not cover:
 
 ### 12.3 Network status
 
-Official BasicFactory and BasicAccount deployments are published for the supported networks, including Ethereum mainnet. Integrators can deploy the open-source contracts
+Official BasicFactory and BasicAccount deployments are published for 10 live networks and 6 testnets, including Ethereum mainnet. Integrators can deploy the open-source contracts
 independently, but those deployments are not automatically official or covered by the published
 audit.
 

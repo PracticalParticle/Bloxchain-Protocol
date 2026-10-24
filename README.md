@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/@bloxchain/sdk"><img src="https://img.shields.io/npm/v/@bloxchain/sdk.svg" alt="npm"></a>
   <a href="https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml"><img src="https://github.com/PracticalParticle/Bloxchain-Protocol/actions/workflows/particle-ci.yml/badge.svg" alt="CI"></a>
   <a href="https://docs.bloxchain.app"><img src="https://img.shields.io/badge/docs-bloxchain.app-yellow" alt="Docs"></a>
-  <a href="#official-createx-catalog"><img src="https://img.shields.io/badge/CreateX-9_networks_same_addresses-purple.svg" alt="CreateX catalog"></a>
+  <a href="#official-createx-catalog"><img src="https://img.shields.io/badge/CreateX-10_live_%2B_6_testnets-purple.svg" alt="CreateX catalog: 10 live and 6 testnets"></a>
 </p>
 
 # Bloxchain Protocol
@@ -190,7 +190,7 @@ To use an account you already deployed with [bloxchain.app](https://bloxchain.ap
 
 Integrators mint with **BasicFactory** → **BasicAccount**. CreateX salts and `bytecodeHash none` make the six infrastructure addresses **identical on every supported network** below. Machine-readable source (ships with `@bloxchain/contracts`): [`official-deployed-addresses.json`](./official-deployed-addresses.json) (format `bloxchain-official-addresses/2`).
 
-Bloxchain supports **9 networks**. Each network is a mainnet, plus its testnet when that testnet is in the catalog.
+Bloxchain supports **10 live networks** and **6 testnets**. The six infrastructure addresses are the same on every one of them.
 
 ### Shared catalog addresses
 
@@ -220,6 +220,7 @@ CreateX factory (called, never vendored): [`0xba5Ed099633D3B313e4D5F7bdc1305d3c2
 | Avalanche C-Chain | 43114 | [snowtrace.io](https://snowtrace.io) |
 | Arc | 5042 | [mainnet.arcscan.app](https://mainnet.arcscan.app) |
 | Robinhood | 4663 | [explorer.chain.robinhood.com](https://explorer.chain.robinhood.com) |
+| Monad | 143 | [monadscan.com](https://monadscan.com) |
 
 Polygon PoS mints need a higher gas limit than the other networks. `create-account` sends that mint with a gas limit of 20,000,000. The other networks use 16,777,216.
 
@@ -234,7 +235,7 @@ Polygon PoS mints need a higher gas limit than the other networks. `create-accou
 | Arc Testnet | 5042002 | [testnet.arcscan.app](https://testnet.arcscan.app) |
 | Robinhood Testnet | 46630 | [explorer.testnet.chain.robinhood.com](https://explorer.testnet.chain.robinhood.com) |
 
-Polygon PoS, BNB Smart Chain, and Avalanche C-Chain are mainnet-only in this catalog.
+Polygon PoS, BNB Smart Chain, Avalanche C-Chain, and Monad are mainnet-only in this catalog.
 
 ### Experimental developer path (Sepolia)
 
@@ -267,7 +268,7 @@ A private chain, or a public chain that is not in the tables above, is outside t
 An open-source framework so teams run blockchain operations through auditable on-chain rules: roles, waiting periods, and controlled external calls.
 
 **Can we deploy a governed account on mainnet?**
-Yes. BasicFactory and BasicAccount each keep their own address on every one of the [9 supported networks](#official-createx-catalog), including Ethereum mainnet.
+Yes. BasicFactory and BasicAccount each keep their own address on all [10 live networks and 6 testnets](#official-createx-catalog), including Ethereum mainnet.
 
 **What is bloxchain.app?**
 An optional hosted app for operating governed accounts in the browser. It follows the same on-chain rules as a self-hosted integration. [docs.bloxchain.app](https://docs.bloxchain.app).
