@@ -6,11 +6,12 @@ security scans do not resolve mutable transitive dependencies at run time.
 - `slither.in` is the direct dependency input for `slither.txt`.
 - `mythril.in` records the direct Mythril pin and its `pytest-cov` compatibility
   constraint.
-- `mythril-resolved.in` is the Python 3.10 resolved graph used to generate
+- `mythril-resolved.in` is the Python 3.11 resolved graph used to generate
   `mythril.txt`. Mythril 0.24.8 requires `coverage<7`, so unconstrained current
-  `pytest-cov` releases are incompatible.
+  `pytest-cov` releases are incompatible. Python 3.12 is not used because
+  `coverage` 6.5.0 has no 3.12 wheel, and Mythril cannot take `coverage` 7.
 
-Regenerate the `.txt` files with Python 3.10 and `pip-compile
+Regenerate the `.txt` files with Python 3.11 and `pip-compile
 --generate-hashes`. Verify them by installing with:
 
 ```bash
