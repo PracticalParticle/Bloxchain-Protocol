@@ -9,7 +9,7 @@
     "developerTools": "Optional per-network developerTools overlay holds the Sepolia experiment (AccountBlox / CopyBlox): an open factory and a 1-second AccountBlox floor. The integrator mint is BasicFactory → BasicAccount.",
     "pendingRows": "A contract that is not yet declared is listed with \"address\": null and \"status\": \"pending-declaration\". Addresses are never guessed."
   },
-  "updated": "2026-10-08",
+  "updated": "2026-10-23",
   "createx": {
     "address": "0xba5ed099633d3b313e4d5f7bdc1305d3c28ba5ed",
     "runtimeCodeHash": "0xbd8a7ea8cfca7b4e5f5041d7d4b17bc317c5ce42cfbc42066a00cf26b43eb53f",
@@ -254,6 +254,15 @@
       "declaredIn": "README.md#official-createx-catalog",
       "mirroredAt": "2026-10-08",
       "notes": "CreateX same-address catalog."
+    },
+    "monad": {
+      "chainId": 143,
+      "status": "official",
+      "catalog": "createx-v1",
+      "explorer": "https://monadscan.com",
+      "declaredIn": "README.md#official-createx-catalog",
+      "mirroredAt": "2026-10-23",
+      "notes": "CreateX same-address catalog. Native gas is MON. Mainnet only."
     }
   }
 }

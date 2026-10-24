@@ -77,12 +77,12 @@
   "devDependencies": {
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
-    "@types/node": "26.6.3",
-    "dotenv": "18.0.5",
-    "hardhat": "3.18.1",
+    "@types/node": "26.6.4",
+    "dotenv": "18.0.6",
+    "hardhat": "3.19.0",
     "husky": "9.1.7",
     "release-please": "17.11.2",
     "typescript": "7.0.2",
-    "viem": "2.57.2"
+    "viem": "2.57.7"
   }
 }

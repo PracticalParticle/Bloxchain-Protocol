@@ -62,6 +62,7 @@ const MAINNETS = [
   ["avalanche", "Avalanche C-Chain"],
   ["arc", "Arc"],
   ["robinhood", "Robinhood"],
+  ["monad", "Monad"],
 ];
 
 const TESTNETS = [
@@ -86,6 +87,7 @@ const PUBLIC_RPC = {
   polygon: "https://polygon-bor-rpc.publicnode.com",
   bsc: "https://bsc-dataseed.binance.org",
   avalanche: "https://api.avax.network/ext/bc/C/rpc",
+  monad: "https://rpc.monad.xyz",
 };
 
 config({ path: ENV_DEPLOYMENT });

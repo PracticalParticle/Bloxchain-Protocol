@@ -131,7 +131,7 @@ From this repository, `npm run create-account` asks for the same two address mod
 
 The factory is deliberately **not** in `contracts/core`, and an account never depends on it at
 runtime. The CreateX catalog declares the pair in `official-deployed-addresses.json`:
-`getOfficialBasicMint(network)` returns those addresses on every supported network, and never
+`getOfficialBasicMint(network)` returns those addresses on all 10 live networks and 6 testnets, and never
 falls back to CopyBlox.
 
 The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for fast loops and open
