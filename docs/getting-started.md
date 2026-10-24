@@ -155,7 +155,7 @@ wallet that sends the mint itself** and pays for it (a direct EOA call: see
 [Known limitation: gas](#5-known-limitation-the-mint-fits-the-cap-only-as-a-direct-eoa-call-m-1)).
 
 > **Declaration status.** The CreateX catalog (`bloxchain-official-addresses/2`) declares one
-> shared `BasicFactory` / `BasicAccount` address book for every supported network listed in
+> shared `BasicFactory` / `BasicAccount` address book for 10 live networks and 6 testnets, listed in
 > [`official-deployed-addresses.json`](../official-deployed-addresses.json). Use
 > `getOfficialBasicMint(network)`. Leave the Sepolia experimental CopyBlox row for experiments
 > ([§10](#10-experimental-copyblox--accountblox-on-sepolia)).
@@ -527,8 +527,8 @@ minted **by that factory**. It does not mean every copy of `BasicAccount` on the
 from it: anyone can deploy or clone the same implementation by another path (including
 `CopyBlox`). Check `isClone` on the factory address you trust.
 
-**Status.** The CreateX catalog declares `BasicAccount` / `BasicFactory` on every supported
-network in `official-deployed-addresses.json` (format `/2`). The SDK ships their ABIs. Read the
+**Status.** The CreateX catalog declares `BasicAccount` / `BasicFactory` on 10 live networks and 6 testnets
+in `official-deployed-addresses.json` (format `/2`). The SDK ships their ABIs. Read the
 pair with `getOfficialBasicMint`. The Nethermind core audit (NM_0828) covers `contracts/core/`.
 `BasicAccount` and `BasicFactory` sit outside that report.
 

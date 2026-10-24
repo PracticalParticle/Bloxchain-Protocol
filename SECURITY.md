@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Official BasicFactory and BasicAccount addresses are published for the supported networks in [`official-deployed-addresses.json`](official-deployed-addresses.json), including Ethereum mainnet. The Nethermind audit covers `contracts/core/` only.
+Official BasicFactory and BasicAccount addresses are published for 10 live networks and 6 testnets in [`official-deployed-addresses.json`](official-deployed-addresses.json), including Ethereum mainnet. The Nethermind audit covers `contracts/core/` only.
 
 We actively maintain security updates for the following versions:
 
@@ -101,8 +101,8 @@ Our State Abstraction framework implements multiple layers of security:
 
 | Item | Status |
 |------|--------|
-| **Mainnet** | Published in the official catalog, including Ethereum mainnet |
-| **Development** | Testnets in the same catalog, including Sepolia |
+| **Mainnet** | 10 live networks in the official catalog, including Ethereum and Monad |
+| **Development** | 6 testnets in the same catalog, including Sepolia |
 
 ### Completed reviews
 
