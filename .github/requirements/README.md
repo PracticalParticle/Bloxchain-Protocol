@@ -12,12 +12,16 @@ security scans do not resolve mutable transitive dependencies at run time.
   `coverage` 6.5.0 has no 3.12 wheel, and Mythril cannot take `coverage` 7.
 
 Regenerate the `.txt` files with Python 3.11 and `pip-compile
---generate-hashes`. Verify them by installing with:
+--generate-hashes`. Install them with Python 3.11 as well. Pillow 13.0.0 and
+filelock 4.2.4 in the Mythril lockfile require that interpreter:
 
 ```bash
-python -m pip install --require-hashes -r .github/requirements/slither.txt
-python -m pip install --require-hashes --no-deps -r .github/requirements/mythril.txt
+python3.11 -m pip install --require-hashes -r .github/requirements/slither.txt
+python3.11 -m pip install --require-hashes --no-deps -r .github/requirements/mythril.txt
 ```
+
+`verify-mythril-install.sh` creates its virtual environment with `python3.11`,
+or with `python` only when that command is already Python 3.11.
 
 Mythril install uses `--no-deps` because Mythril 0.24.8 declares `eth-abi<5.0.0`
 while the lockfile pins `eth-abi>=5.0.1` to remediate GHSA-3qwc-47jf-5rf7. The
