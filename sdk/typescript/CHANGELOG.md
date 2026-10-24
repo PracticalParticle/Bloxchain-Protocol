@@ -5,6 +5,13 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.2.0...sdk-v1.2.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* close Dependabot advisories that fit the current toolchain ([d046785](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d0467852ea8911e8608db47af010bf34bcd69ada))
+
 ## [1.2.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.1.1...sdk-v1.2.0) (2026-10-08)
 
 
