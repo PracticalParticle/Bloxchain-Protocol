@@ -43,6 +43,16 @@ When reporting a security vulnerability, please include:
 4. **Suggested remediation** (if any)
 5. **Your contact information** for follow-up
 
+### What we accept
+
+This channel is for **responsible private disclosure** so we can fix published code. There is **no bug bounty** and **no payment or reward** for reports.
+
+We welcome good-faith reports that help us correct Protocol contracts, Protocol behaviour in published releases, the SDK, or Platform issues that lead to unauthorised on-chain outcomes or key exposure. Teaching templates and example contracts under `contracts/examples/` are also useful to hear about when they can brick, lock funds, or break a documented integration path. Those examples remain **outside** the Nethermind core audit engagement above.
+
+We do not treat as security reports: Platform issues with no security impact, social engineering, third-party wallets and RPC providers, or issues only in your own custom extensions.
+
+We prefer coordinated private handling until we have assessed or fixed the issue. Do not open public GitHub issues for vulnerabilities. Public docs: [Report a vulnerability](https://docs.bloxchain.app/security/report-vulnerabilities).
+
 ### Response Timeline
 
 We take security seriously and commit to the following response times:
@@ -146,4 +156,4 @@ We appreciate the security research community's efforts to help keep Bloxchain P
 
 *This security policy is subject to updates. Please check back regularly for the latest information.*
 
-**Last Updated**: June 2026
+**Last Updated**: November 2026
