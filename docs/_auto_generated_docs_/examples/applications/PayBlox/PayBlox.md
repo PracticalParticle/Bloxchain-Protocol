@@ -153,7 +153,7 @@ function getPaymentRecords(uint256[] txIds) public view returns (struct PayBlox.
 ### PaymentRequested
 
 ```solidity
-event PaymentRequested(uint256 txId, address recipient, address requester, uint256 amount, uint256 timestamp, string description)
+event PaymentRequested(uint256 txId, address recipient, address requester, uint256 amount, address token, uint256 timestamp, string description)
 ```
 
 
@@ -164,7 +164,7 @@ event PaymentRequested(uint256 txId, address recipient, address requester, uint2
 ### PaymentExecuted
 
 ```solidity
-event PaymentExecuted(uint256 txId, address recipient, uint256 amount, uint256 timestamp)
+event PaymentExecuted(uint256 txId, address recipient, uint256 amount, address token, uint256 timestamp)
 ```
 
 
@@ -175,7 +175,7 @@ event PaymentExecuted(uint256 txId, address recipient, uint256 amount, uint256 t
 ### PaymentCancelled
 
 ```solidity
-event PaymentCancelled(uint256 txId, address recipient, uint256 amount, uint256 timestamp)
+event PaymentCancelled(uint256 txId, address recipient, uint256 amount, address token, uint256 timestamp)
 ```
 
 

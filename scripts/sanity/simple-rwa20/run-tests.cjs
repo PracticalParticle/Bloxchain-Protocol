@@ -20,6 +20,7 @@ class SimpleRWA20TestRunner {
         };
     }
 
+    /** Print CLI usage, supported flags, and required environment variables. */
     printUsage() {
         console.log('🔧 SimpleRWA20 Test Runner');
         console.log('='.repeat(50));
@@ -43,6 +44,11 @@ class SimpleRWA20TestRunner {
         console.log();
     }
 
+    /**
+     * Run one named suite and update pass/fail counters.
+     * @param {string} suiteName Suite key from `testSuites`
+     * @param {Function} TestClass Suite constructor exporting `runTests()`
+     */
     async runTestSuite(suiteName, TestClass) {
         console.log(`\n🚀 Running ${suiteName} tests...`);
         console.log('═'.repeat(60));
@@ -70,6 +76,7 @@ class SimpleRWA20TestRunner {
         }
     }
 
+    /** Run every suite registered on this runner. */
     async runAllTests() {
         console.log('🚀 Running ALL SimpleRWA20 test suites...');
         console.log('═'.repeat(60));
@@ -85,6 +92,10 @@ class SimpleRWA20TestRunner {
         this.printResults();
     }
 
+    /**
+     * Run the named suites; unknown names count as failed suites.
+     * @param {string[]} requestedSuites Suite names or mapped flag targets
+     */
     async runSpecificTests(requestedSuites) {
         console.log(`🚀 Running specific test suites: ${requestedSuites.join(', ')}`);
         console.log('═'.repeat(60));
@@ -96,6 +107,8 @@ class SimpleRWA20TestRunner {
                 this.results.totalSuites++;
                 await this.runTestSuite(suiteName, this.testSuites[suiteName]);
             } else {
+                this.results.totalSuites++;
+                this.results.failedSuites++;
                 console.error(`❌ Unknown test suite: ${suiteName}`);
                 console.log(`Available suites: ${Object.keys(this.testSuites).join(', ')}`);
             }
@@ -105,6 +118,7 @@ class SimpleRWA20TestRunner {
         this.printResults();
     }
 
+    /** Print aggregate suite counts, success rate, and duration. */
     printResults() {
         console.log('\n📊 Overall Test Results');
         console.log('═'.repeat(60));
@@ -135,6 +149,7 @@ class SimpleRWA20TestRunner {
      * Parse CLI args and run suites.
      * `--help` / no args print usage and return successfully.
      * Documented flags such as `--token` map to suite names; bare suite names still work.
+     * Unknown suite names are recorded as failures so unknown-only invocations exit non-zero.
      * A selection that yields no suites sets a failing exit code (not based on totalSuites alone).
      */
     async run() {
