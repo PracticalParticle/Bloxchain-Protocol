@@ -226,7 +226,7 @@ function verifyContractsPackage() {
   } catch (error) {
     fail('npm pack --dry-run failed: ' + error.message);
   }
-  const requiredInPack = ['core', 'abi', 'standards', 'artifacts', 'official-deployed-addresses'];
+  const requiredInPack = ['core', 'abi', 'account', 'factory', 'artifacts', 'official-deployed-addresses'];
   for (const dir of requiredInPack) {
     if (!new RegExp(dir + '[/\\\\]|' + dir + '\\.json').test(packOutput)) {
       fail(`npm pack output missing ${dir}`);

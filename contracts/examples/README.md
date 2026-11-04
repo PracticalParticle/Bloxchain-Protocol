@@ -15,4 +15,4 @@ They are **not** ready products, are **outside** the Nethermind core audit (`con
 | `integrations/` | `GuardianSafe` | Safe guard sample; not for live value |
 | `extra/` | helpers (e.g. `BasicERC20`) | Test fixtures |
 
-Sepolia publishes AccountBlox / CopyBlox under `networks.sepolia.developerTools` in `official-deployed-addresses.json` for experiments only. Details: [Getting Started §10](../../docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).
+Sepolia publishes AccountBlox / CopyBlox addresses under `networks.sepolia.developerTools` in `official-deployed-addresses.json` for lab discovery only. Their ABI/bytecode are **not** shipped in `@bloxchain/contracts` — compile from this tree. Details: [Getting Started §10](../../docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).

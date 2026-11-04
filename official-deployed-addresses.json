@@ -91,7 +91,6 @@
         "AccountBlox": {
           "address": "0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0",
           "kind": "template",
-          "artifact": "artifacts/AccountBlox.json",
           "initialized": true,
           "status": "official",
           "linkedLibraries": [
@@ -100,12 +99,11 @@
             "RuntimeRBACDefinitions",
             "GuardControllerDefinitions"
           ],
-          "notes": "Experimental template (contracts/examples), Sepolia only. Time-lock floor is 1 second. BasicAccount floor is 1 day. Linked libraries on this row are the historical Sepolia foundation addresses, not the CreateX catalog."
+          "notes": "Teaching-sample template (contracts/examples), Sepolia lab only — not shipped in @bloxchain/contracts artifacts. Time-lock floor is 1 second. BasicAccount floor is 1 day. Compile from the Protocol repo for ABI/bytecode. Linked libraries on this row are historical Sepolia foundation addresses, not the CreateX catalog."
         },
         "CopyBlox": {
           "address": "0x928a2bd6c13e4f48a0850d2171a8d79b29959fc7",
           "kind": "factory",
-          "artifact": "artifacts/CopyBlox.json",
           "cloneTarget": "AccountBlox",
           "status": "official",
           "supports": {
@@ -117,7 +115,7 @@
             "maxTxGas": 16777216,
             "notes": "Observed gasUsed for cloneBlox against AccountBlox on Sepolia. Public networks cap a single transaction at 2^24 = 16,777,216 (EIP-7825)."
           },
-          "notes": "Experimental factory (contracts/examples), Sepolia only — developer/test, not production. Open by design: any caller may clone any IBaseStateMachine (including AccountBlox) for any initialOwner with caller-chosen recovery/timelock; clonesOf/BloxCloned is a creation index, not custody. BasicFactory is the production self-owner mint pinned to BasicAccount. Predates the owner-indexed clone list; enumerate from BloxCloned logs. Wire via @bloxchain/contracts artifacts + viem. Not exported from @bloxchain/sdk."
+          "notes": "Teaching-sample factory (contracts/examples), Sepolia lab only — not shipped in @bloxchain/contracts artifacts. Open by design: any caller may clone any IBaseStateMachine for any initialOwner with caller-chosen recovery/timelock; clonesOf/BloxCloned is a creation index, not custody. Compile from the Protocol repo for ABI/bytecode. Enumerate from BloxCloned logs on this deployment. Not exported from @bloxchain/sdk."
         }
       }
     },
