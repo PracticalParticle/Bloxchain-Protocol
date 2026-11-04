@@ -46,7 +46,7 @@ class SimpleVaultWithdrawalTests extends BaseSimpleVaultTest {
             console.log(`   Owner: ${owner}`);
             
             // Check broadcaster
-            const broadcaster = await this.callMethod(this.contract.methods.getBroadcaster);
+            const broadcaster = await this.getPrimaryBroadcaster();
             console.log(`   Broadcaster: ${broadcaster}`);
             
             // Check recovery

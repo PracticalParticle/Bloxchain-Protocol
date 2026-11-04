@@ -47,9 +47,19 @@ import "@bloxchain/contracts/core/lib/interfaces/IDefinition.sol";
 | `RuntimeRBAC` | Dynamic role-based access control |
 | `GuardController` | Execution workflows and time-locked transactions |
 
-### Templates and examples
+### What this package includes
 
-Templates (e.g. AccountBlox, CopyBlox) and example applications (SimpleVault, SimpleRWA20) live in the main repository under `contracts/examples/`. They are not included in this npm package. See the [main repo](https://github.com/PracticalParticle/Bloxchain-Protocol) for full documentation and examples.
+| Path | Contents |
+|------|----------|
+| `core/` | Audited framework library (Solidity sources) |
+| `account/` / `factory/` | BasicAccount and BasicFactory (official mint) |
+| `abi/` | ABI JSON for packaged Solidity under `core/`, `account/`, and `factory/` |
+| `artifacts/` | Bytecode for **BasicAccount**, **BasicFactory**, **EngineBlox**, **SecureOwnableDefinitions**, **RuntimeRBACDefinitions**, and **GuardControllerDefinitions** only |
+| `official-deployed-addresses.json` | Official catalog (Basic* on all networks; Sepolia `developerTools` lists lab addresses only) |
+
+### Not in this package
+
+Teaching samples under `contracts/examples/` (AccountBlox, CopyBlox, SimpleVault, …), `contracts/standards/`, and `contracts/experimental/` stay in the [Protocol repository](https://github.com/PracticalParticle/Bloxchain-Protocol) only. They are **not** ready products, are outside the Nethermind core audit, and must not hold value on live networks. See [`contracts/examples/README.md`](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/contracts/examples/README.md).
 
 ## Dependencies
 

@@ -14,7 +14,7 @@ abstract contract Account is GuardController, RuntimeRBAC, SecureOwnable {
 }
 ```
 
-Concrete implementations (for example `AccountBlox`) inherit from `Account` and add application‑specific logic while reusing the shared state machine and security model.
+Concrete implementations inherit from `Account` and add application‑specific logic while reusing the shared state machine and security model. The production path is **`BasicAccount`**. `AccountBlox` under `contracts/examples/` is a teaching sample only (lab / not for live value).
 
 ---
 
@@ -27,7 +27,7 @@ Concrete implementations (for example `AccountBlox`) inherit from `Account` and 
       - Secure ownership operations (`SecureOwnableDefinitions`)
       - Runtime role configuration (`RuntimeRBACDefinitions`)
       - Guarded execution and whitelists (`GuardControllerDefinitions`)
-  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. The official factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount`: it vets the pin once, clones, calls `initialize`, and reverts on failure. The example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) shows the same pattern as an open factory for any `IBaseStateMachine`. Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
+  - **Operational recommendation:** For many deployed instances, use a **factory / cloner** that deploys the proxy (or minimal proxy) and invokes `initialize` in the **same transaction** so initialization cannot be skipped by mistake. The official factory is **`BasicFactory`** (`contracts/factory/BasicFactory.sol`), pinned to `BasicAccount`: it vets the pin once, clones, calls `initialize`, and reverts on failure. The teaching-sample **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) shows the same pattern as an open factory for any `IBaseStateMachine` — lab only, not for live value; see [`contracts/examples/README.md`](../contracts/examples/README.md). Manual transparent/UUPS deploys should follow an explicit runbook; see [Getting Started — Deployment and initialization](./getting-started.md#deployment-and-initialization).
 
 - **Security Model**
   - Protected roles (`OWNER_ROLE`, `BROADCASTER_ROLE`, `RECOVERY_ROLE`) are controlled only by `SecureOwnable`.
@@ -134,9 +134,14 @@ runtime. The CreateX catalog declares the pair in `official-deployed-addresses.j
 `getOfficialBasicMint(network)` returns those addresses on all 10 live networks and 6 testnets, and never
 falls back to CopyBlox.
 
-The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for fast loops and open
-cloning. It is **not** part of `@bloxchain/sdk`. Wire it via `@bloxchain/contracts` artifacts
-on `networks.sepolia.developerTools` addresses.
+The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for **developer / test**
+fast loops and open cloning (mint for another entity, caller-chosen recovery, 1-second
+AccountBlox floor). It is **not** for production and outside the Nethermind core audit.
+Wire ABIs from `@bloxchain/sdk` (`accountBloxAbi` / `@bloxchain/sdk/abi/CopyBlox.abi.json`;
+no CopyBlox client) against `networks.sepolia.developerTools` addresses; bytecode lives in
+this repository, not in `@bloxchain/contracts` artifacts. See
+[Getting Started §10](./getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)
+for accepted risks (index ≠ custody; recovery is powerful).
 
 ### Official mint and the Sepolia experiment
 
@@ -170,7 +175,10 @@ predicted addresses differ per chain. See
 on both mints unless `initialOwner == msg.sender`: you mint your own account, and you may still
 name helper wallets as broadcaster and recovery. Minting for another owner (a relayer or a
 sponsor naming a third party as owner) stays possible with other factories such as the
-experimental CopyBlox. The official factory closes that path.
+experimental CopyBlox. The official factory closes that path on purpose. CopyBlox’s open
+`cloneBlox` (no caller-is-owner check, caller-chosen recovery) is a **documented lab
+trade-off**, not a defect relative to BasicFactory — do not fund clones from the owner index
+alone, and do not use CopyBlox in production.
 
 The deterministic address is `CREATE2` over
 `keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. Since

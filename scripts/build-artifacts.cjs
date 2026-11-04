@@ -31,15 +31,13 @@ const MANIFEST_FORMAT = 'bloxchain-artifact-manifest/1';
 const EIP_170_LIMIT = 24576;
 
 /**
- * Contracts published as artifacts. Platform CreateX mint (BasicAccount / BasicFactory)
- * plus the Sepolia developer toolkit (AccountBlox / CopyBlox), definition libraries, and
- * EngineBlox. Other example applications are not published.
+ * Contracts published as artifacts. Official CreateX mint (BasicAccount / BasicFactory),
+ * EngineBlox, and definition libraries. Teaching samples under contracts/examples/
+ * (including AccountBlox / CopyBlox) are not published — use the Protocol repo for lab work.
  */
 const PUBLISHED_CONTRACTS = [
   { name: 'BasicAccount', kind: 'template', sizeLimit: EIP_170_LIMIT },
   { name: 'BasicFactory', kind: 'factory', sizeLimit: EIP_170_LIMIT },
-  { name: 'AccountBlox', kind: 'template', sizeLimit: EIP_170_LIMIT },
-  { name: 'CopyBlox', kind: 'factory', sizeLimit: EIP_170_LIMIT },
   { name: 'EngineBlox', kind: 'library' },
   { name: 'SecureOwnableDefinitions', kind: 'definition-library' },
   { name: 'RuntimeRBACDefinitions', kind: 'definition-library' },

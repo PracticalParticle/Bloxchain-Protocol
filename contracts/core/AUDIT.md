@@ -15,8 +15,8 @@ Record the **audited git commit** from the report on the [Nethermind engagement 
 
 ## What this audit does not cover
 
-- [`contracts/examples/`](../../contracts/examples/) — sample apps and templates (separate licenses)
-- [`contracts/components/`](../../contracts/components/) — outside NM_0828 unless a future report says otherwise
+- [`contracts/examples/`](../../contracts/examples/) — teaching samples and templates (separate licenses; not for live value)
+- [`contracts/account/`](../../contracts/account/) / [`contracts/factory/`](../../contracts/factory/) — BasicAccount / BasicFactory (outside NM_0828 unless a future report says otherwise)
 - [`contracts/standards/`](../../contracts/standards/)
 - TypeScript SDK ([`sdk/typescript/`](../../sdk/typescript/)) — mirrors core; not a separate Solidity audit
 - Your integrator contracts, proxies, or deployed bytecode on specific networks

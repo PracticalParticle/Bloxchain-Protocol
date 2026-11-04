@@ -2,13 +2,15 @@
 
 Protocol-level **interfaces** that define optional behaviors and extension points for Blox contracts. These live outside `core/` so the engine stays minimal and stable.
 
+**Not published** in `@bloxchain/contracts`. Repo-local for experimental work and future productization.
+
 ## Structure
 
-- **behavior/** – Optional behavior interfaces (e.g. cloneable blox). Implementations live in `components/` or `examples/`.
+- **behavior/** – Optional behavior interfaces (e.g. cloneable blox). Implementations live in `account/`, `factory/`, or `examples/`.
 - **hooks/** – Hook and trigger interfaces used by the system to call into external contracts (e.g. post-action hooks).
 
 Official account and factory implementations live in `contracts/account/` (`BasicAccount`) and `contracts/factory/` (`BasicFactory`).
 
 ## Usage
 
-Contracts in `core/`, `components/`, and `examples/` may depend on these interfaces. New standards should be proposed and reviewed before addition.
+Contracts in `core/`, `account/`, `factory/`, and `examples/` may depend on these interfaces. New standards should be proposed and reviewed before addition.

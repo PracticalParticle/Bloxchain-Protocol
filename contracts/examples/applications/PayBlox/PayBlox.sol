@@ -9,9 +9,10 @@ import "./PayBloxDefinitions.sol";
 
 /**
  * @title PayBlox
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev A simple application that allows sending ETH to a destination address
  * using the payment management system from BaseStateMachine
- * 
+ *
  * This contract demonstrates:
  * - Creating payment requests with native token transfers via _requestTransactionWithPayment
  * - Maintaining a payment table visible only to the owner role
@@ -39,12 +40,13 @@ contract PayBlox is SecureOwnable {
     // Payment table: mapping from txId to PaymentRecord (visible only to owner)
     mapping(uint256 => PaymentRecord) private _paymentTable;
     
-    // Events
+    // Events — `token` is address(0) for native payouts, else the ERC20 contract
     event PaymentRequested(
         uint256 indexed txId,
         address indexed recipient,
         address indexed requester,
         uint256 amount,
+        address token,
         uint256 timestamp,
         string description
     );
@@ -52,16 +54,20 @@ contract PayBlox is SecureOwnable {
         uint256 indexed txId,
         address indexed recipient,
         uint256 amount,
+        address token,
         uint256 timestamp
     );
     event PaymentCancelled(
         uint256 indexed txId,
         address indexed recipient,
         uint256 amount,
+        address token,
         uint256 timestamp
     );
     event EthReceived(address indexed from, uint256 amount);
-    
+    event PaymentRecipientWhitelistUpdated(address indexed recipient, bool whitelisted);
+    event PaymentTokenWhitelistUpdated(address indexed token, bool whitelisted);
+
     /**
      * @notice Initialize PayBlox (replaces constructor for clone pattern)
      * @param initialOwner The initial owner address
@@ -104,7 +110,56 @@ contract PayBlox is SecureOwnable {
     function getEthBalance() public view returns (uint256) {
         return address(this).balance;
     }
-    
+
+    // ============ PAYMENT WHITELIST ============
+    // EngineBlox validates every attached payment against a whitelist, at request time and again at execution:
+    // - recipient  -> whitelist keyed by EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR
+    // - ERC20 token -> whitelist keyed by EngineBlox.ERC20_TRANSFER_SELECTOR (only when erc20TokenAmount > 0)
+    // An empty whitelist denies every payout (deny-by-design). Whitelisting does not move funds by itself:
+    // each payout still requires an owner time-delay request, the timelock period, and an owner approval.
+
+    /**
+     * @notice Whitelist a payment recipient (owner only)
+     * @param recipient The address allowed to receive attached payments
+     */
+    function addPaymentRecipient(address recipient) external {
+        SharedValidation.validateOwner(owner());
+        _addTargetToWhitelist(EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR, recipient);
+        emit PaymentRecipientWhitelistUpdated(recipient, true);
+    }
+
+    /**
+     * @notice Remove a payment recipient from the whitelist (owner only)
+     * @param recipient The address to remove
+     * @notice Pending payments to this recipient will fail at approval, because the policy is re-checked on execution.
+     */
+    function removePaymentRecipient(address recipient) external {
+        SharedValidation.validateOwner(owner());
+        _removeTargetFromWhitelist(EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR, recipient);
+        emit PaymentRecipientWhitelistUpdated(recipient, false);
+    }
+
+    /**
+     * @notice Whitelist an ERC20 token contract for attached ERC20 payments (owner only)
+     * @param token The ERC20 token contract address
+     * @notice Only standard ERC20s are supported (no fee-on-transfer / rebasing), see EngineBlox.executeAttachedPayment.
+     */
+    function addPaymentToken(address token) external {
+        SharedValidation.validateOwner(owner());
+        _addTargetToWhitelist(EngineBlox.ERC20_TRANSFER_SELECTOR, token);
+        emit PaymentTokenWhitelistUpdated(token, true);
+    }
+
+    /**
+     * @notice Remove an ERC20 token contract from the payment whitelist (owner only)
+     * @param token The ERC20 token contract address
+     */
+    function removePaymentToken(address token) external {
+        SharedValidation.validateOwner(owner());
+        _removeTargetFromWhitelist(EngineBlox.ERC20_TRANSFER_SELECTOR, token);
+        emit PaymentTokenWhitelistUpdated(token, false);
+    }
+
     /**
      * @notice Request a payment with payment details
      * @param paymentDetails The payment details including recipient and amounts
@@ -112,6 +167,8 @@ contract PayBlox is SecureOwnable {
      * @return txId The transaction ID (use getTransaction(txId) for full record)
      * @notice This creates a transaction request with payment attached in one step via _requestTransactionWithPayment.
      *         All information is logged in the payment table.
+     * @notice The recipient must be whitelisted via addPaymentRecipient (and, for ERC20 payments, the token via
+     *         addPaymentToken) or the request reverts with TargetNotWhitelisted.
      */
     function requestWithPayment(
         EngineBlox.PaymentDetails memory paymentDetails,
@@ -119,6 +176,10 @@ contract PayBlox is SecureOwnable {
     ) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
+        // Reject self-recipient before registering the request (keeps funds from looping into this contract).
+        if (paymentDetails.recipient == address(this)) {
+            revert SharedValidation.InvalidAddress(paymentDetails.recipient);
+        }
         if (paymentDetails.nativeTokenAmount == 0 && paymentDetails.erc20TokenAmount == 0) {
             revert SharedValidation.NotSupported();
         }
@@ -147,12 +208,14 @@ contract PayBlox is SecureOwnable {
             status: txRecord.status,
             description: description
         });
-        
+
+        (uint256 amount, address token) = _paymentPayout(paymentDetails);
         emit PaymentRequested(
             txRecord.txId,
             paymentDetails.recipient,
             msg.sender,
-            paymentDetails.nativeTokenAmount > 0 ? paymentDetails.nativeTokenAmount : paymentDetails.erc20TokenAmount,
+            amount,
+            token,
             block.timestamp,
             description
         );
@@ -177,10 +240,12 @@ contract PayBlox is SecureOwnable {
         // via executeAttachedPayment in EngineBlox
         if (updated.status == EngineBlox.TxStatus.COMPLETED) {
             PaymentRecord storage record = _paymentTable[txId];
+            (uint256 amount, address token) = _paymentPayout(record.paymentDetails);
             emit PaymentExecuted(
                 txId,
                 record.paymentDetails.recipient,
-                record.paymentDetails.nativeTokenAmount,
+                amount,
+                token,
                 block.timestamp
             );
         }
@@ -202,15 +267,36 @@ contract PayBlox is SecureOwnable {
             _paymentTable[txId].status = updated.status;
             
             PaymentRecord storage record = _paymentTable[txId];
+            (uint256 amount, address token) = _paymentPayout(record.paymentDetails);
             emit PaymentCancelled(
                 txId,
                 record.paymentDetails.recipient,
-                record.paymentDetails.nativeTokenAmount,
+                amount,
+                token,
                 block.timestamp
             );
         }
         
         return updated.txId;
+    }
+
+    /**
+     * @dev Returns the selected payout amount and asset for payment events.
+     *      Native payments use `nativeTokenAmount` with `token = address(0)`.
+     *      ERC20 payments use `erc20TokenAmount` with `token = erc20TokenAddress`.
+     * @param paymentDetails Attached payment details from the request
+     * @return amount Selected payout amount
+     * @return token ERC20 token address, or address(0) for native
+     */
+    function _paymentPayout(EngineBlox.PaymentDetails memory paymentDetails)
+        private
+        pure
+        returns (uint256 amount, address token)
+    {
+        if (paymentDetails.nativeTokenAmount > 0) {
+            return (paymentDetails.nativeTokenAmount, address(0));
+        }
+        return (paymentDetails.erc20TokenAmount, paymentDetails.erc20TokenAddress);
     }
     
     /**

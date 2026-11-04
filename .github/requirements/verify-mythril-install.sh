@@ -4,7 +4,7 @@ if command -v apt-get >/dev/null 2>&1; then
   apt-get update -qq
   apt-get install -y -qq --no-install-recommends gcc python3-dev >/dev/null
 fi
-if command -v python3.11 >/dev/null 2>&1; then
+if command -v python3.11 >/dev/null 2>&1 && python3.11 -c 'import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 11) else 1)'; then
   PYTHON=python3.11
 elif command -v python >/dev/null 2>&1 && python -c 'import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 11) else 1)'; then
   PYTHON=python

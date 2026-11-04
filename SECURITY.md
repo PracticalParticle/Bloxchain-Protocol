@@ -13,7 +13,9 @@ We actively maintain security updates for the following versions:
 
 **Core smart contracts (`contracts/core/`):** Independently audited by **Nethermind** ([audit index](audits/README.md), [report PDF](audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf), [core policy](contracts/core/AUDIT.md)). The audit applies to the commit recorded in [audits/nethermind/README.md](audits/nethermind/README.md) (see the report PDF for the exact SHA). Later changes to core are outside that report until a re-audit or addendum.
 
-Examples and application code under `contracts/examples/` are **not** covered by that engagement.
+**All of `contracts/examples/`** (templates, applications, and integrations — including AccountBlox, CopyBlox, SimpleVault, PayBlox, SimpleRWA20, GuardianSafe, and similar) are **teaching / implementation samples**. They are **not** covered by the Nethermind engagement, are **not** ready products, and **must not** be deployed or used to hold value on live networks. Production mint and accounts: **BasicFactory → BasicAccount** (or your own reviewed extension). See [`contracts/examples/README.md`](contracts/examples/README.md).
+
+**CopyBlox / AccountBlox (Sepolia `developerTools`):** open factory and 1-second account template published for **developer testing on Sepolia only**. Permissionless mint for any named owner with caller-chosen recovery is **by design** (contrast BasicFactory self-owner mint). Do not treat the owner clone index as custody. See [docs/getting-started.md §10](docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).
 
 ## Reporting a Vulnerability
 
@@ -40,6 +42,16 @@ When reporting a security vulnerability, please include:
 3. **Potential impact** assessment
 4. **Suggested remediation** (if any)
 5. **Your contact information** for follow-up
+
+### What we accept
+
+This channel is for **responsible private disclosure** so we can fix published code. There is **no bug bounty** and **no payment or reward** for reports.
+
+We welcome good-faith reports that help us correct Protocol contracts, Protocol behaviour in published releases, the SDK, or Platform issues that lead to unauthorised on-chain outcomes or key exposure. Teaching templates and example contracts under `contracts/examples/` are **not** live products, but reports are still useful when they can brick, lock funds, or break a documented integration path. Those examples remain **outside** the Nethermind core audit engagement above.
+
+We do not treat as security reports: Platform issues with no security impact, social engineering, third-party wallets and RPC providers, or issues only in your own custom extensions.
+
+We prefer coordinated private handling until we have assessed or fixed the issue. Do not open public GitHub issues for vulnerabilities. Public docs: [Report a vulnerability](https://docs.bloxchain.app/security/report-vulnerabilities).
 
 ### Response Timeline
 
@@ -144,4 +156,4 @@ We appreciate the security research community's efforts to help keep Bloxchain P
 
 *This security policy is subject to updates. Please check back regularly for the latest information.*
 
-**Last Updated**: June 2026
+**Last Updated**: November 2026

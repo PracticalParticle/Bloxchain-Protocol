@@ -49,11 +49,21 @@ class SimpleVaultTestRunner {
         
         try {
             const testSuite = new TestClass();
-            await testSuite.runTests();
-            
-            this.results.passedSuites++;
-            console.log(`✅ ${suiteName} tests completed successfully`);
-            
+            // runTests() catches internally and returns false on any failed test or suite abort
+            const passed = await testSuite.runTests();
+
+            if (passed) {
+                this.results.passedSuites++;
+                console.log(`✅ ${suiteName} tests completed successfully`);
+            } else {
+                this.results.failedSuites++;
+                const failedTests = testSuite.testResults?.failedTests ?? 0;
+                const suiteError = testSuite.testResults?.suiteError;
+                console.error(
+                    `❌ ${suiteName} tests failed (${failedTests} failed test(s)${suiteError ? `; aborted: ${suiteError}` : ''})`
+                );
+            }
+
         } catch (error) {
             this.results.failedSuites++;
             console.error(`❌ ${suiteName} tests failed:`, error.message);
@@ -121,24 +131,44 @@ class SimpleVaultTestRunner {
         }
     }
 
+    /**
+     * Parse CLI args and run suites.
+     * `--help` / no args print usage and return successfully.
+     * Documented flags such as `--withdrawal` map to suite names; bare suite names still work.
+     * A selection that yields no suites sets a failing exit code (not based on totalSuites alone).
+     */
     async run() {
         const args = process.argv.slice(2);
-        
+        this.usageError = false;
+
         if (args.length === 0 || args.includes('--help')) {
             this.printUsage();
             return;
         }
-        
+
         if (args.includes('--all')) {
             await this.runAllTests();
-        } else {
-            const requestedSuites = args.filter(arg => !arg.startsWith('--'));
-            if (requestedSuites.length > 0) {
-                await this.runSpecificTests(requestedSuites);
-            } else {
-                console.log('❌ No test suites specified');
-                this.printUsage();
+            return;
+        }
+
+        const flagSuites = {
+            '--withdrawal': 'withdrawal',
+        };
+        const requestedSuites = [];
+        for (const arg of args) {
+            if (flagSuites[arg]) {
+                requestedSuites.push(flagSuites[arg]);
+            } else if (!arg.startsWith('--')) {
+                requestedSuites.push(arg);
             }
+        }
+
+        if (requestedSuites.length > 0) {
+            await this.runSpecificTests(requestedSuites);
+        } else {
+            console.log('❌ No test suites specified');
+            this.printUsage();
+            this.usageError = true;
         }
     }
 }
@@ -146,10 +176,16 @@ class SimpleVaultTestRunner {
 // Run the test runner if this file is executed directly
 if (require.main === module) {
     const runner = new SimpleVaultTestRunner();
-    runner.run().catch(error => {
-        console.error('❌ Test runner failed:', error);
-        process.exit(1);
-    });
+    runner.run()
+        .then(() => {
+            // Prefer exitCode over process.exit so pending stdout/stderr can drain.
+            // usageError covers "No test suites specified"; do not fail on totalSuites === 0 alone.
+            process.exitCode = (runner.usageError || runner.results.failedSuites > 0) ? 1 : 0;
+        })
+        .catch(error => {
+            console.error('❌ Test runner failed:', error);
+            process.exitCode = 1;
+        });
 }
 
 module.exports = SimpleVaultTestRunner;

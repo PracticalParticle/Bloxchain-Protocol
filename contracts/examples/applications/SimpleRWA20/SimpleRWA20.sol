@@ -14,6 +14,7 @@ import "./SimpleRWA20Definitions.sol";
 
 /**
  * @title SimpleRWA20
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev A secure ERC20 token for real-world assets with enhanced security via Guardian.
  * Uses EngineBlox for mint and burn operations, restricted to broadcaster.
  * Implements ERC20Burnable for secure burn operations with allowance checks.
@@ -72,10 +73,11 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      * @notice Create a mint request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing mint parameters
      * @return txId The transaction ID (use getTransaction(txId) for full record)
+     * @notice Reentrancy: guarded by BaseStateMachine._requestAndApproveTransaction (nonReentrant). This wrapper must
+     *         not add its own nonReentrant, or the inner guard reverts on every call (nested lock).
      */
     function mintWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
-        nonReentrant
         returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);
@@ -87,10 +89,10 @@ contract SimpleRWA20 is ERC20Upgradeable, ERC20BurnableUpgradeable, SecureOwnabl
      * @notice Create a burn request and immediately execute it via meta-transaction (single phase)
      * @param metaTx Meta transaction data containing burn parameters
      * @return txId The transaction ID (use getTransaction(txId) for full record)
+     * @notice Reentrancy: guarded by BaseStateMachine._requestAndApproveTransaction (nonReentrant); see mintWithMetaTx.
      */
     function burnWithMetaTx(EngineBlox.MetaTransaction memory metaTx) 
         public 
-        nonReentrant
         returns (uint256 txId) 
     {
         _validateBroadcaster(msg.sender);

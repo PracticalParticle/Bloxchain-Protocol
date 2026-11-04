@@ -10,9 +10,10 @@ import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBloxCloneIndexTest
- * @dev Covers the public provisioning surface of CopyBlox (SPEC-2026-0118):
- *      - the owner-indexed clone list (`clonesOf` and friends) returns every clone an
- *        owner holds, not only the latest one;
+ * @dev Covers CopyBlox clone indexing (SPEC-2026-0118). CopyBlox is an experimental
+ *      open factory for developer/test use (not production; see CopyBlox NatSpec):
+ *      - the owner-indexed clone list (`clonesOf` and friends) returns every clone
+ *        created for that initialOwner argument, not only the latest one;
  *      - the shape gate an integrator must use holds on real contracts: a clone reads as
  *        an account and the factory itself does not;
  *      - `cloneBlox` against the AccountBlox template stays under the EIP-7825 per-tx cap.
@@ -211,9 +212,9 @@ contract CopyBloxCloneIndexTest is Test {
         }
 
         uint256 validIndex = bound(index, 0, n - 1);
-        address at = factory.cloneOfOwnerAt(owner, validIndex);
-        assertTrue(factory.isClone(at), "indexed address is a clone");
-        assertEq(at, factory.clonesOf(owner)[validIndex], "matches clonesOf slice");
+        address indexedClone = factory.cloneOfOwnerAt(owner, validIndex);
+        assertTrue(factory.isClone(indexedClone), "indexed address is a clone");
+        assertEq(indexedClone, factory.clonesOf(owner)[validIndex], "matches clonesOf slice");
 
         uint256 invalidIndex = n + bound(index, 0, 100);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, owner));

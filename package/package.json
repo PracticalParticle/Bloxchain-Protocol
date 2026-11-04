@@ -8,8 +8,6 @@
     "factory",
     "abi",
     "artifacts",
-    "standards",
-    "components",
     "official-deployed-addresses.json",
     "README.md",
     "CHANGELOG.md"
@@ -25,8 +23,6 @@
     "./core/*": "./core/*",
     "./account/*": "./account/*",
     "./factory/*": "./factory/*",
-    "./standards/*": "./standards/*",
-    "./components/*": "./components/*",
     "./*": "./*"
   },
   "scripts": {

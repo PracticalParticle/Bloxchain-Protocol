@@ -166,14 +166,14 @@ function prepareContractsPackage() {
     fail('package/abi/ is empty after prepare');
   }
   const sourceContractsDir = path.join(rootDir, 'contracts');
-  const excludedDirs = ['examples', 'experimental'];
+  const excludedDirs = ['examples', 'experimental', 'standards'];
   const expectedSolPaths = getSolPathsRecursive(sourceContractsDir, sourceContractsDir, excludedDirs);
   const missing = expectedSolPaths.filter(
     (rel) => !fs.existsSync(path.join(contractsPackageDir, rel))
   );
   if (missing.length > 0) {
     fail(
-      'Package layout mismatch: missing .sol files (expected from contracts/, excluding examples & experimental):\n  ' +
+      'Package layout mismatch: missing .sol files (expected from contracts/, excluding examples, experimental & standards):\n  ' +
         missing.join('\n  ')
     );
   }
@@ -226,7 +226,7 @@ function verifyContractsPackage() {
   } catch (error) {
     fail('npm pack --dry-run failed: ' + error.message);
   }
-  const requiredInPack = ['core', 'abi', 'standards', 'artifacts', 'official-deployed-addresses'];
+  const requiredInPack = ['core', 'abi', 'account', 'factory', 'artifacts', 'official-deployed-addresses'];
   for (const dir of requiredInPack) {
     if (!new RegExp(dir + '[/\\\\]|' + dir + '\\.json').test(packOutput)) {
       fail(`npm pack output missing ${dir}`);

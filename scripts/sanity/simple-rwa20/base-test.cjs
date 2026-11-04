@@ -273,14 +273,9 @@ class BaseSimpleRWA20Test {
             // Get owner
             this.roles.owner = await this.callMethod(this.contract.methods.owner);
             
-            // Try to get broadcaster and recovery using SecureOwnable methods
-            try {
-                this.roles.broadcaster = await this.callMethod(this.contract.methods.getBroadcaster);
-            } catch (error) {
-                console.log('⚠️  getBroadcaster method not available, using owner address');
-                this.roles.broadcaster = this.roles.owner;
-            }
-            
+            // Broadcaster: SecureOwnable exposes getBroadcasters() (address[]); no owner fallback
+            this.roles.broadcaster = await this.getPrimaryBroadcaster();
+
             try {
                 this.roles.recovery = await this.callMethod(this.contract.methods.getRecovery);
             } catch (error) {
@@ -308,10 +303,37 @@ class BaseSimpleRWA20Test {
                     console.log(`   🔑 Recovery role served by: ${walletName} (${wallet.address})`);
                 }
             }
-            
+
+            this.requireBroadcasterWallet();
+
         } catch (error) {
             console.error('❌ Failed to load role assignments:', error.message);
             throw error;
+        }
+    }
+
+    /**
+     * Resolve the broadcaster role from the contract. SecureOwnable exposes `getBroadcasters()` (address[]);
+     * there is no `getBroadcaster()`. Prefers a broadcaster served by one of the configured wallets.
+     * Throws when the contract reports no broadcaster — never falls back to the owner, which would submit
+     * meta-transactions from an account without the broadcaster role (NoPermission).
+     */
+    async getPrimaryBroadcaster(options = {}) {
+        const broadcasters = await this.callMethod(this.contract.methods.getBroadcasters, [], options);
+        if (!Array.isArray(broadcasters) || broadcasters.length === 0) {
+            throw new Error('Contract has no broadcaster: getBroadcasters() returned an empty list');
+        }
+        const walletAddresses = Object.values(this.wallets).map((wallet) => wallet.address.toLowerCase());
+        return broadcasters.find((address) => walletAddresses.includes(address.toLowerCase())) || broadcasters[0];
+    }
+
+    /** Fails fast when no configured wallet holds the broadcaster role (e.g. BROADCASTER_PRIVATE_KEY mismatch). */
+    requireBroadcasterWallet() {
+        if (!this.roleWallets.broadcaster) {
+            throw new Error(
+                `No configured wallet holds the broadcaster role (${this.roles.broadcaster}). ` +
+                    'Set BROADCASTER_PRIVATE_KEY to the key of an address returned by getBroadcasters().'
+            );
         }
     }
 
@@ -504,11 +526,16 @@ class BaseSimpleRWA20Test {
             await this.initialize();
             await this.executeTests();
         } catch (error) {
+            // Suite aborted (initialization or an uncaught test error): record it so the runner fails the suite
+            this.testResults.suiteError = error.message;
             console.error(`❌ Test suite failed: ${error.message}`);
         } finally {
             this.testResults.endTime = Date.now();
             this.printTestResults();
         }
+
+        // Same contract as the core sanity suites: true only when nothing failed and the suite did not abort
+        return !this.testResults.suiteError && this.testResults.failedTests === 0;
     }
 
     async advanceBlockchainTime(seconds) {
