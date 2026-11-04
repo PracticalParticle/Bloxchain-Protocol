@@ -66,7 +66,7 @@ if (!fs.existsSync(sourceContractsDir)) {
   process.exit(1);
 }
 
-const excludedDirs = ['examples', 'experimental'];
+const excludedDirs = ['examples', 'experimental', 'standards'];
 const coreSrc = path.join(sourceContractsDir, 'core');
 const coreDest = path.join(contractsDir, 'core');
 if (!fs.existsSync(coreSrc)) {

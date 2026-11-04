@@ -51,9 +51,10 @@ import "@bloxchain/contracts/core/lib/interfaces/IDefinition.sol";
 
 | Path | Contents |
 |------|----------|
-| `core/` | Audited framework library |
+| `core/` | Audited framework library (Solidity sources) |
 | `account/` / `factory/` | BasicAccount and BasicFactory (official mint) |
-| `abi/` / `artifacts/` | ABIs and bytecode for the packaged contracts above (plus EngineBlox and definition libraries) |
+| `abi/` | ABI JSON for packaged Solidity under `core/`, `account/`, and `factory/` |
+| `artifacts/` | Bytecode for **BasicAccount**, **BasicFactory**, **EngineBlox**, **SecureOwnableDefinitions**, **RuntimeRBACDefinitions**, and **GuardControllerDefinitions** only |
 | `official-deployed-addresses.json` | Official catalog (Basic* on all networks; Sepolia `developerTools` lists lab addresses only) |
 
 ### Not in this package

@@ -166,14 +166,14 @@ function prepareContractsPackage() {
     fail('package/abi/ is empty after prepare');
   }
   const sourceContractsDir = path.join(rootDir, 'contracts');
-  const excludedDirs = ['examples', 'experimental'];
+  const excludedDirs = ['examples', 'experimental', 'standards'];
   const expectedSolPaths = getSolPathsRecursive(sourceContractsDir, sourceContractsDir, excludedDirs);
   const missing = expectedSolPaths.filter(
     (rel) => !fs.existsSync(path.join(contractsPackageDir, rel))
   );
   if (missing.length > 0) {
     fail(
-      'Package layout mismatch: missing .sol files (expected from contracts/, excluding examples & experimental):\n  ' +
+      'Package layout mismatch: missing .sol files (expected from contracts/, excluding examples, experimental & standards):\n  ' +
         missing.join('\n  ')
     );
   }

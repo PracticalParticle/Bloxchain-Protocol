@@ -433,7 +433,7 @@ That pair is outside the audited core and outside `@bloxchain/sdk`.
 |---|---|---|
 | Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox` (`contracts/examples/templates/`), 1-second timelock floor |
 | Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor | `CopyBlox` (`contracts/examples/applications/`), an open factory: clones any `IBaseStateMachine` |
-| SDK / wiring | `BasicFactory` in `@bloxchain/sdk` | Addresses under `networks.sepolia.developerTools`; compile ABI from this repo (not in npm artifacts; no CopyBlox client in the SDK) |
+| SDK / wiring | `BasicFactory` in `@bloxchain/sdk` | Addresses under `networks.sepolia.developerTools`; ABIs via `@bloxchain/sdk` (`accountBloxAbi` / `abi/CopyBlox.abi.json`); bytecode not in `@bloxchain/contracts` artifacts; no CopyBlox client |
 | Who may mint | Anyone, **for themselves only**: `msg.sender` must equal `initialOwner`. On networks that enforce the EIP-7825 gas cap, the mint must also be a **direct EOA** call to the factory (M-1); contract wallets and nested frames are unsupported there | Anyone, for any owner (lab trust model; not production) |
 | What may be minted | Only the blox pinned at construction (`BasicAccount`) | Any blox the caller names |
 | How the address is chosen | New address each call (`cloneBlox`), or a deterministic address (`cloneBloxDeterministic`, `CREATE2`) with `predictClone` | New address each call (`CREATE`) |
@@ -546,12 +546,13 @@ They are **not** for production. Production mint is **BasicFactory → BasicAcco
   mint a clone for another entity during lab work; BasicFactory deliberately closes that path.
 
 **BasicAccount** uses a 1-day floor. **BasicFactory** clones BasicAccount only (self-owner mint).
-These examples are **not** in `@bloxchain/contracts` artifacts, are **not** exported from
-`@bloxchain/sdk`, are outside the Nethermind core audit, and must not be treated as a production
-provisioning surface. Resolve Sepolia addresses from `networks.sepolia.developerTools` in
-`official-deployed-addresses.json`. For ABI/bytecode, compile from this repository
-(`contracts/examples/`). From a Protocol checkout, `npm run create-account` offers this path when
-`CREATE_ACCOUNT_EXPERIMENTAL=1` and the network is Sepolia (uses local `abi/`). The guided menu does not.
+These examples are **not** in `@bloxchain/contracts` artifacts (no lab bytecode on npm), are outside
+the Nethermind core audit, and must not be treated as a production provisioning surface. ABIs are
+available from `@bloxchain/sdk` (`accountBloxAbi` for AccountBlox; raw `@bloxchain/sdk/abi/CopyBlox.abi.json`
+for CopyBlox — there is no CopyBlox client). Resolve Sepolia addresses from
+`networks.sepolia.developerTools` in `official-deployed-addresses.json`. From a Protocol checkout,
+`npm run create-account` offers this path when `CREATE_ACCOUNT_EXPERIMENTAL=1` and the network is
+Sepolia (uses local `abi/`). The guided menu does not.
 
 **Known risks (accepted, not a bug to “fix” into self-owner mint):**
 
@@ -564,12 +565,14 @@ provisioning surface. Resolve Sepolia addresses from `networks.sepolia.developer
 ```typescript
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 import { resolveOfficialNetwork, getOfficialAddress } from '@bloxchain/sdk';
-// After compiling this repo: use abi/CopyBlox.abi.json (not the npm artifacts package).
+import { accountBloxAbi } from '@bloxchain/sdk/abi';
+import copyBloxAbi from '@bloxchain/sdk/abi/CopyBlox.abi.json' with { type: 'json' };
 
 const network = resolveOfficialNetwork(official, 11155111);
 const copyBlox = getOfficialAddress(network, 'CopyBlox');
 const accountBlox = getOfficialAddress(network, 'AccountBlox');
-// Wire local ABI + viem getContract / writeContract against those Sepolia addresses.
+// Use accountBloxAbi / copyBloxAbi with viem against those addresses.
+// Bytecode for these examples is not in @bloxchain/contracts artifacts.
 ```
 
 `official-deployed-addresses.json` records which CopyBlox deployments carry the on-chain owner
