@@ -10,9 +10,10 @@ import "../../../contracts/core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBloxCloneIndexTest
- * @dev Covers the public provisioning surface of CopyBlox (SPEC-2026-0118):
- *      - the owner-indexed clone list (`clonesOf` and friends) returns every clone an
- *        owner holds, not only the latest one;
+ * @dev Covers CopyBlox clone indexing (SPEC-2026-0118). CopyBlox is an experimental
+ *      open factory for developer/test use (not production; see CopyBlox NatSpec):
+ *      - the owner-indexed clone list (`clonesOf` and friends) returns every clone
+ *        created for that initialOwner argument, not only the latest one;
  *      - the shape gate an integrator must use holds on real contracts: a clone reads as
  *        an account and the factory itself does not;
  *      - `cloneBlox` against the AccountBlox template stays under the EIP-7825 per-tx cap.

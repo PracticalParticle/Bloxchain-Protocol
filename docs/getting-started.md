@@ -434,7 +434,7 @@ That pair is outside the audited core and outside `@bloxchain/sdk`.
 | Account | `BasicAccount` (`contracts/account/`), 1-day floor, 90-day ceiling, implementation initializer locked | `AccountBlox` (`contracts/examples/templates/`), 1-second timelock floor |
 | Factory | `BasicFactory` (`contracts/factory/`), a pinned minter: clones **one** implementation, fixed in its constructor | `CopyBlox` (`contracts/examples/applications/`), an open factory: clones any `IBaseStateMachine` |
 | SDK / wiring | `BasicFactory` in `@bloxchain/sdk` | Addresses under `networks.sepolia.developerTools`; wire via `@bloxchain/contracts` artifacts (no CopyBlox client in the SDK) |
-| Who may mint | Anyone, **for themselves only**: the sender must be `initialOwner`, as a direct EOA call (M-1) | Anyone, for any owner |
+| Who may mint | Anyone, **for themselves only**: the sender must be `initialOwner`, as a direct EOA call (M-1) | Anyone, for any owner (lab trust model; not production) |
 | What may be minted | Only the blox pinned at construction (`BasicAccount`) | Any blox the caller names |
 | How the address is chosen | New address each call (`cloneBlox`), or a deterministic address (`cloneBloxDeterministic`, `CREATE2`) with `predictClone` | New address each call (`CREATE`) |
 | Governance on the factory | None: no owner, no roles, no timelock, no whitelist. Another account is another mint from the same factory | None |
@@ -534,15 +534,27 @@ pair with `getOfficialBasicMint`. The Nethermind core audit (NM_0828) covers `co
 
 ### 10. Experimental: CopyBlox + AccountBlox on Sepolia
 
-`CopyBlox` and `AccountBlox` are example contracts for experimentation on Sepolia:
+`CopyBlox` and `AccountBlox` are example contracts for **developer / test loops** on Sepolia.
+They are **not** for production. Production mint is **BasicFactory → BasicAccount**.
 
 - **AccountBlox** — Account-pattern template with a **1-second** time-lock floor.
-- **CopyBlox** — open factory that clones any `IBaseStateMachine` for any owner (not pinned).
+- **CopyBlox** — open factory that clones any `IBaseStateMachine` for any owner (not pinned),
+  with caller-chosen recovery and timelock. That openness is intentional so a developer can
+  mint a clone for another entity during lab work; BasicFactory deliberately closes that path.
 
-**BasicAccount** uses a 1-day floor. **BasicFactory** clones BasicAccount only. These examples
-are **not** exported from `@bloxchain/sdk`. Resolve addresses from
+**BasicAccount** uses a 1-day floor. **BasicFactory** clones BasicAccount only (self-owner mint).
+These examples are **not** exported from `@bloxchain/sdk`, are outside the Nethermind core
+audit, and must not be treated as a production provisioning surface. Resolve addresses from
 `networks.sepolia.developerTools` and wire with `@bloxchain/contracts` artifacts + viem.
 `npm run create-account` offers this path when `CREATE_ACCOUNT_EXPERIMENTAL=1` and the network is Sepolia. The guided menu does not.
+
+**Known risks (accepted, not a bug to “fix” into self-owner mint):**
+
+- Anyone may call `cloneBlox` and set `initialOwner`, `broadcaster`, `recovery`, and timelock.
+- `clonesOf` / `BloxCloned` index creation for an owner argument — they are **not** proof of
+  custody. Verify `owner()` and recovery on-chain before funding a clone.
+- Recovery on SecureOwnable clones can drive ownership transfer; only set trusted recovery.
+- The 1-second AccountBlox floor is for fast loops, not production delay assumptions.
 
 ```typescript
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
@@ -648,7 +660,7 @@ To avoid “forgot to call `initialize`” or wrong ordering when spinning up ma
 - **`Clones.clone`** (EIP‑1167, or `cloneDeterministic` for the CREATE2 mint) then **`call`s** `initialize` on the new clone.
 - If initialization **reverts**, the whole transaction **reverts**—you do not end up with a live, uninitialized clone from that path.
 
-For your **own** blox types, the example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is a reference for an open factory that clones any `IBaseStateMachine` and initializes it atomically. Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`). The published CopyBlox address is the Sepolia experiment in [§10](#10-experimental-copyblox--accountblox-on-sepolia).
+For your **own** blox types, the example **`CopyBlox`** (`contracts/examples/applications/CopyBlox/CopyBlox.sol`) is a **lab reference** for an open factory that clones any `IBaseStateMachine` and initializes it atomically (including mint-for-another-owner). Use the same **initializer arity and argument order** your concrete contract exposes (often the same five parameters as `CopyBlox` / `BaseStateMachine`). Do **not** deploy CopyBlox itself for production users; prefer a pinned factory in the style of **BasicFactory**, or your own factory with the trust model you need. The published CopyBlox address is the Sepolia experiment in [§10](#10-experimental-copyblox--accountblox-on-sepolia).
 
 ### **2. Proxy deploy runbook (atomic `initialize`)**
 

@@ -12,25 +12,46 @@ import "../../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBlox
- * @dev A simple blox that can clone other blox contracts and initialize them with user values
+ * @dev Example open factory: clone any `IBaseStateMachine` and initialize it in one call.
  *
  * This contract provides functionality to:
  * - Clone any blox contract using EIP-1167 minimal proxy pattern
- * - Initialize the cloned contract with user-provided values
+ * - Initialize the cloned contract with caller-provided owner, broadcaster, recovery, and timelock
  * - Centralize events from clones by setting eventForwarder to CopyBlox address
  * - Implement IEventForwarder to receive and forward events from all clones
  * - Ensure all clones implement at least IBaseStateMachine interface
  * - Enumerate the clones created for a given initial owner (`clonesOf`)
  *
- * ## Support statement (public provisioning path)
+ * ## Intended use (developers / testing only)
  *
- * CopyBlox is an **example application** of the protocol, and it is also the
- * **sanctioned public provisioning surface**: `cloneBlox` is the supported way for an
- * outside integrator to obtain a governed `AccountBlox` from the published packages
- * alone. It stays under `contracts/examples/applications/` (it is not core protocol
- * and must not be moved into `contracts/core`), but the clone + owner-index +
- * event-forwarding API below is treated as a public API: additive changes only, and
- * the storage layout is preserved for already-deployed factories.
+ * CopyBlox is an **example application** under `contracts/examples/applications/`. It is
+ * **not** core protocol, **not** covered by the Nethermind core audit, and **must not** be
+ * used as a production mint. Production integrators use **BasicFactory → BasicAccount**
+ * (`contracts/factory/`, CreateX catalog). The published Sepolia address lives under
+ * `networks.sepolia.developerTools` only; it is not exported from `@bloxchain/sdk`.
+ *
+ * The open mint is deliberate for developer work: a caller may name **any** `initialOwner`
+ * (mint for another entity), choose **recovery** and **broadcaster**, and pair with
+ * templates such as `AccountBlox` that allow a **1-second** time-lock floor. BasicFactory
+ * is intentionally more restrictive (self-owner mint, pinned BasicAccount, 1-day floor).
+ * Do not "fix" CopyBlox into that model; document and accept the trust trade-offs below.
+ *
+ * ## Known risks and limitations (accepted)
+ *
+ * - **Permissionless provisioning.** Anyone may call `cloneBlox`. There is no
+ *   `msg.sender == initialOwner` check. A third party can index a clone under an address
+ *   they do not control and set recovery to an address they do control.
+ * - **Recovery is powerful.** On SecureOwnable-based clones, the recovery role can drive
+ *   ownership transfer. Only pass recovery addresses you trust for that clone.
+ * - **Index is not custody.** `clonesOf(initialOwner)` / `BloxCloned` list clones *created
+ *   for* that owner argument. They do not prove the named party requested or funded the
+ *   clone. Never treat the index alone as "my accounts"; verify `owner()`, roles, and
+ *   recovery on-chain before sending value.
+ * - **Short timelock.** Pairing with AccountBlox (1-second floor) is for lab loops, not
+ *   production security assumptions.
+ *
+ * The clone + owner-index + event-forwarding API stays additive for already-deployed
+ * factories; storage layout is preserved. CopyBlox must not move into `contracts/core`.
  *
  * A CopyBlox instance is deliberately **not** an account. It answers ERC-165
  * `IBaseStateMachine` (it inherits `BaseStateMachine`) but it never answers
@@ -106,14 +127,16 @@ contract CopyBlox is BaseStateMachine, IEventForwarder {
     }
 
     /**
-     * @notice Clone a blox contract and initialize it with user values
+     * @notice Clone a blox and initialize it (open factory: any caller, any owner).
+     * @dev Developer / test path only. Does **not** require `msg.sender == initialOwner`.
+     *      Caller chooses recovery and timelock; see contract-level known risks. Production
+     *      mint is BasicFactory (self-owner). Event forwarder is this CopyBlox.
      * @param bloxAddress The address of the blox contract to clone
-     * @param initialOwner The initial owner address for the cloned blox
+     * @param initialOwner The initial owner address for the cloned blox (need not be caller)
      * @param broadcaster The broadcaster address for the cloned blox
-     * @param recovery The recovery address for the cloned blox
+     * @param recovery The recovery address for the cloned blox (trusted; can move ownership)
      * @param timeLockPeriodSec The timelock period in seconds for the cloned blox
      * @return cloneAddress The address of the newly cloned blox contract
-     * @notice The eventForwarder is automatically set to CopyBlox address to centralize events
      */
     function cloneBlox(
         address bloxAddress,

@@ -15,6 +15,8 @@ We actively maintain security updates for the following versions:
 
 Examples and application code under `contracts/examples/` are **not** covered by that engagement.
 
+**CopyBlox / AccountBlox (Sepolia `developerTools`):** example open factory and 1-second account template for **developer testing only**. Permissionless mint for any named owner with caller-chosen recovery is **by design** (contrast BasicFactory self-owner mint). Do not use in production; do not treat the owner clone index as custody. See [docs/getting-started.md §10](docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).
+
 ## Reporting a Vulnerability
 
 **⚠️ IMPORTANT: Do NOT create public GitHub issues for security vulnerabilities.**

@@ -134,9 +134,12 @@ runtime. The CreateX catalog declares the pair in `official-deployed-addresses.j
 `getOfficialBasicMint(network)` returns those addresses on all 10 live networks and 6 testnets, and never
 falls back to CopyBlox.
 
-The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for fast loops and open
-cloning. It is **not** part of `@bloxchain/sdk`. Wire it via `@bloxchain/contracts` artifacts
-on `networks.sepolia.developerTools` addresses.
+The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for **developer / test**
+fast loops and open cloning (mint for another entity, caller-chosen recovery, 1-second
+AccountBlox floor). It is **not** for production, **not** part of `@bloxchain/sdk`, and
+outside the Nethermind core audit. Wire it via `@bloxchain/contracts` artifacts on
+`networks.sepolia.developerTools` addresses. See [Getting Started §10](./getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)
+for accepted risks (index ≠ custody; recovery is powerful).
 
 ### Official mint and the Sepolia experiment
 
@@ -170,7 +173,10 @@ predicted addresses differ per chain. See
 on both mints unless `initialOwner == msg.sender`: you mint your own account, and you may still
 name helper wallets as broadcaster and recovery. Minting for another owner (a relayer or a
 sponsor naming a third party as owner) stays possible with other factories such as the
-experimental CopyBlox. The official factory closes that path.
+experimental CopyBlox. The official factory closes that path on purpose. CopyBlox’s open
+`cloneBlox` (no caller-is-owner check, caller-chosen recovery) is a **documented lab
+trade-off**, not a defect relative to BasicFactory — do not fund clones from the owner index
+alone, and do not use CopyBlox in production.
 
 The deterministic address is `CREATE2` over
 `keccak256(abi.encode(minter, initialOwner, index, salt))`, with `minter = msg.sender`. Since

@@ -97,7 +97,7 @@ Put the signing key in a gitignored `.env.deployment` as `DEPLOY_PRIVATE_KEY` on
 
 See [Account pattern](./docs/account-pattern.md) · [shared addresses](#official-createx-catalog).
 
-The 1-second **AccountBlox** template and **CopyBlox** stay out of the guided menu. Developers on Sepolia can set `CREATE_ACCOUNT_EXPERIMENTAL=1` (with `DEPLOY_NETWORK_NAME=sepolia` when running non-interactive). That path is outside the audited core.
+The 1-second **AccountBlox** template and **CopyBlox** stay out of the guided menu. Developers on Sepolia can set `CREATE_ACCOUNT_EXPERIMENTAL=1` (with `DEPLOY_NETWORK_NAME=sepolia` when running non-interactive). That path is outside the audited core and **must not** be used in production (open factory: any owner, caller-chosen recovery; see [Getting Started §10](./docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)).
 
 ### Build smart contracts
 
@@ -129,7 +129,7 @@ Compose only what you need. Account wires all three core components. Most apps u
 | Asset vault (ETH / ERC-20) | Vault with ownership controls | SecureOwnable | [`SimpleVault`](./contracts/examples/applications/SimpleVault/) |
 | Scheduled payments | Payments with approval workflow | SecureOwnable | [`PayBlox`](./contracts/examples/applications/PayBlox/) |
 | RWA / governed token | Token with on-chain governance | SecureOwnable + ERC-20 | [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) |
-| Many copies of your own blox | Example factory that clones a blox you pass in | IBaseStateMachine | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) |
+| Many copies of your own blox (lab only) | Example open factory that clones a blox you pass in — not for production | IBaseStateMachine | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) · prefer [`BasicFactory`](./contracts/factory/BasicFactory.sol) in production |
 | Safe + extra policy | Safe with added on-chain rules | SecureOwnable + guard | [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) |
 
 More: [`contracts/examples/`](./contracts/examples/) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
@@ -239,12 +239,13 @@ Polygon PoS, BNB Smart Chain, Avalanche C-Chain, and Monad are mainnet-only in t
 
 ### Experimental developer path (Sepolia)
 
-**AccountBlox** and **CopyBlox** are example contracts for people experimenting on Sepolia:
+**AccountBlox** and **CopyBlox** are example contracts for **developer / test** work on Sepolia.
+**Do not use them in production.** Production mint is BasicFactory → BasicAccount.
 
 - **AccountBlox.** Account-pattern template with a **1-second** time-lock floor.
-- **CopyBlox.** Open factory that can clone any standard `IBaseStateMachine` blox, including AccountBlox.
+- **CopyBlox.** Open factory that can clone any standard `IBaseStateMachine` blox (including AccountBlox) for **any** named owner, with caller-chosen recovery and timelock. That openness is intentional for lab mint-for-another-entity flows; BasicFactory is deliberately more restrictive (self-owner only). Treat `clonesOf` / `BloxCloned` as a creation index, not proof of custody — verify `owner()` and recovery before funding.
 
-**BasicAccount** uses a **1-day** floor. **BasicFactory** clones BasicAccount only. These example addresses are under `networks.sepolia.developerTools` in the JSON file. Wire them with `@bloxchain/contracts` artifacts and viem. They are **not** exported from `@bloxchain/sdk`. The guided `create-account` menu does not offer this path. Developers set `CREATE_ACCOUNT_EXPERIMENTAL=1` and select Sepolia.
+**BasicAccount** uses a **1-day** floor. **BasicFactory** clones BasicAccount only. These example addresses are under `networks.sepolia.developerTools` in the JSON file. Wire them with `@bloxchain/contracts` artifacts and viem. They are **not** exported from `@bloxchain/sdk` and are outside the Nethermind core audit. The guided `create-account` menu does not offer this path. Developers set `CREATE_ACCOUNT_EXPERIMENTAL=1` and select Sepolia. Details: [Getting Started §10](./docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).
 
 | Contract | Address |
 |----------|---------|
@@ -257,7 +258,7 @@ A private chain, or a public chain that is not in the tables above, is outside t
 
 ## Security
 
-- **Audit scope:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [AUDIT.md](./contracts/core/AUDIT.md). Examples are out of scope, including the Sepolia AccountBlox template.
+- **Audit scope:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [AUDIT.md](./contracts/core/AUDIT.md). Examples are out of scope, including the Sepolia AccountBlox / CopyBlox developer path (open factory trust model is intentional; not for production).
 - **Reporting:** [SECURITY.md](./SECURITY.md) only.
 - **Model notes:** Direct approval can enforce a delay. Meta-transaction approval separates signing from submission and does **not** inherit that delay. See [WHITEPAPER.md](./WHITEPAPER.md#33-direct-delay-and-meta-authorization-are-different-policies).
 
