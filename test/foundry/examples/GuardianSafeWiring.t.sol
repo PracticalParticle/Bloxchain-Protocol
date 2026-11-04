@@ -8,9 +8,9 @@ import "./MockSafe.sol";
 
 /**
  * @title GuardianSafeWiringTest
- * @dev SPEC-2026-0175 R1 (exec selector + single-tuple encode) and R4 (meta selector double-wrap).
- *      Note: this suite proves the definition wiring only. The coarse execution latch (Finding 4) is
- *      SPEC-2026-0176; GuardianSafe is not to be treated as installable until that lands.
+ * @dev SPEC-2026-0175 R1 (exec selector + single-tuple encode) and R4 (meta selector double-wrap);
+ *      SPEC-2026-0176 approved Safe-tx binding (guard admits only the transaction GuardianSafe is executing,
+ *      single-use, cleared after; nested / replayed / post-clear Safe transactions are rejected).
  */
 contract GuardianSafeWiringTest is CommonBase {
     GuardianSafe internal gs;
@@ -199,5 +199,164 @@ contract GuardianSafeWiringTest is CommonBase {
             )
         );
         gs.cancelTransactionWithMetaTx(m);
+    }
+
+    // ============ SPEC-2026-0176: approved Safe-tx binding ============
+
+    string internal constant TX_REJECT = "GuardianSafe: Transactions must be executed through GuardianSafe system";
+    string internal constant GUARD_REJECT = "GuardianSafe: Guard changes must be executed through GuardianSafe system";
+    string internal constant NOT_SAFE = "GuardianSafe: caller is not the Safe";
+
+    address internal constant PAYEE = address(0xBEEF);
+    address internal constant THIEF = address(0xBAD);
+
+    function _approveAfterDelay(GuardianSafe.SafeTx memory t) internal returns (uint256 txId) {
+        txId = _request(t);
+        advanceTime(DEFAULT_TIMELOCK_PERIOD + 1);
+        vm.prank(owner);
+        gs.approveTransactionAfterDelay(txId);
+    }
+
+    function _execFrom(address caller, GuardianSafe.SafeTx memory t) internal {
+        vm.prank(caller);
+        safe.execTransaction(
+            t.to, t.value, t.data, t.operation, t.safeTxGas, t.baseGas, t.gasPrice, t.gasToken, t.refundReceiver, t.signatures
+        );
+    }
+
+    function _errorString(string memory reason) internal pure returns (bytes memory) {
+        return abi.encodeWithSignature("Error(string)", reason);
+    }
+
+    /// AC1 / B1: one approved native payout from the Safe succeeds end-to-end.
+    function test_Binding_ApprovedPayout_PaysOut() public {
+        vm.deal(address(safe), 5 ether);
+        GuardianSafe.SafeTx memory t = _safeTx(PAYEE, "");
+        t.value = 1 ether;
+
+        uint256 txId = _approveAfterDelay(t);
+
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.COMPLETED));
+        assertEq(PAYEE.balance, 1 ether);
+        assertEq(address(safe).balance, 4 ether);
+    }
+
+    /// B1 / AC3: after the approved tx completes, even the identical tx sent from GuardianSafe's address is rejected.
+    function test_Binding_ClearedAfterExecution_ExactReplayBlocked() public {
+        vm.deal(address(safe), 5 ether);
+        GuardianSafe.SafeTx memory t = _safeTx(PAYEE, "");
+        t.value = 1 ether;
+        _approveAfterDelay(t);
+
+        vm.expectRevert(bytes(TX_REJECT));
+        _execFrom(address(gs), t);
+        assertEq(PAYEE.balance, 1 ether);
+    }
+
+    /// AC3 / B3: a plain Safe tx without GuardianSafe approval is still blocked after a governed tx ran.
+    function test_Binding_PostClear_PlainSafeTxBlocked() public {
+        _approveAfterDelay(_safeTx(address(recorder), abi.encodeCall(SafeCallRecorder.ping, ())));
+        vm.deal(address(safe), 1 ether);
+
+        GuardianSafe.SafeTx memory t = _safeTx(THIEF, "");
+        t.value = 1 ether;
+        vm.expectRevert(bytes(TX_REJECT));
+        _execFrom(attacker, t);
+        assertEq(THIEF.balance, 0);
+    }
+
+    /// AC2 / B2: during an approved outer call, a nested unapproved execTransaction is rejected at the guard.
+    function test_Binding_NestedUnapprovedExec_RejectedAtGuard() public {
+        vm.deal(address(safe), 5 ether);
+        NestedSafeExecutor exec = new NestedSafeExecutor(safe);
+
+        uint256 txId = _approveAfterDelay(
+            _safeTx(address(exec), abi.encodeCall(NestedSafeExecutor.nestedExec, (THIEF, 5 ether, bytes(""))))
+        );
+
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.COMPLETED));
+        assertEq(exec.attempts(), 1);
+        assertFalse(exec.nestedSucceeded());
+        assertEq(exec.lastRevertData(), _errorString(TX_REJECT));
+        assertEq(THIEF.balance, 0);
+        assertEq(address(safe).balance, 5 ether);
+    }
+
+    /// B2: a nested guard removal during an approved outer call is rejected.
+    function test_Binding_NestedGuardRemoval_Rejected() public {
+        NestedSafeExecutor exec = new NestedSafeExecutor(safe);
+
+        _approveAfterDelay(
+            _safeTx(
+                address(exec),
+                abi.encodeCall(
+                    NestedSafeExecutor.nestedExec, (address(safe), 0, abi.encodeCall(MockSafe.setGuard, (address(0))))
+                )
+            )
+        );
+
+        assertFalse(exec.nestedSucceeded());
+        assertEq(exec.lastRevertData(), _errorString(GUARD_REJECT));
+        assertEq(safe.guard(), address(gs));
+    }
+
+    /// B2: a nested replay of the same Safe call fields is rejected (binding is single-use and bound to GuardianSafe).
+    function test_Binding_NestedReplayOfApprovedFields_Rejected() public {
+        NestedSafeExecutor exec = new NestedSafeExecutor(safe);
+
+        uint256 txId = _approveAfterDelay(_safeTx(address(exec), abi.encodeCall(NestedSafeExecutor.nestedReplay, ())));
+
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.COMPLETED));
+        assertEq(exec.attempts(), 1);
+        assertFalse(exec.nestedSucceeded());
+        assertEq(exec.lastRevertData(), _errorString(TX_REJECT));
+        assertEq(safe.execCount(), 1);
+    }
+
+    /// R1: the binding admits one guard check only; a second check of the same tx fails and the call does not run.
+    function test_Binding_SingleUse_SecondGuardCheckFails() public {
+        safe.setRecheckGuardForTest(true);
+        uint256 txId = _approveAfterDelay(_safeTx(address(recorder), abi.encodeCall(SafeCallRecorder.ping, ())));
+
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.FAILED));
+        assertEq(recorder.calls(), 0);
+        assertEq(safe.execCount(), 0);
+    }
+
+    /// R2: a failed Safe call leaves no binding (governed tx FAILED; a later identical tx from GuardianSafe still blocked).
+    function test_Binding_FailedSafeCall_LeavesNoBinding() public {
+        GuardianSafe.SafeTx memory t = _safeTx(address(recorder), hex"deadbeef"); // no such function: inner call fails
+        uint256 txId = _approveAfterDelay(t);
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.FAILED));
+
+        vm.expectRevert(bytes(TX_REJECT));
+        _execFrom(address(gs), t);
+    }
+
+    /// The guard hooks only answer the bound Safe.
+    function test_GuardHooks_OnlyCallableBySafe() public {
+        vm.prank(attacker);
+        vm.expectRevert(bytes(NOT_SAFE));
+        gs.checkTransaction(
+            address(recorder), 0, "", ITransactionGuard.Operation.Call, 0, 0, 0, address(0), payable(address(0)), "", address(gs)
+        );
+
+        vm.prank(attacker);
+        vm.expectRevert(bytes(NOT_SAFE));
+        gs.checkAfterExecution(bytes32(0), true);
+    }
+
+    /// Sponsor lock 2: installing GuardianSafe as the guard stays allowed without a governed approval.
+    function test_InitialGuardInstall_StillAllowed() public {
+        MockSafe fresh = new MockSafe();
+        GuardianSafe gs2 = new GuardianSafe();
+        gs2.initialize(address(fresh), owner, broadcaster, recovery, DEFAULT_TIMELOCK_PERIOD, address(mockEventForwarder));
+        fresh.installGuardForTest(address(gs2));
+
+        vm.prank(attacker);
+        fresh.execTransaction(
+            address(fresh), 0, abi.encodeCall(MockSafe.setGuard, (address(gs2))), 0, 0, 0, 0, address(0), payable(address(0)), ""
+        );
+        assertEq(fresh.guard(), address(gs2));
     }
 }

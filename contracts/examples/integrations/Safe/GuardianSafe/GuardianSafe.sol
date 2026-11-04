@@ -88,8 +88,15 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         uint256 maxGasPrice;
     }
 
-    bool private isExecutingThroughGuardian = false;
-    
+    /**
+     * @dev Binding for the one Safe transaction GuardianSafe is currently executing (SPEC-2026-0176).
+     *      Set by `executeTransaction` (only reachable through an approved EngineBlox execution), consumed by the
+     *      first matching `checkTransaction`, and cleared again in `checkAfterExecution` and after the Safe call.
+     *      Zero means no Safe transaction is admitted. Replaces the former global `isExecutingThroughGuardian`
+     *      latch, which admitted *any* Safe transaction (including nested ones) while it was set.
+     */
+    bytes32 private approvedSafeTxHash;
+
     /**
      * @notice Initialize GuardianSafe (replaces constructor for clone pattern)
      * @param _safe The Safe contract address
@@ -245,12 +252,30 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     /**
      * @notice Execute a Safe transaction through execTransaction
      * @param safeTx The Safe transaction parameters
+     * @dev Binds the guard to exactly this Safe transaction (all Safe call fields, signatures, and
+     *      `msgSender == address(this)`) for the duration of the call. The binding is single-use: the guard
+     *      consumes it on the first matching `checkTransaction`, so a nested `execTransaction` from the call
+     *      target — different or identical fields — is rejected. Cleared after the call whether it succeeds or
+     *      fails; a revert rolls the write back with the rest of the frame.
      */
     function executeTransaction(SafeTx memory safeTx) external {
         SharedValidation.validateInternalCall(address(this));
-        
-        isExecutingThroughGuardian = true;
-        
+        require(approvedSafeTxHash == bytes32(0), "GuardianSafe: Safe transaction already in progress");
+
+        approvedSafeTxHash = _safeTxBindingHash(
+            safeTx.to,
+            safeTx.value,
+            safeTx.data,
+            safeTx.operation,
+            safeTx.safeTxGas,
+            safeTx.baseGas,
+            safeTx.gasPrice,
+            safeTx.gasToken,
+            safeTx.refundReceiver,
+            safeTx.signatures,
+            address(this)
+        );
+
         bool success = safe.execTransaction(
             safeTx.to,
             safeTx.value,
@@ -264,8 +289,10 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
             safeTx.signatures
         );
         
-        isExecutingThroughGuardian = false;
-        
+        // Fail-safe: the guard normally consumes the binding in checkTransaction and clears it in
+        // checkAfterExecution; clear again in case the Safe returned without calling the guard.
+        approvedSafeTxHash = bytes32(0);
+
         require(success, "Safe transaction execution failed");
         
         // Emit event for successful execution
@@ -381,24 +408,50 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         return abi.encode(safeTx);
     }
 
+    /**
+     * @notice Safe guard hook: admits only the Safe transaction GuardianSafe is executing right now
+     * @dev SPEC-2026-0176: the live transaction (all Safe call fields, signatures, and `msgSender`) must hash to
+     *      `approvedSafeTxHash`, set by `executeTransaction`. The binding is consumed on admit, so any further
+     *      `execTransaction` in the same window (nested from the call target, or a replay of the same fields) is
+     *      rejected. Only the bound Safe may call this hook. Installing this contract as the guard
+     *      (`setGuard(address(this))`) stays allowed without a binding (initial setup path).
+     */
     function checkTransaction(
         address to,
-        uint256 /* value */,
+        uint256 value,
         bytes memory data,
         Operation operation,
-        uint256 /* safeTxGas */,
-        uint256 /* baseGas */,
-        uint256 /* gasPrice */,
-        address /* gasToken */,
-        address payable /* refundReceiver */,
-        bytes memory /* signatures */,
-        address /* msgSender */
-    ) external view override {
+        uint256 safeTxGas,
+        uint256 baseGas,
+        uint256 gasPrice,
+        address gasToken,
+        address payable refundReceiver,
+        bytes memory signatures,
+        address msgSender
+    ) external override {
+        require(msg.sender == address(safe), "GuardianSafe: caller is not the Safe");
+
         // Check if this is a delegated call and validate if needed
         if (operation == Operation.DelegateCall) {
             _validateDelegation();
         }
-        
+
+        bool approved = _consumeApprovedSafeTx(
+            _safeTxBindingHash(
+                to,
+                value,
+                data,
+                uint8(operation),
+                safeTxGas,
+                baseGas,
+                gasPrice,
+                gasToken,
+                refundReceiver,
+                signatures,
+                msgSender
+            )
+        );
+
         // Handle setGuard calls specially
         if (to == address(safe) && data.length >= 4) {
             bytes4 selector;
@@ -418,24 +471,76 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
                     return; // Allow initial guard setup
                 }
                 
-                // For guard changes after setup, only allow through GuardianSafe system
+                // For guard changes after setup, only the approved Safe transaction is admitted
                 require(
-                    isExecutingThroughGuardian,
+                    approved,
                     "GuardianSafe: Guard changes must be executed through GuardianSafe system"
                 );
                 return;
             }
         }
-        
-        // For all other transactions, ensure they come through GuardianSafe system
+
+        // For all other transactions, only the approved Safe transaction is admitted
         require(
-            isExecutingThroughGuardian, 
+            approved,
             "GuardianSafe: Transactions must be executed through GuardianSafe system"
         );
     }
 
-    function checkAfterExecution(bytes32 hash, bool success) external override {
-        // Empty implementation as per requirements
+    /**
+     * @notice Safe guard hook after execution: clears any remaining binding (success or failure)
+     * @dev Only the bound Safe may call this hook.
+     */
+    function checkAfterExecution(bytes32 /* hash */, bool /* success */) external override {
+        require(msg.sender == address(safe), "GuardianSafe: caller is not the Safe");
+        approvedSafeTxHash = bytes32(0);
+    }
+
+    /**
+     * @dev Consumes the binding if `liveHash` matches it. Returns false (and leaves state untouched) otherwise.
+     */
+    function _consumeApprovedSafeTx(bytes32 liveHash) private returns (bool) {
+        bytes32 bound = approvedSafeTxHash;
+        if (bound == bytes32(0) || bound != liveHash) {
+            return false;
+        }
+        approvedSafeTxHash = bytes32(0);
+        return true;
+    }
+
+    /**
+     * @dev Identity of a Safe transaction as seen by the guard: every field Safe passes to `checkTransaction`
+     *      (dynamic fields hashed) plus the `execTransaction` caller. Binding `msgSender` to `address(this)` means
+     *      only GuardianSafe's own `safe.execTransaction` call can match.
+     */
+    function _safeTxBindingHash(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint8 operation,
+        uint256 safeTxGas,
+        uint256 baseGas,
+        uint256 gasPrice,
+        address gasToken,
+        address refundReceiver,
+        bytes memory signatures,
+        address msgSender
+    ) private pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                to,
+                value,
+                keccak256(data),
+                operation,
+                safeTxGas,
+                baseGas,
+                gasPrice,
+                gasToken,
+                refundReceiver,
+                keccak256(signatures),
+                msgSender
+            )
+        );
     }
 
     /**
