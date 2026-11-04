@@ -49,7 +49,7 @@ import "@bloxchain/contracts/core/lib/interfaces/IDefinition.sol";
 
 ### Templates and examples
 
-Templates (e.g. AccountBlox, CopyBlox) and example applications (SimpleVault, SimpleRWA20) live in the main repository under `contracts/examples/`. They are not included in this npm package. See the [main repo](https://github.com/PracticalParticle/Bloxchain-Protocol) for full documentation and examples.
+Teaching samples (e.g. AccountBlox, CopyBlox, SimpleVault, SimpleRWA20) live in the main repository under `contracts/examples/`. They are **not** ready products, are outside the Nethermind core audit, and must not hold value on live networks. They are not included in this npm package. See [`contracts/examples/README.md`](https://github.com/PracticalParticle/Bloxchain-Protocol/blob/main/contracts/examples/README.md) in the [main repo](https://github.com/PracticalParticle/Bloxchain-Protocol).
 
 ## Dependencies
 

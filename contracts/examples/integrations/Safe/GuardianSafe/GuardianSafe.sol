@@ -46,6 +46,7 @@ interface ITransactionGuard {
 
 /**
  * @title GuardianSafe
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev A secure wrapper for Safe wallet functionality using SecureOwnable security framework.
  * Implements time-locked operations and meta-transaction support for enhanced security.
  */

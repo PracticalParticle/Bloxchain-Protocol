@@ -92,20 +92,7 @@ if (fs.existsSync(standardsSrc)) {
   console.log('⏭️  No standards directory; skipping\n');
 }
 
-// Step 2c: Copy contracts/components to package/components
-const componentsSrc = path.join(sourceContractsDir, 'components');
-const componentsDest = path.join(contractsDir, 'components');
-if (fs.existsSync(componentsSrc)) {
-  if (fs.existsSync(componentsDest)) {
-    fs.rmSync(componentsDest, { recursive: true, force: true });
-  }
-  copyDir(componentsSrc, componentsDest, []);
-  console.log('✅ Components copied\n');
-} else {
-  console.log('⏭️  No components directory; skipping\n');
-}
-
-// Step 2d: Copy Platform mint sources (BasicAccount / BasicFactory)
+// Step 2c: Copy Platform mint sources (BasicAccount / BasicFactory)
 for (const folder of ['account', 'factory']) {
   const src = path.join(sourceContractsDir, folder);
   const dest = path.join(contractsDir, folder);
@@ -136,7 +123,7 @@ copyDir(sourceAbiDir, destAbiDir, []);
 console.log('✅ ABIs copied\n');
 
 // Step 4: Remove ABIs that don't have a contract in the package
-// Only keep ABIs whose contract name exists in core, standards, or components (no examples).
+// Only keep ABIs whose contract name exists in core, standards, account, or factory (no examples).
 const packagedContractNames = collectPackagedContractNames();
 console.log('📋 Step 4: Pruning ABIs not packaged with contracts...');
 const removed = pruneUnpackagedAbis(destAbiDir, packagedContractNames);
@@ -177,7 +164,7 @@ console.log('✅ Package ready for publishing!\n');
 
 /**
  * Collect contract names (basename of .sol files) from the source dirs that get copied
- * into the package: core, standards, components. Excludes examples and experimental.
+ * into the package: core, standards, account, factory. Excludes examples.
  */
 function collectPackagedContractNames() {
   const names = new Set();
@@ -186,7 +173,6 @@ function collectPackagedContractNames() {
   const dirs = [
     coreSrc,
     fs.existsSync(standardsSrc) ? standardsSrc : null,
-    fs.existsSync(componentsSrc) ? componentsSrc : null,
     fs.existsSync(accountSrc) ? accountSrc : null,
     fs.existsSync(factorySrc) ? factorySrc : null,
   ].filter(Boolean);

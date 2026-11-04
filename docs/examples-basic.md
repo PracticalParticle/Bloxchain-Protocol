@@ -2,6 +2,8 @@
 
 This guide provides practical examples using the Bloxchain TypeScript SDK. Contract API is defined by the Solidity source; see [generated contract API](./core/) for NatSpec output.
 
+Solidity under `contracts/examples/` is separate: those are **teaching / lab samples**, not ready products, and must not be used to hold value on live networks. Prefer **BasicFactory → BasicAccount** for live mint. See [`contracts/examples/README.md`](../contracts/examples/README.md).
+
 ## 🚀 **Setup Examples**
 
 ### **Basic Client Setup**

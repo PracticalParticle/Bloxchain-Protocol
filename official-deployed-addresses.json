@@ -6,7 +6,7 @@
     "whatQualifies": "Deployed from the CreateX same-address rail (SPEC-2026-0137), verified (explorer and/or Sourcify), and intended for outside integrators. Local, lab and throwaway deployments never qualify. Faucet-deferred testnets stay out until catalogued.",
     "howToAdd": "Deploy and verify the CreateX catalog on the new chain (addresses must match catalog.contracts). Then: node scripts/promote-official-addresses.cjs --network <name> --chain-id <id> --declare. The script refuses to write without --declare and refuses a network whose addresses differ from the shared catalog. Validate with: npm run validate:official-addresses",
     "sharedCatalog": "catalog.contracts is the Platform CreateX address book (BasicFactory → BasicAccount). Do not paste those six addresses under every network. Network rows point at the catalog id.",
-    "developerTools": "Optional per-network developerTools overlay holds the Sepolia experiment (AccountBlox / CopyBlox): an open factory and a 1-second AccountBlox floor. The integrator mint is BasicFactory → BasicAccount.",
+    "developerTools": "Optional per-network developerTools overlay holds the Sepolia experiment (AccountBlox / CopyBlox): an open factory (any owner, caller-chosen recovery) and a 1-second AccountBlox floor for developer/test loops only — not for production. The integrator mint is BasicFactory → BasicAccount.",
     "pendingRows": "A contract that is not yet declared is listed with \"address\": null and \"status\": \"pending-declaration\". Addresses are never guessed."
   },
   "updated": "2026-10-23",
@@ -86,7 +86,7 @@
       "explorer": "https://sepolia.etherscan.io",
       "declaredIn": "README.md#official-createx-catalog",
       "mirroredAt": "2026-10-08",
-      "notes": "CreateX baseline testnet. Integrator mint = BasicFactory → BasicAccount. Sepolia also lists the experimental AccountBlox / CopyBlox pair under developerTools.",
+      "notes": "CreateX baseline testnet. Integrator mint = BasicFactory → BasicAccount. Sepolia also lists the experimental AccountBlox / CopyBlox pair under developerTools (lab only, not production).",
       "developerTools": {
         "AccountBlox": {
           "address": "0x783eb64d7d5de55f6913f9cb42ef5a4c402884c0",
@@ -117,7 +117,7 @@
             "maxTxGas": 16777216,
             "notes": "Observed gasUsed for cloneBlox against AccountBlox on Sepolia. Public networks cap a single transaction at 2^24 = 16,777,216 (EIP-7825)."
           },
-          "notes": "Experimental factory (contracts/examples), Sepolia only. Open factory: can clone any standard IBaseStateMachine blox, including AccountBlox. BasicFactory is pinned to BasicAccount. Predates the owner-indexed clone list; enumerate from BloxCloned logs. Wire via @bloxchain/contracts artifacts + viem. Not exported from @bloxchain/sdk."
+          "notes": "Experimental factory (contracts/examples), Sepolia only — developer/test, not production. Open by design: any caller may clone any IBaseStateMachine (including AccountBlox) for any initialOwner with caller-chosen recovery/timelock; clonesOf/BloxCloned is a creation index, not custody. BasicFactory is the production self-owner mint pinned to BasicAccount. Predates the owner-indexed clone list; enumerate from BloxCloned logs. Wire via @bloxchain/contracts artifacts + viem. Not exported from @bloxchain/sdk."
         }
       }
     },

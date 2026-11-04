@@ -34,13 +34,13 @@ The optional hosted app ([bloxchain.app](https://bloxchain.app)) uses the same o
 
 ## Architecture
 
-EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings**. Most apps use a subset. The **Account** pattern composes all three. **BasicAccount** is the governed account integrators mint. Example applications sit below as evidence.
+EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings**. Most apps use a subset. The **Account** pattern composes all three. **BasicAccount** is the governed account integrators mint. Educational samples under `contracts/examples/` sit below as learning evidence only.
 
 <p align="center">
-  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
+  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and educational sample applications" width="920">
 </p>
 
-**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset. BasicFactory mints BasicAccount. Examples (vaults, payments, tokens, Safe) sit below Account as evidence.
+**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset. BasicFactory mints BasicAccount. Teaching samples (vaults, payments, tokens, Safe) under `contracts/examples/` sit below Account as learning evidence — not for live value.
 
 Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
 
@@ -97,7 +97,7 @@ Put the signing key in a gitignored `.env.deployment` as `DEPLOY_PRIVATE_KEY` on
 
 See [Account pattern](./docs/account-pattern.md) · [shared addresses](#official-createx-catalog).
 
-The 1-second **AccountBlox** template and **CopyBlox** stay out of the guided menu. Developers on Sepolia can set `CREATE_ACCOUNT_EXPERIMENTAL=1` (with `DEPLOY_NETWORK_NAME=sepolia` when running non-interactive). That path is outside the audited core.
+The 1-second **AccountBlox** template and **CopyBlox** stay out of the guided menu. Developers on Sepolia can set `CREATE_ACCOUNT_EXPERIMENTAL=1` (with `DEPLOY_NETWORK_NAME=sepolia` when running non-interactive). That path is outside the audited core and **must not** be used in production (open factory: any owner, caller-chosen recovery; see [Getting Started §10](./docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)).
 
 ### Build smart contracts
 
@@ -117,22 +117,19 @@ npm run compile:foundry
 npm run test:foundry
 ```
 
-Extend patterns under [`contracts/examples/`](./contracts/examples/). Pin exact versions in production. [VERSIONING](./docs/VERSIONING.md).
+For live deployments, pin exact package versions and use the official mint path. [VERSIONING](./docs/VERSIONING.md).
 
 ## What you can build
 
-Compose only what you need. Account wires all three core components. Most apps use a **subset**.
+Compose only what you need. Account wires all three core components (SecureOwnable, RuntimeRBAC, GuardController). Most apps use a **subset**. See [Account pattern](./docs/account-pattern.md) and [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
 
-| I want to build… | In plain terms | Protocol pieces | Start from |
-|------------------|----------------|-----------------|------------|
-| Governed smart account / treasury | Full account stack with roles and execution rules | Account (SecureOwnable + RuntimeRBAC + GuardController) | [`BasicAccount`](./contracts/account/BasicAccount.sol) · [`BasicFactory`](./contracts/factory/BasicFactory.sol) · `create-account` |
-| Asset vault (ETH / ERC-20) | Vault with ownership controls | SecureOwnable | [`SimpleVault`](./contracts/examples/applications/SimpleVault/) |
-| Scheduled payments | Payments with approval workflow | SecureOwnable | [`PayBlox`](./contracts/examples/applications/PayBlox/) |
-| RWA / governed token | Token with on-chain governance | SecureOwnable + ERC-20 | [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) |
-| Many copies of your own blox | Example factory that clones a blox you pass in | IBaseStateMachine | [`CopyBlox`](./contracts/examples/applications/CopyBlox/) |
-| Safe + extra policy | Safe with added on-chain rules | SecureOwnable + guard | [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) |
+| I want to build… | In plain terms | Path |
+|------------------|----------------|------|
+| Governed smart account / treasury | Full account stack with roles and execution rules | [`BasicAccount`](./contracts/account/BasicAccount.sol) · [`BasicFactory`](./contracts/factory/BasicFactory.sol) · `create-account` |
 
-More: [`contracts/examples/`](./contracts/examples/) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
+Live mint is **BasicFactory → BasicAccount** (or your own reviewed extension).
+
+For a deeper look at Protocol capabilities and use cases, see the educational samples under [`contracts/examples/`](./contracts/examples/) ([README](./contracts/examples/README.md)). They are teaching references for local and lab learning — **not** ready products, **outside** the Nethermind core audit, and **must not** be used to hold value on live networks.
 
 ## Integrate with the SDK
 
@@ -239,12 +236,13 @@ Polygon PoS, BNB Smart Chain, Avalanche C-Chain, and Monad are mainnet-only in t
 
 ### Experimental developer path (Sepolia)
 
-**AccountBlox** and **CopyBlox** are example contracts for people experimenting on Sepolia:
+**AccountBlox** and **CopyBlox** are example contracts for **developer / test** work on Sepolia.
+**Do not use them in production.** Production mint is BasicFactory → BasicAccount.
 
 - **AccountBlox.** Account-pattern template with a **1-second** time-lock floor.
-- **CopyBlox.** Open factory that can clone any standard `IBaseStateMachine` blox, including AccountBlox.
+- **CopyBlox.** Open factory that can clone any standard `IBaseStateMachine` blox (including AccountBlox) for **any** named owner, with caller-chosen recovery and timelock. That openness is intentional for lab mint-for-another-entity flows; BasicFactory is deliberately more restrictive (self-owner only). For the documented Sepolia deployment (`supports.clonesOf: false`), enumerate clones from **`BloxCloned` logs**. Use on-chain `clonesOf` only when `supports.clonesOf` is true. Either way the index is not proof of custody — verify `owner()` and recovery before funding.
 
-**BasicAccount** uses a **1-day** floor. **BasicFactory** clones BasicAccount only. These example addresses are under `networks.sepolia.developerTools` in the JSON file. Wire them with `@bloxchain/contracts` artifacts and viem. They are **not** exported from `@bloxchain/sdk`. The guided `create-account` menu does not offer this path. Developers set `CREATE_ACCOUNT_EXPERIMENTAL=1` and select Sepolia.
+**BasicAccount** uses a **1-day** floor. **BasicFactory** clones BasicAccount only. These example addresses are under `networks.sepolia.developerTools` in the JSON file. Wire them with `@bloxchain/contracts` artifacts and viem. They are **not** exported from `@bloxchain/sdk` and are outside the Nethermind core audit. The guided `create-account` menu does not offer this path. Developers set `CREATE_ACCOUNT_EXPERIMENTAL=1` and select Sepolia. Details: [Getting Started §10](./docs/getting-started.md#10-experimental-copyblox--accountblox-on-sepolia).
 
 | Contract | Address |
 |----------|---------|
@@ -257,7 +255,7 @@ A private chain, or a public chain that is not in the tables above, is outside t
 
 ## Security
 
-- **Audit scope:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [AUDIT.md](./contracts/core/AUDIT.md). Examples are out of scope, including the Sepolia AccountBlox template.
+- **Audit scope:** [`contracts/core/`](./contracts/core/) — [Nethermind NM_0828](./audits/nethermind/Nethermind-Bloxchain-Core-NM_0828.pdf) · [AUDIT.md](./contracts/core/AUDIT.md). Examples are out of scope, including the Sepolia AccountBlox / CopyBlox developer path (open factory trust model is intentional; not for production).
 - **Reporting:** [SECURITY.md](./SECURITY.md) only.
 - **Model notes:** Direct approval can enforce a delay. Meta-transaction approval separates signing from submission and does **not** inherit that delay. See [WHITEPAPER.md](./WHITEPAPER.md#33-direct-delay-and-meta-authorization-are-different-policies).
 
