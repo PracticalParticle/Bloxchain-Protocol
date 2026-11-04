@@ -26,7 +26,6 @@
     "./account/*": "./account/*",
     "./factory/*": "./factory/*",
     "./standards/*": "./standards/*",
-    "./components/*": "./components/*",
     "./*": "./*"
   },
   "scripts": {
