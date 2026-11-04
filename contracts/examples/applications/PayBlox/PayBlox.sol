@@ -62,7 +62,9 @@ contract PayBlox is SecureOwnable {
         uint256 timestamp
     );
     event EthReceived(address indexed from, uint256 amount);
-    
+    event PaymentRecipientWhitelistUpdated(address indexed recipient, bool whitelisted);
+    event PaymentTokenWhitelistUpdated(address indexed token, bool whitelisted);
+
     /**
      * @notice Initialize PayBlox (replaces constructor for clone pattern)
      * @param initialOwner The initial owner address
@@ -105,7 +107,56 @@ contract PayBlox is SecureOwnable {
     function getEthBalance() public view returns (uint256) {
         return address(this).balance;
     }
-    
+
+    // ============ PAYMENT WHITELIST ============
+    // EngineBlox validates every attached payment against a whitelist, at request time and again at execution:
+    // - recipient  -> whitelist keyed by EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR
+    // - ERC20 token -> whitelist keyed by EngineBlox.ERC20_TRANSFER_SELECTOR (only when erc20TokenAmount > 0)
+    // An empty whitelist denies every payout (deny-by-design). Whitelisting does not move funds by itself:
+    // each payout still requires an owner time-delay request, the timelock period, and an owner approval.
+
+    /**
+     * @notice Whitelist a payment recipient (owner only)
+     * @param recipient The address allowed to receive attached payments
+     */
+    function addPaymentRecipient(address recipient) external {
+        SharedValidation.validateOwner(owner());
+        _addTargetToWhitelist(EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR, recipient);
+        emit PaymentRecipientWhitelistUpdated(recipient, true);
+    }
+
+    /**
+     * @notice Remove a payment recipient from the whitelist (owner only)
+     * @param recipient The address to remove
+     * @notice Pending payments to this recipient will fail at approval, because the policy is re-checked on execution.
+     */
+    function removePaymentRecipient(address recipient) external {
+        SharedValidation.validateOwner(owner());
+        _removeTargetFromWhitelist(EngineBlox.ATTACHED_PAYMENT_RECIPIENT_SELECTOR, recipient);
+        emit PaymentRecipientWhitelistUpdated(recipient, false);
+    }
+
+    /**
+     * @notice Whitelist an ERC20 token contract for attached ERC20 payments (owner only)
+     * @param token The ERC20 token contract address
+     * @notice Only standard ERC20s are supported (no fee-on-transfer / rebasing), see EngineBlox.executeAttachedPayment.
+     */
+    function addPaymentToken(address token) external {
+        SharedValidation.validateOwner(owner());
+        _addTargetToWhitelist(EngineBlox.ERC20_TRANSFER_SELECTOR, token);
+        emit PaymentTokenWhitelistUpdated(token, true);
+    }
+
+    /**
+     * @notice Remove an ERC20 token contract from the payment whitelist (owner only)
+     * @param token The ERC20 token contract address
+     */
+    function removePaymentToken(address token) external {
+        SharedValidation.validateOwner(owner());
+        _removeTargetFromWhitelist(EngineBlox.ERC20_TRANSFER_SELECTOR, token);
+        emit PaymentTokenWhitelistUpdated(token, false);
+    }
+
     /**
      * @notice Request a payment with payment details
      * @param paymentDetails The payment details including recipient and amounts
@@ -113,6 +164,8 @@ contract PayBlox is SecureOwnable {
      * @return txId The transaction ID (use getTransaction(txId) for full record)
      * @notice This creates a transaction request with payment attached in one step via _requestTransactionWithPayment.
      *         All information is logged in the payment table.
+     * @notice The recipient must be whitelisted via addPaymentRecipient (and, for ERC20 payments, the token via
+     *         addPaymentToken) or the request reverts with TargetNotWhitelisted.
      */
     function requestWithPayment(
         EngineBlox.PaymentDetails memory paymentDetails,

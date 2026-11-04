@@ -58,15 +58,13 @@ library SimpleVaultDefinitions {
         metaTxApproveActions[1] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
         // Prepare handlerForSelectors arrays
-        // Execution selectors must have self-reference (at least one element pointing to themselves)
-        bytes4[] memory approveWithdrawalDelayedHandlerForSelectors = new bytes4[](1);
-        approveWithdrawalDelayedHandlerForSelectors[0] = APPROVE_WITHDRAWAL_DELAYED_SELECTOR;
-        bytes4[] memory cancelWithdrawalHandlerForSelectors = new bytes4[](1);
-        cancelWithdrawalHandlerForSelectors[0] = CANCEL_WITHDRAWAL_SELECTOR;
-        bytes4[] memory approveWithdrawalMetaHandlerForSelectors = new bytes4[](1);
-        approveWithdrawalMetaHandlerForSelectors[0] = APPROVE_WITHDRAWAL_META_SELECTOR;
+        // Handler selectors point to execution selectors. Approve / cancel / meta-approve operate on an existing
+        // txId whose execution selector is either WITHDRAW_ETH_SELECTOR or WITHDRAW_TOKEN_SELECTOR, so they list both
+        // (strict enforceHandlerRelations checks the pending tx's execution selector against this list).
+        bytes4[] memory withdrawExecutionHandlerForSelectors = new bytes4[](2);
+        withdrawExecutionHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
+        withdrawExecutionHandlerForSelectors[1] = WITHDRAW_TOKEN_SELECTOR;
         
-        // Handler selectors point to execution selectors
         bytes4[] memory withdrawEthHandlerForSelectors = new bytes4[](1);
         withdrawEthHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
         bytes4[] memory withdrawTokenHandlerForSelectors = new bytes4[](1);
@@ -106,7 +104,7 @@ library SimpleVaultDefinitions {
             enforceHandlerRelations: true,
             isProtected: true,
             isGrantRevocable: true,
-            handlerForSelectors: approveWithdrawalDelayedHandlerForSelectors
+            handlerForSelectors: withdrawExecutionHandlerForSelectors
         });
         
         schemas[3] = EngineBlox.FunctionSchema({
@@ -118,7 +116,7 @@ library SimpleVaultDefinitions {
             enforceHandlerRelations: true,
             isProtected: true,
             isGrantRevocable: true,
-            handlerForSelectors: cancelWithdrawalHandlerForSelectors
+            handlerForSelectors: withdrawExecutionHandlerForSelectors
         });
         
         // Meta-transaction functions
@@ -131,15 +129,17 @@ library SimpleVaultDefinitions {
             enforceHandlerRelations: true,
             isProtected: true,
             isGrantRevocable: true,
-            handlerForSelectors: approveWithdrawalMetaHandlerForSelectors
+            handlerForSelectors: withdrawExecutionHandlerForSelectors
         });
         
         // Execution selector schemas (for dual-permission model)
-        // These support both time-delay and meta-transaction workflows
-        EngineBlox.TxAction[] memory executionActions = new EngineBlox.TxAction[](3);
+        // These support both time-delay (request / approve / cancel) and meta-transaction approve workflows
+        EngineBlox.TxAction[] memory executionActions = new EngineBlox.TxAction[](5);
         executionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        executionActions[1] = EngineBlox.TxAction.SIGN_META_APPROVE;
-        executionActions[2] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
+        executionActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        executionActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        executionActions[3] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        executionActions[4] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
         
         bytes4[] memory withdrawEthExecutionHandlerForSelectors = new bytes4[](1);
         withdrawEthExecutionHandlerForSelectors[0] = WITHDRAW_ETH_SELECTOR;
@@ -206,12 +206,10 @@ library SimpleVaultDefinitions {
         withdrawEthHandlers[0] = WITHDRAW_ETH_SELECTOR;
         bytes4[] memory withdrawTokenHandlers = new bytes4[](1);
         withdrawTokenHandlers[0] = WITHDRAW_TOKEN_SELECTOR;
-        bytes4[] memory approveWithdrawalDelayedHandlers = new bytes4[](1);
-        approveWithdrawalDelayedHandlers[0] = APPROVE_WITHDRAWAL_DELAYED_SELECTOR;
-        bytes4[] memory cancelWithdrawalHandlers = new bytes4[](1);
-        cancelWithdrawalHandlers[0] = CANCEL_WITHDRAWAL_SELECTOR;
-        bytes4[] memory approveWithdrawalMetaHandlers = new bytes4[](1);
-        approveWithdrawalMetaHandlers[0] = APPROVE_WITHDRAWAL_META_SELECTOR;
+        // Approve / cancel / meta-approve handlers act on either withdraw execution selector
+        bytes4[] memory withdrawExecutionHandlers = new bytes4[](2);
+        withdrawExecutionHandlers[0] = WITHDRAW_ETH_SELECTOR;
+        withdrawExecutionHandlers[1] = WITHDRAW_TOKEN_SELECTOR;
      
         // Owner: Withdraw ETH Request
         roleHashes[0] = EngineBlox.OWNER_ROLE;
@@ -234,7 +232,7 @@ library SimpleVaultDefinitions {
         functionPermissions[2] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_DELAYED_SELECTOR,
             grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayApproveActions),
-            handlerForSelectors: approveWithdrawalDelayedHandlers // Self-reference indicates execution selector
+            handlerForSelectors: withdrawExecutionHandlers
         });
         
         // Owner: Cancel Withdrawal
@@ -242,7 +240,7 @@ library SimpleVaultDefinitions {
         functionPermissions[3] = EngineBlox.FunctionPermission({
             functionSelector: CANCEL_WITHDRAWAL_SELECTOR,
             grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerTimeDelayCancelActions),
-            handlerForSelectors: cancelWithdrawalHandlers // Self-reference indicates execution selector
+            handlerForSelectors: withdrawExecutionHandlers
         });
         
         // Owner: Approve Withdrawal Meta (signer)
@@ -250,7 +248,7 @@ library SimpleVaultDefinitions {
         functionPermissions[4] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             grantedActionsBitmap: EngineBlox.createBitmapFromActions(ownerMetaApproveActions),
-            handlerForSelectors: approveWithdrawalMetaHandlers // Self-reference indicates execution selector
+            handlerForSelectors: withdrawExecutionHandlers
         });
 
         // Broadcaster: Approve Withdrawal Meta (executor)
@@ -258,13 +256,15 @@ library SimpleVaultDefinitions {
         functionPermissions[5] = EngineBlox.FunctionPermission({
             functionSelector: APPROVE_WITHDRAWAL_META_SELECTOR,
             grantedActionsBitmap: EngineBlox.createBitmapFromActions(broadcasterMetaApproveActions),
-            handlerForSelectors: approveWithdrawalMetaHandlers // Self-reference indicates execution selector
+            handlerForSelectors: withdrawExecutionHandlers
         });
         
-        // Owner: Withdraw ETH Execution (for time-delay and meta-tx signing)
-        EngineBlox.TxAction[] memory ownerExecutionActions = new EngineBlox.TxAction[](2);
+        // Owner: Withdraw ETH Execution (for time-delay request/approve/cancel and meta-tx signing)
+        EngineBlox.TxAction[] memory ownerExecutionActions = new EngineBlox.TxAction[](4);
         ownerExecutionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
-        ownerExecutionActions[1] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        ownerExecutionActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
+        ownerExecutionActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        ownerExecutionActions[3] = EngineBlox.TxAction.SIGN_META_APPROVE;
         
         roleHashes[6] = EngineBlox.OWNER_ROLE;
         functionPermissions[6] = EngineBlox.FunctionPermission({
@@ -273,7 +273,7 @@ library SimpleVaultDefinitions {
             handlerForSelectors: withdrawEthHandlers
         });
         
-        // Owner: Withdraw Token Execution (for time-delay and meta-tx signing)
+        // Owner: Withdraw Token Execution (for time-delay request/approve/cancel and meta-tx signing)
         roleHashes[7] = EngineBlox.OWNER_ROLE;
         functionPermissions[7] = EngineBlox.FunctionPermission({
             functionSelector: WITHDRAW_TOKEN_SELECTOR,
