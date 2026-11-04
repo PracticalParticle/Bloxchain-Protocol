@@ -28,7 +28,7 @@ import "../../../core/lib/utils/SharedValidation.sol";
  * **not** core protocol, **not** covered by the Nethermind core audit, and **must not** be
  * used as a production mint. Production integrators use **BasicFactory → BasicAccount**
  * (`contracts/factory/`, CreateX catalog). The published Sepolia address lives under
- * `networks.sepolia.developerTools` only; it is not exported from `@bloxchain/sdk`.
+ * `networks.sepolia.developerTools` only; it is not exported from the Bloxchain TypeScript SDK.
  *
  * The open mint is deliberate for developer work: a caller may name **any** `initialOwner`
  * (mint for another entity), choose **recovery** and **broadcaster**, and pair with

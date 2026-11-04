@@ -212,9 +212,9 @@ contract CopyBloxCloneIndexTest is Test {
         }
 
         uint256 validIndex = bound(index, 0, n - 1);
-        address at = factory.cloneOfOwnerAt(owner, validIndex);
-        assertTrue(factory.isClone(at), "indexed address is a clone");
-        assertEq(at, factory.clonesOf(owner)[validIndex], "matches clonesOf slice");
+        address indexedClone = factory.cloneOfOwnerAt(owner, validIndex);
+        assertTrue(factory.isClone(indexedClone), "indexed address is a clone");
+        assertEq(indexedClone, factory.clonesOf(owner)[validIndex], "matches clonesOf slice");
 
         uint256 invalidIndex = n + bound(index, 0, 100);
         vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidOperation.selector, owner));
