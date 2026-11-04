@@ -158,11 +158,12 @@ if (require.main === module) {
     const runner = new SimpleRWA20TestRunner();
     runner.run()
         .then(() => {
-            process.exit(runner.results.failedSuites > 0 ? 1 : 0);
+            // Prefer exitCode over process.exit so pending stdout/stderr can drain.
+            process.exitCode = runner.results.failedSuites > 0 ? 1 : 0;
         })
         .catch(error => {
             console.error('❌ Test runner failed:', error);
-            process.exit(1);
+            process.exitCode = 1;
         });
 }
 
