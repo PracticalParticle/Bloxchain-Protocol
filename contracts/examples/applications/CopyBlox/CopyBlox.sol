@@ -12,6 +12,7 @@ import "../../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title CopyBlox
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev Example open factory: clone any `IBaseStateMachine` and initialize it in one call.
  *
  * This contract provides functionality to:

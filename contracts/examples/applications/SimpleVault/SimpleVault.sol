@@ -11,7 +11,10 @@ import "../../../core/lib/utils/SharedValidation.sol";
 import "../../../core/lib/interfaces/IDefinition.sol";
 import "./SimpleVaultDefinitions.sol";
 
-
+/**
+ * @title SimpleVault
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
+ */
 contract SimpleVault is SecureOwnable {
     using SafeERC20 for IERC20;
 

@@ -6,6 +6,7 @@ import "../../core/lib/utils/SharedValidation.sol";
 
 /**
  * @title AccountBlox
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev Complete controller implementation using the Account pattern (GuardController, RuntimeRBAC, SecureOwnable).
  *
  * This contract delegates all behavior to Account:

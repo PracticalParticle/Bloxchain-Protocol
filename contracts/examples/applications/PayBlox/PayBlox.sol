@@ -9,9 +9,10 @@ import "./PayBloxDefinitions.sol";
 
 /**
  * @title PayBlox
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev A simple application that allows sending ETH to a destination address
  * using the payment management system from BaseStateMachine
- * 
+ *
  * This contract demonstrates:
  * - Creating payment requests with native token transfers via _requestTransactionWithPayment
  * - Maintaining a payment table visible only to the owner role

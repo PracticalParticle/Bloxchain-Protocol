@@ -14,6 +14,7 @@ import "./SimpleRWA20Definitions.sol";
 
 /**
  * @title SimpleRWA20
+ * @dev Teaching sample under contracts/examples/ — not a ready product; do not use on live networks.
  * @dev A secure ERC20 token for real-world assets with enhanced security via Guardian.
  * Uses EngineBlox for mint and burn operations, restricted to broadcaster.
  * Implements ERC20Burnable for secure burn operations with allowance checks.

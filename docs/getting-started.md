@@ -534,7 +534,10 @@ pair with `getOfficialBasicMint`. The Nethermind core audit (NM_0828) covers `co
 
 ### 10. Experimental: CopyBlox + AccountBlox on Sepolia
 
-`CopyBlox` and `AccountBlox` are example contracts for **developer / test loops** on Sepolia.
+All of `contracts/examples/` (templates, applications, integrations) are **teaching samples** —
+not ready products and **not** for live networks. See [`contracts/examples/README.md`](../contracts/examples/README.md).
+
+`CopyBlox` and `AccountBlox` are the Sepolia-published pair for **developer / test loops**.
 They are **not** for production. Production mint is **BasicFactory → BasicAccount**.
 
 - **AccountBlox** — Account-pattern template with a **1-second** time-lock floor.
