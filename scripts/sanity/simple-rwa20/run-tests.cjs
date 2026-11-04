@@ -49,11 +49,21 @@ class SimpleRWA20TestRunner {
         
         try {
             const testSuite = new TestClass();
-            await testSuite.runTests();
-            
-            this.results.passedSuites++;
-            console.log(`✅ ${suiteName} tests completed successfully`);
-            
+            // runTests() catches internally and returns false on any failed test or suite abort
+            const passed = await testSuite.runTests();
+
+            if (passed) {
+                this.results.passedSuites++;
+                console.log(`✅ ${suiteName} tests completed successfully`);
+            } else {
+                this.results.failedSuites++;
+                const failedTests = testSuite.testResults?.failedTests ?? 0;
+                const suiteError = testSuite.testResults?.suiteError;
+                console.error(
+                    `❌ ${suiteName} tests failed (${failedTests} failed test(s)${suiteError ? `; aborted: ${suiteError}` : ''})`
+                );
+            }
+
         } catch (error) {
             this.results.failedSuites++;
             console.error(`❌ ${suiteName} tests failed:`, error.message);
@@ -146,10 +156,14 @@ class SimpleRWA20TestRunner {
 // Run the test runner if this file is executed directly
 if (require.main === module) {
     const runner = new SimpleRWA20TestRunner();
-    runner.run().catch(error => {
-        console.error('❌ Test runner failed:', error);
-        process.exit(1);
-    });
+    runner.run()
+        .then(() => {
+            process.exit(runner.results.failedSuites > 0 ? 1 : 0);
+        })
+        .catch(error => {
+            console.error('❌ Test runner failed:', error);
+            process.exit(1);
+        });
 }
 
 module.exports = SimpleRWA20TestRunner;

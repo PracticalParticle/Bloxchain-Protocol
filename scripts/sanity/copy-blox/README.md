@@ -82,7 +82,7 @@ REMOTE_PROTOCOL=https
 
 1. **Initial clone count** – `getCloneCount()` (0 or existing).
 2. **Clone AccountBlox** – `cloneBlox(accountBlox, owner, broadcaster, recovery, timeLockPeriodSec)`; capture clone address from events or `getCloneAtIndex(0)`.
-3. **Clone state and registry** – `isClone(clone)`, `getCloneAtIndex(0)`, then on the clone contract: `owner()`, `getBroadcaster()`, `getRecovery()` match the passed addresses.
+3. **Clone state and registry** – `isClone(clone)`, `getCloneAtIndex(0)`, then on the clone contract: `owner()`, `getBroadcasters()`, `getRecovery()` match the passed addresses.
 4. **Second clone** – Call `cloneBlox` again; assert `getCloneCount()` increases by 1 and `getCloneAtIndex(previousCount)` is the new clone.
 
 ## Contract features covered
