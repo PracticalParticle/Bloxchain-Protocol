@@ -3,11 +3,17 @@
 version: 2
 updates:
   # Keep immutable GitHub Action pins current.
+  # Group CodeQL action steps so init/analyze/upload-sarif stay on the same
+  # version (mixed pins fail the CodeQL workflow).
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "dev"
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
 
   # Root workspace / tooling
   - package-ecosystem: "npm"
