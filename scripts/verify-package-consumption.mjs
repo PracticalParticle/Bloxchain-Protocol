@@ -70,10 +70,10 @@ const packDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloxchain-pack-'));
 
 try {
   if (SKIP_PREPUBLISH) {
-    const preparedArtifact = path.join(PACKAGE_DIR, 'artifacts', 'CopyBlox.json');
+    const preparedArtifact = path.join(PACKAGE_DIR, 'artifacts', 'BasicFactory.json');
     if (!fs.existsSync(preparedArtifact)) {
       fail(
-        'SKIP_PREPUBLISH=1 but package/artifacts/CopyBlox.json is missing. Run prepublish first.'
+        'SKIP_PREPUBLISH=1 but package/artifacts/BasicFactory.json is missing. Run prepublish first.'
       );
     }
     console.log('📦 SKIP_PREPUBLISH=1 — using already-prepared package/\n');
@@ -124,7 +124,7 @@ try {
     `// A fresh integrator: no protocol repo, no solc, no compile step.
 import factory from '@bloxchain/contracts/artifacts/BasicFactory.json' with { type: 'json' };
 import template from '@bloxchain/contracts/artifacts/BasicAccount' with { type: 'json' };
-import copyBlox from '@bloxchain/contracts/artifacts/CopyBlox.json' with { type: 'json' };
+import engine from '@bloxchain/contracts/artifacts/EngineBlox.json' with { type: 'json' };
 import manifest from '@bloxchain/contracts/artifacts/manifest.json' with { type: 'json' };
 import official from '@bloxchain/contracts/official-deployed-addresses.json' with { type: 'json' };
 
@@ -148,8 +148,9 @@ check('BasicAccount bytecode resolves', template.bytecode.startsWith('0x'), \`\$
 check('BasicAccount records 4 library links', linkedLibraries(template).length === 4, linkedLibraries(template).join(', '));
 check('manifest records BasicFactory sha256', /^[0-9a-f]{64}$/.test(manifest.contracts.BasicFactory?.sha256));
 check('manifest records the compiler', typeof manifest.compiler.solc === 'string', \`\${manifest.compiler.solc}, viaIR=\${manifest.compiler.viaIR}, optimizer=\${manifest.compiler.runs}\`);
-// Developer toolkit artifacts still ship (outside @bloxchain/sdk).
-check('CopyBlox developer-toolkit artifact resolves', Array.isArray(copyBlox.abi) && copyBlox.bytecode.startsWith('0x'));
+check('EngineBlox artifact resolves', Array.isArray(engine.abi) && engine.bytecode.startsWith('0x'));
+check('manifest does not publish CopyBlox', manifest.contracts.CopyBlox === undefined);
+check('manifest does not publish AccountBlox', manifest.contracts.AccountBlox === undefined);
 
 // R2: format /2 shared catalog + network list.
 check('official addresses format /2', official._format === 'bloxchain-official-addresses/2');

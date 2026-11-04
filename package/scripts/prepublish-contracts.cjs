@@ -66,7 +66,7 @@ if (!fs.existsSync(sourceContractsDir)) {
   process.exit(1);
 }
 
-const excludedDirs = ['examples', 'experimental'];
+const excludedDirs = ['examples', 'experimental', 'standards'];
 const coreSrc = path.join(sourceContractsDir, 'core');
 const coreDest = path.join(contractsDir, 'core');
 if (!fs.existsSync(coreSrc)) {
@@ -79,20 +79,7 @@ if (fs.existsSync(coreDest)) {
 copyDir(coreSrc, coreDest, excludedDirs);
 console.log('✅ Core copied\n');
 
-// Step 2b: Copy contracts/standards to package/standards
-const standardsSrc = path.join(sourceContractsDir, 'standards');
-const standardsDest = path.join(contractsDir, 'standards');
-if (fs.existsSync(standardsSrc)) {
-  if (fs.existsSync(standardsDest)) {
-    fs.rmSync(standardsDest, { recursive: true, force: true });
-  }
-  copyDir(standardsSrc, standardsDest, []);
-  console.log('✅ Standards copied\n');
-} else {
-  console.log('⏭️  No standards directory; skipping\n');
-}
-
-// Step 2c: Copy Platform mint sources (BasicAccount / BasicFactory)
+// Step 2b: Copy Platform mint sources (BasicAccount / BasicFactory)
 for (const folder of ['account', 'factory']) {
   const src = path.join(sourceContractsDir, folder);
   const dest = path.join(contractsDir, folder);
@@ -123,7 +110,7 @@ copyDir(sourceAbiDir, destAbiDir, []);
 console.log('✅ ABIs copied\n');
 
 // Step 4: Remove ABIs that don't have a contract in the package
-// Only keep ABIs whose contract name exists in core, standards, account, or factory (no examples).
+// Only keep ABIs whose contract name exists in core, account, or factory (no examples/standards).
 const packagedContractNames = collectPackagedContractNames();
 console.log('📋 Step 4: Pruning ABIs not packaged with contracts...');
 const removed = pruneUnpackagedAbis(destAbiDir, packagedContractNames);
@@ -164,7 +151,7 @@ console.log('✅ Package ready for publishing!\n');
 
 /**
  * Collect contract names (basename of .sol files) from the source dirs that get copied
- * into the package: core, standards, account, factory. Excludes examples.
+ * into the package: core, account, factory. Excludes examples and standards.
  */
 function collectPackagedContractNames() {
   const names = new Set();
@@ -172,7 +159,6 @@ function collectPackagedContractNames() {
   const factorySrc = path.join(sourceContractsDir, 'factory');
   const dirs = [
     coreSrc,
-    fs.existsSync(standardsSrc) ? standardsSrc : null,
     fs.existsSync(accountSrc) ? accountSrc : null,
     fs.existsSync(factorySrc) ? factorySrc : null,
   ].filter(Boolean);

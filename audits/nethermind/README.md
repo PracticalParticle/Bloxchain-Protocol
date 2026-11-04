@@ -29,7 +29,7 @@
 
 ## Out of scope
 
-Examples, components, standards, SDK, and deployment tooling — see [`../README.md`](../README.md). Canonical `BasicAccount` (`contracts/account/`) and `BasicFactory` (`contracts/factory/`) are **not** in NM_0828.
+Examples, standards, SDK, and deployment tooling — see [`../README.md`](../README.md). Canonical `BasicAccount` (`contracts/account/`) and `BasicFactory` (`contracts/factory/`) are **not** in NM_0828.
 
 ## Using this audit
 

@@ -2,6 +2,8 @@
 
 Protocol-level **interfaces** that define optional behaviors and extension points for Blox contracts. These live outside `core/` so the engine stays minimal and stable.
 
+**Not published** in `@bloxchain/contracts`. Repo-local for experimental work and future productization.
+
 ## Structure
 
 - **behavior/** – Optional behavior interfaces (e.g. cloneable blox). Implementations live in `account/`, `factory/`, or `examples/`.
