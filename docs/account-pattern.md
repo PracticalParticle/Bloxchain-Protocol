@@ -136,9 +136,11 @@ falls back to CopyBlox.
 
 The experimental **CopyBlox** / **AccountBlox** pair (Sepolia) is for **developer / test**
 fast loops and open cloning (mint for another entity, caller-chosen recovery, 1-second
-AccountBlox floor). It is **not** for production, **not** part of `@bloxchain/sdk`, and
-outside the Nethermind core audit. Wire it via `@bloxchain/contracts` artifacts on
-`networks.sepolia.developerTools` addresses. See [Getting Started §10](./getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)
+AccountBlox floor). It is **not** for production and outside the Nethermind core audit.
+Wire ABIs from `@bloxchain/sdk` (`accountBloxAbi` / `@bloxchain/sdk/abi/CopyBlox.abi.json`;
+no CopyBlox client) against `networks.sepolia.developerTools` addresses; bytecode lives in
+this repository, not in `@bloxchain/contracts` artifacts. See
+[Getting Started §10](./getting-started.md#10-experimental-copyblox--accountblox-on-sepolia)
 for accepted risks (index ≠ custody; recovery is powerful).
 
 ### Official mint and the Sepolia experiment

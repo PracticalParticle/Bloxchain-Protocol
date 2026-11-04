@@ -2,6 +2,7 @@
 pragma solidity 0.8.35;
 
 import "../CommonBase.sol";
+import "../../../contracts/core/lib/utils/SharedValidation.sol";
 import "../../../contracts/examples/applications/PayBlox/PayBlox.sol";
 import "../../../contracts/examples/applications/PayBlox/PayBloxDefinitions.sol";
 
@@ -151,6 +152,13 @@ contract PayBloxWiringTest is CommonBase {
         vm.prank(attacker);
         vm.expectRevert();
         pay.approvePaymentAfterDelay(txId);
+    }
+
+    function test_SelfRecipient_RevertsBeforeRequest() public {
+        _whitelist(address(pay));
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(SharedValidation.InvalidAddress.selector, address(pay)));
+        pay.requestWithPayment(_native(address(pay), 1 ether), "self");
     }
 
     // ============ ERC20 payout ============

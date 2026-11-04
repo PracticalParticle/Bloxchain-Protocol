@@ -40,12 +40,13 @@ contract PayBlox is SecureOwnable {
     // Payment table: mapping from txId to PaymentRecord (visible only to owner)
     mapping(uint256 => PaymentRecord) private _paymentTable;
     
-    // Events
+    // Events — `token` is address(0) for native payouts, else the ERC20 contract
     event PaymentRequested(
         uint256 indexed txId,
         address indexed recipient,
         address indexed requester,
         uint256 amount,
+        address token,
         uint256 timestamp,
         string description
     );
@@ -53,12 +54,14 @@ contract PayBlox is SecureOwnable {
         uint256 indexed txId,
         address indexed recipient,
         uint256 amount,
+        address token,
         uint256 timestamp
     );
     event PaymentCancelled(
         uint256 indexed txId,
         address indexed recipient,
         uint256 amount,
+        address token,
         uint256 timestamp
     );
     event EthReceived(address indexed from, uint256 amount);
@@ -173,6 +176,10 @@ contract PayBlox is SecureOwnable {
     ) public returns (uint256 txId) {
         SharedValidation.validateOwner(owner());
         SharedValidation.validateNotZeroAddress(paymentDetails.recipient);
+        // Reject self-recipient before registering the request (keeps funds from looping into this contract).
+        if (paymentDetails.recipient == address(this)) {
+            revert SharedValidation.InvalidAddress(paymentDetails.recipient);
+        }
         if (paymentDetails.nativeTokenAmount == 0 && paymentDetails.erc20TokenAmount == 0) {
             revert SharedValidation.NotSupported();
         }
@@ -201,12 +208,14 @@ contract PayBlox is SecureOwnable {
             status: txRecord.status,
             description: description
         });
-        
+
+        (uint256 amount, address token) = _paymentPayout(paymentDetails);
         emit PaymentRequested(
             txRecord.txId,
             paymentDetails.recipient,
             msg.sender,
-            paymentDetails.nativeTokenAmount > 0 ? paymentDetails.nativeTokenAmount : paymentDetails.erc20TokenAmount,
+            amount,
+            token,
             block.timestamp,
             description
         );
@@ -231,10 +240,12 @@ contract PayBlox is SecureOwnable {
         // via executeAttachedPayment in EngineBlox
         if (updated.status == EngineBlox.TxStatus.COMPLETED) {
             PaymentRecord storage record = _paymentTable[txId];
+            (uint256 amount, address token) = _paymentPayout(record.paymentDetails);
             emit PaymentExecuted(
                 txId,
                 record.paymentDetails.recipient,
-                record.paymentDetails.nativeTokenAmount,
+                amount,
+                token,
                 block.timestamp
             );
         }
@@ -256,15 +267,36 @@ contract PayBlox is SecureOwnable {
             _paymentTable[txId].status = updated.status;
             
             PaymentRecord storage record = _paymentTable[txId];
+            (uint256 amount, address token) = _paymentPayout(record.paymentDetails);
             emit PaymentCancelled(
                 txId,
                 record.paymentDetails.recipient,
-                record.paymentDetails.nativeTokenAmount,
+                amount,
+                token,
                 block.timestamp
             );
         }
         
         return updated.txId;
+    }
+
+    /**
+     * @dev Returns the selected payout amount and asset for payment events.
+     *      Native payments use `nativeTokenAmount` with `token = address(0)`.
+     *      ERC20 payments use `erc20TokenAmount` with `token = erc20TokenAddress`.
+     * @param paymentDetails Attached payment details from the request
+     * @return amount Selected payout amount
+     * @return token ERC20 token address, or address(0) for native
+     */
+    function _paymentPayout(EngineBlox.PaymentDetails memory paymentDetails)
+        private
+        pure
+        returns (uint256 amount, address token)
+    {
+        if (paymentDetails.nativeTokenAmount > 0) {
+            return (paymentDetails.nativeTokenAmount, address(0));
+        }
+        return (paymentDetails.erc20TokenAmount, paymentDetails.erc20TokenAddress);
     }
     
     /**
