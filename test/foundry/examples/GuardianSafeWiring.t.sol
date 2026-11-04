@@ -300,6 +300,38 @@ contract GuardianSafeWiringTest is CommonBase {
         assertEq(safe.guard(), address(gs));
     }
 
+    /// B2: during an approved outer call, a nested `setGuard(address(gs))` gets no free pass; it must match the binding.
+    function test_Binding_NestedSetGuardSelf_Rejected() public {
+        NestedSafeExecutor exec = new NestedSafeExecutor(safe);
+
+        uint256 txId = _approveAfterDelay(
+            _safeTx(
+                address(exec),
+                abi.encodeCall(
+                    NestedSafeExecutor.nestedExec, (address(safe), 0, abi.encodeCall(MockSafe.setGuard, (address(gs))))
+                )
+            )
+        );
+
+        assertEq(uint8(_status(txId)), uint8(EngineBlox.TxStatus.COMPLETED));
+        assertEq(exec.attempts(), 1);
+        assertFalse(exec.nestedSucceeded());
+        assertEq(exec.lastRevertData(), _errorString(GUARD_REJECT));
+        assertEq(safe.execCount(), 1);
+    }
+
+    /// Sponsor lock 2: once the governed window closes, the unapproved `setGuard(address(gs))` install path is open again.
+    function test_SetGuardSelf_AllowedAgainAfterWindowCloses() public {
+        _approveAfterDelay(_safeTx(address(recorder), abi.encodeCall(SafeCallRecorder.ping, ())));
+
+        vm.prank(attacker);
+        safe.execTransaction(
+            address(safe), 0, abi.encodeCall(MockSafe.setGuard, (address(gs))), 0, 0, 0, 0, address(0), payable(address(0)), ""
+        );
+        assertEq(safe.guard(), address(gs));
+        assertEq(safe.execCount(), 2);
+    }
+
     /// B2: a nested replay of the same Safe call fields is rejected (binding is single-use and bound to GuardianSafe).
     function test_Binding_NestedReplayOfApprovedFields_Rejected() public {
         NestedSafeExecutor exec = new NestedSafeExecutor(safe);

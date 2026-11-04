@@ -98,6 +98,14 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     bytes32 private approvedSafeTxHash;
 
     /**
+     * @dev True while `executeTransaction` has a Safe call in flight (set with the binding, cleared in
+     *      `checkAfterExecution` and after the Safe call). Unlike `approvedSafeTxHash` it is not consumed by the
+     *      first guard check, so the guard can tell "inside a governed window" from "outside any governed call".
+     *      Keeps the unapproved `setGuard(address(this))` install path closed during a governed window.
+     */
+    bool private guardianExecutionOpen;
+
+    /**
      * @notice Initialize GuardianSafe (replaces constructor for clone pattern)
      * @param _safe The Safe contract address
      * @param initialOwner The initial owner address
@@ -260,8 +268,12 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      */
     function executeTransaction(SafeTx memory safeTx) external {
         SharedValidation.validateInternalCall(address(this));
-        require(approvedSafeTxHash == bytes32(0), "GuardianSafe: Safe transaction already in progress");
+        require(
+            approvedSafeTxHash == bytes32(0) && !guardianExecutionOpen,
+            "GuardianSafe: Safe transaction already in progress"
+        );
 
+        guardianExecutionOpen = true;
         approvedSafeTxHash = _safeTxBindingHash(
             safeTx.to,
             safeTx.value,
@@ -292,6 +304,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
         // Fail-safe: the guard normally consumes the binding in checkTransaction and clears it in
         // checkAfterExecution; clear again in case the Safe returned without calling the guard.
         approvedSafeTxHash = bytes32(0);
+        guardianExecutionOpen = false;
 
         require(success, "Safe transaction execution failed");
         
@@ -414,7 +427,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      *      `approvedSafeTxHash`, set by `executeTransaction`. The binding is consumed on admit, so any further
      *      `execTransaction` in the same window (nested from the call target, or a replay of the same fields) is
      *      rejected. Only the bound Safe may call this hook. Installing this contract as the guard
-     *      (`setGuard(address(this))`) stays allowed without a binding (initial setup path).
+     *      (`setGuard(address(this))`) stays allowed without a binding only while no governed execution window is
+     *      open (initial setup path); inside the window it must match the binding like any other transaction.
+     *      The binding is a GuardianSafe-local identity, not Safe's EIP-712 safeTxHash (no Safe nonce/domain).
      */
     function checkTransaction(
         address to,
@@ -466,8 +481,9 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
                     newGuardAddress := mload(add(data, 0x24))
                 }
                 
-                // If setting this GuardianSafe as guard, allow from any user (initial setup)
-                if (newGuardAddress == address(this)) {
+                // Installing this GuardianSafe as guard is allowed without approval only outside a governed
+                // execution window (initial setup). Inside the window it must match the binding like any tx.
+                if (newGuardAddress == address(this) && !guardianExecutionOpen) {
                     return; // Allow initial guard setup
                 }
                 
@@ -494,6 +510,7 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
     function checkAfterExecution(bytes32 /* hash */, bool /* success */) external override {
         require(msg.sender == address(safe), "GuardianSafe: caller is not the Safe");
         approvedSafeTxHash = bytes32(0);
+        guardianExecutionOpen = false;
     }
 
     /**
