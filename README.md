@@ -117,24 +117,19 @@ npm run compile:foundry
 npm run test:foundry
 ```
 
-Study implementation patterns under [`contracts/examples/`](./contracts/examples/) (education / lab only — see below). For live deployments, pin exact package versions and use the official mint path. [VERSIONING](./docs/VERSIONING.md).
+For live deployments, pin exact package versions and use the official mint path. [VERSIONING](./docs/VERSIONING.md).
 
 ## What you can build
 
-Compose only what you need. Account wires all three core components. Most apps use a **subset**.
+Compose only what you need. Account wires all three core components (SecureOwnable, RuntimeRBAC, GuardController). Most apps use a **subset**. See [Account pattern](./docs/account-pattern.md) and [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md).
 
-**`contracts/examples/` is education only.** Those contracts are implementation samples for learning and local/lab work. They are **not** ready products, are **outside** the Nethermind core audit, and **must not** be deployed or used to hold value on live networks. Production accounts: **BasicFactory → BasicAccount** (or your own reviewed extension). See [`contracts/examples/README.md`](./contracts/examples/README.md).
+| I want to build… | In plain terms | Path |
+|------------------|----------------|------|
+| Governed smart account / treasury | Full account stack with roles and execution rules | [`BasicAccount`](./contracts/account/BasicAccount.sol) · [`BasicFactory`](./contracts/factory/BasicFactory.sol) · `create-account` |
 
-| I want to build… | In plain terms | Protocol pieces | Path | Maturity |
-|------------------|----------------|-----------------|------|----------|
-| Governed smart account / treasury | Full account stack with roles and execution rules | Account (SecureOwnable + RuntimeRBAC + GuardController) | [`BasicAccount`](./contracts/account/BasicAccount.sol) · [`BasicFactory`](./contracts/factory/BasicFactory.sol) · `create-account` | **Official** (live catalog) |
-| Asset vault (ETH / ERC-20) | Vault with ownership controls | SecureOwnable | Study [`SimpleVault`](./contracts/examples/applications/SimpleVault/) | **Example** — not for live use |
-| Scheduled payments | Payments with approval workflow | SecureOwnable | Study [`PayBlox`](./contracts/examples/applications/PayBlox/) | **Example** — not for live use |
-| RWA / governed token | Token with on-chain governance | SecureOwnable + ERC-20 | Study [`SimpleRWA20`](./contracts/examples/applications/SimpleRWA20/) | **Example** — not for live use |
-| Many copies of your own blox | Open factory that clones a blox you pass in | IBaseStateMachine | Study [`CopyBlox`](./contracts/examples/applications/CopyBlox/); prefer [`BasicFactory`](./contracts/factory/BasicFactory.sol) for live mint | **Example** — not for live use |
-| Safe + extra policy | Safe with added on-chain rules | SecureOwnable + guard | Study [`GuardianSafe`](./contracts/examples/integrations/Safe/GuardianSafe/) | **Example** — not for live use |
+Live mint is **BasicFactory → BasicAccount** (or your own reviewed extension).
 
-More: [`contracts/examples/`](./contracts/examples/) · [State abstraction vs account abstraction](./docs/state-abstraction-vs-account-abstraction.md)
+For a deeper look at Protocol capabilities and use cases, see the educational samples under [`contracts/examples/`](./contracts/examples/) ([README](./contracts/examples/README.md)). They are teaching references for local and lab learning — **not** ready products, **outside** the Nethermind core audit, and **must not** be used to hold value on live networks.
 
 ## Integrate with the SDK
 
