@@ -34,13 +34,13 @@ The optional hosted app ([bloxchain.app](https://bloxchain.app)) uses the same o
 
 ## Architecture
 
-EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings**. Most apps use a subset. The **Account** pattern composes all three. **BasicAccount** is the governed account integrators mint. Example applications sit below as evidence.
+EngineBlox is the shared library. BaseStateMachine owns storage. SecureOwnable, RuntimeRBAC, and GuardController are **optional siblings**. Most apps use a subset. The **Account** pattern composes all three. **BasicAccount** is the governed account integrators mint. Educational samples under `contracts/examples/` sit below as learning evidence only.
 
 <p align="center">
-  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and example applications" width="920">
+  <img src="./docs/assets/protocol-composition-dark.svg" alt="How the protocol fits together: shared rules engine, on-chain state, optional ownership roles and guards, full governed account, and educational sample applications" width="920">
 </p>
 
-**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset. BasicFactory mints BasicAccount. Examples (vaults, payments, tokens, Safe) sit below Account as evidence.
+**Composition (text):** EngineBlox → BaseStateMachine → optional SecureOwnable / RuntimeRBAC / GuardController → Account. Most apps use a subset. BasicFactory mints BasicAccount. Teaching samples (vaults, payments, tokens, Safe) under `contracts/examples/` sit below Account as learning evidence — not for live value.
 
 Full diagrams: [Architecture](./docs/bloxchain-architecture.md) · [State machine](./docs/state-machine-engine.md) · [Technical overview](./TECHNICAL_OVERVIEW.md) · [Account pattern](./docs/account-pattern.md)
 
