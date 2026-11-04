@@ -131,24 +131,44 @@ class SimpleVaultTestRunner {
         }
     }
 
+    /**
+     * Parse CLI args and run suites.
+     * `--help` / no args print usage and return successfully.
+     * Documented flags such as `--withdrawal` map to suite names; bare suite names still work.
+     * A selection that yields no suites sets a failing exit code (not based on totalSuites alone).
+     */
     async run() {
         const args = process.argv.slice(2);
-        
+        this.usageError = false;
+
         if (args.length === 0 || args.includes('--help')) {
             this.printUsage();
             return;
         }
-        
+
         if (args.includes('--all')) {
             await this.runAllTests();
-        } else {
-            const requestedSuites = args.filter(arg => !arg.startsWith('--'));
-            if (requestedSuites.length > 0) {
-                await this.runSpecificTests(requestedSuites);
-            } else {
-                console.log('❌ No test suites specified');
-                this.printUsage();
+            return;
+        }
+
+        const flagSuites = {
+            '--withdrawal': 'withdrawal',
+        };
+        const requestedSuites = [];
+        for (const arg of args) {
+            if (flagSuites[arg]) {
+                requestedSuites.push(flagSuites[arg]);
+            } else if (!arg.startsWith('--')) {
+                requestedSuites.push(arg);
             }
+        }
+
+        if (requestedSuites.length > 0) {
+            await this.runSpecificTests(requestedSuites);
+        } else {
+            console.log('❌ No test suites specified');
+            this.printUsage();
+            this.usageError = true;
         }
     }
 }
@@ -159,7 +179,8 @@ if (require.main === module) {
     runner.run()
         .then(() => {
             // Prefer exitCode over process.exit so pending stdout/stderr can drain.
-            process.exitCode = runner.results.failedSuites > 0 ? 1 : 0;
+            // usageError covers "No test suites specified"; do not fail on totalSuites === 0 alone.
+            process.exitCode = (runner.usageError || runner.results.failedSuites > 0) ? 1 : 0;
         })
         .catch(error => {
             console.error('❌ Test runner failed:', error);

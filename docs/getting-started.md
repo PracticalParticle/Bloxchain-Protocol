@@ -427,7 +427,8 @@ rather than to apply:
 
 Integrators mint with **BasicFactory → BasicAccount**. Sepolia also carries an experimental
 **CopyBlox → AccountBlox** pair for people trying the account pattern with a 1-second time-lock.
-That pair is outside the audited core and outside `@bloxchain/sdk`.
+That pair is outside the audited core. Its ABIs are available from `@bloxchain/sdk`;
+its bytecode is not in `@bloxchain/contracts` artifacts (no CopyBlox client).
 
 | | Official mint | Experimental (Sepolia only) |
 |---|---|---|
