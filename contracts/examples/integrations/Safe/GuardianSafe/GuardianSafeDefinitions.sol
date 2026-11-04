@@ -19,7 +19,9 @@ library GuardianSafeDefinitions {
     bytes32 public constant EXEC_SAFE_TX = keccak256("EXEC_SAFE_TX");
     
     // Function Selector Constants
-    bytes4 public constant EXEC_SAFE_TX_SELECTOR = bytes4(keccak256("executeTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)"));
+    // executeTransaction takes a single SafeTx struct, so the ABI signature is the tuple form `executeTransaction((...))`.
+    // Must match GuardianSafe.executeTransaction.selector and the single-tuple abi.encode(safeTx) params (SPEC-2026-0175 R1).
+    bytes4 public constant EXEC_SAFE_TX_SELECTOR = bytes4(keccak256("executeTransaction((address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes))"));
     
     // Time Delay Function Selectors
     bytes4 public constant REQUEST_TX_SELECTOR = bytes4(keccak256("requestTransaction((address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes))"));
@@ -27,9 +29,11 @@ library GuardianSafeDefinitions {
     bytes4 public constant CANCEL_TX_SELECTOR = bytes4(keccak256("cancelTransaction(uint256)"));
     
     // Meta-transaction Function Selectors
-    bytes4 public constant APPROVE_TX_META_SELECTOR = bytes4(keccak256("approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant CANCEL_TX_META_SELECTOR = bytes4(keccak256("cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
-    bytes4 public constant REQUEST_AND_APPROVE_TX_META_SELECTOR = bytes4(keccak256("requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    // Each takes a single MetaTransaction struct: fn(((TxRecord),(MetaTxParams),bytes32,bytes,bytes)) -- same double-wrap
+    // form as SecureOwnableDefinitions so the stamped handlerSelector equals msg.sig (SPEC-2026-0175 R4).
+    bytes4 public constant APPROVE_TX_META_SELECTOR = bytes4(keccak256("approveTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant CANCEL_TX_META_SELECTOR = bytes4(keccak256("cancelTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
+    bytes4 public constant REQUEST_AND_APPROVE_TX_META_SELECTOR = bytes4(keccak256("requestAndApproveTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))"));
     
     /**
      * @dev Returns predefined function schemas
@@ -104,7 +108,7 @@ library GuardianSafeDefinitions {
         
         // Meta-transaction functions
         schemas[3] = EngineBlox.FunctionSchema({
-            functionSignature: "approveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "approveTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -116,7 +120,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[4] = EngineBlox.FunctionSchema({
-            functionSignature: "cancelTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "cancelTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: CANCEL_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -128,7 +132,7 @@ library GuardianSafeDefinitions {
         });
         
         schemas[5] = EngineBlox.FunctionSchema({
-            functionSignature: "requestAndApproveTransactionWithMetaTx((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
+            functionSignature: "requestAndApproveTransactionWithMetaTx(((uint256,uint256,uint8,(address,address,uint256,uint256,bytes32,bytes4,bytes),bytes32,bytes32,(address,uint256,address,uint256)),(uint256,uint256,address,bytes4,uint8,uint256,uint256,address),bytes32,bytes,bytes))",
             functionSelector: REQUEST_AND_APPROVE_TX_META_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -141,21 +145,22 @@ library GuardianSafeDefinitions {
         
         // Execution selector schema (for dual-permission model)
         // Supports both time-delay and meta-transaction workflows
-        EngineBlox.TxAction[] memory executionActions = new EngineBlox.TxAction[](8);
+        EngineBlox.TxAction[] memory executionActions = new EngineBlox.TxAction[](9);
         executionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         executionActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
-        executionActions[2] = EngineBlox.TxAction.SIGN_META_APPROVE;
-        executionActions[3] = EngineBlox.TxAction.SIGN_META_CANCEL;
-        executionActions[4] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
-        executionActions[5] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
-        executionActions[6] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
-        executionActions[7] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
+        executionActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        executionActions[3] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        executionActions[4] = EngineBlox.TxAction.SIGN_META_CANCEL;
+        executionActions[5] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        executionActions[6] = EngineBlox.TxAction.EXECUTE_META_APPROVE;
+        executionActions[7] = EngineBlox.TxAction.EXECUTE_META_CANCEL;
+        executionActions[8] = EngineBlox.TxAction.EXECUTE_META_REQUEST_AND_APPROVE;
         
         bytes4[] memory execSafeTxExecutionHandlerForSelectors = new bytes4[](1);
         execSafeTxExecutionHandlerForSelectors[0] = EXEC_SAFE_TX_SELECTOR;
         
         schemas[6] = EngineBlox.FunctionSchema({
-            functionSignature: "executeTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)",
+            functionSignature: "executeTransaction((address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes))",
             functionSelector: EXEC_SAFE_TX_SELECTOR,
             operationType: EXEC_SAFE_TX,
             operationName: "EXEC_SAFE_TX",
@@ -283,13 +288,14 @@ library GuardianSafeDefinitions {
             handlerForSelectors: execSafeTxHandlers
         });
         
-        // Owner: Execute Transaction (for time-delay request/approve and meta-tx signing)
-        EngineBlox.TxAction[] memory ownerExecutionActions = new EngineBlox.TxAction[](5);
+        // Owner: Execute Transaction (for time-delay request/approve/cancel and meta-tx signing)
+        EngineBlox.TxAction[] memory ownerExecutionActions = new EngineBlox.TxAction[](6);
         ownerExecutionActions[0] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_REQUEST;
         ownerExecutionActions[1] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_APPROVE;
-        ownerExecutionActions[2] = EngineBlox.TxAction.SIGN_META_APPROVE;
-        ownerExecutionActions[3] = EngineBlox.TxAction.SIGN_META_CANCEL;
-        ownerExecutionActions[4] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
+        ownerExecutionActions[2] = EngineBlox.TxAction.EXECUTE_TIME_DELAY_CANCEL;
+        ownerExecutionActions[3] = EngineBlox.TxAction.SIGN_META_APPROVE;
+        ownerExecutionActions[4] = EngineBlox.TxAction.SIGN_META_CANCEL;
+        ownerExecutionActions[5] = EngineBlox.TxAction.SIGN_META_REQUEST_AND_APPROVE;
         
         roleHashes[9] = EngineBlox.OWNER_ROLE;
         functionPermissions[9] = EngineBlox.FunctionPermission({

@@ -173,20 +173,12 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @dev Helper function to encode SafeTx parameters to avoid stack too deep
      * @param safeTx The Safe transaction parameters
      * @return Encoded parameters for executeTransaction function
+     * @notice Encodes a single SafeTx tuple so it decodes as `executeTransaction(SafeTx)`
+     *         (selector GuardianSafeDefinitions.EXEC_SAFE_TX_SELECTOR). Flattened field encoding does not match
+     *         the struct ABI (dynamic tuple head offset) and must not be used.
      */
     function _encodeSafeTxParams(SafeTx calldata safeTx) private pure returns (bytes memory) {
-        return abi.encode(
-            safeTx.to,
-            safeTx.value,
-            safeTx.data,
-            safeTx.operation,
-            safeTx.safeTxGas,
-            safeTx.baseGas,
-            safeTx.gasPrice,
-            safeTx.gasToken,
-            safeTx.refundReceiver,
-            safeTx.signatures
-        );
+        return abi.encode(safeTx);
     }
 
     /**
@@ -383,20 +375,10 @@ contract GuardianSafe is SecureOwnable, ITransactionGuard {
      * @dev Helper function to encode SafeTx parameters from memory (for createTransactionExecutionOptions)
      * @param safeTx The Safe transaction parameters
      * @return Encoded parameters for executeTransaction function
+     * @notice Single SafeTx tuple, identical to `_encodeSafeTxParams` (see there).
      */
     function _encodeSafeTxParamsMemory(SafeTx memory safeTx) private pure returns (bytes memory) {
-        return abi.encode(
-            safeTx.to,
-            safeTx.value,
-            safeTx.data,
-            safeTx.operation,
-            safeTx.safeTxGas,
-            safeTx.baseGas,
-            safeTx.gasPrice,
-            safeTx.gasToken,
-            safeTx.refundReceiver,
-            safeTx.signatures
-        );
+        return abi.encode(safeTx);
     }
 
     function checkTransaction(
