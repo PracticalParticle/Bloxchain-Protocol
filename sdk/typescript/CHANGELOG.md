@@ -5,6 +5,66 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.3.0...sdk-v1.4.0) (2026-11-05)
+
+
+### Features
+
+* add BasicAccount and a pinned BasicFactory ([afd3873](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/afd3873a09612c658b0dc66d846199698b02a996))
+* add BasicAccount and a pinned BasicFactory ([54d950d](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/54d950d5fef8c26422e14026d33ed99b2ec61bdb))
+* add new error types for meta-transaction handling and payment validation ([d3ce2a1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d3ce2a149efa193fc46a154c538248c5ae19e162))
+* clarify EIP-712 signing process for meta-transactions in EngineBlox library ([6a02b97](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6a02b97188d30a5e94694dcd516b1222af5e9e91))
+* **contracts:** require deployer == initialOwner on both BasicFactory mints ([f734d06](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f734d069605f1f80c448f5b7ac3d5d770b545b2c))
+* enhance error handling and test coverage in guard-controller and fuzz testing ([8754d2f](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/8754d2ff0ec8485fdce6303eea7b418ce4995c7b))
+* enhance error handling in contract-errors.ts and update documentation ([dba5165](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/dba5165a054a189408a9d3d10d95f6b38fd1a394))
+* enhance guard-controller and RBAC tests with improved schema handling and error reporting ([e7369e1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e7369e1aa3474cef19a7f70fe9851bc4927de8ef))
+* enhance guard-controller tests with schema pre-checks and improved error handling ([b298043](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b298043b14de723dfdb9266ffade47891810c271))
+* enhance ownership transfer logic and documentation in SecureOwnable contract ([b6ac4bb](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b6ac4bbe9b360a7d2c51d84b6bafdebd99fb81b2))
+* enhance payment validation and documentation in transaction handling ([06a9ee1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/06a9ee19089fb190ea0191714a870616facb33a4))
+* enhance README and test configurations for improved clarity and consistency ([4dca1db](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/4dca1db4c2834b5acce747f5d815f366ad801f8c))
+* enhance typed-data signing validation in MetaTransactionSigner ([c617c59](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c617c5939ff816a514474642be9f83d9049a4b32))
+* **examples:** index CopyBlox clones by owner ([d446288](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d446288100460a3482ee2fc66589b2876c29781e))
+* expand error handling in contract-errors.ts with new error types ([ffc93ea](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ffc93ead69a5633f20adaca9ac3e5136f9d14ea5))
+* **factory:** add deterministic CREATE2 mint to BasicFactory ([12086a0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/12086a0c1860d43a6dd4c9f1130b288a171daf47))
+* implement meta-transaction handler validation in BaseStateMachine ([5b2c8bf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/5b2c8bfded5c5525ed8d15f80bf4f19f1cf7c53c))
+* integrate definition contract calls for execution parameters ([cba4efe](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/cba4efe85d33b1ecd3a957720df5b9ecad96aa8d))
+* introduce bounded returndata handling in EngineBlox library ([af9ab57](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/af9ab57a2d51f497185bd9a9ac6f7532b05b2717))
+* introduce ContractFunctionMustBeProtected error for enhanced function protection ([e04a672](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e04a6723ccebe499a23715432510032a447aa5db))
+* introduce CONTROLLER_CONFIG_OPERATION and enhance GuardControll… ([d5a231d](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d5a231d4b3d6eddfb8a39b9325f245cd09f8b53f))
+* introduce CONTROLLER_CONFIG_OPERATION and enhance GuardController functionality ([4eef1c8](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/4eef1c89226ea2d969b71ba6d88d2587434966d3))
+* refine EIP-712 message hashing for meta-transactions in EngineBlox library ([3f27b9e](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/3f27b9e0e51c4ce2662510233e5189a4b0f55975))
+* **sdk:** add factory wrapper, account gate, gas envelope and address helpers ([86dd148](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/86dd1484c8b8f3564a503807a9e25af48d381184))
+* **sdk:** add flowReadiness probe and guard/RBAC public-builder docs ([c5a28b3](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c5a28b3d0f20522b1a25b2b3302cd2297ddead26))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([78a9ce2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/78a9ce2ab8510f318b376f49244d52cdb3b2f986))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([c45d761](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c45d761ae983607e0b38a946b55d0c503a928f78))
+* **sdk:** enforce self-owner mint in the BasicFactory client and docs ([9bc0ebf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9bc0ebf03f63c2ff7ed91dbe882d58eea3302a97))
+* **sdk:** make BasicFactory the official mint and deprecate CopyBlox ([e2fe8e2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e2fe8e28b7878463f50da02906048aa9ece400ee))
+* **sdk:** public-integrator surface — exports, EIP-712, errors, deadline, inner status ([6d3213a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6d3213aa05804c751580f38ec7e375c9673a277f))
+* standardize EIP-712 type hashes and signing process in EngineBlox library ([d79d293](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d79d293eb0dbae775e7223f1d87a8c9845015c66))
+* update deployment scripts and add new wallet creation functionality ([0e54b06](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/0e54b0635f794fd707ebff186c5ac7fc4beafafd))
+* update EngineBlox ABI and GuardController definitions for new payment selectors ([7658827](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/76588270597593c0a024d99a7ee5f6e6ad969da3))
+
+
+### Bug Fixes
+
+* add validation for non-negative gas limit in BaseStateMachine ([124ec65](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/124ec654801054929f5badd2e8a4380a0b5b7020))
+* address still-valid review findings on artifacts, CopyBlox, and … ([b3e63d8](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b3e63d848d5ab0fa03878427f0dbe0a7ab5627da))
+* address still-valid review findings on artifacts, CopyBlox, and provisioner ([f4798f0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f4798f02fcd8eb07629d46d71d2ccd6c1a348d2a))
+* close Dependabot advisories that fit the current toolchain ([d046785](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/d0467852ea8911e8608db47af010bf34bcd69ada))
+* correct chainId assignment in MetaTransactionSigner class ([fe3bb37](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/fe3bb379ba7a75255ad3fa15482f87204d3b6119))
+* describe disabled initializers and honor per-network mint gas ([e19ab17](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e19ab17273d46a81be5b00a69a727d9073141090))
+* describe disabled initializers and honor per-network mint gas ([35358f1](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/35358f1d6b74412f74d52ee23e1e046fcac3c2d0))
+* enhance gas option type handling in TransactionOptions interface ([8553caf](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/8553cafebb254d20799046074c4dba5f43f551ab))
+* improve gas limit handling in BaseStateMachine ([3e475ee](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/3e475eed0bfe7eb998bc89a3cef1a3c27ffea89b))
+* **sdk:** address review notes on explainError docs, ABIs, and RBAC sanity ([41ff788](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/41ff788217b66ca1b439bc9b7c6e5be3dfee67bf))
+* **sdk:** address SPEC-0118 review findings on provisioning surface ([b06002b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b06002bdb198cdf203feb36665fe0908cf85c2dc))
+* **sdk:** apply review fixes for Polygon gas, promote, and discovery ([6e32409](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6e324096ab7c3a9aeba06659c895abc63cb9258a))
+* **sdk:** peer-only viem, absolute Builder deadline, type widenings ([01390cc](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/01390cc890248ee2e00696c4ff6c48b9eeba6ca8))
+* **sdk:** peer-only viem, absolute Builder deadline, type widenings ([1b3fb81](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/1b3fb819c2000fdf97bd061ed956478fc483fad3))
+* **sdk:** reject pending-declaration rows with a set address ([e3370bd](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e3370bde31fd2a96f6277512bf340803092b5063))
+* tighten gas metadata checks and contract-failure classification ([ac86ac0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ac86ac04a1d3846fc08b15de10792781d0737efb))
+* tighten gas metadata checks and contract-failure classification ([9427e99](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/9427e99d32af000a7ac7c8378eed423657c3d1a4))
+
 ## [1.3.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/sdk-v1.2.1...sdk-v1.3.0) (2026-11-05)
 
 
