@@ -9,18 +9,18 @@ These numbers are **not** required to match.
 | Layer | Where | Example | Bumped when |
 |-------|--------|---------|-------------|
 | **A. On-chain protocol** | `contracts/core/lib/EngineBlox.sol` → `VERSION`; mirrored in `sdk/typescript/lib/EngineBlox.tsx` | `"1.0.0"` | EIP-712 / meta-tx domain break, incompatible EngineBlox semantics |
-| **B. npm `@bloxchain/contracts`** | `package/package.json` | `1.0.0`, `1.0.1`, `1.1.0` | Publishable Solidity artifact changes (ABI, packaged sources) |
-| **C. npm `@bloxchain/sdk`** | `sdk/typescript/package.json` | `1.0.0`, `1.0.1`, `1.2.0` | TypeScript SDK fixes and features |
+| **B. npm `@bloxchain/contracts`** | `package/package.json` | `1.0.0`, `1.2.0`, `1.4.0` | Publishable Solidity artifact changes (ABI, packaged sources) |
+| **C. npm `@bloxchain/sdk`** | `sdk/typescript/package.json` | `1.0.0`, `1.2.0`, `1.4.0` | TypeScript SDK fixes and features |
 
-**Example:** npm `@bloxchain/sdk@1.0.5` does **not** mean on-chain `EngineBlox.VERSION` became `1.0.5`. Protocol bumps are rare and manual.
+**Example:** npm `@bloxchain/sdk@1.4.0` does **not** mean on-chain `EngineBlox.VERSION` became `1.4.0`. Protocol bumps are rare and manual. Exact npm patch/minor numbers in the example column are illustrative; check npm `latest` / GitHub tags for the current release.
 
 ## Compatibility matrix
 
 | On-chain `VERSION` | `@bloxchain/contracts` | `@bloxchain/sdk` | Notes |
 |--------------------|-------------------------|------------------|--------|
-| `1.0.0` | `1.0.x` | `1.0.x` – `1.x.x` | SDK declares peer `@bloxchain/contracts` `^1.0.0` |
+| `1.0.0` | `1.x.x` | `1.x.x` | SDK declares peer `@bloxchain/contracts` `^1.0.0`. Prefer npm `latest` on major 1; pin both packages to the same concrete version in lockfiles. |
 
-Update this table when **A** or supported **B/C** ranges change.
+Update this table when **A** or the supported major line for **B/C** changes (for example a future `2.x`).
 
 ## npm packages
 
