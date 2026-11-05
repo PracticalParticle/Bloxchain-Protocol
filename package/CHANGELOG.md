@@ -5,6 +5,27 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.3.0...contracts-v1.4.0) (2026-11-05)
+
+
+### Features
+
+* **contracts:** publish compiled artifacts and official deployed addresses ([159513a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/159513afcf06ac16ea6b6c4bcdd30bde391cdcd2))
+* **sdk:** add flowReadiness probe and guard/RBAC public-builder docs ([c5a28b3](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c5a28b3d0f20522b1a25b2b3302cd2297ddead26))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([78a9ce2](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/78a9ce2ab8510f318b376f49244d52cdb3b2f986))
+* **sdk:** declare CreateX catalog /2 and drop CopyBlox client ([c45d761](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/c45d761ae983607e0b38a946b55d0c503a928f78))
+* **sdk:** public-integrator surface — exports, EIP-712, errors, deadline, inner status ([6d3213a](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/6d3213aa05804c751580f38ec7e375c9673a277f))
+* update deployment scripts and add new wallet creation functionality ([0e54b06](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/0e54b0635f794fd707ebff186c5ac7fc4beafafd))
+* update environment configuration and deployment scripts for CopyBlox ([ed83a88](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/ed83a88748756e50a660f81236a3d6e35a49ddf2))
+
+
+### Bug Fixes
+
+* describe disabled initializers and honor per-network mint gas ([e19ab17](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/e19ab17273d46a81be5b00a69a727d9073141090))
+* **sdk:** address SPEC-0118 review findings on provisioning surface ([b06002b](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/b06002bdb198cdf203feb36665fe0908cf85c2dc))
+* update dotenv configuration for quieter environment variable loa… ([75b6a9c](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/75b6a9c75352243172c018a257820b515c8d006e))
+* update dotenv configuration for quieter environment variable loading ([0df11d5](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/0df11d54f83dd3c87a595afcc320dc98f7b49200))
+
 ## [1.3.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.2.0...contracts-v1.3.0) (2026-11-05)
 
 
