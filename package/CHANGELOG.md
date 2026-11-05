@@ -5,6 +5,19 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.2.0...contracts-v1.3.0) (2026-11-05)
+
+
+### Features
+
+* declare Monad mainnet in the official CreateX catalog ([fecd1f0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/fecd1f0b))
+* slim npm package to the official mint surface (core / account / factory / curated artifacts); stop publishing `standards` and `components` paths ([f081b67](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/f081b670))
+
+
+### Documentation
+
+* align package and example maturity docs with teaching-sample policy ([edc325f](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/edc325fd), [838fef0](https://github.com/PracticalParticle/Bloxchain-Protocol/commit/838fef05))
+
 ## [1.2.0](https://github.com/PracticalParticle/Bloxchain-Protocol/compare/contracts-v1.1.0...contracts-v1.2.0) (2026-10-08)
 
 
