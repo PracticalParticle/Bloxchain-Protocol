@@ -64,7 +64,7 @@
   "devDependencies": {
     "@types/node": "26.6.6",
     "typescript": "6.0.2",
-    "viem": "2.57.14"
+    "viem": "2.57.16"
   },
   "peerDependencies": {
     "@bloxchain/contracts": "^1.0.0",
